@@ -208,10 +208,11 @@ const EmcalaAuth = (() => {
       <div style="display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque',Inter,system-ui,sans-serif;">
         <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);padding:6px 14px;border-radius:100px;">
           <span style="width:8px;height:8px;border-radius:50%;background:${info.bg};box-shadow:0 0 8px ${info.bg}88;"></span>
-          <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);letter-spacing:0.05em;">${info.label}</span>
           <span style="font-size:13px;font-weight:700;color:#fff;">${session.nombre}</span>
         </div>
-        <button onclick="EmcalaAuth.logout()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:11px;cursor:pointer;text-decoration:underline;font-family:inherit;">Salir</button>
+        <button onclick="EmcalaAuth.logout()" title="Cerrar Sesión" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:50%;color:#ef4444;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.25)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+        </button>
       </div>
     `;
   }
