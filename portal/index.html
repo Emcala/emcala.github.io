@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMCALA · Portal Central</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.container{width:100%;max-width:400px;text-align:center;animation:fadeIn 0.6s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.user-info{margin-bottom:24px;padding:15px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:16px}
+.user-info strong{display:block;font-size:18px;color:#fff}
+.user-info span{font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em}
+.link-btn{display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(255,255,255,0.1);color:#fff;text-decoration:none;padding:20px;border-radius:16px;margin-bottom:12px;font-weight:700;font-size:16px;border:1px solid rgba(255,255,255,0.18);transition:transform 0.2s,background 0.2s}
+.link-btn:hover{transform:scale(1.02);background:rgba(255,255,255,0.18)}
+.btn-logout-small{background:none;border:none;color:rgba(255,255,255,0.45);font-size:12px;font-weight:600;margin-top:20px;cursor:pointer;text-decoration:underline;font-family:inherit}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div style="margin-bottom:28px">
+    <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:52px;font-weight:800;color:#fff;letter-spacing:-0.04em;line-height:1">EMCALA</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-top:6px">Gestión Integral de Operaciones</div>
+  </div>
+  
+  <div id="menuPrincipal" style="display:none;">
+    <div class="user-info">
+      <span id="labelRol"></span>
+      <strong id="labelNombre"></strong>
+    </div>
+    
+    <div id="menuLinks"></div>
+    
+    <button class="btn-logout-small" onclick="EmcalaAuth.logout()">Cerrar Sesión</button>
+  </div>
+</div>
+
+<!-- Auth Module -->
+<script src="../emcala-auth.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIGURACIÓN DE HERRAMIENTAS POR ROL
+// ═══════════════════════════════════════════════════════════════
+const HERRAMIENTAS = {
+  mapa: { href: '../plan_merchs/index.html', label: '🗺️ PLAN MERCHS' },
+  reparaciones: { href: 'https://emcala.github.io/Relevamiento/reparaciones.html', label: '🛠️ REPARACIONES' },
+  cuentas: { href: 'https://emcala.github.io/Relevamiento/cuentas.html', label: '👥 GESTIÓN DE CUENTAS' },
+  gestion_edf: { href: '../gestion_edf/index.html', label: '📋 GESTIÓN EDF' },
+  zonas_merch: { href: '../zonas_merch/zonas_merch.html', label: '👷 ZONAS MERCH' },
+  ejecucion: { href: 'https://emcala.github.io/suralnor-ejecucion/dashboard/index.html', label: '📊 EJECUCIÓN' },
+  dashboard_comercial: { href: 'https://emcala.github.io/dashboard_comercial/dashboard.html', label: '📈 DASHBOARD COMERCIAL' },
+  analisis_anual: { href: '../analisis_anual/index.html', label: '📅 ANÁLISIS ANUAL' },
+  repago_edf: { href: '../gestion_edf/edf-repago.html', label: '💰 REPAGO (EDF)' }
+};
+
+const MENU_POR_ROL = {
+  jdv: ['mapa', 'reparaciones', 'cuentas', 'gestion_edf', 'zonas_merch', 'ejecucion', 'dashboard_comercial', 'analisis_anual', 'repago_edf'],
+  admin: ['mapa', 'reparaciones', 'cuentas', 'gestion_edf', 'zonas_merch', 'ejecucion', 'dashboard_comercial', 'analisis_anual', 'repago_edf'],
+  auditor: ['mapa', 'reparaciones', 'cuentas', 'gestion_edf', 'zonas_merch', 'ejecucion', 'dashboard_comercial', 'analisis_anual', 'repago_edf'],
+  supervisor: ['reparaciones', 'gestion_edf', 'dashboard_comercial', 'analisis_anual', 'repago_edf'],
+  trade: ['mapa', 'reparaciones', 'zonas_merch', 'ejecucion', 'dashboard_comercial', 'analisis_anual', 'repago_edf'],
+  tecnico: ['reparaciones', 'gestion_edf'],
+  promotor: ['reparaciones'],
+  merch: ['zonas_merch']
+};
+
+function renderPortal() {
+  const session = EmcalaAuth.getSession();
+  if (!session) return;
+
+  const rol = session.rol.toLowerCase();
+
+  document.getElementById('labelNombre').textContent = session.nombre;
+  document.getElementById('labelRol').textContent = session.rol;
+
+  // Tools menu
+  const toolKeys = MENU_POR_ROL[rol] || MENU_POR_ROL['supervisor'];
+  const menuEl = document.getElementById('menuLinks');
+
+  let html = '';
+  toolKeys.forEach(key => {
+    const tool = HERRAMIENTAS[key];
+    if (tool) {
+      html += `<a href="${tool.href}" class="link-btn">${tool.label}</a>`;
+    }
+  });
+
+  menuEl.innerHTML = html;
+
+  // Show portal
+  document.getElementById('menuPrincipal').style.display = 'block';
+}
+
+window.onload = () => {
+  // Verificar sesión (redirige al login si no hay)
+  if (!EmcalaAuth.requireLogin()) return;
+  renderPortal();
+};
+</script>
+</body>
+</html>
