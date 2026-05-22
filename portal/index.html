@@ -7,15 +7,24 @@
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { font-family:'Inter', sans-serif; background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:30px 20px; color:#fff; }
+    body { font-family:'Inter', sans-serif; background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 20px; color:#fff; }
     .header { text-align:center; margin-bottom:40px; animation:fadeInDown 0.8s ease; }
-    .portal-container { width:100%; max-width:400px; display:flex; flex-direction:column; gap:16px; animation:fadeInUp 0.6s ease 0.2s both; }
-    .user-info { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:16px; padding:16px; text-align:center; margin-bottom:10px; display:flex; flex-direction:column; gap:4px; }
+    
+    #menuPrincipal { width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
+    .portal-container { width:100%; display:flex; flex-direction:column; gap:16px; animation:fadeInUp 0.6s ease 0.2s both; }
+    
+    .user-info { width: 100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:16px; padding:16px; text-align:center; margin-bottom:20px; display:flex; flex-direction:column; gap:4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     #labelRol { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.15em; color:rgba(255,255,255,0.6); }
     #labelNombre { font-family:'Bricolage Grotesque', sans-serif; font-size:18px; font-weight:700; color:#fff; }
-    .link-btn { display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:14px; padding:18px; color:#fff; text-decoration:none; font-family:'Bricolage Grotesque', sans-serif; font-size:16px; font-weight:600; letter-spacing:0.02em; transition:all 0.2s ease; backdrop-filter:blur(10px); }
-    .link-btn:active { transform:scale(0.97); background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.4); }
-    .btn-logout-small { margin-top:30px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Inter', sans-serif; font-size:13px; text-decoration:underline; cursor:pointer; padding:10px; transition:color 0.2s; }
+    
+    #menuLinks { width: 100%; display:flex; flex-direction:column; gap:16px; }
+    
+    .link-btn { display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:14px; padding:18px; color:#fff; text-decoration:none; font-family:'Bricolage Grotesque', sans-serif; font-size:16px; font-weight:600; letter-spacing:0.02em; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter:blur(10px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .link-btn:hover { background:rgba(255,255,255,0.18); border-color:rgba(255,255,255,0.3); transform:translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+    .link-btn:active { transform:scale(0.97) translateY(0); background:rgba(255,255,255,0.12); box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-color:rgba(255,255,255,0.4); }
+    
+    .btn-logout-small { margin-top:30px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Inter', sans-serif; font-size:13px; text-decoration:underline; cursor:pointer; padding:10px; transition:color 0.2s; align-self: center; }
+    .btn-logout-small:hover { color:rgba(255,255,255,0.8); }
     .btn-logout-small:active { color:#fff; }
     @keyframes fadeInDown { from {opacity:0; transform:translateY(-20px);} to {opacity:1; transform:translateY(0);} }
     @keyframes fadeInUp { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
@@ -92,7 +101,7 @@
   
     menuEl.innerHTML = html;
   
-    document.getElementById('menuPrincipal').style.display = 'block';
+    document.getElementById('menuPrincipal').style.display = 'flex';
   }
   
   window.onload = () => {
