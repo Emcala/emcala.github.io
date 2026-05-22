@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EMCALA Â· Portal Central</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.container{width:100%;max-width:400px;text-align:center;animation:fadeIn 0.6s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.user-info{margin-bottom:24px;padding:15px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:16px}
-.user-info strong{display:block;font-size:18px;color:#fff}
-.user-info span{font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em}
-.link-btn{display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(255,255,255,0.1);color:#fff;text-decoration:none;padding:20px;border-radius:16px;margin-bottom:12px;font-weight:700;font-size:16px;border:1px solid rgba(255,255,255,0.18);transition:transform 0.2s,background 0.2s}
-.link-btn:hover{transform:scale(1.02);background:rgba(255,255,255,0.18)}
-.btn-logout-small{background:none;border:none;color:rgba(255,255,255,0.45);font-size:12px;font-weight:600;margin-top:20px;cursor:pointer;text-decoration:underline;font-family:inherit}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Portal Emcala</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body { font-family:'Inter', sans-serif; background:linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:30px 20px; color:#fff; }
+    .header { text-align:center; margin-bottom:40px; animation:fadeInDown 0.8s ease; }
+    .portal-container { width:100%; max-width:400px; display:flex; flex-direction:column; gap:16px; animation:fadeInUp 0.6s ease 0.2s both; }
+    .user-info { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:16px; padding:16px; text-align:center; margin-bottom:10px; display:flex; flex-direction:column; gap:4px; }
+    #labelRol { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.15em; color:rgba(255,255,255,0.6); }
+    #labelNombre { font-family:'Bricolage Grotesque', sans-serif; font-size:18px; font-weight:700; color:#fff; }
+    .link-btn { display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:14px; padding:18px; color:#fff; text-decoration:none; font-family:'Bricolage Grotesque', sans-serif; font-size:16px; font-weight:600; letter-spacing:0.02em; transition:all 0.2s ease; backdrop-filter:blur(10px); }
+    .link-btn:active { transform:scale(0.97); background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.4); }
+    .btn-logout-small { margin-top:30px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Inter', sans-serif; font-size:13px; text-decoration:underline; cursor:pointer; padding:10px; transition:color 0.2s; }
+    .btn-logout-small:active { color:#fff; }
+    @keyframes fadeInDown { from {opacity:0; transform:translateY(-20px);} to {opacity:1; transform:translateY(0);} }
+    @keyframes fadeInUp { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
+  </style>
 </head>
 <body>
 
-<div class="container">
-  <div style="margin-bottom:28px">
+  <div class="header">
     <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:52px;font-weight:800;color:#fff;letter-spacing:-0.04em;line-height:1">EMCALA</div>
-    <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-top:6px">GestiÃ³n Integral de Operaciones</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-top:6px">Gestión Integral de Operaciones</div>
   </div>
   
   <div id="menuPrincipal" style="display:none;">
@@ -31,80 +33,72 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
       <span id="labelRol"></span>
       <strong id="labelNombre"></strong>
     </div>
-    
-    <div id="menuLinks"></div>
-    
-    <button class="btn-logout-small" onclick="EmcalaAuth.logout()">Cerrar SesiÃ³n</button>
+
+    <div class="portal-container">
+      <div id="menuLinks"></div>
+      
+      <button class="btn-logout-small" onclick="EmcalaAuth.logout()">Cerrar Sesión</button>
+    </div>
   </div>
-</div>
 
-<!-- Auth Module -->
-<script src="../emcala-auth.js"></script>
-
-<script>
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// CONFIGURACIÃ“N DE HERRAMIENTAS POR ROL
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-const HERRAMIENTAS = {
-  reparaciones: { href: 'https://emcala.github.io/Relevamiento/reparaciones.html', label: '🛠️ REPARACIONES' },
-  dashboard_ventas: { href: 'https://emcala.github.io/dashboard_comercial/dashboard.html', label: '📈 ANÁLISIS DE VENTAS' },
-  ejecucion: { href: 'https://emcala.github.io/suralnor-ejecucion/dashboard/index.html', label: '📊 AS EJECUCIÓN' },
-  zonas_merch: { href: '../zonas_merch/zonas_merch.html', label: '👷 ZONAS MERCH' },
-  coaching_pr: { href: '#', label: '🎯 DASHBOARD COACHING PR' },
-  cuentas: { href: 'https://emcala.github.io/Relevamiento/cuentas.html', label: '👥 GESTIÓN DE CUENTAS' }
-};
-
-const MENU_POR_ROL = {
-  jdv: ['reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas'],
-  admin: ['reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas'],
-  auditor: ['reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas'],
-  supervisor: ['reparaciones', 'dashboard_ventas', 'coaching_pr'],
-  trade: ['reparaciones', 'dashboard_ventas'],
-  tecnico: ['reparaciones'],
-  promotor: ['reparaciones']
-};
-
-function renderPortal() {
-  const session = EmcalaAuth.getSession();
-  if (!session) return;
-
-  const rol = session.rol.toLowerCase();
-  const usuario = (session.usuario || '').toUpperCase();
-
-  document.getElementById('labelNombre').textContent = session.nombre;
-  document.getElementById('labelRol').textContent = session.rol;
-
-  // Tools menu
-  let toolKeys = MENU_POR_ROL[rol] || MENU_POR_ROL['supervisor'];
+  <script src="../emcala-auth.js"></script>
+  <script>
+  const HERRAMIENTAS = {
+    reparaciones: { href: 'https://emcala.github.io/Relevamiento/reparaciones.html', label: '🛠️ REPARACIONES' },
+    dashboard_ventas: { href: 'https://emcala.github.io/dashboard_comercial/dashboard.html', label: '📈 ANÁLISIS DE VENTAS' },
+    ejecucion: { href: 'https://emcala.github.io/suralnor-ejecucion/dashboard/index.html', label: '📊 AS EJECUCIÓN' },
+    zonas_merch: { href: '../zonas_merch/zonas_merch.html', label: '👷 ZONAS MERCH' },
+    coaching_pr: { href: '#', label: '🎯 DASHBOARD COACHING PR' },
+    cuentas: { href: 'https://emcala.github.io/Relevamiento/cuentas.html', label: '👥 GESTIÓN DE CUENTAS' }
+  };
   
-  if (usuario === 'SDVAS') {
-    toolKeys = [...toolKeys];
-    if (!toolKeys.includes('ejecucion')) toolKeys.push('ejecucion');
-    if (!toolKeys.includes('zonas_merch')) toolKeys.push('zonas_merch');
-  }
+  const MENU_POR_ROL = {
+    jdv: ['reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas'],
+    admin: ['reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas'],
+    auditor: ['reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas'],
+    supervisor: ['reparaciones', 'dashboard_ventas', 'coaching_pr'],
+    trade: ['reparaciones', 'dashboard_ventas'],
+    tecnico: ['reparaciones'],
+    promotor: ['reparaciones']
+  };
 
-  const menuEl = document.getElementById('menuLinks');
-
-  let html = '';
-  toolKeys.forEach(key => {
-    const tool = HERRAMIENTAS[key];
-    if (tool) {
-      html += `<a href="${tool.href}" class="link-btn">${tool.label}</a>`;
+  function renderPortal() {
+    const session = EmcalaAuth.getSession();
+    if (!session) return;
+  
+    const rol = session.rol.toLowerCase();
+    const usuario = (session.usuario || '').toUpperCase();
+  
+    document.getElementById('labelNombre').textContent = session.nombre;
+    document.getElementById('labelRol').textContent = session.rol;
+  
+    let toolKeys = MENU_POR_ROL[rol] || MENU_POR_ROL['supervisor'];
+    
+    if (usuario === 'SDVAS') {
+      toolKeys = [...toolKeys];
+      if (!toolKeys.includes('ejecucion')) toolKeys.push('ejecucion');
+      if (!toolKeys.includes('zonas_merch')) toolKeys.push('zonas_merch');
     }
-  });
-
-  menuEl.innerHTML = html;
-
-  // Show portal
-  document.getElementById('menuPrincipal').style.display = 'block';
-}
-
-window.onload = () => {
-  // Verificar sesiÃ³n (redirige al login si no hay)
-  if (!EmcalaAuth.requireLogin()) return;
-  renderPortal();
-};
-</script>
+  
+    const menuEl = document.getElementById('menuLinks');
+  
+    let html = '';
+    toolKeys.forEach(key => {
+      const tool = HERRAMIENTAS[key];
+      if (tool) {
+        html += <a href=" + tool.href + " class="link-btn"> + tool.label + </a>;
+      }
+    });
+  
+    menuEl.innerHTML = html;
+  
+    document.getElementById('menuPrincipal').style.display = 'block';
+  }
+  
+  window.onload = () => {
+    if (!EmcalaAuth.requireLogin()) return;
+    renderPortal();
+  };
+  </script>
 </body>
 </html>
-
