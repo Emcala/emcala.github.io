@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EMCALA · Portal Central</title>
+<title>EMCALA Â· Portal Central</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -23,7 +23,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
 <div class="container">
   <div style="margin-bottom:28px">
     <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:52px;font-weight:800;color:#fff;letter-spacing:-0.04em;line-height:1">EMCALA</div>
-    <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-top:6px">Gestión Integral de Operaciones</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-top:6px">GestiÃ³n Integral de Operaciones</div>
   </div>
   
   <div id="menuPrincipal" style="display:none;">
@@ -34,7 +34,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
     
     <div id="menuLinks"></div>
     
-    <button class="btn-logout-small" onclick="EmcalaAuth.logout()">Cerrar Sesión</button>
+    <button class="btn-logout-small" onclick="EmcalaAuth.logout()">Cerrar SesiÃ³n</button>
   </div>
 </div>
 
@@ -42,16 +42,16 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
 <script src="../emcala-auth.js"></script>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// CONFIGURACIÓN DE HERRAMIENTAS POR ROL
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// CONFIGURACIÃ“N DE HERRAMIENTAS POR ROL
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const HERRAMIENTAS = {
-  reparaciones: { href: 'https://emcala.github.io/Relevamiento/reparaciones.html', label: '??? REPARACIONES' },
-  dashboard_ventas: { href: 'https://emcala.github.io/dashboard_comercial/dashboard.html', label: '?? AN LISIS DE VENTAS' },
-  ejecucion: { href: 'https://emcala.github.io/suralnor-ejecucion/dashboard/index.html', label: '?? AS EJECUCI N' },
-  zonas_merch: { href: '../zonas_merch/zonas_merch.html', label: '?? ZONAS MERCH' },
-  coaching_pr: { href: '#', label: '?? DASHBOARD COACHING PR' },
-  cuentas: { href: 'https://emcala.github.io/Relevamiento/cuentas.html', label: '?? GESTI N DE CUENTAS' }
+  reparaciones: { href: 'https://emcala.github.io/Relevamiento/reparaciones.html', label: '🛠️ REPARACIONES' },
+  dashboard_ventas: { href: 'https://emcala.github.io/dashboard_comercial/dashboard.html', label: '📈 ANÁLISIS DE VENTAS' },
+  ejecucion: { href: 'https://emcala.github.io/suralnor-ejecucion/dashboard/index.html', label: '📊 AS EJECUCIÓN' },
+  zonas_merch: { href: '../zonas_merch/zonas_merch.html', label: '👷 ZONAS MERCH' },
+  coaching_pr: { href: '#', label: '🎯 DASHBOARD COACHING PR' },
+  cuentas: { href: 'https://emcala.github.io/Relevamiento/cuentas.html', label: '👥 GESTIÓN DE CUENTAS' }
 };
 
 const MENU_POR_ROL = {
@@ -100,7 +100,7 @@ function renderPortal() {
 }
 
 window.onload = () => {
-  // Verificar sesión (redirige al login si no hay)
+  // Verificar sesiÃ³n (redirige al login si no hay)
   if (!EmcalaAuth.requireLogin()) return;
   renderPortal();
 };
