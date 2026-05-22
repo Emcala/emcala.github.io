@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMCALA · Acceso</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.container{width:100%;max-width:400px;text-align:center;animation:fadeIn 0.6s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.login-card{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);padding:36px 28px;border-radius:24px;margin-bottom:20px}
+.field{margin-bottom:16px;text-align:left}
+.field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;color:rgba(255,255,255,0.55)}
+.field input{width:100%;padding:14px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:12px;font-family:inherit;font-size:15px;outline:none;transition:all 0.2s;text-align:center;color:#fff}
+.field input::placeholder{color:rgba(255,255,255,0.35)}
+.field input:focus{border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.18)}
+.btn-login{width:100%;background:#fff;color:#0B2559;border:none;padding:16px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;transition:opacity 0.2s;font-family:inherit}
+.btn-login:hover{opacity:0.9}
+.error{color:#FFD580;font-size:13px;margin-top:12px;display:none;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div style="margin-bottom:28px">
+    <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:52px;font-weight:800;color:#fff;letter-spacing:-0.04em;line-height:1">EMCALA</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-top:6px">Portal de Acceso</div>
+  </div>
+
+  <div id="sectionLogin" class="login-card">
+    <div class="field"><label>Usuario</label><input type="text" id="user" placeholder="USUARIO"></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="pass" placeholder="••••••••"></div>
+    <button class="btn-login" onclick="doLoginHub()">Ingresar</button>
+    <div id="loginErr" class="error">Credenciales incorrectas</div>
+  </div>
+</div>
+
+<!-- Auth Module -->
+<script src="emcala-auth.js"></script>
+
+<script>
+// GS URL for Auth
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwreokQunVau5zi-QN-NzPz14IOfk11p4As3PYRqvSh1zqgbPosHJ9nX2RAfotacKxN/exec'; 
+
+// Local dev bypass check
+function checkLocalDevBypass() {
+  if (window.location.protocol === 'file:') {
+    const s = localStorage.getItem('user_session');
+    if (s) {
+      window.location.href = './portal/index.html';
+      return true;
+    }
+  }
+  return false;
+}
+
+function doLoginHub() {
+  const u = document.getElementById('user').value.trim().toUpperCase();
+  const p = document.getElementById('pass').value.trim();
+  const btn = document.querySelector('.btn-login');
+  
+  if (!u || !p) {
+    document.getElementById('loginErr').textContent = 'Ingresa usuario y contraseña';
+    document.getElementById('loginErr').style.display = 'block';
+    return;
+  }
+
+  // --- LOCAL DEV BYPASS ---
+  if (window.location.protocol === 'file:' && u === 'MATIAS' && p === '1234') {
+    EmcalaAuth.createSession({ usuario: u, rol: 'jdv', nombre: 'Matias (Desarrollo Local)', promotores: '', userHash: 'dev_hash' });
+    window.location.href = './portal/index.html';
+    return;
+  }
+  // ------------------------
+
+  btn.textContent = 'Verificando...'; 
+  btn.disabled = true;
+  document.getElementById('loginErr').style.display = 'none';
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'login', usuario: u, password: p })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.ok) {
+      // Usar EmcalaAuth para crear la sesión de forma segura
+      EmcalaAuth.createSession({
+        usuario: u,
+        userHash: data.userHash, // El GAS debe enviar este hash para firmar la sesión
+        rol: data.rol,
+        nombre: data.label,
+        promotores: data.promotores
+      });
+      // Redirigir al portal unificado
+      window.location.href = './portal/index.html';
+    } else {
+      document.getElementById('loginErr').textContent = 'Credenciales incorrectas';
+      document.getElementById('loginErr').style.display = 'block';
+      btn.textContent = 'Ingresar'; btn.disabled = false;
+    }
+  })
+  .catch(error => {
+    document.getElementById('loginErr').textContent = 'Error de conexión';
+    document.getElementById('loginErr').style.display = 'block';
+    btn.textContent = 'Ingresar'; btn.disabled = false;
+  });
+}
+
+// Si entra a esta página pero ya está logueado de antes, lo mandamos directo al portal
+window.onload = () => {
+  if (checkLocalDevBypass()) return;
+  
+  const s = localStorage.getItem('user_session');
+  if (s) {
+    window.location.href = './portal/index.html';
+  }
+};
+</script>
+</body>
+</html>
