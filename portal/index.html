@@ -86,7 +86,7 @@
     toolKeys.forEach(key => {
       const tool = HERRAMIENTAS[key];
       if (tool) {
-        html += <a href=" + tool.href + " class="link-btn"> + tool.label + </a>;
+        html += `<a href="${tool.href}" class="link-btn">${tool.label}</a>`;
       }
     });
   
