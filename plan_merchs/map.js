@@ -48,9 +48,9 @@ const MapManager = {
             dark: 'Oscuro'
         };
 
-        // Default: use voyager for light theme, dark for dark theme
-        const theme = document.documentElement.getAttribute('data-theme') || 'light';
-        const defaultTile = theme === 'dark' ? 'dark' : 'voyager';
+        // Default: use osm unconditionally
+        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const defaultTile = 'osm';
         this.currentTileKey = defaultTile;
         this.currentTileLayer = this.tileLayers[defaultTile];
         this.currentTileLayer.addTo(this.map);
@@ -70,9 +70,7 @@ const MapManager = {
     },
 
     setTheme(theme) {
-        // Auto-switch tile layer when theme changes
-        const newKey = theme === 'dark' ? 'dark' : 'voyager';
-        this.switchTileLayer(newKey);
+        // No auto-switch tile layer when theme changes, let the user pick from the layer control
     },
 
     switchTileLayer(key) {

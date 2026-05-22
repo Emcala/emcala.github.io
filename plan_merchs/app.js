@@ -31,13 +31,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     UI.init();
 
     // Load data
-    if (config.sheetsUrl) {
-        const ok = await DataService.loadFromAPI(config.sheetsUrl);
-        if (!ok) {
-            alert('No se pudo cargar la base de datos desde Google Sheets. Verificá la URL o los permisos. Se cargarán datos de prueba.');
-            DataService.loadDemo();
-        }
-    } else {
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxjExv7KWkxsFwNK0kpAOMAH1UZO16UJEJNyCiHnkKonrwlXbt2G8LGAWB1Il3P-0El/exec';
+    const ok = await DataService.loadFromAPI(config.sheetsUrl || API_URL);
+    if (!ok) {
+        alert('No se pudo cargar la base de datos desde Google Sheets. Verificá la URL o los permisos. Se cargarán datos de prueba.');
         DataService.loadDemo();
     }
 
