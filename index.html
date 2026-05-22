@@ -69,7 +69,7 @@ function doLoginHub() {
 
   // --- LOCAL DEV BYPASS ---
   if (window.location.protocol === 'file:' && u === 'MATIAS' && p === '1234') {
-    EmcalaAuth.createSession({ usuario: u, rol: 'jdv', nombre: 'Matias (Desarrollo Local)', promotores: '', userHash: 'dev_hash' });
+    EmcalaAuth.createSession({ usuario: u, rol: 'auditor', nombre: 'Matias', promotores: '', userHash: 'dev_hash' });
     window.location.href = './portal/index.html';
     return;
   }

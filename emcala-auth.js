@@ -193,7 +193,7 @@ const EmcalaAuth = (() => {
     if (!container) return;
 
     const rolColors = {
-      jdv:        { bg: '#7C3AED', label: 'JEFE DE VENTA' },
+      auditor:    { bg: '#7C3AED', label: 'JEFE DE VENTA' },
       supervisor: { bg: '#2563EB', label: 'SUPERVISOR' },
       trade:      { bg: '#D97706', label: 'TRADE MARKETING' },
       tecnico:    { bg: '#059669', label: 'TÉCNICO' },
