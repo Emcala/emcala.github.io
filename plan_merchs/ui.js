@@ -14,7 +14,7 @@ const UI = {
     },
 
     initTheme() {
-        const saved = localStorage.getItem('emcala_theme') || 'light';
+        const saved = localStorage.getItem('emcala_theme') || 'dark';
         document.documentElement.setAttribute('data-theme', saved);
         this.updateThemeIcon(saved);
     },

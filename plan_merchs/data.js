@@ -16,18 +16,19 @@ function generateColor(index) {
 function parseCoordinate(coordStr) {
     if (!coordStr) return NaN;
     let str = String(coordStr).trim();
-    // Si tiene coma, asume que es el separador decimal
-    if (str.includes(',')) str = str.replace(/\./g, '').replace(',', '.');
     
-    // Contar puntos
-    const parts = str.split('.');
-    let cleanStr = str;
-    if (parts.length > 2) {
-        // Si tiene múltiples puntos, conservamos el primero y borramos el resto
-        cleanStr = parts[0] + '.' + parts.slice(1).join('');
+    // Si tiene coma, asume que es el separador decimal
+    if (str.includes(',')) {
+        str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+        // Si hay multiples puntos "-34.485.918" -> "-34.485918"
+        let parts = str.split('.');
+        if (parts.length > 2) {
+            str = parts[0] + '.' + parts.slice(1).join('');
+        }
     }
     
-    let num = parseFloat(cleanStr);
+    let num = parseFloat(str);
     
     // Auto-recuperación para coordenadas aplanadas por Google Sheets (ej: -34485918 -> -34.485918)
     // Si el número está fuera de rango de una coordenada válida (> 180 o < -180)

@@ -137,7 +137,7 @@ const MapManager = {
                     const cb = L.DomUtil.create('input', '', switchWrap);
                     cb.type = 'checkbox';
                     cb.id = `floating-${t.id}`;
-                    cb.checked = true;
+                    cb.checked = t.id !== 'show-promotor-zones';
                     const slider = L.DomUtil.create('span', 'layer-panel-slider', switchWrap);
 
                     cb.onchange = (e) => {
@@ -383,6 +383,11 @@ const MapManager = {
                 this._hasAutoCentered = true;
             }
         }
+        
+        // Sincronizar estado inicial de las capas según los toggles (ej: promotores off por defecto)
+        const promotorCb = document.getElementById('floating-show-promotor-zones');
+        const showPromotores = promotorCb ? promotorCb.checked : false;
+        Object.keys(this.layers.promotorZones).forEach(id => this.togglePromotorZone(id, showPromotores));
     },
 
     togglePromotorZone(id, visible) {
