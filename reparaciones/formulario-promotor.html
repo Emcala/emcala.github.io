@@ -18,7 +18,6 @@
   --shadow-lg:0 8px 32px rgba(15,42,74,0.13);
 }
 
-/* ── BASE ── */
 html{height:100%;}
 body{
   font-family:'Bricolage Grotesque',sans-serif;
@@ -41,7 +40,6 @@ body::after{
   pointer-events:none;z-index:0;
 }
 
-/* ── CARD ── */
 .form-box{
   background:white;
   border-radius:20px;
@@ -53,15 +51,12 @@ body::after{
 }
 @keyframes formUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── LOGO ── */
 .form-logo{display:flex;justify-content:center;margin-bottom:14px;}
-.form-logo img{width:68px;height:68px;border-radius:50%;object-fit:cover;border:3px solid var(--border);}
+.form-logo-text{font-size:28px;font-weight:800;color:var(--navy);letter-spacing:0.12em;}
 
-/* ── TÍTULOS ── */
 .form-title{font-size:20px;font-weight:800;text-align:center;color:var(--navy);margin-bottom:2px;}
 .form-desc{font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;}
 
-/* ── CAMPOS ── */
 .field{margin-bottom:10px;}
 .field label{
   display:block;font-size:11px;font-weight:700;
@@ -86,10 +81,8 @@ body::after{
 .field textarea{resize:vertical;min-height:72px;}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 
-/* ── DIVIDER ── */
 .divider{height:1px;background:var(--border);margin:14px 0;}
 
-/* ── GEO ── */
 .geo-btn{
   width:100%;padding:12px 16px;
   border:1.5px solid var(--border);border-radius:10px;
@@ -108,7 +101,6 @@ body::after{
 .geo-result.ok{color:var(--success);font-weight:600;}
 .geo-result.err{color:#DC2626;}
 
-/* ── SUBMIT ── */
 .submit-btn{
   width:100%;padding:15px;
   background:var(--navy);color:white;
@@ -122,7 +114,6 @@ body::after{
 .submit-btn:active{transform:scale(0.98);}
 .submit-btn:disabled{opacity:0.6;cursor:not-allowed;}
 
-/* ── SUCCESS ── */
 .success-box{display:none;text-align:center;padding:32px 0;}
 .success-box.show{display:block;}
 .success-icon{font-size:56px;margin-bottom:16px;}
@@ -143,13 +134,11 @@ body::after{
 }
 .btn-nuevo:hover{background:var(--blue);}
 
-/* ── TABLET ── */
 @media(min-width:481px) and (max-width:768px){
   body{padding:24px 20px 40px;}
   .form-box{padding:36px 32px 44px;}
 }
 
-/* ── MOBILE — Samsung A05 / Moto E22 ── */
 @media(max-width:480px){
   body{padding:16px 12px 40px;align-items:flex-start;}
   .form-box{
@@ -158,7 +147,7 @@ body::after{
     max-width:100%;
     animation:none;
   }
-  .form-logo img{width:72px;height:72px;}
+
   .form-title{font-size:18px;}
   .form-desc{font-size:12px;margin-bottom:20px;}
   .grid-2{grid-template-columns:1fr;}
@@ -179,16 +168,11 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
 
 <div class="form-box">
 
-  <!-- LOGO -->
-  <div class="form-logo">
-    <img src="data:image/jpeg;base64,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">
-  </div>
+  <div class="form-logo"><span class="form-logo-text">EMCALA</span></div>
 
-  <!-- TÍTULO -->
   <div class="form-title">SOLICITUD DE REPARACIÓN</div>
   <div class="form-desc">Completá todos los campos para registrar la solicitud</div>
 
-  <!-- FORMULARIO -->
   <div id="formContent">
     <form id="mainForm" novalidate>
 
@@ -297,7 +281,6 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
     </form>
   </div>
 
-  <!-- ÉXITO -->
   <div class="success-box" id="successOverlay">
     <div class="success-icon">✅</div>
     <div class="success-title">¡Solicitud enviada!</div>
@@ -324,19 +307,19 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
   function previewFoto(input) {
     const file = input.files[0];
     if (!file) return;
-    
+
     if (file.size > 5 * 1024 * 1024) {
       alert('❌ La imagen es demasiado grande. El tamaño máximo es 5MB.');
       input.value = '';
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = function(e) {
       base64Foto = e.target.result.split(',')[1];
       mimeTypeFoto = file.type;
       extFoto = file.name.split('.').pop();
-      
+
       document.getElementById('fotoPreview').src = e.target.result;
       document.getElementById('fotoPreviewContainer').style.display = 'block';
       const btn = document.getElementById('fotoBtn');
