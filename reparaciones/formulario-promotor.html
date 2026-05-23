@@ -196,7 +196,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
         <label>Promotor <span class="req">*</span></label>
         <select id="promotor" required>
           <option value="" disabled selected>Seleccionar promotor...</option>
-<option>ANDUAGA SANTIAGO</option><option>ASCONA MATIAS</option>
+          <option>ANDUAGA SANTIAGO</option><option>ASCONA MATIAS</option>
           <option>BENITEZ NAHUEL</option><option>CESPEDES ENZO</option>
           <option>DIAZ VALERIA</option><option>DOMINGUEZ GONZALO</option>
           <option>FERNANDEZ LUIS</option><option>FERREYRA LEONARDO</option>
@@ -204,16 +204,16 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
           <option>GALLO JONATHAN</option><option>GARCIA MAIRA</option>
           <option>GEREZ JONATHAN</option><option>GOMEZ GUSTAVO</option>
           <option>GONZALEZ ROBERTO</option><option>GUARAZ JUAN</option>
-	  <option>JAIMES EZEQUIEL</option><option>JOFRE LUCAS</option>
-	  <option>LEITES RODRIGO</option><option>LOPEZ ALEJANDRA</option>
-	  <option>LOPEZ PABLO</option><option>MENDOZA SERGIO</option>
-	  <option>MIÑO RENZO</option><option>MORENO AGUSTINA</option>
-	  <option>MOURELLE ALFREDO</option><option>MUÑOZ PAULA</option>
-	  <option>PEREYRA BRAIAN</option><option>REGNER LEANDRO</option>
+          <option>JAIMES EZEQUIEL</option><option>JOFRE LUCAS</option>
+          <option>LEITES RODRIGO</option><option>LOPEZ ALEJANDRA</option>
+          <option>LOPEZ PABLO</option><option>MENDOZA SERGIO</option>
+          <option>MIÑO RENZO</option><option>MORENO AGUSTINA</option>
+          <option>MOURELLE ALFREDO</option><option>MUÑOZ PAULA</option>
+          <option>PEREYRA BRAIAN</option><option>REGNER LEANDRO</option>
           <option>SAN JUAN CARLOS</option><option>SANCHEZ ROCIO</option>
           <option>SANTILLAN SERGIO</option><option>SCORNAVACHE WALTER</option>
           <option>TESEI ALEJANDRA</option><option>THEILLET NICOLAS</option>
-          <option>TORRES KARINA</option><option>VEDIA ELIZABETH</option> 
+          <option>TORRES KARINA</option><option>VEDIA ELIZABETH</option>
         </select>
       </div>
 
@@ -318,6 +318,8 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
   let base64Foto = '';
   let mimeTypeFoto = '';
   let extFoto = '';
+
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwreokQunVau5zi-QN-NzPz14IOfk11p4As3PYRqvSh1zqgbPosHJ9nX2RAfotacKxN/exec';
 
   function previewFoto(input) {
     const file = input.files[0];
@@ -459,7 +461,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
     let bestPos = null;
     let readings = 0;
     const MAX_READINGS = 4;
-    const MIN_ACCURACY = 50; // metros — si llegamos a esto, paramos antes
+    const MIN_ACCURACY = 50;
     let watchId = null;
     let timeoutId = null;
 
@@ -481,7 +483,6 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
 
       btn.classList.remove('loading');
 
-      // Color del indicador según precisión
       const accColor = acc <= 20 ? 'var(--success)' : acc <= 50 ? '#D97706' : 'var(--error)';
       const accLabel = acc <= 20 ? 'Muy preciso' : acc <= 50 ? 'Aceptable' : 'Baja precisión';
 
@@ -501,7 +502,6 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       if (watchId) navigator.geolocation.clearWatch(watchId);
       if (timeoutId) clearTimeout(timeoutId);
 
-      // Si ya teníamos algo, usarlo igual
       if (bestPos) { done(bestPos); return; }
 
       btn.classList.remove('loading');
@@ -514,7 +514,6 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       result.innerHTML = `✕ ${msgs[err.code] || 'Error desconocido. Intentá de nuevo.'}`;
     }
 
-    // Usamos watchPosition para tomar varias lecturas y quedarnos con la mejor
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         readings++;
@@ -524,7 +523,6 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
           bestPos = pos;
         }
 
-        // Parar si llegamos a buena precisión o al máximo de lecturas
         if (pos.coords.accuracy <= MIN_ACCURACY || readings >= MAX_READINGS) {
           done(bestPos);
         }
@@ -533,15 +531,12 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
 
-    // Timeout total de 20 segundos
     timeoutId = setTimeout(() => {
       if (bestPos) { done(bestPos); }
       else { fail({ code: 3 }); }
     }, 20000);
   }
 
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwreokQunVau5zi-QN-NzPz14IOfk11p4As3PYRqvSh1zqgbPosHJ9nX2RAfotacKxN/exec';
-	
   document.getElementById('mainForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
@@ -557,8 +552,8 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
     fields.forEach(f => {
       const el = document.getElementById(f.id);
       if (!el.value.trim()) {
-        el.style.borderColor = 'var(--error)';
-        el.style.boxShadow = '0 0 0 3px rgba(255,77,109,0.15)';
+        el.style.borderColor = '#DC2626';
+        el.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.15)';
         valid = false;
         el.addEventListener('input', () => {
           el.style.borderColor = '';
@@ -567,41 +562,51 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       }
     });
 
-    if (valid) {
-      const edfInput = document.getElementById('edf');
-      const isSinEdf = document.getElementById('sinEdf').checked;
-      if (!isSinEdf) {
-        const edfVal = edfInput.value.trim().replace(/\s/g, '');
-        if (!/^\d{5,12}$/.test(edfVal)) {
-          edfInput.style.borderColor = 'var(--error)';
-          edfInput.style.boxShadow = '0 0 0 3px rgba(255,77,109,0.15)';
-          alert('⚠️ El número de EDF debe ser numérico y tener entre 5 y 12 dígitos.\nSi el equipo no tiene número de EDF / Activo Fijo, marcá la casilla correspondiente.');
-          valid = false;
-          edfInput.addEventListener('input', () => {
-            edfInput.style.borderColor = '';
-            edfInput.style.boxShadow = '';
-          }, { once: true });
-        }
-      }
-    }
-
-    if (valid) {
-      if (!clienteValido) {
-        alert('⚠️ Por favor, ingresá un código de cliente válido de Suralnor.');
-        const el = document.getElementById('codigoCliente');
-        el.style.borderColor = 'var(--error)';
-        el.style.boxShadow = '0 0 0 3px rgba(255,77,109,0.15)';
-        valid = false;
-        el.addEventListener('input', () => {
-          el.style.borderColor = '';
-          el.style.boxShadow = '';
-        }, { once: true });
-      }
-    }
-
     if (!valid) {
-      const firstErr = document.querySelector('[style*="error"]');
+      const firstErr = document.querySelector('input[style*="DC2626"], select[style*="DC2626"], textarea[style*="DC2626"]');
       if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // Validar EDF
+    const edfInput = document.getElementById('edf');
+    const isSinEdf = document.getElementById('sinEdf').checked;
+    if (!isSinEdf) {
+      const edfVal = edfInput.value.trim().replace(/\s/g, '');
+      if (!/^\d{5,12}$/.test(edfVal)) {
+        edfInput.style.borderColor = '#DC2626';
+        edfInput.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.15)';
+        alert('⚠️ El número de EDF debe ser numérico y tener entre 5 y 12 dígitos.\nSi el equipo no tiene número de EDF / Activo Fijo, marcá la casilla correspondiente.');
+        edfInput.addEventListener('input', () => {
+          edfInput.style.borderColor = '';
+          edfInput.style.boxShadow = '';
+        }, { once: true });
+        return;
+      }
+    }
+
+    // ── FIX PRINCIPAL: verificar cliente en el momento del submit ──
+    // Si el promotor escribió el código pero no hizo blur (ej: tocó directo "Enviar"),
+    // verificamos ahora antes de bloquear el envío.
+    const codigoCampo = document.getElementById('codigoCliente').value.trim();
+    if (!clienteValido && codigoCampo) {
+      const submitBtn = document.querySelector('.submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Verificando cliente...';
+      await verificarCliente(codigoCampo);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enviar Registro →';
+    }
+
+    if (!clienteValido) {
+      alert('⚠️ Por favor, ingresá un código de cliente válido de Suralnor.');
+      const el = document.getElementById('codigoCliente');
+      el.style.borderColor = '#DC2626';
+      el.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.15)';
+      el.addEventListener('input', () => {
+        el.style.borderColor = '';
+        el.style.boxShadow = '';
+      }, { once: true });
       return;
     }
 
@@ -622,7 +627,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       notas: ''
     };
 
-    // Anti-duplicado: verificar si el mismo payload fue enviado en los últimos 60 segundos
+    // Anti-duplicado
     const payloadHash = [payload.promotor, payload.cliente, payload.marca, payload.edf, payload.falla].join('|');
     const now = Date.now();
     if (payloadHash === lastSubmitHash && (now - lastSubmitTime) < 60000) {
@@ -630,19 +635,16 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       return;
     }
 
-    // Deshabilitar botón y mostrar estado de carga
     const submitBtn = document.querySelector('.submit-btn');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Enviando...';
 
-    const summary = `
-PROMOTOR: ${payload.promotor}
+    const summary = `PROMOTOR: ${payload.promotor}
 CÓDIGO CLIENTE: ${payload.cliente}
 MARCA HELADERA: ${payload.marca}
 EDF: ${payload.edf}
 FALLA SUGERIDA: ${payload.falla}
-UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada'}
-    `.trim();
+UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada'}`.trim();
 
     try {
       const response = await fetch(SCRIPT_URL, {
@@ -653,11 +655,9 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
 
       const result = await response.json();
 
-      // Guardar hash para prevenir duplicados
       lastSubmitHash = payloadHash;
       lastSubmitTime = Date.now();
 
-      // Mostrar éxito con número de OT real
       document.getElementById('otNumber').textContent = 'OT ' + (result.ot || '—');
       document.getElementById('summaryText').textContent = summary;
       document.getElementById('formContent').style.display = 'none';
@@ -665,7 +665,6 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
 
     } catch (err) {
       console.error('Error al enviar:', err);
-      // Fallback: en muchos casos la solicitud SÍ llegó pero CORS bloqueó la respuesta
       lastSubmitHash = payloadHash;
       lastSubmitTime = Date.now();
 
@@ -695,11 +694,9 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
     document.getElementById('formContent').style.display = 'block';
     document.getElementById('geoResult').className = 'geo-result';
     geoData = null;
-    // Reiniciar GPS al limpiar
     setTimeout(() => geolocate(), 500);
   }
 
-  // Iniciar GPS automáticamente al cargar
   window.addEventListener('load', () => {
     cargarPromotores();
     setTimeout(() => geolocate(), 600);
