@@ -12,6 +12,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-measure@3.1.0/dist/leaflet-measure.css"/>
 <script src="https://unpkg.com/leaflet-measure@3.1.0/dist/leaflet-measure.js"></script>
+<script src="../emcala-auth.js"></script>
 <style>
 :root{--bg:#F5F7FA;--card:#FFFFFF;--border:#E2E8F0;--navy:#0F2A4A;--blue:#1B5FA8;--accent:#0EA5E9;--text:#0F2A4A;--muted:#64748B;--success:#16A34A;--warn:#D97706;--danger:#DC2626;--radius:14px;--shadow:0 1px 4px rgba(15,42,74,0.08),0 4px 16px rgba(15,42,74,0.06);--shadow-lg:0 8px 32px rgba(15,42,74,0.13)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -461,7 +462,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:20px;margin-bottom:20px;">
     <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);">
-      <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px;text-align:center;">PRODUCTIVIDAD POR TÉCNICO</div>
+      <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px;text-align:center;">OTs CREADAS VS RESUELTAS</div>
       <div style="height:250px;position:relative;"><canvas id="chartTecnicos"></canvas></div>
     </div>
     
@@ -508,17 +509,18 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
 let currentUser=null,currentRole=null,currentUserHash=null,promotoresPropios=[];
 
 (function(){
-  const session=JSON.parse(localStorage.getItem('user_session'));
-  if(!session){window.location.href='https://emcala.github.io/';return;}
-  currentUser=session.usuario;
-  currentUserHash=session.userHash;
-  currentRole=session.rol;
-  if(session.promotores) promotoresPropios=session.promotores.split(',').map(p=>p.trim().toUpperCase());
+  if (!EmcalaAuth.requireLogin()) return;
+  const _s = EmcalaAuth.getSession();
+  if (!_s) return;
+  currentUser = _s.usuario;
+  currentUserHash = _s.userHash;
+  currentRole = _s.rol;
+  if (_s.promotores) promotoresPropios = _s.promotores.split(',').map(p => p.trim().toUpperCase());
 })();
 
 window.addEventListener('load',()=>{
-  const session=JSON.parse(localStorage.getItem('user_session'));
-  if(session){
+  const _s = EmcalaAuth.getSession();
+  if(_s){
     document.getElementById('dashboard').style.display='block';
     const badge=document.getElementById('roleBadge');
     if(badge){const labels={supervisor:'SUPERVISOR',tecnico:'TÉCNICO',trade:'TRADE MARKETING'};badge.textContent=labels[currentRole]||currentRole.toUpperCase();badge.className='role-badge '+currentRole;badge.style.display='none';}
@@ -531,42 +533,21 @@ window.addEventListener('load',()=>{
   const periodoLabel = document.getElementById('periodoLabel');
   if(periodoLabel) periodoLabel.style.display = 'none';
 }
-    iniciarControlInactividad();
+    
+    if(currentRole==='trade'||currentRole==='supervisor'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabHistorial').style.display='';document.getElementById('tabRetiro').style.display='';document.getElementById('tabLogs').style.display='';}
+    if(currentRole==='tecnico'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabHistorial').style.display='';}
+    if(currentRole==='auditor'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabDashboard').style.display='';document.getElementById('tabLogs').style.display='';document.getElementById('tabHistorial').style.display='';document.getElementById('tabRetiro').style.display='';switchTab('dashboard');}
+
     if(typeof initMap==='function') initMap();
     if(typeof loadData==='function') loadData();
   }
 });
 
-window.doLogout=function(){localStorage.removeItem('user_session');window.location.href='https://emcala.github.io/index.html';};
+window.doLogout=function(){EmcalaAuth.logout();};
 
-/* =========================================================================
-   Control de inactividad (según rol)
-   - Técnico: 30 min (está en la calle reparando)
-   - Supervisor/Trade: 15 min (están en oficina)
-========================================================================= */
-function getInactividadMax(){
-  return currentRole==='tecnico' ? 30*60*1000 : 15*60*1000;
-}
-
-function checkInactividad(){
-  const s=localStorage.getItem('user_session');if(!s)return;
-  const session=JSON.parse(s);
-  if(Date.now()-session.lastActivity>getInactividadMax()){localStorage.removeItem('user_session');window.location.replace('https://emcala.github.io/');}
-}
-
-function resetInactividad(){
-  const s=localStorage.getItem('user_session');if(!s)return;
-  const session=JSON.parse(s);session.lastActivity=Date.now();localStorage.setItem('user_session',JSON.stringify(session));
-}
-
-function iniciarControlInactividad(){
-  setInterval(checkInactividad,60*1000);
-  ['click','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,resetInactividad,{passive:true}));
-}
 /* ========================================================================= */
 
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwreokQunVau5zi-QN-NzPz14IOfk11p4As3PYRqvSh1zqgbPosHJ9nX2RAfotacKxN/exec';
-const TOKEN_ESCRITURA='CLAVE_SECRETA_QUILMES_2026';
 
 function formatFechaAR(d){if(!d||isNaN(d))return '';return d.toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires',day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{timeZone:'America/Argentina/Buenos_Aires',hour:'2-digit',minute:'2-digit'});}
 
@@ -743,27 +724,29 @@ function updateMap(data){
   document.getElementById('mapLegend').innerHTML='<div class="legend-item"><div class="legend-dot" style="background:#16A34A"></div>Hasta 15 días</div><div class="legend-item"><div class="legend-dot" style="background:#D97706"></div>15–20 días</div><div class="legend-item"><div class="legend-dot" style="background:#DC2626"></div>21+días</div><div class="legend-item"><div class="legend-dot" style="background:#94A3B8"></div>Sin fecha</div>';
 }
 
-async function loadData(){
-  document.getElementById('registrosList').innerHTML='<div class="loading-state"><div class="spin"></div><p>Cargando registros...</p></div>';
-  try{
-    const response=await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'datos',usuario:currentUser,userHash:currentUserHash,dias:diasCargados})});
-    const data=await response.json();
-    if(!data.ok){document.getElementById('registrosList').innerHTML=`<div class="empty-state"><div class="ico">🚨</div><p style="color:#DC2626;font-weight:bold;">Error de autorización.</p></div>`;return;}
-    allData=parseRegistros(data.registros);
-    seguimientosRaw = data.seguimientos || [];
-    seguimientos=parseSeguimientos(data.seguimientos);
-    chatData=parseChat(data.chat||[]);
-    historialData=parseHistorial(data.historial||[]);
-    populateFilter();applyFilters();
-    if(document.getElementById('tabHistorial')&&document.getElementById('tabHistorial').classList.contains('active'))renderHistorial();
-  }catch(e){console.error(e);document.getElementById('registrosList').innerHTML=`<div class="empty-state"><div class="ico">⚠️</div><p>Error al cargar los datos.</p></div>`;}
-}
+  async function loadData(){
+    document.getElementById('registrosList').innerHTML='<div class="loading-state"><div class="spin"></div><p>Cargando registros...</p></div>';
+    try{
+      const response=await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'datos',usuario:currentUser,userHash:currentUserHash,dias:diasCargados})});
+      const data=await response.json();
+      if(!data.ok){document.getElementById('registrosList').innerHTML=`<div class="empty-state"><div class="ico">🚫</div><p style="color:#DC2626;font-weight:bold;">Error de autorización.</p></div>`;return;}
+      allData=parseRegistros(data.registros);
+      seguimientosRaw = data.seguimientos || [];
+      seguimientos=parseSeguimientos(data.seguimientos);
+      chatData=parseChat(data.chat||[]);
+      historialData=parseHistorial(data.historial||[]);
+      populateFilter();applyFilters();
+      if(document.getElementById('tabHistorial')&&document.getElementById('tabHistorial').classList.contains('active'))renderHistorial();
+      if(document.getElementById('tabDashboard')&&document.getElementById('tabDashboard').classList.contains('active'))renderDashboard();
+    }catch(e){console.error(e);document.getElementById('registrosList').innerHTML=`<div class="empty-state"><div class="ico">❌</div><p>Error al cargar los datos.</p></div>`;}
+  }
 
 function parseRegistros(rows){
   if(!rows||rows.length<2)return[];
   const h=rows[0].map(s=>(s||'').toString().trim().toLowerCase());
   const col=n=>h.findIndex(s=>s.includes(n));
-  const iOt=col('ot'),iTs=col('timestamp'),iProm=col('promotor'),iRol=col('rol'),iCli=col('cliente'),iMarca=col('marca'),iEdf=col('edf'),iFalla=col('falla'),iLat=col('lat'),iLng=col('lng'),iFoto=col('foto'),iNotas=col('notas');
+  let iTs=col('timestamp'); if(iTs===-1) iTs=col('marca temporal'); if(iTs===-1) iTs=0;
+  const iOt=col('ot'),iProm=col('promotor'),iRol=col('rol'),iCli=col('cliente'),iMarca=col('marca'),iEdf=col('edf'),iFalla=col('falla'),iLat=col('lat'),iLng=col('lng'),iFoto=col('foto'),iNotas=col('notas');
   const iLocalidad=h.findIndex(s=>s.includes('localidad'))!==-1?h.findIndex(s=>s.includes('localidad')):12;
   const iFrecuencia=h.findIndex(s=>s.includes('frecuencia'))!==-1?h.findIndex(s=>s.includes('frecuencia')):13;
   const iDireccion=h.findIndex(s=>s.includes('direcci'))!==-1?h.findIndex(s=>s.includes('direcci')):15;
@@ -867,9 +850,7 @@ function populateFilter(){
   const tp=document.getElementById('tFiltPromotor');if(tp)tp.innerHTML='<option value="">Todos</option>'+names.map(n=>`<option value="${n}">${n}</option>`).join('');
   const localidades=[...new Set(allData.map(r=>r.localidad).filter(Boolean))].sort();
   const ddLoc=document.getElementById('mfLocalidadDropdown');if(ddLoc)ddLoc.innerHTML=localidades.map(l=>`<label class="multi-filter-option"><input type="checkbox" value="${l}" onchange="applyFilters()"> ${l}</label>`).join('');
-  if(currentRole==='trade'||currentRole==='supervisor'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabHistorial').style.display='';document.getElementById('tabRetiro').style.display='';document.getElementById('tabLogs').style.display='';}
-  if(currentRole==='tecnico'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabHistorial').style.display='';}
-  if(currentRole==='auditor'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabDashboard').style.display='';document.getElementById('tabLogs').style.display='';document.getElementById('tabHistorial').style.display='';document.getElementById('tabRetiro').style.display='';switchTab('dashboard');}
+  
   if(currentRole==='tecnico'&&window.innerWidth<=900){document.querySelectorAll('.filters-bar .filter-field').forEach((f,i)=>{if(i>0)f.style.display='none';});document.querySelectorAll('.filter-sep').forEach(s=>s.style.display='none');const btnClear=document.querySelector('.btn-clear');if(btnClear)btnClear.style.display='none';}
 }
 
