@@ -953,8 +953,7 @@ function clearFilters(){
   applyFilters();
 }
 
-const FREC_COLORES={'LU':'#1B5FA8','LUJU':'#1B5FA8','JU':'#1B5FA8','MA':'#16A34A','MAVI':'#16A34A','VI':'#16A34A','MI':'#D97706','MISA':'#D97706','SA':'#D97706'};
-function getFrecColor(frec){return FREC_COLORES[(frec||'').toUpperCase().trim()]||'#64748B';}
+function getFrecColor(frec){const f=(frec||'').toUpperCase();if(f.includes('LU')||f.includes('JU'))return'#1B5FA8';if(f.includes('MA')||f.includes('VI'))return'#16A34A';if(f.includes('MI')||f.includes('SA'))return'#D97706';return'#64748B';}
 
 function buildRegItem(r,onclickAttr){
   const avatarColor=r.frecuencia?getFrecColor(r.frecuencia):ageColor(r.ts);
