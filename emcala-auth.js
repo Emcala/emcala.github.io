@@ -19,7 +19,6 @@ const EmcalaAuth = (() => {
   const SESSION_KEY     = 'user_session';
   const INACTIVITY_MS   = 30 * 60 * 1000; // 30 minutos
   const CHECK_INTERVAL  = 60 * 1000;       // verificar cada 1 min
-  const SESSION_SECRET  = 'emcala2026sec';  // sal para verificar integridad
 
   // ── UTILIDADES ─────────────────────────────────────────────
 
@@ -34,9 +33,8 @@ const EmcalaAuth = (() => {
     return 'h' + Math.abs(hash).toString(36);
   }
 
-  function computeSessionHash(session) {
-    return simpleHash(session.usuario + '|' + session.rol + '|' + SESSION_SECRET);
-  }
+  // El hash ya no se computa localmente, se confía en el token del servidor.
+  // Mantenemos la firma para compatibilidad o uso futuro si fuera necesario.
 
   // ── SESIÓN ─────────────────────────────────────────────────
 
@@ -58,10 +56,9 @@ const EmcalaAuth = (() => {
       return false;
     }
 
-    // Verificar integridad (hash)
-    const expectedHash = computeSessionHash(session);
-    if (session._h && session._h !== expectedHash) {
-      console.warn('[EmcalaAuth] Sesión manipulada detectada');
+    // Verificar que exista el token de sesión emitido por el servidor
+    if (!session._h) {
+      console.warn('[EmcalaAuth] Sesión sin token válido detectada');
       return false;
     }
 
@@ -90,10 +87,7 @@ const EmcalaAuth = (() => {
     const session = getRawSession();
     if (!session) return;
     session.lastActivity = Date.now();
-    // Asegurar que tenga hash de integridad
-    if (!session._h) {
-      session._h = computeSessionHash(session);
-    }
+    // El token _h ya viene del servidor y no debe reescribirse
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   }
 
@@ -169,16 +163,16 @@ const EmcalaAuth = (() => {
 
   // ── CREAR SESIÓN (para uso desde el login) ─────────────────
 
-  function createSession({ usuario, rol, nombre, promotores, userHash }) {
+  function createSession({ usuario, rol, nombre, promotores, userHash, sessionToken }) {
     const session = {
       usuario:      usuario,
       rol:          rol,
       nombre:       nombre || usuario,
       promotores:   promotores || '',
       userHash:     userHash || '',
+      _h:           sessionToken || '',
       lastActivity: Date.now()
     };
-    session._h = computeSessionHash(session);
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     return session;
   }

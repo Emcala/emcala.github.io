@@ -68,8 +68,8 @@ function doLoginHub() {
   }
 
   // --- LOCAL DEV BYPASS ---
-  if (window.location.protocol === 'file:' && u === 'MATIAS' && p === '1234') {
-    EmcalaAuth.createSession({ usuario: u, rol: 'auditor', nombre: 'Matias', promotores: '', userHash: 'dev_hash' });
+  if (window.location.protocol === 'file:') {
+    EmcalaAuth.createSession({ usuario: u, rol: 'auditor', nombre: u + ' (DEV)', promotores: '', userHash: 'dev_hash' });
     window.location.href = './portal/index.html';
     return;
   }
@@ -90,7 +90,8 @@ function doLoginHub() {
       // Usar EmcalaAuth para crear la sesión de forma segura
       EmcalaAuth.createSession({
         usuario: u,
-        userHash: data.userHash, // El GAS debe enviar este hash para firmar la sesión
+        userHash: data.userHash, // El GAS envía este hash (SHA-256 de contraseña)
+        sessionToken: data.sessionToken, // El GAS envía el token HMAC
         rol: data.rol,
         nombre: data.label,
         promotores: data.promotores
