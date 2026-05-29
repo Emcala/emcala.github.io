@@ -810,13 +810,13 @@ function updateNotificaciones(){
   if(currentRole==='tecnico'&&freqsHoy.length){
     countVerde=filtered.filter(r=>{
       const eKey=getEstadoKey(r.ot,r.cliente);
-      if(eKey==='resuelto'||eKey==='retiro'||eKey==='cliente-cerrado')return false;
+      if(eKey==='resuelto'||eKey==='retiro')return false;
       return checkFrecuenciaDia(r.frecuencia, dia);
     }).length;
   } else {
     countVerde=filtered.filter(r=>{
       const eKey=getEstadoKey(r.ot,r.cliente);
-      if(eKey==='resuelto'||eKey==='retiro'||eKey==='cliente-cerrado')return false;
+      if(eKey==='resuelto'||eKey==='retiro')return false;
       const pri=getPrioridadAprobada(r.ot,r.cliente)||getPrioridadSugerida(r.ot,r.cliente);
       return pri==='1'||pri==='2';
     }).length;
@@ -882,10 +882,10 @@ function applyFilters(ordenInteligente){
     }
     const eKey=getEstadoKey(r.ot,r.cliente);
     if(estadosSeleccionados.length>0){if(!estadosSeleccionados.includes(eKey))return false;}
-    else{if(eKey==='resuelto'||eKey==='retiro'||eKey==='cliente-cerrado')return false;}
+    else{if(eKey==='resuelto'||eKey==='retiro')return false;}
 
     // Anti-duplicados: Ocultar OTs obsoletas (creadas ANTES de que el técnico resolviera otra OT del mismo cliente)
-    if(eKey !== 'resuelto' && eKey !== 'retiro' && eKey !== 'cliente-cerrado' && r.cliente) {
+    if(eKey !== 'resuelto' && eKey !== 'retiro' && r.cliente) {
       const cliKey = r.cliente.toString().trim();
       const currTs = r.timestamp ? new Date(r.timestamp) : new Date(0);
       const segVals = Object.values(seguimientos);
