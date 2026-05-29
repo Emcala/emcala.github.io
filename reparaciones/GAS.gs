@@ -449,7 +449,7 @@ function doPost(e) {
     ]);
 
     const estadoLow = (data.estado||'').toLowerCase();
-    if ((estadoLow === 'resuelto' || estadoLow === 'retiro' || estadoLow === 'cliente-cerrado') && data.tecnico) {
+    if ((estadoLow === 'resuelto' || estadoLow === 'retiro') && data.tecnico) {
       let supervisorPromotor = '';
       const mesasRows = getCachedMesas();
       if (mesasRows.length > 1) {
