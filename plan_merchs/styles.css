@@ -103,7 +103,13 @@ body {
     display: flex; align-items: center; justify-content: center;
     transition: var(--transition); font-size: 14px;
 }
-.icon-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border-glow); }
+.icon-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+}
 
 .header-stats { display: flex; gap: 8px; }
 .stat-badge {
@@ -152,7 +158,12 @@ body {
     transition: var(--transition);
 }
 .tab-btn i { font-size: 16px; }
-.tab-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,0.03); }
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
 .tab-btn.active { color: var(--accent-secondary); border-bottom-color: var(--accent-primary); }
 
 .tab-content {
@@ -848,4 +859,64 @@ body {
     }
     #sidebar:not(.sidebar-open) { transform: translateX(-100%); width: var(--sidebar-width); }
     .header-stats { display: none; }
+}
+
+/* ==========================================
+   TREE LIST (Hierarchy)
+   ========================================== */
+.tree-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.tree-item {
+    display: flex;
+    flex-direction: column;
+}
+.tree-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid transparent;
+    user-select: none;
+}
+.tree-item-header:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-glow);
+    transform: translateX(4px);
+    box-shadow: -4px 4px 12px rgba(0,0,0,0.1);
+}
+.tree-item-header.active {
+    background: var(--accent-glow);
+    border-color: var(--border-glow);
+}
+.tree-item-icon {
+    font-size: 12px;
+    width: 14px;
+    text-align: center;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+}
+.tree-item.expanded > .tree-item-header > .tree-item-icon {
+    transform: rotate(90deg);
+}
+.tree-item-children {
+    display: none;
+    padding-left: 24px;
+    margin-top: 4px;
+    flex-direction: column;
+    gap: 4px;
+    border-left: 1px solid var(--border-color);
+    margin-left: 14px;
+}
+.tree-item.expanded > .tree-item-children {
+    display: flex;
+}
+/* No icon for leaf nodes */
+.tree-item.leaf > .tree-item-header .tree-item-icon {
+    visibility: hidden;
 }

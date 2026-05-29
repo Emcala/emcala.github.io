@@ -69,6 +69,9 @@
             <button id="btn-config" class="icon-btn" title="Configuración">
                 <i class="fas fa-cog"></i>
             </button>
+            <button id="btn-logout" class="icon-btn" title="Cerrar sesión" onclick="EmcalaAuth.logout()" style="color: #ef4444; margin-left: 4px;">
+                <i class="fas fa-power-off"></i>
+            </button>
             <div id="emcala-user-badge" style="display:flex;align-items:center;"></div>
         </div>
     </header>
@@ -97,34 +100,10 @@
             <div class="tab-content active" id="tab-filters">
                 <div class="filter-section">
                     <div class="section-header">
-                        <h3><i class="fas fa-user-tie"></i> Promotores</h3>
-                        <button class="link-btn" id="toggle-all-promotores">Todos</button>
+                        <h3><i class="fas fa-sitemap"></i> Merchandisers</h3>
+                        <button class="link-btn" id="toggle-all-merchs">Desmarcar Todos</button>
                     </div>
-                    <div id="promotores-list" class="filter-list">
-                        <div class="loading-placeholder">
-                            <i class="fas fa-spinner fa-spin"></i> Cargando...
-                        </div>
-                    </div>
-                </div>
-
-                <div class="filter-section">
-                    <div class="section-header">
-                        <h3><i class="fas fa-user-tag"></i> Merchs</h3>
-                        <button class="link-btn" id="toggle-all-merchs">Todos</button>
-                    </div>
-                    <div id="merchs-list" class="filter-list">
-                        <div class="loading-placeholder">
-                            <i class="fas fa-spinner fa-spin"></i> Cargando...
-                        </div>
-                    </div>
-                </div>
-
-                <div class="filter-section">
-                    <div class="section-header">
-                        <h3><i class="fas fa-calendar-alt"></i> Frecuencia</h3>
-                        <button class="link-btn" id="toggle-all-frecuencias">Todas</button>
-                    </div>
-                    <div id="frecuencias-list" class="filter-list">
+                    <div id="merchs-tree" class="tree-list">
                         <div class="loading-placeholder">
                             <i class="fas fa-spinner fa-spin"></i> Cargando...
                         </div>
@@ -229,21 +208,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <div class="config-section">
-                    <h3>Conexión con Google Sheets</h3>
-                    <p class="config-help">
-                        Pegá la URL del Web App de Google Apps Script que está vinculado a tu planilla.
-                        <a href="#" id="show-instructions">Ver instrucciones</a>
-                    </p>
-                    <div class="input-group">
-                        <label for="sheets-url">URL del Apps Script Web App</label>
-                        <input type="url" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec" class="text-input">
-                    </div>
-                    <button class="btn-secondary" id="test-connection">
-                        <i class="fas fa-plug"></i> Probar conexión
-                    </button>
-                    <div id="connection-status" class="connection-status"></div>
-                </div>
+                <!-- Sheets config removed as it is now hardcoded -->
 
                 <div class="config-section">
                     <h3>Mapa</h3>
@@ -261,35 +226,33 @@
                     </div>
                 </div>
 
-                <div class="config-section" id="instructions-section" style="display:none;">
-                    <h3>📋 Instrucciones de configuración</h3>
-                    <div class="instructions">
-                        <ol>
-                            <li>Abrí tu Google Sheets</li>
-                            <li>Andá a <strong>Extensiones → Apps Script</strong></li>
-                            <li>Borrá el contenido y pegá el código del archivo <code>google-apps-script.js</code></li>
-                            <li>Hacé clic en <strong>Implementar → Nueva implementación</strong></li>
-                            <li>Tipo: <strong>Aplicación web</strong></li>
-                            <li>Ejecutar como: <strong>Yo</strong></li>
-                            <li>Quién tiene acceso: <strong>Cualquier persona</strong></li>
-                            <li>Hacé clic en <strong>Implementar</strong> y copiá la URL</li>
-                            <li>Pegá la URL arriba y probá la conexión</li>
-                        </ol>
-                        <div class="sheets-structure">
-                            <h4>Estructura requerida del Sheets:</h4>
-                            <p><strong>Hoja "Promotores":</strong> ID | Nombre | Color | Zona</p>
-                            <p><strong>Hoja "Merchandisers":</strong> ID | Nombre | PromotorID | Color | Zona</p>
-                            <p><strong>Hoja "Clientes":</strong> ID | Nombre | Direccion | Latitud | Longitud | MerchID | PromotorID | Telefono | Notas</p>
-                            <p class="config-help">La columna "Zona" debe contener coordenadas en formato: <code>lat,lng;lat,lng;lat,lng</code></p>
-                        </div>
+                <div class="config-section">
+                    <h3>Personalización</h3>
+                    <p class="config-help">Elegí el estilo del marcador para los clientes en el mapa.</p>
+                    <div class="input-group">
+                        <label>Icono de Clientes</label>
+                        <select id="config-client-icon" class="config-input">
+                            <option value="number">Prioridad (Números)</option>
+                            <option value="fas fa-store">Tienda</option>
+                            <option value="fas fa-shopping-cart">Carrito</option>
+                            <option value="fas fa-box">Caja</option>
+                            <option value="fas fa-building">Edificio</option>
+                            <option value="fas fa-coffee">Café</option>
+                            <option value="fas fa-star">Estrella</option>
+                            <option value="fas fa-map-marker-alt">Pin</option>
+                        </select>
+                    </div>
+                    
+                    <h3 style="margin-top:20px;">Colores de Merchandisers</h3>
+                    <div id="config-merchs-colors" style="display:flex; flex-direction:column; gap:8px; margin-top:10px; max-height:200px; overflow-y:auto; padding-right:10px;">
+                        <!-- Merchs colors will be injected here -->
                     </div>
                 </div>
+
+
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" id="load-demo">
-                    <i class="fas fa-flask"></i> Cargar Demo
-                </button>
-                <button class="btn-primary" id="save-config">
+                <button class="btn-primary" id="save-config" style="margin-left: auto;">
                     <i class="fas fa-save"></i> Guardar
                 </button>
             </div>
@@ -325,62 +288,81 @@
 
     <!-- Client Edit/Add Modal -->
     <div class="modal-overlay" id="client-modal" style="z-index: 2000; display: none;">
-        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
-            <h2 id="client-modal-title" style="margin-top:0;">Nuevo Cliente</h2>
-            <form id="client-form">
-                <input type="hidden" id="client-original-codigo">
-                <input type="hidden" id="client-original-nombre">
-                <div class="form-group">
-                    <label>Código / ID</label>
-                    <input type="text" id="client-codigo" class="config-input">
-                </div>
-                <div class="form-group">
-                    <label>Razón Social / Nombre *</label>
-                    <input type="text" id="client-nombre" class="config-input" required>
-                </div>
-                <div class="form-group">
-                    <label>Dirección</label>
-                    <input type="text" id="client-direccion" class="config-input">
-                </div>
-                <div style="display:flex; gap:10px;">
-                    <div class="form-group" style="flex:1;">
-                        <label>Latitud *</label>
-                        <input type="text" id="client-lat" class="config-input" required>
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 id="client-modal-title"><i class="fas fa-user-edit"></i> Nuevo Cliente</h2>
+                <button type="button" class="modal-close" id="client-modal-close-top">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="client-form">
+                    <input type="hidden" id="client-original-codigo">
+                    <input type="hidden" id="client-original-nombre">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Código / ID</label>
+                            <input type="text" id="client-codigo" class="config-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Razón Social / Nombre *</label>
+                            <input type="text" id="client-nombre" class="config-input" required>
+                        </div>
                     </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>Longitud *</label>
-                        <input type="text" id="client-lng" class="config-input" required>
+
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label>Dirección</label>
+                        <input type="text" id="client-direccion" class="config-input">
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Promotor</label>
-                    <input type="text" id="client-promotor" class="config-input">
-                </div>
-                <div class="form-group">
-                    <label>Merch</label>
-                    <input type="text" id="client-merch" class="config-input">
-                </div>
-                <div class="form-group">
-                    <label>Frecuencia</label>
-                    <input type="text" id="client-frecuencia" class="config-input">
-                </div>
-                <div class="form-group">
-                    <label>Prioridad (número para el marcador)</label>
-                    <input type="text" id="client-prioridad" class="config-input" placeholder="Ej: 1, 2, 3...">
-                </div>
-                <div class="form-group">
-                    <label>Teléfono</label>
-                    <input type="text" id="client-telefono" class="config-input">
-                </div>
-                <div class="form-group">
-                    <label>Notas</label>
-                    <textarea id="client-notas" class="config-input" rows="2" style="width:100%; resize:vertical; background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm); padding:10px;"></textarea>
-                </div>
-                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-                    <button type="button" class="btn btn-secondary" id="client-modal-close">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="client-modal-save">Guardar</button>
-                </div>
-            </form>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Latitud *</label>
+                            <input type="text" id="client-lat" class="config-input" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Longitud *</label>
+                            <input type="text" id="client-lng" class="config-input" required>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Promotor</label>
+                            <input type="text" id="client-promotor" class="config-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Merch</label>
+                            <input type="text" id="client-merch" class="config-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Frecuencia</label>
+                            <input type="text" id="client-frecuencia" class="config-input">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Prioridad (Nro)</label>
+                            <input type="text" id="client-prioridad" class="config-input" placeholder="Ej: 1, 2...">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Teléfono</label>
+                            <input type="text" id="client-telefono" class="config-input">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Notas</label>
+                        <textarea id="client-notas" class="config-input" rows="2" style="width:100%; resize:vertical; background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm); padding:10px;"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn secondary-btn" id="client-modal-close">Cancelar</button>
+                <button type="submit" form="client-form" class="btn primary-btn" id="client-modal-save">Guardar</button>
+            </div>
         </div>
     </div>
 

@@ -61,21 +61,28 @@ const UI = {
         };
         clearBtn.onclick = () => { searchInput.value = ''; clearBtn.classList.remove('visible'); this.filterClients(''); };
         // Toggle all
-        document.getElementById('toggle-all-promotores').onclick = () => this.toggleAllPromotores();
         document.getElementById('toggle-all-merchs').onclick = () => this.toggleAllMerchs();
-        document.getElementById('toggle-all-frecuencias').onclick = () => this.toggleAllFrecuencias();
         // Config
-        document.getElementById('btn-config').onclick = () => document.getElementById('config-modal').classList.add('active');
+        document.getElementById('btn-config').onclick = () => {
+            const config = JSON.parse(localStorage.getItem('emcala_config') || '{}');
+            if (config.clientIcon) document.getElementById('config-client-icon').value = config.clientIcon;
+            
+            const merchsContainer = document.getElementById('config-merchs-colors');
+            merchsContainer.innerHTML = '';
+            DataService.data.merchandisers.forEach(m => {
+                const currentColor = config.merchColors && config.merchColors[m.ID] ? config.merchColors[m.ID] : m.Color;
+                merchsContainer.innerHTML += `
+                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:13px; padding: 4px 0; border-bottom: 1px solid var(--border-color);">
+                        <span>${m.Nombre}</span>
+                        <input type="color" data-merch-id="${m.ID}" value="${currentColor}" style="border:none; width:30px; height:24px; cursor:pointer; background:transparent;">
+                    </div>
+                `;
+            });
+            document.getElementById('config-modal').classList.add('active');
+        };
         document.getElementById('modal-close').onclick = () => document.getElementById('config-modal').classList.remove('active');
         document.getElementById('config-modal').onclick = (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('active'); };
-        document.getElementById('show-instructions').onclick = (e) => {
-            e.preventDefault();
-            const s = document.getElementById('instructions-section');
-            s.style.display = s.style.display === 'none' ? 'block' : 'none';
-        };
         document.getElementById('save-config').onclick = () => this.saveConfig();
-        document.getElementById('load-demo').onclick = () => this.loadDemoData();
-        document.getElementById('test-connection').onclick = () => this.testConnection();
         document.getElementById('btn-refresh').onclick = () => this.refreshData();
         // Print
         document.getElementById('print-promotor').onchange = () => this.updatePrintPreview();
@@ -88,6 +95,8 @@ const UI = {
         // CRUD Modals
         document.getElementById('btn-new-client').onclick = () => this.openClientModal();
         document.getElementById('client-modal-close').onclick = () => this.closeClientModal();
+        const topClose = document.getElementById('client-modal-close-top');
+        if (topClose) topClose.onclick = () => this.closeClientModal();
         document.getElementById('client-form').onsubmit = (e) => this.submitClientForm(e);
     },
 
@@ -98,47 +107,88 @@ const UI = {
         document.querySelector('#stat-promotores span').textContent = promotores.length;
         document.querySelector('#stat-merchs span').textContent = merchandisers.length;
         document.querySelector('#stat-clientes span').textContent = clientes.length;
-        // Activate all
-        this.activePromotores = new Set(promotores.map(p => p.ID));
-        this.activeMerchs = new Set(merchandisers.map(m => m.ID));
-        this.activeFrequencies = new Set(DataService.data.frecuencias.map(f => f.Nombre));
-        // Promotor filters
-        const pList = document.getElementById('promotores-list');
-        pList.innerHTML = promotores.map(p => {
-            const count = clientes.filter(c => c.PromotorID === p.ID).length;
-            return `<label class="filter-item active" data-id="${p.ID}">
-                <input type="checkbox" checked data-type="promotor" data-id="${p.ID}">
-                <span class="filter-color" style="background:${p.Color}"></span>
-                <span class="filter-name">${p.Nombre}</span>
-                <span class="filter-count">${count}</span>
-            </label>`;
-        }).join('');
-        pList.querySelectorAll('input').forEach(cb => { cb.onchange = () => this.onPromotorToggle(cb.dataset.id, cb.checked); });
-        // Merch filters
-        const mList = document.getElementById('merchs-list');
-        mList.innerHTML = merchandisers.map(m => {
-            const count = clientes.filter(c => c.MerchID === m.ID).length;
-            return `<label class="filter-item active" data-id="${m.ID}">
-                <input type="checkbox" checked data-type="merch" data-id="${m.ID}">
-                <span class="filter-color" style="background:${m.Color}"></span>
-                <span class="filter-name">${m.Nombre}</span>
-                <span class="filter-count">${count}</span>
-            </label>`;
-        }).join('');
-        mList.querySelectorAll('input').forEach(cb => { cb.onchange = () => this.onMerchToggle(cb.dataset.id, cb.checked); });
         
-        // Frecuencia filters
-        const fList = document.getElementById('frecuencias-list');
-        fList.innerHTML = DataService.data.frecuencias.map(f => {
-            const count = clientes.filter(c => c.Frecuencia === f.Nombre).length;
-            return `<label class="filter-item active" data-id="freq-${f.Nombre}">
-                <input type="checkbox" checked data-type="frecuencia" data-id="${f.Nombre}">
-                <span class="filter-color" style="background:${f.Color}"></span>
-                <span class="filter-name">${f.Nombre}</span>
-                <span class="filter-count">${count}</span>
-            </label>`;
-        }).join('');
-        fList.querySelectorAll('input').forEach(cb => { cb.onchange = () => this.onFrecuenciaToggle(cb.dataset.id, cb.checked); });
+        // Activate all
+        this.activeMerchs = new Set(merchandisers.map(m => m.ID));
+        
+        // Build Tree
+        const treeList = document.getElementById('merchs-tree');
+        let treeHtml = '';
+        
+        merchandisers.forEach(m => {
+            const mClients = clientes.filter(c => c.MerchID === m.ID);
+            const count = mClients.length;
+            
+            // Group by Frecuencia
+            const freqs = {};
+            mClients.forEach(c => {
+                const f = c.Frecuencia || 'Sin Frecuencia';
+                if (!freqs[f]) freqs[f] = [];
+                freqs[f].push(c);
+            });
+            
+            let childrenHtml = '';
+            Object.keys(freqs).sort().forEach(f => {
+                const fClients = freqs[f];
+                
+                let clientsHtml = '';
+                fClients.sort((a,b) => a.Nombre.localeCompare(b.Nombre)).forEach(c => {
+                    clientsHtml += `
+                    <div class="tree-item leaf" style="cursor: pointer;" data-lat="${c.Latitud}" data-lng="${c.Longitud}">
+                        <div class="tree-item-header" style="padding: 4px 8px;">
+                            <i class="fas fa-store" style="color: var(--accent-secondary); margin-right: 6px; width: 14px; text-align: center;"></i>
+                            <span class="filter-name" style="font-size: 11px;">${c.Nombre}</span>
+                            <span class="client-item-code" style="margin-left:auto; font-size:9px;">#${c.ID}</span>
+                        </div>
+                    </div>`;
+                });
+
+                childrenHtml += `
+                <div class="tree-item">
+                    <div class="tree-item-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <i class="fas fa-chevron-right tree-item-icon"></i>
+                        <i class="fas fa-calendar-alt" style="color: var(--text-muted); font-size: 11px; margin-right: 6px;"></i>
+                        <span class="filter-name" style="font-size: 12px;">${f}</span>
+                        <span class="filter-count">${fClients.length}</span>
+                    </div>
+                    <div class="tree-item-children">
+                        ${clientsHtml}
+                    </div>
+                </div>`;
+            });
+
+            treeHtml += `
+            <div class="tree-item" data-merch-id="${m.ID}">
+                <div class="tree-item-header">
+                    <i class="fas fa-chevron-right tree-item-icon" onclick="this.closest('.tree-item').classList.toggle('expanded'); event.stopPropagation();" style="padding:4px;"></i>
+                    <input type="checkbox" checked data-type="merch" data-id="${m.ID}" style="display:inline-block; margin-right: 6px; cursor: pointer;">
+                    <span class="filter-color" style="background:${m.Color}; cursor:pointer;" onclick="this.closest('.tree-item').classList.toggle('expanded')"></span>
+                    <span class="filter-name" style="cursor:pointer;" onclick="this.closest('.tree-item').classList.toggle('expanded')">${m.Nombre}</span>
+                    <span class="filter-count">${count}</span>
+                </div>
+                <div class="tree-item-children">
+                    ${childrenHtml}
+                </div>
+            </div>`;
+        });
+        
+        treeList.innerHTML = treeHtml;
+
+        // Bind events
+        treeList.querySelectorAll('input[data-type="merch"]').forEach(cb => {
+            cb.onchange = (e) => {
+                e.stopPropagation();
+                this.onMerchToggle(cb.dataset.id, cb.checked);
+            };
+        });
+
+        treeList.querySelectorAll('.leaf').forEach(el => {
+            el.onclick = (e) => {
+                e.stopPropagation();
+                const lat = parseFloat(el.dataset.lat), lng = parseFloat(el.dataset.lng);
+                if (!isNaN(lat) && !isNaN(lng)) MapManager.flyToClient(lat, lng);
+            };
+        });
         // Client list
         this.renderClientList(clientes);
         // Print dropdowns
@@ -176,42 +226,18 @@ const UI = {
 
 
     // --- FILTERS ---
-    onPromotorToggle(id, checked) {
-        checked ? this.activePromotores.add(id) : this.activePromotores.delete(id);
-        const item = document.querySelector(`.filter-item[data-id="${id}"]`);
-        item && item.classList.toggle('active', checked);
-        MapManager.togglePromotorZone(id, checked);
-        // Toggle associated merchs
-        DataService.getMerchsByPromotor(id).forEach(m => {
-            this.onMerchToggle(m.ID, checked);
-            const cb = document.querySelector(`input[data-id="${m.ID}"]`);
-            if (cb) cb.checked = checked;
-            const mi = document.querySelector(`.filter-item[data-id="${m.ID}"]`);
-            if (mi) mi.classList.toggle('active', checked);
-        });
-    },
-
     onMerchToggle(id, checked) {
         checked ? this.activeMerchs.add(id) : this.activeMerchs.delete(id);
-        const item = document.querySelector(`.filter-item[data-id="${id}"]`);
+        const item = document.querySelector(`.tree-item[data-merch-id="${id}"] > .tree-item-header`);
         item && item.classList.toggle('active', checked);
         MapManager.toggleMerchZone(id, checked);
-        this.applyClientFilters();
-    },
-
-    onFrecuenciaToggle(freq, checked) {
-        checked ? this.activeFrequencies.add(freq) : this.activeFrequencies.delete(freq);
-        const item = document.querySelector(`.filter-item[data-id="freq-${freq}"]`);
-        item && item.classList.toggle('active', checked);
         this.applyClientFilters();
     },
 
     applyClientFilters() {
         const visibleIds = new Set();
         DataService.data.clientes.forEach(c => {
-            if (this.activePromotores.has(c.PromotorID) && 
-                this.activeMerchs.has(c.MerchID) && 
-                this.activeFrequencies.has(c.Frecuencia)) {
+            if (this.activeMerchs.has(c.MerchID)) {
                 visibleIds.add(c.ID);
             }
         });
@@ -220,28 +246,15 @@ const UI = {
         MapManager.updateClientVisibility(visibleIds, globalShow);
     },
 
-    toggleAllPromotores() {
-        const allActive = this.activePromotores.size === DataService.data.promotores.length;
-        DataService.data.promotores.forEach(p => this.onPromotorToggle(p.ID, !allActive));
-        document.querySelectorAll('input[data-type="promotor"]').forEach(cb => cb.checked = !allActive);
-    },
-
     toggleAllMerchs() {
         const allActive = this.activeMerchs.size === DataService.data.merchandisers.length;
         DataService.data.merchandisers.forEach(m => {
             this.onMerchToggle(m.ID, !allActive);
-            const cb = document.querySelector(`input[data-id="${m.ID}"]`);
+            const cb = document.querySelector(`input[data-type="merch"][data-id="${m.ID}"]`);
             if (cb) cb.checked = !allActive;
         });
-    },
-
-    toggleAllFrecuencias() {
-        const allActive = this.activeFrequencies.size === DataService.data.frecuencias.length;
-        DataService.data.frecuencias.forEach(f => {
-            this.onFrecuenciaToggle(f.Nombre, !allActive);
-            const cb = document.querySelector(`input[data-type="frecuencia"][data-id="${f.Nombre}"]`);
-            if (cb) cb.checked = !allActive;
-        });
+        const btn = document.getElementById('toggle-all-merchs');
+        if (btn) btn.textContent = allActive ? 'Marcar Todos' : 'Desmarcar Todos';
     },
 
     filterClients(query) {
@@ -374,7 +387,6 @@ const UI = {
         } catch (e) {
             console.warn('No se pudo acceder a localStorage', e);
         }
-        if (config.sheetsUrl) document.getElementById('sheets-url').value = config.sheetsUrl;
         if (config.lat) document.getElementById('map-center-lat').value = config.lat;
         if (config.lng) document.getElementById('map-center-lng').value = config.lng;
         if (config.zoom) document.getElementById('map-zoom').value = config.zoom;
@@ -382,11 +394,16 @@ const UI = {
     },
 
     saveConfig() {
+        const merchColors = {};
+        document.querySelectorAll('#config-merchs-colors input[type="color"]').forEach(input => {
+            merchColors[input.getAttribute('data-merch-id')] = input.value;
+        });
         const config = {
-            sheetsUrl: document.getElementById('sheets-url').value.trim(),
             lat: parseFloat(document.getElementById('map-center-lat').value),
             lng: parseFloat(document.getElementById('map-center-lng').value),
-            zoom: parseInt(document.getElementById('map-zoom').value)
+            zoom: parseInt(document.getElementById('map-zoom').value),
+            clientIcon: document.getElementById('config-client-icon').value,
+            merchColors: merchColors
         };
         try {
             localStorage.setItem('emcala_config', JSON.stringify(config));
@@ -394,38 +411,23 @@ const UI = {
             console.warn('No se pudo guardar en localStorage', e);
             alert('No se pudieron guardar los ajustes (puede deberse a permisos del navegador).');
         }
+        
+        // Apply merch colors to memory
+        DataService.data.merchandisers.forEach(m => {
+            if (config.merchColors[m.ID]) m.Color = config.merchColors[m.ID];
+        });
+
         document.getElementById('config-modal').classList.remove('active');
-        this.refreshData();
+        MapManager.renderAll();
+        this.renderUI();
     },
 
-    async testConnection() {
-        const url = document.getElementById('sheets-url').value.trim();
-        const status = document.getElementById('connection-status');
-        if (!url) { status.className = 'connection-status error'; status.textContent = 'Ingresá una URL'; return; }
-        status.className = 'connection-status'; status.style.display = 'block';
-        status.textContent = 'Probando conexión...'; status.style.color = 'var(--text-muted)';
-        const ok = await DataService.loadFromAPI(url);
-        if (ok) {
-            status.className = 'connection-status success';
-            status.textContent = `✓ Conectado - ${DataService.data.promotores.length} promotores, ${DataService.data.merchandisers.length} merchs, ${DataService.data.clientes.length} clientes`;
-        } else {
-            status.className = 'connection-status error';
-            status.textContent = '✗ Error de conexión. Verificá la URL y que el script esté desplegado.';
-        }
-    },
+
 
     async refreshData() {
-        let config = {};
-        try {
-            config = JSON.parse(localStorage.getItem('emcala_config') || '{}');
-        } catch (e) {}
-        if (config.sheetsUrl) {
-            const ok = await DataService.loadFromAPI(config.sheetsUrl);
-            if (!ok) {
-                alert('No se pudo cargar la base de datos desde Google Sheets. Verificá la URL o los permisos. Se cargarán datos de prueba.');
-                DataService.loadDemo();
-            }
-        } else {
+        const ok = await DataService.loadFromAPI(window.EMCALA_API_URL);
+        if (!ok) {
+            alert('No se pudo cargar la base de datos desde Google Sheets. Verificá la URL o los permisos. Se cargarán datos de prueba.');
             DataService.loadDemo();
         }
         MapManager.renderAll();

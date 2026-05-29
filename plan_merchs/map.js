@@ -118,12 +118,9 @@ const MapManager = {
                 // Divider
                 L.DomUtil.create('div', 'layer-panel-divider', body);
 
-                // Toggle rows
                 const toggles = [
-                    { id: 'show-promotor-zones', icon: 'fa-draw-polygon', label: 'Zonas Promotores' },
                     { id: 'show-merch-zones', icon: 'fa-vector-square', label: 'Zonas Merchs' },
-                    { id: 'show-clients', icon: 'fa-store', label: 'Clientes' },
-                    { id: 'show-labels', icon: 'fa-tag', label: 'Etiquetas' }
+                    { id: 'show-clients', icon: 'fa-store', label: 'Clientes' }
                 ];
 
                 toggles.forEach(t => {
@@ -136,18 +133,15 @@ const MapManager = {
                     cb.type = 'checkbox';
                     cb.id = `floating-${t.id}`;
                     cb.checked = t.id !== 'show-promotor-zones';
+                    cb.checked = true;
                     const slider = L.DomUtil.create('span', 'layer-panel-slider', switchWrap);
 
                     cb.onchange = (e) => {
                         const isChecked = e.target.checked;
-                        if (t.id === 'show-promotor-zones') {
-                            Object.keys(this.layers.promotorZones).forEach(id => this.togglePromotorZone(id, isChecked));
-                        } else if (t.id === 'show-merch-zones') {
+                        if (t.id === 'show-merch-zones') {
                             Object.keys(this.layers.merchZones).forEach(id => this.toggleMerchZone(id, isChecked));
                         } else if (t.id === 'show-clients') {
                             if (window.UI) UI.applyClientFilters();
-                        } else if (t.id === 'show-labels') {
-                            this.toggleAllLabels(isChecked);
                         }
                     };
                 });
@@ -240,11 +234,9 @@ const MapManager = {
     },
 
     clearAll() {
-        Object.values(this.layers.promotorZones).forEach(l => this.map.removeLayer(l));
         Object.values(this.layers.merchZones).forEach(l => this.map.removeLayer(l));
         this.layers.clientMarkers.forEach(item => this.map.removeLayer(item.marker));
-        this.layers.labels.forEach(l => this.map.removeLayer(l));
-        this.layers = { promotorZones: {}, merchZones: {}, clientMarkers: [], labels: [] };
+        this.layers = { merchZones: {}, clientMarkers: [] };
     },
 
     // Genera un polígono envolvente, línea o círculo
@@ -286,27 +278,9 @@ const MapManager = {
         this.clearAll();
         const { promotores, merchandisers, clientes } = DataService.data;
 
-        // Render promotor zones
-        promotores.forEach(p => {
-            const pClients = clientes.filter(c => c.PromotorID === p.ID);
-            const popupHtml = `<div class="popup-content"><h3>${p.Nombre}</h3><div class="popup-row"><i class="fas fa-user-tie"></i> Promotor</div><div class="popup-row"><i class="fas fa-store"></i> ${pClients.length} clientes</div></div>`;
-            
-            const polygon = this.generateConvexHull(pClients, {
-                color: p.Color, weight: 3, opacity: 0.8,
-                fillColor: p.Color, fillOpacity: 0.1,
-                dashArray: null
-            }, popupHtml);
-
-            if (polygon) {
-                this.layers.promotorZones[p.ID] = polygon;
-                // Label en el centro del polígono
-                const center = polygon.getBounds().getCenter();
-                const label = L.marker(center, {
-                    icon: L.divIcon({ className: 'zone-label', html: `<span style="color:${p.Color}">${p.Nombre}</span>`, iconSize: [120, 24], iconAnchor: [60, 12] })
-                }).addTo(this.map);
-                this.layers.labels.push(label);
-            }
-        });
+        let config = {};
+        try { config = JSON.parse(localStorage.getItem('emcala_config') || '{}'); } catch(e){}
+        const clientIcon = config.clientIcon || 'number';
 
         // Render merch zones
         merchandisers.forEach(m => {
@@ -333,12 +307,18 @@ const MapManager = {
             const freqObj = DataService.getFrecuencia(c.Frecuencia);
             const markerColor = freqObj ? freqObj.Color : '#6366f1';
             
-            // Use the priority number (Prioridad) or client code (ID) as the marker label
-            const markerLabel = c.Prioridad || c.ID;
+            let htmlInner = '';
+            if (clientIcon === 'number') {
+                const markerLabel = c.Prioridad || c.ID;
+                htmlInner = `<span>${markerLabel}</span>`;
+            } else {
+                htmlInner = `<i class="${clientIcon}"></i>`;
+            }
+
             const marker = L.marker([c.Latitud, c.Longitud], {
                 icon: L.divIcon({
                     className: '',
-                    html: `<div class="custom-marker number-marker" style="background:${markerColor}"><span>${markerLabel}</span></div>`,
+                    html: `<div class="custom-marker number-marker" style="background:${markerColor}">${htmlInner}</div>`,
                     iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
                 })
             }).addTo(this.map);
@@ -381,17 +361,8 @@ const MapManager = {
                 this._hasAutoCentered = true;
             }
         }
-        
-        // Sincronizar estado inicial de las capas según los toggles (ej: promotores off por defecto)
-        const promotorCb = document.getElementById('floating-show-promotor-zones');
-        const showPromotores = promotorCb ? promotorCb.checked : false;
-        Object.keys(this.layers.promotorZones).forEach(id => this.togglePromotorZone(id, showPromotores));
     },
 
-    togglePromotorZone(id, visible) {
-        const l = this.layers.promotorZones[id];
-        if (l) visible ? l.addTo(this.map) : this.map.removeLayer(l);
-    },
     toggleMerchZone(id, visible) {
         const l = this.layers.merchZones[id];
         if (l) visible ? l.addTo(this.map) : this.map.removeLayer(l);
@@ -405,9 +376,6 @@ const MapManager = {
                 if (this.map.hasLayer(item.marker)) this.map.removeLayer(item.marker);
             }
         });
-    },
-    toggleAllLabels(visible) {
-        this.layers.labels.forEach(l => visible ? l.addTo(this.map) : this.map.removeLayer(l));
     },
     flyToClient(lat, lng) {
         this.map.flyTo([lat, lng], 17, { duration: 0.8 });
