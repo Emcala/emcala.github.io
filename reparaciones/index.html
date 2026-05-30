@@ -480,7 +480,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
     <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px;text-align:center;">TOP 10 PDVs CRÍTICOS</div>
     <div style="overflow-x:auto;">
       <table class="excel-table" style="width:100%;">
-        <thead><tr><th>PDV / Cliente</th><th>Localidad</th><th>Total Reportes</th></tr></thead>
+        <thead><tr><th>PDV / Cliente</th><th>Promotor</th><th>Supervisor</th><th>Localidad</th><th>Total Reportes</th></tr></thead>
         <tbody id="tablaPDVs"></tbody>
       </table>
     </div>
@@ -1391,16 +1391,28 @@ function renderDashboard() {
 
     const msToHs = (ms) => ms / (1000 * 60 * 60);
 
-    if (T0 && T1 && T2 && T1 >= T0 && T2 >= T1) {
+    if (T0 && T2 && T2 >= T0) {
       const resStr = new Date(T2).toISOString().slice(0, 7);
       if (resStr === currentMonthStr) {
-        sumSuperEste += msToHs(T1 - T0); countSuperEste++;
-        sumTecnicoEste += msToHs(T2 - T1); countTecnicoEste++;
         sumTotalEste += msToHs(T2 - T0); countTotalEste++;
       } else if (resStr === prevMonthStr) {
-        sumSuperPasado += msToHs(T1 - T0); countSuperPasado++;
-        sumTecnicoPasado += msToHs(T2 - T1); countTecnicoPasado++;
         sumTotalPasado += msToHs(T2 - T0); countTotalPasado++;
+      }
+
+      if (T1 && T1 >= T0 && T2 >= T1) {
+        if (resStr === currentMonthStr) {
+          sumSuperEste += msToHs(T1 - T0); countSuperEste++;
+          sumTecnicoEste += msToHs(T2 - T1); countTecnicoEste++;
+        } else if (resStr === prevMonthStr) {
+          sumSuperPasado += msToHs(T1 - T0); countSuperPasado++;
+          sumTecnicoPasado += msToHs(T2 - T1); countTecnicoPasado++;
+        }
+      } else {
+        if (resStr === currentMonthStr) {
+          sumTecnicoEste += msToHs(T2 - T0); countTecnicoEste++;
+        } else if (resStr === prevMonthStr) {
+          sumTecnicoPasado += msToHs(T2 - T0); countTecnicoPasado++;
+        }
       }
     }
 
@@ -1419,21 +1431,31 @@ function renderDashboard() {
     if(estado !== 'resuelto' && !estado.includes('retiro')) {
       prioridadesCount[pri] = (prioridadesCount[pri] || 0) + 1;
     }
+  });
 
-    const pdv = r.cliente || 'Desconocido';
-    if(estado !== 'resuelto' && !estado.includes('retiro')) {
-      if (!pdvCount[pdv]) pdvCount[pdv] = { total: 0, loc: r.localidad || '-' };
-      pdvCount[pdv].total++;
-    }
+  const clientInfo = {};
+  allData.forEach(r => {
+    if (r.cliente) clientInfo[r.cliente] = { loc: r.localidad||'-', prom: r.nombre||'-', sup: r.supervisor||'-' };
+  });
+  historialData.forEach(h => {
+    if (h.cliente && !clientInfo[h.cliente]) clientInfo[h.cliente] = { loc: '-', prom: h.promotor||'-', sup: h.supervisor||'-' };
   });
 
   const allUniqueOts = new Map();
-  allData.forEach(r => { if(r.ot && r.timestamp) allUniqueOts.set(r.ot, { ts: r.timestamp, marca: r.marca }); });
-  historialData.forEach(h => { if(h.ot && h.ts) allUniqueOts.set(h.ot, { ts: h.ts, marca: h.marca }); });
+  allData.forEach(r => { if(r.ot && r.timestamp) allUniqueOts.set(r.ot, { ts: r.timestamp, marca: r.marca, cli: r.cliente }); });
+  historialData.forEach(h => { if(h.ot && h.ts) allUniqueOts.set(h.ot, { ts: h.ts, marca: h.marca, cli: h.cliente }); });
 
   let marcasEsteMes = {}, marcasMesPasado = {};
+  let pdvCount = {};
 
   allUniqueOts.forEach((otData, otId) => {
+    const pdv = otData.cli || 'Desconocido';
+    if (!pdvCount[pdv]) {
+      const info = clientInfo[pdv] || {loc:'-', prom:'-', sup:'-'};
+      pdvCount[pdv] = { total: 0, loc: info.loc, prom: info.prom, sup: info.sup };
+    }
+    pdvCount[pdv].total++;
+
     if(!otData.ts) return;
     const tsStr = new Date(otData.ts).toISOString().slice(0, 7);
     
@@ -1578,9 +1600,13 @@ function renderDashboard() {
     }
   });
 
-  const topPdvs = Object.keys(pdvCount).map(k => ({ nombre: k, ...pdvCount[k] })).sort((a, b) => b.total - a.total).slice(0, 10);
+  const topPdvs = Object.keys(pdvCount).filter(k => pdvCount[k].total > 1 && k !== 'Desconocido').map(k => ({ nombre: k, ...pdvCount[k] })).sort((a, b) => b.total - a.total).slice(0, 10);
   const tbodyPDVs = document.getElementById('tablaPDVs');
-  tbodyPDVs.innerHTML = topPdvs.map(p => `<tr><td style="font-weight:600;font-size:12px;">${p.nombre}</td><td style="font-size:11px;">${p.loc}</td><td style="font-weight:bold;color:var(--red);text-align:center;">${p.total}</td></tr>`).join('');
+  if(topPdvs.length > 0) {
+    tbodyPDVs.innerHTML = topPdvs.map(p => `<tr><td style="font-weight:600;font-size:12px;">${p.nombre}</td><td style="font-size:11px;">${p.prom}</td><td style="font-size:11px;">${p.sup}</td><td style="font-size:11px;">${p.loc}</td><td style="font-weight:bold;color:var(--red);text-align:center;">${p.total}</td></tr>`).join('');
+  } else {
+    tbodyPDVs.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No hay PDVs con reincidencias</td></tr>`;
+  }
 }
 </script>
 </body>
