@@ -1392,7 +1392,12 @@ function renderDashboard() {
     const msToHs = (ms) => ms / (1000 * 60 * 60);
 
     if (T0 && T2 && T2 >= T0) {
-      const resStr = new Date(T2).toISOString().slice(0, 7);
+      let resStr = '';
+      try {
+        const d2 = new Date(T2);
+        if(isNaN(d2)) return null;
+        resStr = d2.toISOString().slice(0, 7);
+      } catch(e) { return null; }
       if (resStr === currentMonthStr) {
         sumTotalEste += msToHs(T2 - T0); countTotalEste++;
       } else if (resStr === prevMonthStr) {
@@ -1446,9 +1451,9 @@ function renderDashboard() {
   historialData.forEach(h => { if(h.ot && h.ts) allUniqueOts.set(h.ot, { ts: h.ts, marca: h.marca, cli: h.cliente }); });
 
   let marcasEsteMes = {}, marcasMesPasado = {};
-  let pdvCount = {};
-
-  allUniqueOts.forEach((otData, otId) => {
+    let pdvCount = {};
+  
+    allUniqueOts.forEach((otData, otId) => {
     const pdv = otData.cli || 'Desconocido';
     if (!pdvCount[pdv]) {
       const info = clientInfo[pdv] || {loc:'-', prom:'-', sup:'-'};
@@ -1457,9 +1462,16 @@ function renderDashboard() {
     pdvCount[pdv].total++;
 
     if(!otData.ts) return;
-    const tsStr = new Date(otData.ts).toISOString().slice(0, 7);
-    
-    if(tsStr === currentMonthStr) creadasEsteMes++;
+      let tsStr = '';
+      try {
+        const d = new Date(otData.ts);
+        if(isNaN(d)) return;
+        tsStr = d.toISOString().slice(0, 7);
+      } catch(e) {
+        return;
+      }
+      
+      if(tsStr === currentMonthStr) creadasEsteMes++;
     else if(tsStr === prevMonthStr) creadasMesPasado++;
 
     const marca = (otData.marca || 'Sin Marca').toUpperCase().trim();
@@ -1468,7 +1480,12 @@ function renderDashboard() {
 
     const T2 = procesarTiempos(otId, otData.ts);
     if(T2) {
-      const resStr = new Date(T2).toISOString().slice(0, 7);
+        let resStr = '';
+        try {
+          const d2 = new Date(T2);
+          if(isNaN(d2)) return;
+          resStr = d2.toISOString().slice(0, 7);
+        } catch(e) { return; }
       if(resStr === currentMonthStr) resueltasEsteMes++;
       else if(resStr === prevMonthStr) resueltasMesPasado++;
     }
@@ -1611,3 +1628,8 @@ function renderDashboard() {
 </script>
 </body>
 </html>
+
+
+
+
+
