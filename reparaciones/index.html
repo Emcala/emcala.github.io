@@ -1451,7 +1451,7 @@ function renderDashboard() {
   historialData.forEach(h => { if(h.ot && h.ts) allUniqueOts.set(h.ot, { ts: h.ts, marca: h.marca, cli: h.cliente }); });
 
   let marcasEsteMes = {}, marcasMesPasado = {};
-    let pdvCount = {};
+      pdvCount = {};
   
     allUniqueOts.forEach((otData, otId) => {
     const pdv = otData.cli || 'Desconocido';
@@ -1628,6 +1628,7 @@ function renderDashboard() {
 </script>
 </body>
 </html>
+
 
 
 
