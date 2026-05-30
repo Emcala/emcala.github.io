@@ -1331,8 +1331,8 @@ function renderDashboard() {
     const iTs = h.findIndex(x=>x === 'timestamp'); // Columna A
     const iTecTs = h.findIndex(x=>x === 'tec_timestamp'); // Columna M
     const iEst = h.findIndex(x=>x.includes('estado'));
-    let idxPri = h.findIndex(x=>x==='prioridad_aprobada');
-    if(idxPri < 0) idxPri = h.findIndex(x=>x.includes('prioridad'));
+    const iPriSug = h.findIndex(x=>x==='prioridad_sugerida');
+    const iPriApr = h.findIndex(x=>x==='prioridad_aprobada');
 
     if(iOt>=0 && iTs>=0 && iEst>=0) {
       seguimientosRaw.slice(1).forEach(row => {
@@ -1343,14 +1343,15 @@ function renderDashboard() {
           ts: new Date(row[iTs]).getTime(),
           tecTs: (iTecTs >= 0 && row[iTecTs]) ? new Date(row[iTecTs]).getTime() : null,
           est: row[iEst].toString().toLowerCase().trim(),
-          pri: idxPri>=0 ? row[idxPri].toString().trim() : ''
+          priSug: iPriSug>=0 ? row[iPriSug].toString().trim() : '',
+          priApr: iPriApr>=0 ? row[iPriApr].toString().trim() : ''
         });
       });
     }
   }
 
   let activas = 0, resueltas = 0, retiro = 0;
-  let marcasCount = {}, pdvCount = {}, prioridadesCount = {};
+  let pdvCount = {}, prioridadesCount = {};
 
   const now = new Date();
   const currentMonthStr = now.toISOString().slice(0, 7);
@@ -1382,7 +1383,7 @@ function renderDashboard() {
     if(!T0 || isNaN(T0)) return null;
 
     let T1 = null, T2 = null;
-    const priEvent = tl.find(ev => ev.pri !== '');
+    const priEvent = tl.find(ev => ev.priSug !== '' || ev.priApr !== '');
     if(priEvent) T1 = priEvent.ts;
 
     const resEvent = tl.find(ev => ev.est === 'resuelto' || ev.est.includes('retiro'));
@@ -1414,11 +1415,6 @@ function renderDashboard() {
     else if (estado === 'resuelto') resueltas++;
     else activas++;
 
-    const marca = (r.marca || 'Sin Marca').toUpperCase().trim();
-    if(estado !== 'resuelto' && !estado.includes('retiro')) {
-      marcasCount[marca] = (marcasCount[marca] || 0) + 1;
-    }
-
     const pri = (seg && seg.prioridad_aprobada) ? seg.prioridad_aprobada.toString().trim() : 'Sin Asignar';
     if(estado !== 'resuelto' && !estado.includes('retiro')) {
       prioridadesCount[pri] = (prioridadesCount[pri] || 0) + 1;
@@ -1429,16 +1425,26 @@ function renderDashboard() {
       if (!pdvCount[pdv]) pdvCount[pdv] = { total: 0, loc: r.localidad || '-' };
       pdvCount[pdv].total++;
     }
+  });
 
-    // PRODUCTIVIDAD: OTs Creadas (por fecha original en Form)
-    if(r.timestamp) {
-      const tsStr = new Date(r.timestamp).toISOString().slice(0, 7);
-      if(tsStr === currentMonthStr) creadasEsteMes++;
-      else if(tsStr === prevMonthStr) creadasMesPasado++;
-    }
+  const allUniqueOts = new Map();
+  allData.forEach(r => { if(r.ot && r.timestamp) allUniqueOts.set(r.ot, { ts: r.timestamp, marca: r.marca }); });
+  historialData.forEach(h => { if(h.ot && h.ts) allUniqueOts.set(h.ot, { ts: h.ts, marca: h.marca }); });
 
-    // PRODUCTIVIDAD y SLA: OTs Resueltas (por fecha de resolución en Seguimientos)
-    const T2 = procesarTiempos(r.ot, r.timestamp);
+  let marcasEsteMes = {}, marcasMesPasado = {};
+
+  allUniqueOts.forEach((otData, otId) => {
+    if(!otData.ts) return;
+    const tsStr = new Date(otData.ts).toISOString().slice(0, 7);
+    
+    if(tsStr === currentMonthStr) creadasEsteMes++;
+    else if(tsStr === prevMonthStr) creadasMesPasado++;
+
+    const marca = (otData.marca || 'Sin Marca').toUpperCase().trim();
+    if(tsStr === currentMonthStr) marcasEsteMes[marca] = (marcasEsteMes[marca] || 0) + 1;
+    else if(tsStr === prevMonthStr) marcasMesPasado[marca] = (marcasMesPasado[marca] || 0) + 1;
+
+    const T2 = procesarTiempos(otId, otData.ts);
     if(T2) {
       const resStr = new Date(T2).toISOString().slice(0, 7);
       if(resStr === currentMonthStr) resueltasEsteMes++;
@@ -1484,24 +1490,22 @@ function renderDashboard() {
   });
 
   if (chartMarcasInstance) chartMarcasInstance.destroy();
-  const marcasLabels = Object.keys(marcasCount).sort((a,b) => marcasCount[b] - marcasCount[a]).slice(0, 10);
+  const marcasLabels = Array.from(new Set([...Object.keys(marcasEsteMes), ...Object.keys(marcasMesPasado)])).sort((a,b) => (marcasEsteMes[b]||0) - (marcasEsteMes[a]||0)).slice(0, 10);
   chartMarcasInstance = new Chart(document.getElementById('chartMarcas'), {
     type: 'bar',
     data: {
       labels: marcasLabels,
-      datasets: [{
-        label: 'OTs Activas',
-        data: marcasLabels.map(l => marcasCount[l]),
-        backgroundColor: '#3B82F6',
-        borderRadius: 6
-      }]
+      datasets: [
+        { label: 'Mes Actual', data: marcasLabels.map(l => marcasEsteMes[l]||0), backgroundColor: '#3B82F6', borderRadius: 6 },
+        { label: 'Mes Anterior', data: marcasLabels.map(l => marcasMesPasado[l]||0), backgroundColor: '#9CA3AF', borderRadius: 6 }
+      ]
     },
     options: { 
       ...commonOptions, 
       plugins: { 
         ...commonOptions.plugins,
-        legend: { display: false },
-        datalabels: { color: '#fff', anchor: 'center', align: 'center', font: { weight: 'bold' } }
+        legend: { position: 'bottom' },
+        datalabels: { color: '#fff', anchor: 'center', align: 'center', font: { weight: 'bold' }, formatter: (v)=>v||'' }
       } 
     }
   });
