@@ -53,22 +53,22 @@
   <script src="../emcala-auth.js"></script>
   <script>
   const HERRAMIENTAS = {
+    planificador_promotor: { href: '../planificador/promotor.html', label: '📝 MI PLANIFICACIÓN' },
+    planificador_spv: { href: '../planificador/supervisor.html', label: '📋 PLANIFICADOR' },
+    planificador_gen: { href: '../planificador/index.html', label: '📊 PLANIFICADOR GENERAL' },
     reparaciones: { href: 'https://emcala.github.io/reparaciones/', label: '🛠️ REPARACIONES' },
     dashboard_ventas: { href: 'https://emcala.github.io/dashboard_comercial/dashboard.html', label: '📊 ANÁLISIS DE VENTAS' },
     ejecucion: { href: 'https://emcala.github.io/suralnor-ejecucion/dashboard/index.html', label: '📊 AS EJECUCIÓN' },
     zonas_merch: { href: '../plan_merchs/', label: '👷 ZONAS MERCH' },
     coaching_pr: { href: '#', label: '🎯 DASHBOARD COACHING PR' },
-    cuentas: { href: 'https://emcala.github.io/Relevamiento/cuentas.html', label: '👥 GESTIÓN DE CUENTAS' }
+    cuentas: { href: '../portal/cuentas.html', label: '👥 GESTIÓN DE CUENTAS' }
   };
   
   const MENU_POR_ROL = {
-    jdv: ['reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas'],
-    admin: ['reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas'],
-    auditor: ['reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas'],
-    supervisor: ['reparaciones', 'dashboard_ventas', 'coaching_pr'],
+    auditor: ['reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas', 'planificador_gen'],
+    supervisor: ['reparaciones', 'dashboard_ventas', 'coaching_pr', 'planificador_spv'],
     trade: ['reparaciones', 'dashboard_ventas'],
-    tecnico: ['reparaciones'],
-    promotor: ['reparaciones']
+    tecnico: ['reparaciones']
   };
 
   function renderPortal() {
