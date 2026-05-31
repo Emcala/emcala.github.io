@@ -189,9 +189,8 @@ const DataService = {
     getClientsByPromotor(pid) { return this.data.clientes.filter(c => c.PromotorID === pid); },
     
     async saveClient(action, dataObj) {
-        let config = {};
-        try { config = JSON.parse(localStorage.getItem('emcala_config') || '{}'); } catch(e) {}
-        if (!config.sheetsUrl) throw new Error("No hay URL configurada. Andá a Configuración y pegá la URL del Apps Script.");
+        const apiUrl = window.EMCALA_API_URL;
+        if (!apiUrl) throw new Error("No hay URL configurada en window.EMCALA_API_URL.");
         
         const params = new URLSearchParams();
         params.append('action', action);
@@ -201,7 +200,7 @@ const DataService = {
         
         try {
             // POST usando x-www-form-urlencoded para evitar preflight CORS en Google Apps Script
-            const response = await fetch(config.sheetsUrl, {
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: params.toString()
