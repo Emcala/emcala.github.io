@@ -1,7 +1,7 @@
 // ============================================
 // APP INIT
 // ============================================
-window.EMCALA_API_URL = 'https://script.google.com/macros/s/AKfycbxjExv7KWkxsFwNK0kpAOMAH1UZO16UJEJNyCiHnkKonrwlXbt2G8LGAWB1Il3P-0El/exec';
+window.EMCALA_API_URL = 'https://script.google.com/macros/s/AKfycbwRrxNQuOXgdneNO1tMLrHhUVtgZuOBd3FdlH7VghHqoqBFQdZ-68CbAppjclBPrm1o/exec';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // ── Auth check ──
