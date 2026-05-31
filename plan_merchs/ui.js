@@ -6,6 +6,7 @@ const UI = {
     activePromotores: new Set(),
     activeMerchs: new Set(),
     activeFrequencies: new Set(),
+    selectedClients: new Set(),
 
     init() {
         this.initTheme();
@@ -98,6 +99,15 @@ const UI = {
         const topClose = document.getElementById('client-modal-close-top');
         if (topClose) topClose.onclick = () => this.closeClientModal();
         document.getElementById('client-form').onsubmit = (e) => this.submitClientForm(e);
+
+        // Bulk Actions
+        document.getElementById('btn-bulk-frecuencia').onclick = () => this.openBulkFrecuenciaModal();
+        document.getElementById('btn-bulk-clear').onclick = () => this.clearBulkSelection();
+        const bulkCloseTop = document.getElementById('bulk-modal-close');
+        if (bulkCloseTop) bulkCloseTop.onclick = () => document.getElementById('bulk-frecuencia-modal').style.display = 'none';
+        const bulkCancel = document.getElementById('bulk-modal-cancel');
+        if (bulkCancel) bulkCancel.onclick = () => document.getElementById('bulk-frecuencia-modal').style.display = 'none';
+        document.getElementById('bulk-modal-save').onclick = () => this.submitBulkFrecuencia();
     },
 
     // --- DATA RENDERING ---
@@ -203,20 +213,28 @@ const UI = {
         list.innerHTML = clients.map(c => {
             const merch = DataService.getMerch(c.MerchID);
             const promotor = DataService.getPromotor(c.PromotorID);
+            const isChecked = this.selectedClients.has(c.ID) ? 'checked' : '';
             return `<div class="client-item" data-lat="${c.Latitud}" data-lng="${c.Longitud}">
-                <div class="client-item-header">
-                    <span class="client-item-code">#${c.ID}</span>
-                    <span class="client-item-name">${c.Nombre}</span>
-                </div>
-                <div class="client-item-addr">${c.Direccion || ''}</div>
-                <div class="client-item-tags">
-                    ${promotor ? `<span class="client-tag" style="background:${promotor.Color}">${promotor.Nombre}</span>` : ''}
-                    ${merch ? `<span class="client-tag" style="background:${merch.Color}">${merch.Nombre}</span>` : ''}
+                <input type="checkbox" class="client-checkbox" value="${c.ID}" ${isChecked}>
+                <div class="client-item-content">
+                    <div class="client-item-header">
+                        <span class="client-item-code">#${c.ID}</span>
+                        <span class="client-item-name">${c.Nombre}</span>
+                    </div>
+                    <div class="client-item-addr">${c.Direccion || ''}</div>
+                    <div class="client-item-tags">
+                        ${promotor ? `<span class="client-tag" style="background:${promotor.Color}">${promotor.Nombre}</span>` : ''}
+                        ${merch ? `<span class="client-tag" style="background:${merch.Color}">${merch.Nombre}</span>` : ''}
+                    </div>
                 </div>
             </div>`;
         }).join('');
         list.querySelectorAll('.client-item').forEach(el => {
-            el.onclick = () => {
+            el.onclick = (e) => {
+                if (e.target.classList.contains('client-checkbox')) {
+                    this.toggleClientSelection(e.target.value, e.target.checked);
+                    return;
+                }
                 const lat = parseFloat(el.dataset.lat), lng = parseFloat(el.dataset.lng);
                 if (!isNaN(lat) && !isNaN(lng)) MapManager.flyToClient(lat, lng);
             };
@@ -263,6 +281,69 @@ const UI = {
             c.Nombre.toLowerCase().includes(q) || (c.Direccion && c.Direccion.toLowerCase().includes(q))
         ) : DataService.data.clientes;
         this.renderClientList(filtered);
+    },
+
+    // --- BULK ACTIONS ---
+    toggleClientSelection(clientId, isSelected) {
+        if (isSelected) {
+            this.selectedClients.add(clientId);
+        } else {
+            this.selectedClients.delete(clientId);
+        }
+        this.updateBulkBar();
+    },
+
+    clearBulkSelection() {
+        this.selectedClients.clear();
+        this.updateBulkBar();
+        document.querySelectorAll('.client-checkbox').forEach(cb => cb.checked = false);
+    },
+
+    updateBulkBar() {
+        const bar = document.getElementById('bulk-actions-bar');
+        const countSpan = document.getElementById('bulk-count');
+        if (this.selectedClients.size > 0) {
+            countSpan.textContent = `${this.selectedClients.size} seleccionado${this.selectedClients.size > 1 ? 's' : ''}`;
+            bar.style.display = 'flex';
+        } else {
+            bar.style.display = 'none';
+        }
+    },
+
+    openBulkFrecuenciaModal() {
+        document.getElementById('bulk-frecuencia-count').textContent = this.selectedClients.size;
+        
+        const select = document.getElementById('bulk-frecuencia-select');
+        select.innerHTML = '<option value="">-- Seleccionar existente --</option>' + 
+            DataService.data.frecuencias.map(f => `<option value="${f.Nombre}">${f.Nombre}</option>`).join('');
+        
+        document.getElementById('bulk-frecuencia-input').value = '';
+        document.getElementById('bulk-frecuencia-modal').style.display = 'flex';
+    },
+
+    async submitBulkFrecuencia() {
+        const selectVal = document.getElementById('bulk-frecuencia-select').value;
+        const inputVal = document.getElementById('bulk-frecuencia-input').value.trim();
+        const nuevaFrecuencia = inputVal || selectVal;
+        
+        if (!nuevaFrecuencia) {
+            alert('Por favor, ingresá o seleccioná una frecuencia.');
+            return;
+        }
+
+        const clientIds = Array.from(this.selectedClients);
+        document.getElementById('global-loader').style.display = 'flex';
+        document.getElementById('bulk-frecuencia-modal').style.display = 'none';
+        
+        try {
+            await DataService.saveBulkClients(clientIds, nuevaFrecuencia);
+            this.clearBulkSelection();
+            await this.refreshData();
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            document.getElementById('global-loader').style.display = 'none';
+        }
     },
 
     // --- PRINT ---

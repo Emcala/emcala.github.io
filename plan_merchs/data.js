@@ -193,12 +193,49 @@ const DataService = {
         if (!apiUrl) throw new Error("No hay URL configurada en window.EMCALA_API_URL.");
         
         try {
-            // USAMOS GET EN LUGAR DE POST PARA BYPASSEAR CUALQUIER RESTRICCION CORS
             const params = new URLSearchParams();
             params.append('action', action);
             for (const key in dataObj) {
                 params.append(key, dataObj[key]);
             }
+            
+            const response = await fetch(`${apiUrl}?${params.toString()}`, {
+                method: 'GET'
+            });
+            
+            const result = await response.json();
+            if (result.status !== 'success') throw new Error(result.message);
+            return result;
+        } catch (e) {
+            throw new Error("Error de conexión: " + e.message);
+        }
+    },
+
+    async saveBulkClients(clientIds, nuevaFrecuencia) {
+        const apiUrl = window.EMCALA_API_URL;
+        if (!apiUrl) throw new Error("No hay URL configurada en window.EMCALA_API_URL.");
+        
+        // Find clients by ID to get their original codigo/nombre
+        const codigos = [];
+        const nombres = [];
+        
+        for (const id of clientIds) {
+            const c = this.data.clientes.find(x => x.ID === id);
+            if (c) {
+                if (c.Codigo && c.Codigo !== ('C' + this.data.clientes.indexOf(c))) {
+                    codigos.push(c.Codigo);
+                } else {
+                    nombres.push(c.Nombre);
+                }
+            }
+        }
+        
+        try {
+            const params = new URLSearchParams();
+            params.append('action', 'bulk_edit_frecuencia');
+            params.append('frecuencia', nuevaFrecuencia);
+            params.append('codigos', codigos.join('|||'));
+            params.append('nombres', nombres.join('|||'));
             
             const response = await fetch(`${apiUrl}?${params.toString()}`, {
                 method: 'GET'

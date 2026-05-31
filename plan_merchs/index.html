@@ -22,11 +22,10 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-    <!-- App Styles -->
-    <link rel="stylesheet" href="styles.css">
-
-    <!-- Auth Module -->
-    <script src="../emcala-auth.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css?v=2">
+    <!-- FontAwesome -->
+    <script src="../emcala-auth.js?v=2"></script>
 </head>
 <body>
     <!-- Header -->
@@ -125,6 +124,17 @@
                         <i class="fas fa-spinner fa-spin"></i> Cargando...
                     </div>
                 </div>
+
+                <!-- Bulk Actions Bar -->
+                <div id="bulk-actions-bar" class="bulk-actions-bar" style="display:none;">
+                    <span id="bulk-count">0 seleccionados</span>
+                    <button class="btn btn-primary" id="btn-bulk-frecuencia" style="margin-left:auto;">
+                        <i class="fas fa-calendar-alt"></i> Cambiar Frecuencia
+                    </button>
+                    <button class="btn btn-secondary" id="btn-bulk-clear" style="margin-left:8px;" title="Desmarcar todos">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Tab: Print -->
@@ -193,6 +203,112 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Client Edit/Add Modal -->
+    <div class="modal-overlay" id="client-modal" style="z-index: 2000; display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 id="client-modal-title"><i class="fas fa-user-edit"></i> Nuevo Cliente</h2>
+                <button type="button" class="modal-close" id="client-modal-close-top">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="client-form">
+                    <input type="hidden" id="client-original-codigo">
+                    <input type="hidden" id="client-original-nombre">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Código / ID</label>
+                            <input type="text" id="client-codigo" class="config-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Razón Social / Nombre *</label>
+                            <input type="text" id="client-nombre" class="config-input" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label>Dirección</label>
+                        <input type="text" id="client-direccion" class="config-input">
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Latitud *</label>
+                            <input type="text" id="client-lat" class="config-input" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Longitud *</label>
+                            <input type="text" id="client-lng" class="config-input" required>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Promotor</label>
+                            <input type="text" id="client-promotor" class="config-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Merch</label>
+                            <input type="text" id="client-merch" class="config-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Frecuencia</label>
+                            <input type="text" id="client-frecuencia" class="config-input">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Prioridad (Nro)</label>
+                            <input type="text" id="client-prioridad" class="config-input" placeholder="Ej: 1, 2...">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Teléfono</label>
+                            <input type="text" id="client-telefono" class="config-input">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Notas</label>
+                        <textarea id="client-notas" class="config-input" rows="2" style="width:100%; resize:vertical; background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm); padding:10px;"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn secondary-btn" id="client-modal-close">Cancelar</button>
+                <button type="submit" form="client-form" class="btn primary-btn" id="client-modal-save">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Edit Frecuencia Modal -->
+    <div id="bulk-frecuencia-modal" class="modal-overlay" style="display:none; z-index: 2001;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Edición Masiva</h3>
+                <button id="bulk-modal-close" class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-top:0; font-size:14px; color:var(--text-muted);">
+                    Se actualizará la frecuencia para <strong id="bulk-frecuencia-count">0</strong> clientes.
+                </p>
+                <div class="form-group">
+                    <label>Nueva Frecuencia</label>
+                    <select id="bulk-frecuencia-select" class="config-input" style="margin-bottom: 10px;">
+                        <!-- Opciones de frecuencias -->
+                    </select>
+                    <input type="text" id="bulk-frecuencia-input" class="config-input" placeholder="O escribí una personalizada..." />
+                </div>
+            </div>
+            <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end;">
+                <button class="btn secondary-btn" id="bulk-modal-cancel" style="margin-right: 10px;">Cancelar</button>
+                <button class="btn primary-btn" id="bulk-modal-save">Guardar Cambios</button>
+            </div>
+        </div>
     </div>
 
     <!-- Config Modal -->
@@ -377,9 +493,9 @@
             crossorigin=""></script>
 
     <!-- App JS -->
-    <script src="data.js?v=3"></script>
+    <script src="data.js?v=4"></script>
     <script src="map.js"></script>
-    <script src="ui.js"></script>
+    <script src="ui.js?v=2"></script>
     <script src="app.js"></script>
     <script src="rebalance.js"></script>
 </body>
