@@ -134,7 +134,7 @@ const DataService = {
             }
 
             // Crear Cliente
-            const frecuenciaVal = getVal(['frecuencia']) || 'Sin Frecuencia';
+            const frecuenciaVal = getVal(['frecuencia', 'frec', 'visita', 'visitas']) || 'Sin Frecuencia';
             const codigoVal = getVal(['codigo', 'id']) || ('C' + clientes.length);
             clientes.push({
                 ID: codigoVal,
