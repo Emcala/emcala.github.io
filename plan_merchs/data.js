@@ -192,14 +192,16 @@ const DataService = {
         const apiUrl = window.EMCALA_API_URL;
         if (!apiUrl) throw new Error("No hay URL configurada en window.EMCALA_API_URL.");
         
-        const payload = { action: action, ...dataObj };
-        
         try {
-            // Usamos text/plain con JSON.stringify para evitar problemas de CORS con Google Apps Script
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
+            // USAMOS GET EN LUGAR DE POST PARA BYPASSEAR CUALQUIER RESTRICCION CORS
+            const params = new URLSearchParams();
+            params.append('action', action);
+            for (const key in dataObj) {
+                params.append(key, dataObj[key]);
+            }
+            
+            const response = await fetch(`${apiUrl}?${params.toString()}`, {
+                method: 'GET'
             });
             
             const result = await response.json();
