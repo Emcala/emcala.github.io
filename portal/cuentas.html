@@ -84,7 +84,8 @@
           <div style="font-size: 13px; font-weight: 700; margin-bottom: 4px;">Autorización Requerida</div>
           <div style="font-size: 11px; color: var(--muted);">Para hacer modificaciones, ingresa tu contraseña actual de administrador.</div>
         </div>
-        <input type="password" id="admin-pass" placeholder="Tu contraseña...">
+        <input type="password" id="admin-pass" placeholder="Tu contraseña..." style="flex: 1;">
+        <button class="btn" onclick="loadUsers()" style="height: 36px;">Entrar</button>
       </div>
 
       <div class="flex-between">
@@ -204,11 +205,11 @@
       if (data) {
         renderTable(data.users);
       } else {
-        document.getElementById('loading').innerHTML = 'Error al cargar (¿Contraseña incorrecta?)';
+        document.getElementById('loading').innerHTML = 'Error al cargar (¿Contraseña incorrecta o error de red?)';
       }
     }
 
-    document.getElementById('admin-pass').addEventListener('change', loadUsers);
+    // Eliminamos el listener "change" automático para que se use el botón "Entrar"
 
     function renderTable(users) {
       const tbody = document.getElementById('tbody-users');
