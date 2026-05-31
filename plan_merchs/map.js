@@ -335,11 +335,17 @@ const MapManager = {
             if (promotor) popupHtml += `<span class="popup-tag" style="background:${promotor.Color}">${promotor.Nombre}</span> `;
             if (merch) popupHtml += `<span class="popup-tag" style="background:${merch.Color}">${merch.Nombre}</span>`;
             
+            const isSelected = window.UI && UI.selectedClients.has(c.ID);
+            const selectIcon = isSelected ? 'fa-minus' : 'fa-plus';
+            const selectText = isSelected ? 'Desmarcar' : 'Seleccionar';
+            const selectColor = isSelected ? 'var(--text-muted)' : 'var(--accent-primary)';
+
             // Botones de acción
             popupHtml += `
-                <div style="display:flex; justify-content:space-between; margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px;">
-                    <button class="btn" onclick="UI.openClientModal('${c.ID}')" style="padding: 4px 8px; font-size: 12px; background:var(--bg-tertiary); color:var(--text-primary); border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-edit"></i> Editar</button>
-                    <button class="btn" onclick="UI.deleteClient('${c.ID}')" style="padding: 4px 8px; font-size: 12px; background:var(--bg-tertiary); color:#ef4444; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-trash"></i> Borrar</button>
+                <div style="display:flex; justify-content:space-between; margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px; gap:4px;">
+                    <button class="btn" onclick="UI.toggleClientSelectionFromMap('${c.ID}', this)" style="flex:1; padding: 4px; font-size: 11px; background:var(--bg-tertiary); color:${selectColor}; border:none; border-radius:4px; cursor:pointer;"><i class="fas ${selectIcon}"></i> ${selectText}</button>
+                    <button class="btn" onclick="UI.openClientModal('${c.ID}')" style="flex:1; padding: 4px; font-size: 11px; background:var(--bg-tertiary); color:var(--text-primary); border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-edit"></i> Editar</button>
+                    <button class="btn" onclick="UI.deleteClient('${c.ID}')" style="flex:1; padding: 4px; font-size: 11px; background:var(--bg-tertiary); color:#ef4444; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-trash"></i> Borrar</button>
                 </div>
             `;
             

@@ -6,15 +6,20 @@
 
 function doGet(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getActiveSheet(); // Lee la hoja que esté activa (la primera)
-  
+  var sheet = ss.getActiveSheet();
+  var action = e.parameter.action || 'all';
+
+  // Si la acción no es 'all', procesamos como si fuera un POST (evita errores CORS de POST)
+  if (action === 'add' || action === 'edit' || action === 'delete' || action === 'bulk_edit_frecuencia') {
+    return handleRequest(e.parameter, sheet);
+  }
+
+  // Comportamiento por defecto: obtener todos los clientes
   var data = sheet.getDataRange().getValues();
   var result = { clientes: [] };
 
   if (data.length > 1) {
     var headers = data[0];
-    
-    // Normalizar cabeceras a minúsculas para evitar problemas de mayúsculas/minúsculas
     var normalizedHeaders = headers.map(function(h) {
       return h.toString().toLowerCase().trim();
     });
@@ -33,33 +38,30 @@ function doGet(e) {
     }
   }
 
-// Devolver JSON con soporte CORS automático
   return ContentService
     .createTextOutput(JSON.stringify(result))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function doPost(e) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getActiveSheet();
+function handleRequest(paramData, sheet) {
   var headers = sheet.getDataRange().getValues()[0];
   var normalizedHeaders = headers.map(function(h) { return h.toString().toLowerCase().trim(); });
 
-  var action = e.parameter.action;
+  var action = paramData.action;
   var result = { status: 'success', message: '' };
 
   // Función interna para mapear los campos estándar de la app a las columnas reales del sheet
   function getFieldValue(header) {
-    if (header.indexOf('cod') > -1 || header === 'id') return e.parameter.codigo;
-    if (header.indexOf('razon') > -1 || header.indexOf('nombre') > -1 || header.indexOf('client') > -1) return e.parameter.razon_social;
-    if (header.indexOf('dir') > -1 || header.indexOf('domic') > -1) return e.parameter.direccion;
-    if (header.indexOf('lat') > -1) return e.parameter.latitud;
-    if (header.indexOf('lon') > -1 || header.indexOf('lng') > -1) return e.parameter.longitud;
-    if (header.indexOf('prom') > -1) return e.parameter.promotor;
-    if (header.indexOf('merch') > -1) return e.parameter.merch;
-    if (header.indexOf('frec') > -1) return e.parameter.frecuencia;
-    if (header.indexOf('tel') > -1) return e.parameter.telefono;
-    if (header.indexOf('nota') > -1) return e.parameter.notas;
+    if (header.indexOf('cod') > -1 || header === 'id') return paramData.codigo;
+    if (header.indexOf('razon') > -1 || header.indexOf('nombre') > -1 || header.indexOf('client') > -1) return paramData.razon_social;
+    if (header.indexOf('dir') > -1 || header.indexOf('domic') > -1) return paramData.direccion;
+    if (header.indexOf('lat') > -1) return paramData.latitud;
+    if (header.indexOf('lon') > -1 || header.indexOf('lng') > -1) return paramData.longitud;
+    if (header.indexOf('prom') > -1) return paramData.promotor;
+    if (header.indexOf('merch') > -1) return paramData.merch;
+    if (header.indexOf('frec') > -1) return paramData.frecuencia;
+    if (header.indexOf('tel') > -1) return paramData.telefono;
+    if (header.indexOf('nota') > -1) return paramData.notas;
     return undefined;
   }
 
@@ -74,8 +76,8 @@ function doPost(e) {
       result.message = 'Cliente agregado';
     } 
     else if (action === 'edit' || action === 'delete') {
-      var original_codigo = e.parameter.original_codigo;
-      var original_nombre = e.parameter.original_nombre;
+      var original_codigo = paramData.original_codigo;
+      var original_nombre = paramData.original_nombre;
       
       var data = sheet.getDataRange().getValues();
       var rowIndex = -1;
@@ -118,6 +120,44 @@ function doPost(e) {
         result.status = 'error';
         result.message = 'No se encontró el cliente a modificar/borrar.';
       }
+    } else if (action === 'bulk_edit_frecuencia') {
+      var idsStr = paramData.codigos || "";
+      var nombresStr = paramData.nombres || "";
+      var ids = idsStr ? idsStr.split('|||') : [];
+      var nombres = nombresStr ? nombresStr.split('|||') : [];
+      var nuevaFrecuencia = paramData.frecuencia;
+
+      var data = sheet.getDataRange().getValues();
+      var colCodigo = -1;
+      var colNombre = -1;
+      var colFrecuencia = -1;
+
+      for (var j = 0; j < normalizedHeaders.length; j++) {
+        if (normalizedHeaders[j].indexOf('cod') > -1 || normalizedHeaders[j] === 'id') colCodigo = j;
+        if (normalizedHeaders[j].indexOf('razon') > -1 || normalizedHeaders[j].indexOf('nombre') > -1 || normalizedHeaders[j].indexOf('client') > -1) colNombre = j;
+        if (normalizedHeaders[j].indexOf('frec') > -1) colFrecuencia = j;
+      }
+
+      if (colFrecuencia > -1) {
+        var count = 0;
+        for (var i = 1; i < data.length; i++) {
+           var match = false;
+           var rowCod = data[i][colCodigo] ? data[i][colCodigo].toString() : "";
+           var rowNom = data[i][colNombre] ? data[i][colNombre].toString() : "";
+           
+           if (rowCod && ids.indexOf(rowCod) > -1) match = true;
+           else if (rowNom && nombres.indexOf(rowNom) > -1) match = true;
+
+           if (match) {
+             sheet.getRange(i + 1, colFrecuencia + 1).setValue(nuevaFrecuencia);
+             count++;
+           }
+        }
+        result.message = 'Se actualizaron ' + count + ' clientes.';
+      } else {
+        result.status = 'error';
+        result.message = 'No se encontró la columna de frecuencia.';
+      }
     } else {
       result.status = 'error';
       result.message = 'Acción desconocida';
@@ -127,10 +167,27 @@ function doPost(e) {
     result.message = error.toString();
   }
 
-  // Devolver configuración CORS explícita para POST (aunque no se use directamente con form-urlencoded)
   var output = ContentService.createTextOutput(JSON.stringify(result));
   output.setMimeType(ContentService.MimeType.JSON);
   return output;
+}
+
+function doPost(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getActiveSheet();
+
+  var paramData = {};
+  if (e && e.postData && e.postData.contents) {
+    try {
+      paramData = JSON.parse(e.postData.contents);
+    } catch(err) {
+      paramData = e.parameter;
+    }
+  } else if (e && e.parameter) {
+    paramData = e.parameter;
+  }
+  
+  return handleRequest(paramData, sheet);
 }
 
 // =============================================

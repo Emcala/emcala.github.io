@@ -124,17 +124,6 @@
                         <i class="fas fa-spinner fa-spin"></i> Cargando...
                     </div>
                 </div>
-
-                <!-- Bulk Actions Bar -->
-                <div id="bulk-actions-bar" class="bulk-actions-bar" style="display:none;">
-                    <span id="bulk-count">0 seleccionados</span>
-                    <button class="btn btn-primary" id="btn-bulk-frecuencia" style="margin-left:auto;">
-                        <i class="fas fa-calendar-alt"></i> Cambiar Frecuencia
-                    </button>
-                    <button class="btn btn-secondary" id="btn-bulk-clear" style="margin-left:8px;" title="Desmarcar todos">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
             </div>
 
             <!-- Tab: Print -->
@@ -184,6 +173,19 @@
                     </button>
                     <button class="btn-secondary" id="btn-export-csv" style="width:100%; margin-top: 8px; justify-content: center;">
                         <i class="fas fa-file-csv"></i> Exportar CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bulk Actions Bar (Moved here to be globally visible in sidebar) -->
+            <div id="bulk-actions-bar" class="bulk-actions-bar" style="display:none;">
+                <span id="bulk-count">0 seleccionados</span>
+                <div style="display:flex; gap:8px;">
+                    <button id="btn-bulk-frecuencia" class="btn" title="Cambiar Frecuencia Masivamente">
+                        <i class="fas fa-calendar-alt"></i> Frec.
+                    </button>
+                    <button id="btn-bulk-clear" class="btn" title="Limpiar Selección" style="color:var(--text-muted); background:none; border:none; padding:4px;">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>
@@ -494,8 +496,8 @@
 
     <!-- App JS -->
     <script src="data.js?v=4"></script>
-    <script src="map.js"></script>
-    <script src="ui.js?v=2"></script>
+    <script src="map.js?v=2"></script>
+    <script src="ui.js?v=3"></script>
     <script src="app.js"></script>
     <script src="rebalance.js"></script>
 </body>

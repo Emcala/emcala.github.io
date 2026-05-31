@@ -293,6 +293,22 @@ const UI = {
         this.updateBulkBar();
     },
 
+    toggleClientSelectionFromMap(clientId, btnElement) {
+        const isSelected = this.selectedClients.has(clientId);
+        this.toggleClientSelection(clientId, !isSelected);
+        
+        if (!isSelected) {
+            btnElement.innerHTML = '<i class="fas fa-minus"></i> Desmarcar';
+            btnElement.style.color = 'var(--text-muted)';
+        } else {
+            btnElement.innerHTML = '<i class="fas fa-plus"></i> Seleccionar';
+            btnElement.style.color = 'var(--accent-primary)';
+        }
+        
+        const cb = document.querySelector(`.client-checkbox[value="${clientId}"]`);
+        if (cb) cb.checked = !isSelected;
+    },
+
     clearBulkSelection() {
         this.selectedClients.clear();
         this.updateBulkBar();
