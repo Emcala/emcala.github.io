@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Promotor · EMCALA</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&display=swap');
+
+    :root {
+      --bg: linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%);
+      --surf: #ffffff;
+      --brd: #e2e8f0;
+      --acc: #1B5FA8;
+      --txt: #0f172a;
+      --muted: #64748b;
+      --foco1: #ef4444; /* Cervezas */
+      --foco2: #0284c7; /* NABS */
+      --foco3: #eab308; /* KPI 1 */
+      --foco4: #a855f7; /* KPI 2 */
+      --shad: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body { background: var(--bg); color: var(--txt); font-family: 'Bricolage Grotesque', sans-serif; min-height: 100vh; padding-bottom: 40px; }
+
+    .hdr { background: rgba(255,255,255,0.12); border-bottom: 1px solid rgba(255,255,255,0.22); padding: 20px; text-align: center; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(8px); display:flex; justify-content:space-between; align-items:center; }
+    .hdr h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; color: #fff; text-transform: uppercase; letter-spacing: -0.02em; margin:0; }
+    .hdr h1 span { color: rgba(255,255,255,0.6); font-weight: 600; }
+
+    .container { padding: 16px; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+    .card { background: var(--surf); border-radius: 12px; padding: 20px; box-shadow: var(--shad); border-top: 4px solid var(--acc); }
+    .card.foco1 { border-top-color: var(--foco1); }
+    .card.foco2 { border-top-color: var(--foco2); }
+    .card.foco3 { border-top-color: var(--foco3); }
+    .card.foco4 { border-top-color: var(--foco4); }
+
+    .card-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 800; text-transform: uppercase; color: var(--txt); margin-bottom: 16px; letter-spacing: -0.02em; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group:last-child { margin-bottom: 0; }
+    label { display: block; font-weight: 700; font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; font-family: 'Bricolage Grotesque', sans-serif; letter-spacing: 0.08em; }
+
+    select, input[type="number"], input[type="date"] {
+      width: 100%; padding: 12px; border: 1px solid var(--brd); border-radius: 8px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; font-weight: 600; color: var(--txt); background: #f8fafc; outline: none; transition: all 0.2s;
+    }
+    select:focus, input:focus { background: #fff; border-color: var(--acc); box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1); }
+    select:disabled { background: #e2e8f0; color: var(--muted); cursor: not-allowed; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .btn-submit { background: #fff; color: var(--acc); border: none; width: 100%; padding: 16px; border-radius: 12px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; text-transform: uppercase; cursor: pointer; box-shadow: 0 8px 16px rgba(0,0,0,0.1); transition: all 0.2s; margin-top: 8px; }
+    .btn-submit:hover { opacity: 0.9; transform: translateY(-2px); }
+    .btn-submit:disabled { background: #94a3b8; color: #fff; cursor: not-allowed; box-shadow: none; transform: none; }
+
+    #loading { text-align: center; font-weight: 600; color: #FFD580; margin-top: 10px; display: none; }
+    .success-msg { display: none; background: #10b981; color: white; padding: 16px; border-radius: 8px; text-align: center; font-weight: 700; margin-top: 16px; }
+
+    .kpi-fixed-text { font-size: 16px; font-weight: 800; color: var(--acc); padding: 8px 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0; text-align: center; }
+    .kpi-pending-text { font-size: 14px; font-weight: 600; color: #dc2626; padding: 12px; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div class="hdr">
+    <div>
+      <h1>EMCALA <span>| Mi Planificación</span></h1>
+    </div>
+  </div>
+
+  <div class="container">
+    
+    <!-- IDENTIFICACION -->
+    <div class="card">
+      <div class="card-title">👤 Identificación</div>
+      <div class="form-group">
+        <label>Fecha a planificar</label>
+        <input type="date" id="date-input" required>
+      </div>
+      <div class="form-group">
+        <label>Supervisor</label>
+        <select id="spv-select">
+          <option value="">Selecciona tu supervisor...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Promotor</label>
+        <select id="prom-select" disabled>
+          <option value="">Selecciona tu nombre...</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- FOCO 1 & 2 -->
+    <div class="row" style="display:flex; flex-direction:column;">
+      <div class="card foco1">
+        <div class="card-title" style="color:var(--foco1)">🍺 Cervezas</div>
+        <div class="form-group">
+          <label>Total Planificado (HL)</label>
+          <input type="number" id="f1-total" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      
+      <div class="card foco2">
+        <div class="card-title" style="color:var(--foco2)">🥤 NABS</div>
+        <div class="form-group">
+          <label>Total Planificado (HL)</label>
+          <input type="number" id="f2-total" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+    </div>
+
+    <!-- FOCO 3 -->
+    <div class="card foco3">
+      <div class="card-title" style="color:var(--foco3)">🎯 KPI 1</div>
+      <div id="kpi1-container">
+        <div class="kpi-pending-text">Elegí tu supervisor para ver el KPI...</div>
+      </div>
+    </div>
+
+    <!-- FOCO 4 -->
+    <div class="card foco4">
+      <div class="card-title" style="color:var(--foco4)">🎯 KPI 2</div>
+      <div id="kpi2-container">
+        <div class="kpi-pending-text">Elegí tu supervisor para ver el KPI...</div>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="btn-submit" disabled>Enviar Planificación</button>
+    <div id="loading">Consultando datos del supervisor...</div>
+    <div class="success-msg" id="success-msg">¡Planificación enviada con éxito!</div>
+
+  </div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
+
+    const SPV_DATA = {
+      'AVILA EZEQUIEL': ['FERNANDEZ LUIS','THEILLET NICOLAS','JAIMES EZEQUIEL','MOURELLE ALFREDO','PEREYRA BRAIAN','SAN JUAN CARLOS','SANTILLAN SERGIO','TESEI ALEJANDRA','TORRES KARINA'],
+      'ARES PEDRO': ['GALLO JONATHAN','DIAZ VALERIA','FERREYRA LEONARDO','MIÑO RENZO','LOPEZ PABLO','SANCHEZ ROCIO'],
+      'ECEIZA KEVIN': ['DOMINGUEZ GONZALO','GEREZ JONATHAN','GONZALEZ ROBERTO','JOFRE LUCAS','GUARAZ JUAN','MENDOZA SERGIO','MUÑOZ PAULA','REGNER LEANDRO','SCORNAVACHE WALTER'],
+      'RIERA SALA DANIELA': ['ASCONA MATIAS','BENITEZ NAHUEL','CESPEDES ENZO','FERREYRA TOBIAS','FREDES CLAUDIA','GARCIA MAIRA','LEITES RODRIGO','LOPEZ ALEJANDRA','MORENO AGUSTINA'],
+      'BDR': ['ANDUAGA SANTIAGO','GOMEZ GUSTAVO','VEDIA ELIZABETH'],
+      'LEMOS PATRICIA': ['LEMOS PATRICIA']
+    };
+
+    const spvSelect = document.getElementById('spv-select');
+    const promSelect = document.getElementById('prom-select');
+    const dateInput = document.getElementById('date-input');
+    const btnSubmit = document.getElementById('btn-submit');
+    const loading = document.getElementById('loading');
+
+    // Poblar supervisores
+    for (const spv in SPV_DATA) {
+      const opt = document.createElement('option');
+      opt.value = spv; opt.textContent = spv;
+      spvSelect.appendChild(opt);
+    }
+
+    // Setear fecha actual
+    const _now = new Date();
+    dateInput.value = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
+
+    // Estado global de los KPIs
+    let currentKpiData = null;
+
+    spvSelect.addEventListener('change', () => {
+      const spv = spvSelect.value;
+      promSelect.innerHTML = '<option value="">Selecciona tu nombre...</option>';
+      if (spv) {
+        SPV_DATA[spv].forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p; opt.textContent = p;
+          promSelect.appendChild(opt);
+        });
+        promSelect.disabled = false;
+        loadKpis();
+      } else {
+        promSelect.disabled = true;
+        currentKpiData = null;
+        renderKpis();
+      }
+    });
+
+    dateInput.addEventListener('change', () => {
+      if(spvSelect.value) {
+        loadKpis();
+      }
+    });
+
+    async function loadKpis() {
+      const date = dateInput.value;
+      const spv = spvSelect.value;
+      if (!date || !spv) return;
+
+      currentKpiData = null;
+      btnSubmit.disabled = true;
+      loading.textContent = 'Buscando FOCOS KPI del supervisor...';
+      loading.style.display = 'block';
+
+      document.getElementById('kpi1-container').innerHTML = `<div class="kpi-pending-text">Sincronizando...</div>`;
+      document.getElementById('kpi2-container').innerHTML = `<div class="kpi-pending-text">Sincronizando...</div>`;
+
+      try {
+        const response = await fetch(`${SCRIPT_URL}?date=${date}&spv=${encodeURIComponent(spv)}`);
+        const result = await response.json();
+        
+        // El promotor aún no lo eligió necesariamente, así que buscamos en el primer promotor disponible o iteramos la data del spv
+        if (result.status === 'success' && result.data) {
+          // Buscamos cualquier registro que tenga configurado k1-met
+          let foundKpi = false;
+          for (let key in result.data) {
+            const d = result.data[key];
+            if (d['k1-met'] && d['k1-tar']) {
+              currentKpiData = {
+                k1m: d['k1-met'], k1t: d['k1-tar'],
+                k2m: d['k2-met'], k2t: d['k2-tar']
+              };
+              foundKpi = true;
+              break;
+            }
+          }
+        }
+        renderKpis();
+      } catch (e) {
+        console.error(e);
+        const msg = `<div class="kpi-pending-text">Error de conexión al buscar los KPIs.</div>`;
+        document.getElementById('kpi1-container').innerHTML = msg;
+        document.getElementById('kpi2-container').innerHTML = msg;
+      } finally {
+        loading.style.display = 'none';
+      }
+    }
+
+    function renderKpis() {
+      if (currentKpiData) {
+        document.getElementById('kpi1-container').innerHTML = `
+          <div class="kpi-fixed-text">${currentKpiData.k1m}: ${currentKpiData.k1t}</div>
+          <div class="form-group" style="margin-top:12px;">
+            <label>Planificado (Unidades/HL)</label>
+            <input type="number" id="kpi1-p" step="0.01" placeholder="0.00">
+          </div>
+        `;
+        document.getElementById('kpi2-container').innerHTML = `
+          <div class="kpi-fixed-text">${currentKpiData.k2m}: ${currentKpiData.k2t}</div>
+          <div class="form-group" style="margin-top:12px;">
+            <label>Planificado (Unidades/HL)</label>
+            <input type="number" id="kpi2-p" step="0.01" placeholder="0.00">
+          </div>
+        `;
+        checkForm();
+      } else {
+        const msg = `<div class="kpi-pending-text">${spvSelect.value ? 'El supervisor aún no ha definido los FOCOS KPI para esta fecha.' : 'Elegí tu supervisor para ver el KPI...'}</div>`;
+        document.getElementById('kpi1-container').innerHTML = msg;
+        document.getElementById('kpi2-container').innerHTML = msg;
+        btnSubmit.disabled = true;
+      }
+    }
+
+    function checkForm() {
+      if (spvSelect.value && promSelect.value && currentKpiData) {
+        btnSubmit.disabled = false;
+      } else {
+        btnSubmit.disabled = true;
+      }
+    }
+
+    promSelect.addEventListener('change', checkForm);
+
+    btnSubmit.addEventListener('click', async () => {
+      if (!currentKpiData) {
+        alert('No hay KPIs definidos para hoy.'); return;
+      }
+      if (!promSelect.value) {
+        alert('Por favor selecciona tu nombre.'); return;
+      }
+
+      const payload = {
+        date: dateInput.value,
+        spv: spvSelect.value,
+        promotor: promSelect.value,
+        'f1-p': document.getElementById('f1-total').value || '',
+        'f2-p': document.getElementById('f2-total').value || '',
+        'k1-met': currentKpiData.k1m,
+        'k1-tar': currentKpiData.k1t,
+        'k1-p': document.getElementById('kpi1-p').value || '',
+        'k2-met': currentKpiData.k2m,
+        'k2-tar': currentKpiData.k2t,
+        'k2-p': document.getElementById('kpi2-p').value || ''
+      };
+
+      const success = document.getElementById('success-msg');
+      btnSubmit.disabled = true; 
+      loading.textContent = 'Enviando planificación, por favor esperá...';
+      loading.style.display = 'block'; 
+      success.style.display = 'none';
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+          success.style.display = 'block';
+          document.getElementById('f1-total').value = '';
+          document.getElementById('f2-total').value = '';
+          document.getElementById('kpi1-p').value = '';
+          document.getElementById('kpi2-p').value = '';
+          promSelect.value = ''; // Reset promotor
+          checkForm();
+          window.scrollTo(0, 0);
+          setTimeout(() => { success.style.display = 'none'; }, 5000);
+        } else { alert('Error del servidor: ' + (result.message || 'Desconocido')); }
+      } catch (e) {
+        alert('Hubo un error de conexión.');
+      } finally {
+        loading.style.display = 'none';
+        checkForm(); // Re-evaluar btn estado
+      }
+    });
+  </script>
+</body>
+</html>
