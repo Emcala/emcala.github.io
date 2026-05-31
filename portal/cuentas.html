@@ -160,15 +160,13 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec';
 
     async function fetchAPI(payload) {
-      if (!payload.action.includes('get_')) {
-        const apass = document.getElementById('admin-pass').value;
-        if (!apass) {
-          alert('Debes ingresar tu contraseña de admin arriba para realizar cambios.');
-          return null;
-        }
-        payload.admin_user = session.usuario;
-        payload.admin_pass = apass;
+      const apass = document.getElementById('admin-pass').value;
+      if (!apass && payload.action !== 'login') {
+        alert('Debes ingresar tu contraseña de admin arriba.');
+        return null;
       }
+      payload.admin_user = session.usuario;
+      payload.admin_pass = apass;
 
       try {
         const res = await fetch(SCRIPT_URL, {
