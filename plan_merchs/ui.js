@@ -316,6 +316,7 @@ const UI = {
         this.selectedClients.clear();
         this.updateBulkBar();
         document.querySelectorAll('.client-checkbox').forEach(cb => cb.checked = false);
+        if (window.MapManager) MapManager.updateMarkersVisualState();
     },
 
     updateBulkBar() {
