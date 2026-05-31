@@ -101,13 +101,24 @@ const UI = {
         document.getElementById('client-form').onsubmit = (e) => this.submitClientForm(e);
 
         // Bulk Actions
-        document.getElementById('btn-bulk-frecuencia').onclick = () => this.openBulkFrecuenciaModal();
+        document.getElementById('btn-bulk-edit').onclick = () => this.openBulkEditModal();
         document.getElementById('btn-bulk-clear').onclick = () => this.clearBulkSelection();
         const bulkCloseTop = document.getElementById('bulk-modal-close');
-        if (bulkCloseTop) bulkCloseTop.onclick = () => document.getElementById('bulk-frecuencia-modal').style.display = 'none';
+        if (bulkCloseTop) bulkCloseTop.onclick = () => document.getElementById('bulk-edit-modal').style.display = 'none';
         const bulkCancel = document.getElementById('bulk-modal-cancel');
-        if (bulkCancel) bulkCancel.onclick = () => document.getElementById('bulk-frecuencia-modal').style.display = 'none';
-        document.getElementById('bulk-modal-save').onclick = () => this.submitBulkFrecuencia();
+        if (bulkCancel) bulkCancel.onclick = () => document.getElementById('bulk-edit-modal').style.display = 'none';
+        document.getElementById('bulk-modal-save').onclick = () => this.submitBulkEdit();
+
+        // Bulk Edit Modal Checkbox Toggles
+        document.querySelectorAll('.bulk-check').forEach(cb => {
+            cb.onchange = (e) => {
+                const idStr = e.target.id.replace('bulk-check-', '');
+                const input1 = document.getElementById(`bulk-input-${idStr}`);
+                if (input1) input1.disabled = !e.target.checked;
+                const input2 = document.getElementById(`bulk-input-${idStr}-custom`);
+                if (input2) input2.disabled = !e.target.checked;
+            };
+        });
     },
 
     // --- DATA RENDERING ---
@@ -297,16 +308,17 @@ const UI = {
         const isSelected = this.selectedClients.has(clientId);
         this.toggleClientSelection(clientId, !isSelected);
         
-        if (!isSelected) {
-            btnElement.innerHTML = '<i class="fas fa-minus"></i> Desmarcar';
-            btnElement.style.color = 'var(--text-muted)';
-        } else {
-            btnElement.innerHTML = '<i class="fas fa-plus"></i> Seleccionar';
-            btnElement.style.color = 'var(--accent-primary)';
+        // Cierra el popup inmediatamente para mayor velocidad
+        if (MapManager.map) {
+            MapManager.map.closePopup();
         }
         
+        // Se actualiza el checkbox de la lista también
         const cb = document.querySelector(`.client-checkbox[value="${clientId}"]`);
         if (cb) cb.checked = !isSelected;
+        
+        // Actualizar visualmente todos los marcadores para que brillen
+        MapManager.updateMarkersVisualState();
     },
 
     clearBulkSelection() {
@@ -326,34 +338,56 @@ const UI = {
         }
     },
 
-    openBulkFrecuenciaModal() {
-        document.getElementById('bulk-frecuencia-count').textContent = this.selectedClients.size;
+    openBulkEditModal() {
+        document.getElementById('bulk-edit-count').textContent = this.selectedClients.size;
         
-        const select = document.getElementById('bulk-frecuencia-select');
-        select.innerHTML = '<option value="">-- Seleccionar existente --</option>' + 
+        // Populate existing frequencies
+        const selectFrec = document.getElementById('bulk-input-frecuencia');
+        selectFrec.innerHTML = '<option value="">-- Seleccionar existente --</option>' + 
             DataService.data.frecuencias.map(f => `<option value="${f.Nombre}">${f.Nombre}</option>`).join('');
         
-        document.getElementById('bulk-frecuencia-input').value = '';
-        document.getElementById('bulk-frecuencia-modal').style.display = 'flex';
+        // Reset all inputs and checkboxes
+        document.querySelectorAll('.bulk-check').forEach(cb => cb.checked = false);
+        document.querySelectorAll('[id^="bulk-input-"]').forEach(el => {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.value = '';
+            el.disabled = true;
+        });
+        
+        document.getElementById('bulk-edit-modal').style.display = 'flex';
     },
 
-    async submitBulkFrecuencia() {
-        const selectVal = document.getElementById('bulk-frecuencia-select').value;
-        const inputVal = document.getElementById('bulk-frecuencia-input').value.trim();
-        const nuevaFrecuencia = inputVal || selectVal;
+    async submitBulkEdit() {
+        const changes = {};
         
-        if (!nuevaFrecuencia) {
-            alert('Por favor, ingresá o seleccioná una frecuencia.');
+        if (document.getElementById('bulk-check-frecuencia').checked) {
+            changes.Frecuencia = document.getElementById('bulk-input-frecuencia-custom').value.trim() || document.getElementById('bulk-input-frecuencia').value;
+        }
+        if (document.getElementById('bulk-check-promotor').checked) {
+            changes.Promotor = document.getElementById('bulk-input-promotor').value.trim();
+        }
+        if (document.getElementById('bulk-check-merch').checked) {
+            changes.Merch = document.getElementById('bulk-input-merch').value.trim();
+        }
+        if (document.getElementById('bulk-check-prioridad').checked) {
+            changes.Prioridad = document.getElementById('bulk-input-prioridad').value.trim();
+        }
+        if (document.getElementById('bulk-check-notas').checked) {
+            changes.Notas = document.getElementById('bulk-input-notas').value.trim();
+        }
+
+        if (Object.keys(changes).length === 0) {
+            alert('No seleccionaste ningún campo para actualizar.');
             return;
         }
 
         const clientIds = Array.from(this.selectedClients);
         document.getElementById('global-loader').style.display = 'flex';
-        document.getElementById('bulk-frecuencia-modal').style.display = 'none';
+        document.getElementById('bulk-edit-modal').style.display = 'none';
         
         try {
-            await DataService.saveBulkClients(clientIds, nuevaFrecuencia);
+            await DataService.saveBulkClients(clientIds, changes);
             this.clearBulkSelection();
+            MapManager.updateMarkersVisualState();
             await this.refreshData();
         } catch (error) {
             alert(error.message);

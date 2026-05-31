@@ -352,7 +352,7 @@ const MapManager = {
             popupHtml += `</div>`;
             marker.bindPopup(popupHtml);
             
-            this.layers.clientMarkers.push({ marker, client: c });
+            this.layers.clientMarkers.push({ marker, client: c, popupHtml });
         });
 
         // Autocentrar si hay marcadores (sólo en la carga inicial)
@@ -380,6 +380,43 @@ const MapManager = {
                 if (!this.map.hasLayer(item.marker)) item.marker.addTo(this.map);
             } else {
                 if (this.map.hasLayer(item.marker)) this.map.removeLayer(item.marker);
+            }
+        });
+    },
+    updateMarkersVisualState() {
+        if (!window.UI) return;
+        this.layers.clientMarkers.forEach(item => {
+            const isSelected = UI.selectedClients.has(item.client.ID);
+            const iconDiv = item.marker.getElement();
+            if (iconDiv) {
+                const markerInner = iconDiv.querySelector('.custom-marker');
+                if (markerInner) {
+                    if (isSelected) {
+                        markerInner.style.boxShadow = '0 0 0 3px #10b981, 0 0 10px rgba(16, 185, 129, 0.8)';
+                        markerInner.style.transform = 'scale(1.1)';
+                        markerInner.style.zIndex = '1000';
+                    } else {
+                        markerInner.style.boxShadow = '';
+                        markerInner.style.transform = '';
+                        markerInner.style.zIndex = '';
+                    }
+                }
+            }
+            
+            // Adjust popup behavior: if we have selected clients, clicking a marker should toggle it instead of opening popup
+            if (UI.selectedClients.size > 0) {
+                item.marker.closePopup();
+                item.marker.unbindPopup();
+                item.marker.off('click');
+                item.marker.on('click', (e) => {
+                    UI.toggleClientSelectionFromMap(item.client.ID, null);
+                });
+            } else {
+                // Restore standard popup behavior
+                item.marker.off('click');
+                if (!item.marker.getPopup()) {
+                    item.marker.bindPopup(item.popupHtml);
+                }
             }
         });
     },

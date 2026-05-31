@@ -211,11 +211,10 @@ const DataService = {
         }
     },
 
-    async saveBulkClients(clientIds, nuevaFrecuencia) {
+    async saveBulkClients(clientIds, changes) {
         const apiUrl = window.EMCALA_API_URL;
         if (!apiUrl) throw new Error("No hay URL configurada en window.EMCALA_API_URL.");
         
-        // Find clients by ID to get their original codigo/nombre
         const codigos = [];
         const nombres = [];
         
@@ -232,10 +231,14 @@ const DataService = {
         
         try {
             const params = new URLSearchParams();
-            params.append('action', 'bulk_edit_frecuencia');
-            params.append('frecuencia', nuevaFrecuencia);
+            params.append('action', 'bulk_edit');
             params.append('codigos', codigos.join('|||'));
             params.append('nombres', nombres.join('|||'));
+            
+            // Adjuntamos solo los campos que vienen en changes
+            for (const key in changes) {
+                params.append(key, changes[key]);
+            }
             
             const response = await fetch(`${apiUrl}?${params.toString()}`, {
                 method: 'GET'
