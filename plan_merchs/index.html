@@ -296,48 +296,33 @@
             </div>
             <div class="modal-body">
                 <p style="margin-top:0; font-size:14px; color:var(--text-muted);">
-                    Se actualizarán <strong id="bulk-edit-count">0</strong> clientes. Seleccioná qué campos querés sobreescribir.
+                    Se actualizarán <strong id="bulk-edit-count">0</strong> clientes. Los campos que dejes en blanco NO se modificarán.
                 </p>
                 
-                <div class="form-group" style="margin-bottom: 15px; display:flex; align-items:center; gap:10px;">
-                    <input type="checkbox" id="bulk-check-frecuencia" class="bulk-check">
-                    <div style="flex:1;">
-                        <label style="margin:0 0 4px 0;">Frecuencia</label>
-                        <select id="bulk-input-frecuencia" class="config-input" disabled></select>
-                        <input type="text" id="bulk-input-frecuencia-custom" class="config-input" placeholder="Personalizada..." style="margin-top:4px;" disabled />
-                    </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="margin:0 0 4px 0;">Frecuencia</label>
+                    <select id="bulk-input-frecuencia" class="config-input"></select>
+                    <input type="text" id="bulk-input-frecuencia-custom" class="config-input" placeholder="O escribí una personalizada..." style="margin-top:4px;" />
                 </div>
 
-                <div class="form-group" style="margin-bottom: 15px; display:flex; align-items:center; gap:10px;">
-                    <input type="checkbox" id="bulk-check-promotor" class="bulk-check">
-                    <div style="flex:1;">
-                        <label style="margin:0 0 4px 0;">Promotor</label>
-                        <input type="text" id="bulk-input-promotor" class="config-input" disabled>
-                    </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="margin:0 0 4px 0;">Promotor</label>
+                    <input type="text" id="bulk-input-promotor" class="config-input" placeholder="Nombre del promotor...">
                 </div>
 
-                <div class="form-group" style="margin-bottom: 15px; display:flex; align-items:center; gap:10px;">
-                    <input type="checkbox" id="bulk-check-merch" class="bulk-check">
-                    <div style="flex:1;">
-                        <label style="margin:0 0 4px 0;">Merchandiser</label>
-                        <input type="text" id="bulk-input-merch" class="config-input" disabled>
-                    </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="margin:0 0 4px 0;">Merchandiser</label>
+                    <input type="text" id="bulk-input-merch" class="config-input" placeholder="Nombre del merch...">
                 </div>
 
-                <div class="form-group" style="margin-bottom: 15px; display:flex; align-items:center; gap:10px;">
-                    <input type="checkbox" id="bulk-check-prioridad" class="bulk-check">
-                    <div style="flex:1;">
-                        <label style="margin:0 0 4px 0;">Prioridad</label>
-                        <input type="text" id="bulk-input-prioridad" class="config-input" disabled>
-                    </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="margin:0 0 4px 0;">Prioridad</label>
+                    <input type="text" id="bulk-input-prioridad" class="config-input" placeholder="Ej: 1, 2...">
                 </div>
 
-                <div class="form-group" style="margin-bottom: 15px; display:flex; align-items:flex-start; gap:10px;">
-                    <input type="checkbox" id="bulk-check-notas" class="bulk-check" style="margin-top:8px;">
-                    <div style="flex:1;">
-                        <label style="margin:0 0 4px 0;">Notas</label>
-                        <textarea id="bulk-input-notas" class="config-input" rows="2" style="width:100%; resize:vertical; background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm); padding:10px;" disabled></textarea>
-                    </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="margin:0 0 4px 0;">Notas</label>
+                    <textarea id="bulk-input-notas" class="config-input" rows="2" style="width:100%; resize:vertical; background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm); padding:10px;" placeholder="Agregar notas..."></textarea>
                 </div>
             </div>
             <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end;">

@@ -108,17 +108,6 @@ const UI = {
         const bulkCancel = document.getElementById('bulk-modal-cancel');
         if (bulkCancel) bulkCancel.onclick = () => document.getElementById('bulk-edit-modal').style.display = 'none';
         document.getElementById('bulk-modal-save').onclick = () => this.submitBulkEdit();
-
-        // Bulk Edit Modal Checkbox Toggles
-        document.querySelectorAll('.bulk-check').forEach(cb => {
-            cb.onchange = (e) => {
-                const idStr = e.target.id.replace('bulk-check-', '');
-                const input1 = document.getElementById(`bulk-input-${idStr}`);
-                if (input1) input1.disabled = !e.target.checked;
-                const input2 = document.getElementById(`bulk-input-${idStr}-custom`);
-                if (input2) input2.disabled = !e.target.checked;
-            };
-        });
     },
 
     // --- DATA RENDERING ---
@@ -224,6 +213,7 @@ const UI = {
         list.innerHTML = clients.map(c => {
             const merch = DataService.getMerch(c.MerchID);
             const promotor = DataService.getPromotor(c.PromotorID);
+            const freqObj = DataService.getFrecuencia(c.Frecuencia);
             const isChecked = this.selectedClients.has(c.ID) ? 'checked' : '';
             return `<div class="client-item" data-lat="${c.Latitud}" data-lng="${c.Longitud}">
                 <input type="checkbox" class="client-checkbox" value="${c.ID}" ${isChecked}>
@@ -234,6 +224,7 @@ const UI = {
                     </div>
                     <div class="client-item-addr">${c.Direccion || ''}</div>
                     <div class="client-item-tags">
+                        ${freqObj ? `<span class="client-tag" style="background:${freqObj.Color}; display:flex; align-items:center; gap:4px;"><i class="fas fa-calendar-alt" style="font-size:9px;"></i> ${freqObj.Nombre}</span>` : ''}
                         ${promotor ? `<span class="client-tag" style="background:${promotor.Color}">${promotor.Nombre}</span>` : ''}
                         ${merch ? `<span class="client-tag" style="background:${merch.Color}">${merch.Nombre}</span>` : ''}
                     </div>
@@ -346,11 +337,9 @@ const UI = {
         selectFrec.innerHTML = '<option value="">-- Seleccionar existente --</option>' + 
             DataService.data.frecuencias.map(f => `<option value="${f.Nombre}">${f.Nombre}</option>`).join('');
         
-        // Reset all inputs and checkboxes
-        document.querySelectorAll('.bulk-check').forEach(cb => cb.checked = false);
+        // Reset all inputs
         document.querySelectorAll('[id^="bulk-input-"]').forEach(el => {
-            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.value = '';
-            el.disabled = true;
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') el.value = '';
         });
         
         document.getElementById('bulk-edit-modal').style.display = 'flex';
@@ -359,24 +348,26 @@ const UI = {
     async submitBulkEdit() {
         const changes = {};
         
-        if (document.getElementById('bulk-check-frecuencia').checked) {
-            changes.Frecuencia = document.getElementById('bulk-input-frecuencia-custom').value.trim() || document.getElementById('bulk-input-frecuencia').value;
-        }
-        if (document.getElementById('bulk-check-promotor').checked) {
-            changes.Promotor = document.getElementById('bulk-input-promotor').value.trim();
-        }
-        if (document.getElementById('bulk-check-merch').checked) {
-            changes.Merch = document.getElementById('bulk-input-merch').value.trim();
-        }
-        if (document.getElementById('bulk-check-prioridad').checked) {
-            changes.Prioridad = document.getElementById('bulk-input-prioridad').value.trim();
-        }
-        if (document.getElementById('bulk-check-notas').checked) {
-            changes.Notas = document.getElementById('bulk-input-notas').value.trim();
-        }
+        const frecCustom = document.getElementById('bulk-input-frecuencia-custom').value.trim();
+        const frecSelect = document.getElementById('bulk-input-frecuencia').value;
+        const finalFrec = frecCustom || frecSelect;
+        
+        if (finalFrec) changes.Frecuencia = finalFrec;
+        
+        const promoVal = document.getElementById('bulk-input-promotor').value.trim();
+        if (promoVal) changes.Promotor = promoVal;
+
+        const merchVal = document.getElementById('bulk-input-merch').value.trim();
+        if (merchVal) changes.Merch = merchVal;
+
+        const prioVal = document.getElementById('bulk-input-prioridad').value.trim();
+        if (prioVal) changes.Prioridad = prioVal;
+
+        const notasVal = document.getElementById('bulk-input-notas').value.trim();
+        if (notasVal) changes.Notas = notasVal;
 
         if (Object.keys(changes).length === 0) {
-            alert('No seleccionaste ningún campo para actualizar.');
+            alert('No ingresaste ningún valor para actualizar.');
             return;
         }
 
