@@ -185,6 +185,14 @@
         <main id="map-container">
             <div id="map"></div>
             
+            <!-- Loading Overlay -->
+            <div id="map-loading" class="map-loading">
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <p>Cargando mapa...</p>
+                </div>
+            </div>
+            
             <div class="map-controls">
                 <!-- Capas Base -->
                 <div class="layer-control">
@@ -343,6 +351,13 @@
     <div id="config-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> Configuración Visual</h2>
+                <button class="modal-close" onclick="document.getElementById('config-modal').classList.remove('active')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                
                 <div class="config-section">
                     <h3>Mapa</h3>
                     <div class="input-group">
