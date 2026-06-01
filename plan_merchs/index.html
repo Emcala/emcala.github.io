@@ -211,9 +211,14 @@
                 <div style="flex:1;">
                     <span id="bulk-count">0</span> clientes seleccionados
                 </div>
-                <button id="btn-bulk-clear" class="btn" title="Limpiar Selección" style="color:var(--text-muted); background:none; border:none; padding:4px;">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div style="display:flex; gap:8px;">
+                    <button id="btn-bulk-edit" class="btn" title="Edición Masiva" style="background:var(--accent-primary); color:white; border:none; padding:4px 8px; border-radius:4px;">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button id="btn-bulk-clear" class="btn" title="Limpiar Selección" style="color:var(--text-muted); background:none; border:none; padding:4px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
         </main>
     </div>
@@ -352,7 +357,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-cog"></i> Configuración Visual</h2>
-                <button class="modal-close" onclick="document.getElementById('config-modal').classList.remove('active')">
+                <button class="modal-close" id="modal-close">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
