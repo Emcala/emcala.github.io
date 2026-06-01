@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=2">
+    <link rel="stylesheet" href="styles.css?v=3">
     <!-- FontAwesome -->
     <script src="../emcala-auth.js?v=2"></script>
 </head>
@@ -110,12 +110,15 @@
 
             <!-- Tab: Clients List -->
             <div class="tab-content" id="tab-clients">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="search-clients" placeholder="Buscar cliente...">
-                    <button class="clear-search" id="clear-search" title="Limpiar">
-                        <i class="fas fa-times"></i>
-                    </button>
+                <div class="search-container" style="position: relative;">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-clients" placeholder="Buscar cliente, promotor, frec..." autocomplete="off">
+                        <button class="clear-search" id="clear-search" title="Limpiar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="search-suggestions" class="search-suggestions" style="display:none;"></div>
                 </div>
                 <button id="btn-new-client" class="btn primary-btn" style="width: 100%; margin-bottom: 10px;"><i class="fas fa-plus"></i> Nuevo Cliente</button>
                 <div class="client-count" id="client-count">0 clientes</div>
@@ -168,8 +171,8 @@
                 </div>
 
                 <div class="print-actions">
-                    <button class="btn-primary" id="btn-print">
-                        <i class="fas fa-print"></i> Imprimir
+                    <button class="btn primary-btn" id="btn-print" style="width: 100%; margin-top: 15px;">
+                        <i class="fas fa-print"></i> Imprimir Planilla
                     </button>
                     <button class="btn-secondary" id="btn-export-csv" style="width:100%; margin-top: 8px; justify-content: center;">
                         <i class="fas fa-file-csv"></i> Exportar CSV
@@ -516,7 +519,7 @@
     <!-- App JS -->
     <script src="data.js?v=6"></script>
     <script src="map.js?v=4"></script>
-    <script src="ui.js?v=5"></script>
+    <script src="ui.js?v=7"></script>
     <script src="app.js"></script>
     <script src="rebalance.js"></script>
 </body>

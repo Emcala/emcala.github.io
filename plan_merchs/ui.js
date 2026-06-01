@@ -56,11 +56,20 @@ const UI = {
         // Search
         const searchInput = document.getElementById('search-clients');
         const clearBtn = document.getElementById('clear-search');
+        
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                const sugg = document.getElementById('search-suggestions');
+                if (sugg) sugg.style.display = 'none';
+            }
+        });
+
         searchInput.oninput = () => {
             clearBtn.classList.toggle('visible', searchInput.value.length > 0);
-            this.filterClients(searchInput.value);
+            this.handleSearchInput(searchInput.value);
         };
-        clearBtn.onclick = () => { searchInput.value = ''; clearBtn.classList.remove('visible'); this.filterClients(''); };
+        clearBtn.onclick = () => { searchInput.value = ''; clearBtn.classList.remove('visible'); this.handleSearchInput(''); };
         // Toggle all
         document.getElementById('toggle-all-merchs').onclick = () => this.toggleAllMerchs();
         // Config
@@ -153,11 +162,14 @@ const UI = {
                     </div>`;
                 });
 
+                const freqObj = DataService.getFrecuencia(f);
+                const freqColor = freqObj ? freqObj.Color : '#9ca3af';
+
                 childrenHtml += `
                 <div class="tree-item">
                     <div class="tree-item-header" onclick="this.parentElement.classList.toggle('expanded')">
                         <i class="fas fa-chevron-right tree-item-icon"></i>
-                        <i class="fas fa-calendar-alt" style="color: var(--text-muted); font-size: 11px; margin-right: 6px;"></i>
+                        <span class="filter-color" style="background:${freqColor}; margin-right: 6px;"></span>
                         <span class="filter-name" style="font-size: 12px;">${f}</span>
                         <span class="filter-count">${fClients.length}</span>
                     </div>
@@ -277,11 +289,108 @@ const UI = {
         if (btn) btn.textContent = allActive ? 'Marcar Todos' : 'Desmarcar Todos';
     },
 
-    filterClients(query) {
+    handleSearchInput(query) {
         const q = query.toLowerCase().trim();
-        const filtered = q ? DataService.data.clientes.filter(c =>
-            c.Nombre.toLowerCase().includes(q) || (c.Direccion && c.Direccion.toLowerCase().includes(q))
-        ) : DataService.data.clientes;
+        const suggestionsBox = document.getElementById('search-suggestions');
+        
+        if (q.length === 0) {
+            suggestionsBox.style.display = 'none';
+            this.filterClients('');
+            return;
+        }
+
+        const suggestions = [];
+        const { clientes, promotores, merchandisers, frecuencias } = DataService.data;
+
+        // 1. Clientes (Max 5)
+        let clientCount = 0;
+        clientes.forEach(c => {
+            if (clientCount < 5 && (c.ID.toString().toLowerCase().includes(q) || c.Nombre.toLowerCase().includes(q))) {
+                suggestions.push({ type: 'cliente', text: c.Nombre, extra: c.ID, obj: c });
+                clientCount++;
+            }
+        });
+
+        // 2. Promotores
+        promotores.forEach(p => {
+            if (p.Nombre.toLowerCase().includes(q)) suggestions.push({ type: 'promotor', text: p.Nombre, obj: p });
+        });
+
+        // 3. Merchs
+        merchandisers.forEach(m => {
+            if (m.Nombre.toLowerCase().includes(q)) suggestions.push({ type: 'merch', text: m.Nombre, obj: m });
+        });
+
+        // 4. Frecuencias
+        frecuencias.forEach(f => {
+            if (f.Nombre.toLowerCase().includes(q) && f.Nombre !== 'Sin Frecuencia') {
+                suggestions.push({ type: 'frecuencia', text: f.Nombre, obj: f });
+            }
+        });
+
+        if (suggestions.length > 0) {
+            suggestionsBox.innerHTML = suggestions.map(s => {
+                let display = s.text;
+                if (s.type === 'cliente') display = `#${s.extra} - ${s.text}`;
+                return `<div class="search-suggestion-item" data-type="${s.type}" data-val="${s.text}" data-id="${s.extra || ''}">
+                    <span class="suggestion-type ${s.type}">${s.type}</span>
+                    <span style="font-size:11px;">${display}</span>
+                </div>`;
+            }).join('');
+            suggestionsBox.style.display = 'block';
+
+            suggestionsBox.querySelectorAll('.search-suggestion-item').forEach(item => {
+                item.onclick = () => {
+                    const type = item.dataset.type;
+                    const val = item.dataset.val;
+                    const id = item.dataset.id;
+                    suggestionsBox.style.display = 'none';
+                    
+                    if (type === 'cliente') {
+                        document.getElementById('search-clients').value = val;
+                        this.filterClients(val);
+                        const c = clientes.find(x => x.ID.toString() === id);
+                        if (c && !isNaN(c.Latitud) && window.MapManager) MapManager.flyToClient(parseFloat(c.Latitud), parseFloat(c.Longitud));
+                    } else {
+                        // Autocompletar con formato especial
+                        const tag = `${type}: ${val}`;
+                        document.getElementById('search-clients').value = tag;
+                        document.getElementById('clear-search').classList.add('visible');
+                        this.filterClients(tag);
+                    }
+                };
+            });
+        } else {
+            suggestionsBox.style.display = 'none';
+        }
+
+        // Siempre aplicar filtro en vivo mientras escribe
+        this.filterClients(query);
+    },
+
+    filterClients(query) {
+        let q = query.toLowerCase().trim();
+        let filtered = DataService.data.clientes;
+        
+        if (q) {
+            if (q.startsWith('promotor: ')) {
+                const name = q.replace('promotor: ', '').trim();
+                filtered = filtered.filter(c => c.Promotor.toLowerCase() === name);
+            } else if (q.startsWith('merch: ')) {
+                const name = q.replace('merch: ', '').trim();
+                filtered = filtered.filter(c => c.Merch.toLowerCase() === name);
+            } else if (q.startsWith('frecuencia: ')) {
+                const name = q.replace('frecuencia: ', '').trim();
+                filtered = filtered.filter(c => (c.Frecuencia || 'Sin Frecuencia').toLowerCase() === name);
+            } else {
+                filtered = filtered.filter(c =>
+                    c.Nombre.toLowerCase().includes(q) || 
+                    (c.Direccion && c.Direccion.toLowerCase().includes(q)) ||
+                    c.ID.toString().toLowerCase().includes(q) ||
+                    (c.Frecuencia && c.Frecuencia.toLowerCase().includes(q))
+                );
+            }
+        }
         this.renderClientList(filtered);
     },
 
