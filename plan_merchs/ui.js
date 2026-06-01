@@ -12,6 +12,12 @@ const UI = {
         this.initTheme();
         this.bindEvents();
         this.loadConfig();
+        
+        // Mobile: start with sidebar closed
+        if (window.innerWidth <= 768) {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.remove('sidebar-open');
+        }
     },
 
     initTheme() {

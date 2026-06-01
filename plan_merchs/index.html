@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=4">
+    <link rel="stylesheet" href="styles.css?v=5">
     <!-- FontAwesome -->
     <script src="../emcala-auth.js?v=2"></script>
 </head>
@@ -179,33 +179,33 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Bulk Actions Bar (Moved here to be globally visible in sidebar) -->
-            <div id="bulk-actions-bar" class="bulk-actions-bar" style="display:none;">
-                <span id="bulk-count">0 seleccionados</span>
-                <div style="display:flex; gap:8px;">
-                    <button id="btn-bulk-edit" class="btn" title="Edición Masiva">
-                        <i class="fas fa-edit"></i> Editar
-                    </button>
-                    <button id="btn-bulk-clear" class="btn" title="Limpiar Selección" style="color:var(--text-muted); background:none; border:none; padding:4px;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
         </aside>
 
         <!-- Map Container -->
         <main id="map-container">
             <div id="map"></div>
-
-
-
-            <!-- Loading Overlay -->
-            <div id="map-loading" class="map-loading">
-                <div class="loading-content">
-                    <div class="loading-spinner"></div>
-                    <p>Cargando mapa...</p>
+            
+            <div class="map-controls">
+                <!-- Capas Base -->
+                <div class="layer-control">
+                    <select id="map-style-select" class="layer-select" title="Estilo de Mapa">
+                        <!-- Opciones generadas en map.js -->
+                    </select>
                 </div>
+                <!-- Vista General -->
+                <button id="btn-fit-bounds" class="icon-btn float-btn" title="Centrar mapa en zonas">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+
+            <!-- Bulk Actions Bar -->
+            <div class="bulk-actions-bar" id="bulk-actions-bar" style="display:none;">
+                <div style="flex:1;">
+                    <span id="bulk-count">0</span> clientes seleccionados
+                </div>
+                <button id="btn-bulk-clear" class="btn" title="Limpiar Selección" style="color:var(--text-muted); background:none; border:none; padding:4px;">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </main>
     </div>
@@ -298,39 +298,43 @@
                 <button id="bulk-modal-close" class="modal-close"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <p style="margin-top:0; font-size:14px; color:var(--text-muted);">
-                    Se actualizarán <strong id="bulk-edit-count">0</strong> clientes. Los campos que dejes en blanco NO se modificarán.
+                <p style="margin-top:0; font-size:13px; color:var(--text-muted); line-height:1.4;">
+                    Se actualizarán <strong id="bulk-edit-count">0</strong> clientes seleccionados. <br>
+                    <span style="color:var(--warning);">¡Los campos que dejes vacíos NO se modificarán!</span>
                 </p>
                 
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="margin:0 0 4px 0;">Frecuencia</label>
-                    <select id="bulk-input-frecuencia" class="config-input"></select>
-                    <input type="text" id="bulk-input-frecuencia-custom" class="config-input" placeholder="O escribí una personalizada..." style="margin-top:4px;" />
-                </div>
+                <form id="bulk-edit-form">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Promotor</label>
+                            <input type="text" id="bulk-promotor" class="config-input" placeholder="(sin cambios)">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Merchandiser</label>
+                            <input type="text" id="bulk-merch" class="config-input" placeholder="(sin cambios)">
+                        </div>
+                    </div>
 
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="margin:0 0 4px 0;">Promotor</label>
-                    <input type="text" id="bulk-input-promotor" class="config-input" placeholder="Nombre del promotor...">
-                </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Frecuencia</label>
+                            <input type="text" id="bulk-frecuencia" class="config-input" placeholder="(sin cambios)">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Prioridad</label>
+                            <input type="text" id="bulk-prioridad" class="config-input" placeholder="(sin cambios)">
+                        </div>
+                    </div>
 
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="margin:0 0 4px 0;">Merchandiser</label>
-                    <input type="text" id="bulk-input-merch" class="config-input" placeholder="Nombre del merch...">
-                </div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="margin:0 0 4px 0;">Prioridad</label>
-                    <input type="text" id="bulk-input-prioridad" class="config-input" placeholder="Ej: 1, 2...">
-                </div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="margin:0 0 4px 0;">Notas</label>
-                    <textarea id="bulk-input-notas" class="config-input" rows="2" style="width:100%; resize:vertical; background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm); padding:10px;" placeholder="Agregar notas..."></textarea>
-                </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Notas</label>
+                        <textarea id="bulk-notas" class="config-input" rows="2" placeholder="(sin cambios)" style="width:100%; resize:vertical; background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm); padding:10px;"></textarea>
+                    </div>
+                </form>
             </div>
-            <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end;">
-                <button class="btn secondary-btn" id="bulk-modal-cancel" style="margin-right: 10px;">Cancelar</button>
-                <button class="btn primary-btn" id="bulk-modal-save">Guardar Cambios</button>
+            <div class="modal-footer">
+                <button type="button" class="btn secondary-btn" id="bulk-modal-cancel">Cancelar</button>
+                <button type="button" class="btn primary-btn" id="bulk-modal-save"><i class="fas fa-save"></i> Aplicar a Todos</button>
             </div>
         </div>
     </div>
@@ -339,14 +343,6 @@
     <div id="config-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h2><i class="fas fa-cog"></i> Configuración</h2>
-                <button class="modal-close" id="modal-close">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <!-- Sheets config removed as it is now hardcoded -->
-
                 <div class="config-section">
                     <h3>Mapa</h3>
                     <div class="input-group">
@@ -519,7 +515,7 @@
     <!-- App JS -->
     <script src="data.js?v=6"></script>
     <script src="map.js?v=4"></script>
-    <script src="ui.js?v=7"></script>
+    <script src="ui.js?v=8"></script>
     <script src="app.js"></script>
     <script src="rebalance.js"></script>
 </body>
