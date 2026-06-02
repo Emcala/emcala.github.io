@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Dashboard Â· Emcala</title>
+<title>Dashboard · Emcala</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500;600&display=swap');
 
@@ -174,31 +174,31 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
 
 <div id="page-tabs">
   <button class="ptab active" data-page="1">Mensual</button>
-  <button class="ptab" data-page="2">DÃ­as de Visita</button>
+  <button class="ptab" data-page="2">Días de Visita</button>
   <button class="ptab" data-page="3">Canal</button>
   <button class="ptab" data-page="4">Cervezas</button>
   <button class="ptab" data-page="5">NABS</button>
   <button class="ptab" data-page="6">Ranking</button>
   <button class="ptab" data-page="7">CRM</button>`n  `n  <div style="flex:1"></div>`n  <div id="emcala-user-badge" style="display:flex;align-items:center;padding-right:10px;"></div>`n</div>
 
-<!-- â•â•â• PAGE 1: MENSUAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══ PAGE 1: MENSUAL ═══════════════════════════════════════ -->
 <div class="page active" id="pg1">
   <div class="hdr">
     <h1>EMCALA</h1>
     <div style="display:flex;align-items:center;gap:5px">
-      <label class="fbtn">ðŸ“‚ Cargar carpeta<input type="file" id="folder-input" webkitdirectory accept=".csv" multiple></label>
+      <label class="fbtn">📂 Cargar carpeta<input type="file" id="folder-input" webkitdirectory accept=".csv" multiple></label>
       <span class="fst pend" id="s25">Sin archivos</span>
-      <label class="fbtn" style="margin-left:4px;">ðŸ“‹ Maestro<input type="file" id="maestro-input" accept=".xlsx,.xls"></label>
+      <label class="fbtn" style="margin-left:4px;">📋 Maestro<input type="file" id="maestro-input" accept=".xlsx,.xls"></label>
       <span class="fst pend" id="s-maestro">Sin maestro</span>
     </div>
     <div class="sep"></div>
-    <div class="un-wrap"><div class="un-btn" id="un-btn1"><span id="un-lbl1">Cervezas CMQ</span><span class="arr">â–¼</span></div><div class="un-dd" id="un-dd1"></div></div>
+    <div class="un-wrap"><div class="un-btn" id="un-btn1"><span id="un-lbl1">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd1"></div></div>
     <div class="sep"></div>
     <div class="sdv-group" id="sdv1"></div>
     <button class="tot-btn all" id="tot1">TODOS</button>
   </div>
   <div class="dmain">
-    <div class="up-state" id="up1"><div class="ico">ðŸ“Š</div><p>CargÃ¡ los archivos CSV para comenzar</p><small style="font-size:11px;opacity:.7">Separador ; Â· UTF-16</small></div>
+    <div class="up-state" id="up1"><div class="ico">📊</div><p>Cargá los archivos CSV para comenzar</p><small style="font-size:11px;opacity:.7">Separador ; · UTF-16</small></div>
     <div class="kpi-row" id="kpi1">
       <div class="kpi" id="k1-0"></div><div class="kpi" id="k1-1"></div>
       <div class="kpi" id="k1-2"></div><div class="kpi" id="k1-3"></div>
@@ -206,42 +206,42 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
     <div class="dbody" id="body1">
       <div class="lpanel">
         <div class="cc"><div class="cc-t"><span id="t1-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld1a"></div>2026</div></div></div><div class="cdiv" id="c1-hl"></div></div>
-        <div class="cc"><div class="cc-t"><span>CCC Â· Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld1b"></div>2026</div></div></div><div class="cdiv" id="c1-ccc"></div></div>
-        <div class="cc"><div class="cc-t"><span>Total Brand Distribution <span style="font-weight:400;font-size:9px;color:var(--muted)">CCCÃ—SKUs/PDV</span></span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld1c"></div>2026</div></div></div><div class="cdiv" id="c1-bd"></div></div>
+        <div class="cc"><div class="cc-t"><span>CCC · Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld1b"></div>2026</div></div></div><div class="cdiv" id="c1-ccc"></div></div>
+        <div class="cc"><div class="cc-t"><span>Total Brand Distribution <span style="font-weight:400;font-size:9px;color:var(--muted)">CCC×SKUs/PDV</span></span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld1c"></div>2026</div></div></div><div class="cdiv" id="c1-bd"></div></div>
       </div>
       <div class="rpanel">
         <div class="rrow">
-          <div class="cc"><div class="cc-t" id="t1-ytd-hl">HL Â· YTD vs LYTD</div><div class="cdiv" id="c1-ytd-hl"></div></div>
-          <div class="cc"><div class="cc-t" id="t1-comp-hl">HL Â· Comparativa</div><div class="cdiv" id="c1-comp-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t1-ytd-hl">HL · YTD vs LYTD</div><div class="cdiv" id="c1-ytd-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t1-comp-hl">HL · Comparativa</div><div class="cdiv" id="c1-comp-hl"></div></div>
         </div>
         <div class="rrow">
-          <div class="cc"><div class="cc-t">CCC Â· CCC vs CNC</div><div class="cdiv" id="c1-cnc"></div></div>
-          <div class="cc"><div class="cc-t">CCC Â· Comparativa</div><div class="cdiv" id="c1-comp-ccc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · CCC vs CNC</div><div class="cdiv" id="c1-cnc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · Comparativa</div><div class="cdiv" id="c1-comp-ccc"></div></div>
         </div>
         <div class="rrow">
-          <div class="cc"><div class="cc-t">TBD Â· YTD vs LYTD</div><div class="cdiv" id="c1-ytd-bd"></div></div>
-          <div class="cc"><div class="cc-t">TBD Â· Comparativa</div><div class="cdiv" id="c1-comp-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · YTD vs LYTD</div><div class="cdiv" id="c1-ytd-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · Comparativa</div><div class="cdiv" id="c1-comp-bd"></div></div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- â•â•â• PAGE 2: DÃAS DE VISITA â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══ PAGE 2: DÍAS DE VISITA ════════════════════════════════ -->
 <div class="page" id="pg2">
   <div class="hdr">
-    <div class="un-wrap"><div class="un-btn" id="un-btn2"><span id="un-lbl2">Cervezas CMQ</span><span class="arr">â–¼</span></div><div class="un-dd" id="un-dd2"></div></div>
+    <div class="un-wrap"><div class="un-btn" id="un-btn2"><span id="un-lbl2">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd2"></div></div>
     <div class="sep"></div>
     <div class="sdv-group" id="sdv2"></div>
     <button class="tot-btn all" id="tot2">TODOS</button>
     <div class="sep"></div>
     <div class="freq-tools">
       <div id="freq-anchors"></div>
-      <button type="button" class="tot-btn all" id="freq-todos-btn" title="1Âª vez: selecciona todas las frecuencias Â· 2Âª vez: limpia la selecciÃ³n">TODOS</button>
+      <button type="button" class="tot-btn all" id="freq-todos-btn" title="1ª vez: selecciona todas las frecuencias · 2ª vez: limpia la selección">TODOS</button>
     </div>
   </div>
   <div class="dmain">
-    <div class="up-state" id="up2"><div class="ico">ðŸ“†</div><p>CargÃ¡ los CSV en la pestaÃ±a Mensual primero</p></div>
+    <div class="up-state" id="up2"><div class="ico">📆</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
     <div class="kpi-row" id="kpi2">
       <div class="kpi" id="k2-0"></div><div class="kpi" id="k2-1"></div>
       <div class="kpi" id="k2-2"></div><div class="kpi" id="k2-3"></div>
@@ -250,31 +250,31 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
     <div class="dbody" id="body2">
       <div class="lpanel">
         <div class="cc"><div class="cc-t"><span id="t2-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld2a"></div>2026</div></div></div><div class="cdiv" id="c2-hl"></div></div>
-        <div class="cc"><div class="cc-t"><span id="t2-ccc">CCC Â· Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld2b"></div>2026</div></div></div><div class="cdiv" id="c2-ccc"></div></div>
+        <div class="cc"><div class="cc-t"><span id="t2-ccc">CCC · Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld2b"></div>2026</div></div></div><div class="cdiv" id="c2-ccc"></div></div>
         <div class="cc"><div class="cc-t"><span>Total Brand Distribution</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld2c"></div>2026</div></div></div><div class="cdiv" id="c2-bd"></div></div>
       </div>
       <div class="rpanel">
         <div class="rrow">
-          <div class="cc"><div class="cc-t" id="t2-ytd-hl">HL Â· YTD vs LYTD</div><div class="cdiv" id="c2-ytd-hl"></div></div>
-          <div class="cc"><div class="cc-t" id="t2-comp-hl">HL Â· Comparativa</div><div class="cdiv" id="c2-comp-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t2-ytd-hl">HL · YTD vs LYTD</div><div class="cdiv" id="c2-ytd-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t2-comp-hl">HL · Comparativa</div><div class="cdiv" id="c2-comp-hl"></div></div>
         </div>
         <div class="rrow">
-          <div class="cc"><div class="cc-t">CCC Â· CCC vs CNC</div><div class="cdiv" id="c2-cnc"></div></div>
-          <div class="cc"><div class="cc-t">CCC Â· Comparativa</div><div class="cdiv" id="c2-comp-ccc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · CCC vs CNC</div><div class="cdiv" id="c2-cnc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · Comparativa</div><div class="cdiv" id="c2-comp-ccc"></div></div>
         </div>
         <div class="rrow">
-          <div class="cc"><div class="cc-t">TBD Â· YTD vs LYTD</div><div class="cdiv" id="c2-ytd-bd"></div></div>
-          <div class="cc"><div class="cc-t">TBD Â· Comparativa</div><div class="cdiv" id="c2-comp-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · YTD vs LYTD</div><div class="cdiv" id="c2-ytd-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · Comparativa</div><div class="cdiv" id="c2-comp-bd"></div></div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- â•â•â• PAGE 3: CANAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══ PAGE 3: CANAL ═════════════════════════════════════════ -->
 <div class="page" id="pg3">
   <div class="hdr">
-    <div class="un-wrap"><div class="un-btn" id="un-btn3"><span id="un-lbl3">Cervezas CMQ</span><span class="arr">â–¼</span></div><div class="un-dd" id="un-dd3"></div></div>
+    <div class="un-wrap"><div class="un-btn" id="un-btn3"><span id="un-lbl3">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd3"></div></div>
     <div class="sep"></div>
     <div class="sdv-group" id="sdv3"></div>
     <button class="tot-btn all" id="tot3">TODOS</button>
@@ -290,7 +290,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
     </div>
   </div>
   <div class="dmain">
-    <div class="up-state" id="up3"><div class="ico">ðŸ“Š</div><p>CargÃ¡ los CSV en la pestaÃ±a Mensual primero</p></div>
+    <div class="up-state" id="up3"><div class="ico">📊</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
     <div class="kpi-row" id="kpi3">
       <div class="kpi" id="k3-0"></div><div class="kpi" id="k3-1"></div>
       <div class="kpi" id="k3-2"></div><div class="kpi" id="k3-3"></div>
@@ -298,49 +298,49 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
     <div class="dbody" id="body3">
       <div class="lpanel">
         <div class="cc"><div class="cc-t"><span id="t3-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld3a"></div>2026</div></div></div><div class="cdiv" id="c3-hl"></div></div>
-        <div class="cc"><div class="cc-t"><span>CCC Â· Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld3b"></div>2026</div></div></div><div class="cdiv" id="c3-ccc"></div></div>
+        <div class="cc"><div class="cc-t"><span>CCC · Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld3b"></div>2026</div></div></div><div class="cdiv" id="c3-ccc"></div></div>
         <div class="cc"><div class="cc-t"><span>Total Brand Distribution</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld3c"></div>2026</div></div></div><div class="cdiv" id="c3-bd"></div></div>
       </div>
       <div class="rpanel">
         <div class="rrow">
-          <div class="cc"><div class="cc-t" id="t3-ytd-hl">HL Â· YTD vs LYTD</div><div class="cdiv" id="c3-ytd-hl"></div></div>
-          <div class="cc"><div class="cc-t" id="t3-comp-hl">HL Â· Comparativa</div><div class="cdiv" id="c3-comp-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t3-ytd-hl">HL · YTD vs LYTD</div><div class="cdiv" id="c3-ytd-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t3-comp-hl">HL · Comparativa</div><div class="cdiv" id="c3-comp-hl"></div></div>
         </div>
         <div class="rrow">
-          <div class="cc"><div class="cc-t">CCC Â· CCC vs CNC</div><div class="cdiv" id="c3-cnc"></div></div>
-          <div class="cc"><div class="cc-t">CCC Â· Comparativa</div><div class="cdiv" id="c3-comp-ccc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · CCC vs CNC</div><div class="cdiv" id="c3-cnc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · Comparativa</div><div class="cdiv" id="c3-comp-ccc"></div></div>
         </div>
         <div class="rrow">
-          <div class="cc"><div class="cc-t">TBD Â· YTD vs LYTD</div><div class="cdiv" id="c3-ytd-bd"></div></div>
-          <div class="cc"><div class="cc-t">TBD Â· Comparativa</div><div class="cdiv" id="c3-comp-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · YTD vs LYTD</div><div class="cdiv" id="c3-ytd-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · Comparativa</div><div class="cdiv" id="c3-comp-bd"></div></div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- â•â•â• PAGE 4: CERVEZAS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══ PAGE 4: CERVEZAS ═══════════════════════════════════ -->
 <div class="page" id="pg4">
   <div class="hdr">
     <div class="sdv-group" id="sdv4"></div>
     <button class="tot-btn all" id="tot4">TODOS</button>
     <div class="sep"></div>
     <div class="sdv-wrap" id="cal-wrap">
-      <button class="sdv-btn all" id="cal-drop-btn">Calibres <span class="chv">â–¼</span></button>
+      <button class="sdv-btn all" id="cal-drop-btn">Calibres <span class="chv">▼</span></button>
       <div class="promo-panel" id="cal-panel">
         <div class="promo-hdr" id="cal-hdr-all" style="cursor:pointer"></div>
       </div>
     </div>
     <div class="sep"></div>
     <div class="sdv-wrap" id="marca-wrap">
-      <button class="sdv-btn all" id="marca-drop-btn">Marcas <span class="chv">â–¼</span></button>
+      <button class="sdv-btn all" id="marca-drop-btn">Marcas <span class="chv">▼</span></button>
       <div class="promo-panel" id="marca-panel">
         <div class="promo-hdr" id="marca-hdr-all" style="cursor:pointer"></div>
       </div>
     </div>
   </div>
   <div class="dmain">
-    <div class="up-state" id="up4"><div class="ico">ðŸº</div><p>CargÃ¡ los CSV en la pestaÃ±a Mensual primero</p></div>
+    <div class="up-state" id="up4"><div class="ico">🍺</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
     <div class="kpi-row" id="kpi4">
       <div class="kpi" id="k4-0"></div><div class="kpi" id="k4-1"></div>
       <div class="kpi" id="k4-2"></div><div class="kpi" id="k4-3"></div>
@@ -353,31 +353,31 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
     <div class="dbody" id="body4" style="flex:0 0 70%;">
       <div class="lpanel">
         <div class="cc"><div class="cc-t"><span id="t4-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#f97316"></div>2026</div></div></div><div class="cdiv" id="c4-hl"></div></div>
-        <div class="cc"><div class="cc-t"><span>CCC Â· Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#f97316"></div>2026</div></div></div><div class="cdiv" id="c4-ccc"></div></div>
+        <div class="cc"><div class="cc-t"><span>CCC · Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#f97316"></div>2026</div></div></div><div class="cdiv" id="c4-ccc"></div></div>
         <div class="cc"><div class="cc-t"><span>Total Brand Distribution</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#f97316"></div>2026</div></div></div><div class="cdiv" id="c4-bd"></div></div>
       </div>
       <div class="rpanel">
         <div class="rrow">
-          <div class="cc"><div class="cc-t" id="t4-ytd-hl">HL Â· YTD vs LYTD</div><div class="cdiv" id="c4-ytd-hl"></div></div>
-          <div class="cc"><div class="cc-t" id="t4-comp-hl">HL Â· Comparativa</div><div class="cdiv" id="c4-comp-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t4-ytd-hl">HL · YTD vs LYTD</div><div class="cdiv" id="c4-ytd-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t4-comp-hl">HL · Comparativa</div><div class="cdiv" id="c4-comp-hl"></div></div>
         </div>
         <div class="rrow">
-          <div class="cc"><div class="cc-t">CCC Â· CCC vs CNC</div><div class="cdiv" id="c4-cnc"></div></div>
-          <div class="cc"><div class="cc-t">CCC Â· Comparativa</div><div class="cdiv" id="c4-comp-ccc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · CCC vs CNC</div><div class="cdiv" id="c4-cnc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · Comparativa</div><div class="cdiv" id="c4-comp-ccc"></div></div>
         </div>
         <div class="rrow">
-          <div class="cc"><div class="cc-t">TBD Â· YTD vs LYTD</div><div class="cdiv" id="c4-ytd-bd"></div></div>
-          <div class="cc"><div class="cc-t">TBD Â· Comparativa</div><div class="cdiv" id="c4-comp-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · YTD vs LYTD</div><div class="cdiv" id="c4-ytd-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · Comparativa</div><div class="cdiv" id="c4-comp-bd"></div></div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- â•â•â• PAGE 6: RANKING â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══ PAGE 6: RANKING ═══════════════════════════════════════ -->
 <div class="page" id="pg6">
   <div class="hdr">
-    <div class="un-wrap"><div class="un-btn" id="un-btn6"><span id="un-lbl6">Cervezas CMQ</span><span class="arr">â–¼</span></div><div class="un-dd" id="un-dd6"></div></div>
+    <div class="un-wrap"><div class="un-btn" id="un-btn6"><span id="un-lbl6">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd6"></div></div>
     <div class="sep"></div>
     <div class="sdv-group" id="sdv6"></div>
     <button class="tot-btn all" id="tot6">TODOS</button>
@@ -393,14 +393,14 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
     </div>
     <div class="sep"></div>
     <div class="sdv-wrap" id="marca6-wrap">
-      <button class="sdv-btn all" id="marca6-drop-btn">Marcas <span class="chv">â–¼</span></button>
+      <button class="sdv-btn all" id="marca6-drop-btn">Marcas <span class="chv">▼</span></button>
       <div class="promo-panel" id="marca6-panel">
         <div class="promo-hdr" id="marca6-hdr-all" style="cursor:pointer"></div>
       </div>
     </div>
     <div class="sep"></div>
     <div class="sdv-wrap" id="cal6-wrap">
-      <button class="sdv-btn all" id="cal6-drop-btn">Calibres <span class="chv">â–¼</span></button>
+      <button class="sdv-btn all" id="cal6-drop-btn">Calibres <span class="chv">▼</span></button>
       <div class="promo-panel" id="cal6-panel">
         <div class="promo-hdr" id="cal6-hdr-all" style="cursor:pointer"></div>
       </div>
@@ -414,20 +414,20 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
     </div>
   </div>
   <div class="dmain">
-    <div class="up-state" id="up6"><div class="ico">ðŸ†</div><p>CargÃ¡ los CSV en la pestaÃ±a Mensual primero</p></div>
+    <div class="up-state" id="up6"><div class="ico">🏆</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
     <div class="kpi-row" id="kpi6">
       <div class="kpi" id="k6-0"></div><div class="kpi" id="k6-1"></div>
       <div class="kpi" id="k6-2"></div><div class="kpi" id="k6-3"></div>
     </div>
     <div class="dbody" id="body6">
       <div class="lpanel" style="flex:0 0 65%;">
-        <div class="cc"><div class="cc-t"><span id="t6-hl">Volumen HL Â· Top 50</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld6a"></div>2026</div></div></div><div class="cdiv" id="c6-hl"></div></div>
+        <div class="cc"><div class="cc-t"><span id="t6-hl">Volumen HL · Top 50</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld6a"></div>2026</div></div></div><div class="cdiv" id="c6-hl"></div></div>
         <div class="cc"><div class="cc-t"><span>SKU/PDV Promedio</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld6b"></div>2026</div></div></div><div class="cdiv" id="c6-sku"></div></div>
         <div class="cc"><div class="cc-t"><span>Mix Top 50 sobre total</span></div><div class="cdiv" id="c6-mix"></div></div>
       </div>
       <div class="rpanel" style="overflow:hidden;">
         <div class="cc" style="flex:1;overflow:hidden;">
-          <div class="cc-t">Ranking Top 50 Â· Clientes</div>
+          <div class="cc-t">Ranking Top 50 · Clientes</div>
           <div style="overflow-y:auto;flex:1;min-height:0;">
             <table id="t6-tabla" style="width:100%;border-collapse:collapse;font-family:'Barlow Condensed',sans-serif;font-size:clamp(9px,0.65vw,12px);">
               <thead>
@@ -450,28 +450,28 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
   </div>
 </div>
 
-<!-- â•â•â• PAGE 5: NABS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══ PAGE 5: NABS ══════════════════════════════════════════ -->
 <div class="page" id="pg5">
   <div class="hdr">
     <div class="sdv-group" id="sdv5"></div>
     <button class="tot-btn all" id="tot5">TODOS</button>
     <div class="sep"></div>
     <div class="sdv-wrap" id="cal5-wrap">
-      <button class="sdv-btn all" id="cal5-drop-btn">Calibres <span class="chv">â–¼</span></button>
+      <button class="sdv-btn all" id="cal5-drop-btn">Calibres <span class="chv">▼</span></button>
       <div class="promo-panel" id="cal5-panel">
         <div class="promo-hdr" id="cal5-hdr-all" style="cursor:pointer"></div>
       </div>
     </div>
     <div class="sep"></div>
     <div class="sdv-wrap" id="marca5-wrap">
-      <button class="sdv-btn all" id="marca5-drop-btn">Marcas <span class="chv">â–¼</span></button>
+      <button class="sdv-btn all" id="marca5-drop-btn">Marcas <span class="chv">▼</span></button>
       <div class="promo-panel" id="marca5-panel">
         <div class="promo-hdr" id="marca5-hdr-all" style="cursor:pointer"></div>
       </div>
     </div>
   </div>
   <div class="dmain">
-    <div class="up-state" id="up5"><div class="ico">ðŸ¥¤</div><p>CargÃ¡ los CSV en la pestaÃ±a Mensual primero</p></div>
+    <div class="up-state" id="up5"><div class="ico">🥤</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
     <div class="kpi-row" id="kpi5">
       <div class="kpi" id="k5-0"></div><div class="kpi" id="k5-1"></div>
       <div class="kpi" id="k5-2"></div><div class="kpi" id="k5-3"></div>
@@ -479,50 +479,50 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
     <div class="dbody" id="body5">
       <div class="lpanel">
         <div class="cc"><div class="cc-t"><span id="t5-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#a855f7"></div>2026</div></div></div><div class="cdiv" id="c5-hl"></div></div>
-        <div class="cc"><div class="cc-t"><span>CCC Â· Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#a855f7"></div>2026</div></div></div><div class="cdiv" id="c5-ccc"></div></div>
+        <div class="cc"><div class="cc-t"><span>CCC · Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#a855f7"></div>2026</div></div></div><div class="cdiv" id="c5-ccc"></div></div>
         <div class="cc"><div class="cc-t"><span>Total Brand Distribution</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#a855f7"></div>2026</div></div></div><div class="cdiv" id="c5-bd"></div></div>
       </div>
       <div class="rpanel">
         <div class="rrow">
-          <div class="cc"><div class="cc-t">HL Â· YTD vs LYTD</div><div class="cdiv" id="c5-ytd-hl"></div></div>
-          <div class="cc"><div class="cc-t">HL Â· Comparativa</div><div class="cdiv" id="c5-comp-hl"></div></div>
+          <div class="cc"><div class="cc-t">HL · YTD vs LYTD</div><div class="cdiv" id="c5-ytd-hl"></div></div>
+          <div class="cc"><div class="cc-t">HL · Comparativa</div><div class="cdiv" id="c5-comp-hl"></div></div>
         </div>
         <div class="rrow">
-          <div class="cc"><div class="cc-t">CCC Â· CCC vs CNC</div><div class="cdiv" id="c5-cnc"></div></div>
-          <div class="cc"><div class="cc-t">CCC Â· Comparativa</div><div class="cdiv" id="c5-comp-ccc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · CCC vs CNC</div><div class="cdiv" id="c5-cnc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · Comparativa</div><div class="cdiv" id="c5-comp-ccc"></div></div>
         </div>
         <div class="rrow">
-          <div class="cc"><div class="cc-t">TBD Â· YTD vs LYTD</div><div class="cdiv" id="c5-ytd-bd"></div></div>
-          <div class="cc"><div class="cc-t">TBD Â· Comparativa</div><div class="cdiv" id="c5-comp-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · YTD vs LYTD</div><div class="cdiv" id="c5-ytd-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · Comparativa</div><div class="cdiv" id="c5-comp-bd"></div></div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- â•â•â• PAGE 7: CRM â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══ PAGE 7: CRM ════════════════════════════════════════════ -->
 <div class="page" id="pg7">
   <div class="hdr">
     <h1 style="font-size:clamp(12px,1vw,18px);">CRM</h1>
     <div class="sep"></div>
     <div class="crm-search-wrap">
-      <span class="ico-search">ðŸ”</span>
-      <input type="text" id="crm-input" placeholder="Buscar cliente por nombre o cÃ³digoâ€¦" autocomplete="off">
+      <span class="ico-search">🔍</span>
+      <input type="text" id="crm-input" placeholder="Buscar cliente por nombre o código…" autocomplete="off">
       <div class="crm-dd" id="crm-dd"></div>
     </div>
     <div class="sep"></div>
     <div class="crm-ficha" id="crm-ficha" style="display:none">
-      <span class="crm-tag" id="crm-tag-canal"><span>Canal: </span><span id="crm-canal">â€”</span></span>
-      <span class="crm-tag" id="crm-tag-sup"><span>Supervisor: </span><span id="crm-sup">â€”</span></span>
-      <span class="crm-tag" id="crm-tag-prom"><span>Promotor: </span><span id="crm-prom">â€”</span></span>
-      <span class="crm-tag" id="crm-tag-dias"><span>DÃ­as visita: </span><span id="crm-dias">â€”</span></span>
-      <span class="crm-tag" id="crm-tag-un"><span>UN: </span><span id="crm-un">â€”</span></span>
-      <span class="crm-tag" style="background:#d1fae5;border-color:#6ee7b7;"><span>Ãšltima compra: </span><span id="crm-fecha">â€”</span></span>
-      <span class="crm-tag" id="crm-tag-lic" style="display:none"><span>Lic. alcohol: </span><span id="crm-lic">â€”</span></span>
+      <span class="crm-tag" id="crm-tag-canal"><span>Canal: </span><span id="crm-canal">—</span></span>
+      <span class="crm-tag" id="crm-tag-sup"><span>Supervisor: </span><span id="crm-sup">—</span></span>
+      <span class="crm-tag" id="crm-tag-prom"><span>Promotor: </span><span id="crm-prom">—</span></span>
+      <span class="crm-tag" id="crm-tag-dias"><span>Días visita: </span><span id="crm-dias">—</span></span>
+      <span class="crm-tag" id="crm-tag-un"><span>UN: </span><span id="crm-un">—</span></span>
+      <span class="crm-tag" style="background:#d1fae5;border-color:#6ee7b7;"><span>Última compra: </span><span id="crm-fecha">—</span></span>
+      <span class="crm-tag" id="crm-tag-lic" style="display:none"><span>Lic. alcohol: </span><span id="crm-lic">—</span></span>
     </div>
   </div>
   <div class="dmain">
-    <div id="crm-empty"><div class="ico">ðŸ‘¤</div><p>BuscÃ¡ un cliente para ver su historial</p></div>
+    <div id="crm-empty"><div class="ico">👤</div><p>Buscá un cliente para ver su historial</p></div>
     <div class="kpi-row" id="kpi7" style="display:none">
       <div class="kpi" id="k7-0"></div><div class="kpi" id="k7-1"></div>
       <div class="kpi" id="k7-2"></div><div class="kpi" id="k7-3"></div>
@@ -531,17 +531,17 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;heigh
       <div class="lpanel">
         <div class="cc"><div class="cc-t"><span id="t7-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld7a" style="background:#10b981"></div>2026</div></div></div><div class="cdiv" id="c7-hl"></div></div>
         <div class="cc"><div class="cc-t"><span>SKU/PDV Mensual</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#10b981"></div>2026</div></div></div><div class="cdiv" id="c7-sku"></div></div>
-        <div class="cc"><div class="cc-t"><span>HL Â· Comparativa</span></div><div class="cdiv" id="c7-comp"></div></div>
+        <div class="cc"><div class="cc-t"><span>HL · Comparativa</span></div><div class="cdiv" id="c7-comp"></div></div>
       </div>
       <div class="rpanel" style="overflow:hidden;flex-direction:column;gap:6px;">
         <div class="cc" style="flex-shrink:0;padding:6px 10px;">
           <div class="cc-t" style="justify-content:flex-start;gap:8px;">
-            <span style="font-size:11px;color:var(--muted);font-weight:400;">Ãšltima compra:</span>
-            <span id="crm-last-fecha" style="font-size:14px;color:var(--acc);font-weight:900;">â€”</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:400;">Última compra:</span>
+            <span id="crm-last-fecha" style="font-size:14px;color:var(--acc);font-weight:900;">—</span>
           </div>
         </div>
         <div class="cc" style="flex:1;overflow:hidden;">
-          <div class="cc-t">Productos Â· Ãºltimo mes</div>
+          <div class="cc-t">Productos · último mes</div>
           <div style="overflow-y:auto;flex:1;min-height:0;">
             <table id="t7-prods" style="width:100%;border-collapse:collapse;font-family:'Barlow Condensed',sans-serif;font-size:clamp(9px,0.65vw,12px);">
               <thead>
@@ -573,9 +573,9 @@ if (!EmcalaAuth.requireLogin()) {
     EmcalaAuth.renderUserBadge('emcala-user-badge');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // CONSTANTS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const LABS  = MESES.map(m => m.slice(0,3).toUpperCase());
 
@@ -595,12 +595,12 @@ const SEGS = [
             'PEREYRA BRAIAN','SAN JUAN CARLOS','SANTILLAN SERGIO','TESEI ALEJANDRA','TORRES KARINA'] },
   { key:'eceiza', label:'Eceiza',     sdv:'ECEIZA KEVIN',
     promos:['DOMINGUEZ GONZALO','GEREZ JONATHAN','GONZALEZ ROBERTO','JOFRE LUCAS',
-            'LOPEZ PABLO','MENDOZA SERGIO','MUÃ‘OZ PAULA','REGNER LEANDRO','SCORNAVACHE WALTER'] },
+            'LOPEZ PABLO','MENDOZA SERGIO','MUÑOZ PAULA','REGNER LEANDRO','SCORNAVACHE WALTER'] },
   { key:'riera',  label:'Riera Sala', sdv:'RIERA SALA DANIELA',
     promos:['ASCONA MATIAS','BENITEZ NAHUEL','CESPEDES ENZO','FERREYRA TOBIAS',
             'FREDES CLAUDIA','GARCIA MAIRA','LEITES RODRIGO','LOPEZ ALEJANDRA','MORENO AGUSTINA'] },
   { key:'parodi', label:'Parodi',     sdv:'PARODI EZEQUIEL',
-    promos:['AVILA EZEQUIEL','DIAZ VALERIA','FERREYRA LEONARDO','MIÃ‘O RENZO','PERREN ANDREA','SANCHEZ ROCIO'] },
+    promos:['AVILA EZEQUIEL','DIAZ VALERIA','FERREYRA LEONARDO','MIÑO RENZO','PERREN ANDREA','SANCHEZ ROCIO'] },
   { key:'bdr',    label:'BDR',        sdv:'LEMOS MAY', sdv2Excl:'LEMOS PATRICIA',
     promos:['ANDUAGA SANTIAGO','GOMEZ GUSTAVO','VEDIA ELIZABETH'] },
   { key:'mayo',   label:'Mayo',       sdv:'LEMOS MAY', sdv2Only:'LEMOS PATRICIA',
@@ -612,16 +612,16 @@ const CART_PROMO = {
   'FERNANDEZ LUIS':197,'GALLO JONATHAN':160,'JAIMES EZEQUIEL':191,'MOURELLE ALFREDO':174,
   'PEREYRA BRAIAN':174,'SAN JUAN CARLOS':175,'SANTILLAN SERGIO':166,'TESEI ALEJANDRA':155,'TORRES KARINA':199,
   'DOMINGUEZ GONZALO':172,'GEREZ JONATHAN':182,'GONZALEZ ROBERTO':192,'JOFRE LUCAS':182,
-  'LOPEZ PABLO':169,'MENDOZA SERGIO':168,'MUÃ‘OZ PAULA':197,'REGNER LEANDRO':192,'SCORNAVACHE WALTER':183,
+  'LOPEZ PABLO':169,'MENDOZA SERGIO':168,'MUÑOZ PAULA':197,'REGNER LEANDRO':192,'SCORNAVACHE WALTER':183,
   'ASCONA MATIAS':143,'BENITEZ NAHUEL':156,'CESPEDES ENZO':136,'FERREYRA TOBIAS':192,
   'FREDES CLAUDIA':162,'GARCIA MAIRA':163,'LEITES RODRIGO':149,'LOPEZ ALEJANDRA':157,'MORENO AGUSTINA':153,
-  'AVILA EZEQUIEL':45,'DIAZ VALERIA':41,'FERREYRA LEONARDO':48,'MIÃ‘O RENZO':50,'PERREN ANDREA':53,'SANCHEZ ROCIO':42,
+  'AVILA EZEQUIEL':45,'DIAZ VALERIA':41,'FERREYRA LEONARDO':48,'MIÑO RENZO':50,'PERREN ANDREA':53,'SANCHEZ ROCIO':42,
   'ANDUAGA SANTIAGO':176,'GOMEZ GUSTAVO':172,'VEDIA ELIZABETH':49,'LEMOS PATRICIA':85
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// STATE â€” one object per page, fully isolated
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
+// STATE — one object per page, fully isolated
+// ═══════════════════════════════════════════════════════════════
 function initActivePromos() {
   const s = new Set();
   SEGS.forEach(seg => seg.promos.forEach(p => s.add(seg.key + '|' + p)));
@@ -635,9 +635,9 @@ const ST = {
 };
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // MAESTRO DE CLIENTES
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 let MAESTRO = {}; // { cli_code: { razon, promotor, dias, alta, anulado, licencia } }
 
 const DIAS_MAP = {
@@ -651,7 +651,7 @@ function normDiasMaestro(dias) {
 
 function loadMaestroXLSX(file) {
   const el = document.getElementById('s-maestro');
-  el.textContent = 'Cargandoâ€¦'; el.className = 'fst pend';
+  el.textContent = 'Cargando…'; el.className = 'fst pend';
   const reader = new FileReader();
   reader.onload = e => {
     try {
@@ -678,7 +678,7 @@ function loadMaestroXLSX(file) {
         count++;
       });
 
-      el.textContent = 'âœ“ ' + count.toLocaleString() + ' clientes activos';
+      el.textContent = '✓ ' + count.toLocaleString() + ' clientes activos';
       el.className = 'fst ok';
 
       // Recalcular cartera si hay datos cargados
@@ -703,7 +703,7 @@ function getCarteraMaestro(pg, freqExtra) {
   const pf = makePromoFilter(pg);
   if (!pf) return 0;
 
-  // Construir set de promotores activos segÃºn pg
+  // Construir set de promotores activos según pg
   const promosActivos = new Set();
   SEGS.forEach(seg => {
     seg.promos.forEach(p => {
@@ -725,16 +725,16 @@ function getCarteraMaestro(pg, freqExtra) {
   return count;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // DATA
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 let DATA = [];
 let CHS  = {}; // echarts instances
 let CH_OBS = {}; // one ResizeObserver per chart container
 const CACHE_DB_NAME = 'emcala-dashboard-db';
 const CACHE_STORE = 'snapshots';
 const CACHE_KEY = 'latest-data-v3';
-// Si querÃ©s autocarga total para tus jefes, ponÃ© aquÃ­ los 2 CSV "fijos".
+// Si querés autocarga total para tus jefes, poné aquí los 2 CSV "fijos".
 // Ejemplo: ['data/2025.csv', 'data/2026.csv']
 const AUTO_CSV_SOURCES = ['bases/2025.csv', 'bases/2026.csv'];
 
@@ -821,11 +821,11 @@ function parseCSV(txt) {
   const lines = txt.split(/\r?\n/).filter(l => l.trim());
   const H = lines[0].split(';').map(h => h.trim());
   const ix = n => H.indexOf(n);
-  const iS=ix('Sector de SupervisiÃ³n'), iS2=ix('Sector de Venta'),
-        iUN=ix('Unidad de Negocio'),    iA=ix('AÃ±o'), iM=ix('Mes'),
+  const iS=ix('Sector de Supervisión'), iS2=ix('Sector de Venta'),
+        iUN=ix('Unidad de Negocio'),    iA=ix('Año'), iM=ix('Mes'),
         iHL=ix('Cantidad Total en HL'), iB=ix('Cantidad Total en Bultos'),
-        iC=ix('CÃ³digo Cliente'),        iP=ix('CÃ³digo Producto'),
-        iD=ix('DÃ­as Visita'),           iCA=ix('Canal Ajustado'),
+        iC=ix('Código Cliente'),        iP=ix('Código Producto'),
+        iD=ix('Días Visita'),           iCA=ix('Canal Ajustado'),
         iCAL=ix('Calibre'),              iPROD=ix('Producto'),
         iMAR=ix('Marca'),             iCLI_N=ix('Cliente'),
         iFECHA=ix('Fecha');
@@ -861,7 +861,7 @@ document.getElementById('folder-input').addEventListener('change', e => {
   const files = [...e.target.files].filter(f => f.name.toLowerCase().endsWith('.csv'));
   if (!files.length) return;
   const el = document.getElementById('s25');
-  el.textContent = 'Cargandoâ€¦'; el.className = 'fst pend';
+  el.textContent = 'Cargando…'; el.className = 'fst pend';
   let loaded = 0;
   let totalRows = 0;
   files.forEach(file => {
@@ -877,8 +877,8 @@ document.getElementById('folder-input').addEventListener('change', e => {
       } catch(err) { console.error('Error en', file.name, err); }
       loaded++;
       if (loaded === files.length) {
-        const years = [...new Set(DATA.map(r=>r.yr))].sort().join(' Â· ');
-        el.textContent = 'âœ“ ' + years + ' Â· ' + totalRows.toLocaleString() + ' filas';
+        const years = [...new Set(DATA.map(r=>r.yr))].sort().join(' · ');
+        el.textContent = '✓ ' + years + ' · ' + totalRows.toLocaleString() + ' filas';
         el.className = 'fst ok';
         renderAll();
         saveDataCache();
@@ -888,9 +888,9 @@ document.getElementById('folder-input').addEventListener('change', e => {
   });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // PAGE TABS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 document.querySelectorAll('.ptab').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
@@ -902,9 +902,9 @@ document.querySelectorAll('.ptab').forEach(btn => {
   });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // UN DROPDOWNS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function mkUN(pg) {
   const dd = document.getElementById('un-dd'+pg);
   const btn = document.getElementById('un-btn'+pg);
@@ -942,9 +942,9 @@ document.addEventListener('click', () => {
   document.querySelectorAll('.sdv-btn').forEach(b => b.classList.remove('open'));
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // SDV DROPDOWNS WITH PROMOTER CHECKBOXES
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function mkSDV(pg) {
   const container = document.getElementById('sdv'+pg);
   const totBtn    = document.getElementById('tot'+pg);
@@ -969,7 +969,7 @@ function mkSDV(pg) {
 
     const btn   = document.createElement('button');
     btn.className = 'sdv-btn all';
-    btn.innerHTML = seg.label + ' <span class="chv">â–¼</span>';
+    btn.innerHTML = seg.label + ' <span class="chv">▼</span>';
     wrap.appendChild(btn);
 
     const panel = document.createElement('div');
@@ -1065,27 +1065,27 @@ function mkSDV(pg) {
 }
 [1,2,3].forEach(pg => mkSDV(pg));
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// FRECUENCIA (page 2) â€” dropdown estilo SDV, multi-selecciÃ³n
-// Claves = valor exacto normalizado de "DÃ­as Visita" en el CSV (comas o espacios)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
+// FRECUENCIA (page 2) — dropdown estilo SDV, multi-selección
+// Claves = valor exacto normalizado de "Días Visita" en el CSV (comas o espacios)
+// ═══════════════════════════════════════════════════════════════
 const FREQ_LIST = [
   { key: 'TODOS', label: 'Todos' },
   { key: 'LU', label: 'LU' },
-  { key: 'LU,JU', label: 'LU Â· JU' },
+  { key: 'LU,JU', label: 'LU · JU' },
   { key: 'JU', label: 'JU' },
   { key: 'MA', label: 'MA' },
-  { key: 'MA,VI', label: 'MA Â· VI' },
+  { key: 'MA,VI', label: 'MA · VI' },
   { key: 'VI', label: 'VI' },
   { key: 'MI', label: 'MI' },
-  { key: 'MI,SA', label: 'MI Â· SA' },
+  { key: 'MI,SA', label: 'MI · SA' },
   { key: 'SA', label: 'SA' },
 ];
 
 const FREQ_GROUPS = [
-  { id: 'luju', anchor: 'LU Â· JU', keys: ['LU', 'LU,JU', 'JU'] },
-  { id: 'mavi', anchor: 'MA Â· VI', keys: ['MA', 'MA,VI', 'VI'] },
-  { id: 'misa', anchor: 'MI Â· SA', keys: ['MI', 'MI,SA', 'SA'] },
+  { id: 'luju', anchor: 'LU · JU', keys: ['LU', 'LU,JU', 'JU'] },
+  { id: 'mavi', anchor: 'MA · VI', keys: ['MA', 'MA,VI', 'VI'] },
+  { id: 'misa', anchor: 'MI · SA', keys: ['MI', 'MI,SA', 'SA'] },
 ];
 
 function normDias(s) {
@@ -1096,7 +1096,7 @@ function normDias(s) {
 function freqLabelForKey(key) {
   if (key === 'TODOS') return 'Todos';
   const row = FREQ_LIST.find(x => x.key !== 'TODOS' && normDias(x.key) === normDias(key));
-  return row ? row.label : key.replace(/,/g, ' Â· ');
+  return row ? row.label : key.replace(/,/g, ' · ');
 }
 
 function getAllFreqKeysNorm() {
@@ -1174,7 +1174,7 @@ function makeFreqExtra() {
     btn.type = 'button';
     btn.className = 'sdv-btn all';
     btn.dataset.freqGroup = g.id;
-    btn.innerHTML = g.anchor + ' <span class="chv">â–¼</span>';
+    btn.innerHTML = g.anchor + ' <span class="chv">▼</span>';
 
     const panel = document.createElement('div');
     panel.className = 'promo-panel';
@@ -1267,9 +1267,9 @@ function makeFreqExtra() {
   syncFreqUI();
 })();
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // CANAL TABS (page 3)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 document.querySelectorAll('#canal-tabs .ftab').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#canal-tabs .ftab').forEach(b => b.classList.remove('active'));
@@ -1279,9 +1279,9 @@ document.querySelectorAll('#canal-tabs .ftab').forEach(btn => {
   });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // DATA HELPERS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function isMarket(pg) { return ST[pg].un === 'MARKETPLACE ALIMENTOS'; }
 function volOf(r, pg) { return isMarket(pg) ? r.bul : r.hl; }
 function volLbl(pg)   { return isMarket(pg) ? 'Bultos' : 'HL'; }
@@ -1310,7 +1310,7 @@ function makePromoFilter(pg) {
 }
 
 function getCartera(pg) {
-  // Si el maestro estÃ¡ cargado, usarlo
+  // Si el maestro está cargado, usarlo
   const cartM = getCarteraMaestro(pg, null);
   if (cartM !== null) return cartM;
   // Fallback: maestro hardcodeado
@@ -1394,9 +1394,9 @@ function rf(base) {
 function pct(a, b) { return b ? (a-b)/b*100 : null; }
 function lastMes(dv, dc) { return [...MESES].reverse().find(m => dv[m]>0 || dc[m]>0) || MESES[0]; }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // ECHARTS HELPERS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function getEC(id) {
   const el = document.getElementById(id);
   if (!el) return null;
@@ -1412,9 +1412,9 @@ function getEC(id) {
   return CHS[id];
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // CHART: MONTHLY BARS (ghost axis trick for % labels)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function makeMonthly(id, d25, d26, col26) {
   const chart = getEC(id);
   const v25 = MESES.map(m => Math.round(d25[m]) || 0);
@@ -1457,9 +1457,9 @@ function makeMonthly(id, d25, d26, col26) {
   });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // CHART: SKU/PDV MENSUAL (para Ranking)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function makeSKUMonthly(id, d25, d26, col26) {
   const chart = getEC(id);
   if (!chart) return;
@@ -1503,15 +1503,15 @@ function makeSKUMonthly(id, d25, d26, col26) {
   });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // CHART: YTD vs LYTD
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function makeYTD(id, d25, d26, meses26, col26) {
   const chart = getEC(id);
   const ytd26 = Math.round(meses26.reduce((a,m) => a+(d26[m]||0), 0));
   const ytd25 = Math.round(meses26.reduce((a,m) => a+(d25[m]||0), 0));
   const p = ytd25 ? (ytd26-ytd25)/ytd25*100 : 0;
-  const sign = p>=0?'+':'', col = p>=0?'#0e9f6e':'#e02424', arrow = p>=0?'â–² ':'â–¼ ';
+  const sign = p>=0?'+':'', col = p>=0?'#0e9f6e':'#e02424', arrow = p>=0?'▲ ':'▼ ';
 
   chart.setOption({
     animation:false,
@@ -1538,9 +1538,9 @@ function makeYTD(id, d25, d26, meses26, col26) {
   });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // CHART: CCC vs CNC vs CARTERA
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function makeCNC(id, d26, meses26, col26, pg, cartOverride) {
   const chart = getEC(id);
   const last  = meses26[meses26.length-1] || MESES[0];
@@ -1571,18 +1571,18 @@ function makeCNC(id, d26, meses26, col26, pg, cartOverride) {
         data:[
           {value:cart, itemStyle:{color:'transparent', borderColor:'transparent'}, label:{show:false}},
           {value:ccc,  itemStyle:{color:'transparent', borderColor:'transparent'},
-           label:{show:true, position:'top', color:'#0e9f6e', fontSize:11, fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>'â–² '+pCCC.toFixed(1)+'%'}},
+           label:{show:true, position:'top', color:'#0e9f6e', fontSize:11, fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>'▲ '+pCCC.toFixed(1)+'%'}},
           {value:cnc,  itemStyle:{color:'transparent', borderColor:'transparent'},
-           label:{show:true, position:'top', color:'#e02424', fontSize:11, fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>'â–¼ '+pCNC.toFixed(1)+'%'}}
+           label:{show:true, position:'top', color:'#e02424', fontSize:11, fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>'▼ '+pCNC.toFixed(1)+'%'}}
         ] }
     ],
     tooltip:{show:false}
   });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// CHART: COMPARATIVA DE DESEMPEÃ‘O
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
+// CHART: COMPARATIVA DE DESEMPEÑO
+// ═══════════════════════════════════════════════════════════════
 function makeComp(id, d26, d25, last, prev, col26) {
   const chart = getEC(id);
   const vA = Math.round(d26[last]) || 0;
@@ -1592,10 +1592,10 @@ function makeComp(id, d26, d25, last, prev, col26) {
   const pAC = vC ? (vA-vC)/vC*100 : null;
   const cAB = pAB!==null && pAB>=0 ? '#0e9f6e' : '#e02424';
   const cAC = pAC!==null && pAC>=0 ? '#0e9f6e' : '#e02424';
-  const fP  = p => p===null ? '' : (p>=0?'â–² +':'â–¼ ')+p.toFixed(1)+'%';
-  const lA  = last ? last.slice(0,3).toUpperCase()+' 26' : 'â€”';
-  const lB  = prev ? prev.slice(0,3).toUpperCase()+' 26' : 'â€”';
-  const lC  = last ? last.slice(0,3).toUpperCase()+' 25' : 'â€”';
+  const fP  = p => p===null ? '' : (p>=0?'▲ +':'▼ ')+p.toFixed(1)+'%';
+  const lA  = last ? last.slice(0,3).toUpperCase()+' 26' : '—';
+  const lB  = prev ? prev.slice(0,3).toUpperCase()+' 26' : '—';
+  const lC  = last ? last.slice(0,3).toUpperCase()+' 25' : '—';
 
   chart.setOption({
     animation:false,
@@ -1626,9 +1626,9 @@ function makeComp(id, d26, d25, last, prev, col26) {
   });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // KPI HELPER
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function setKPI(id, label, val, d, sfx='', dec=0, sub='') {
   const el = document.getElementById(id);
   if (!el) return;
@@ -1642,9 +1642,9 @@ function setKPI(id, label, val, d, sfx='', dec=0, sub='') {
      !isNull ? `<div class="kpi-d ${cls}">${sign}${d.toFixed(1)}% vs AA</div>` : '');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // SHOW / HIDE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function showPage(pg, hasData, hasSel) {
   const show = hasData && hasSel;
   document.getElementById('up'+pg).style.display  = show ? 'none' : 'flex';
@@ -1653,9 +1653,9 @@ function showPage(pg, hasData, hasSel) {
   if (body) body.style.display = show ? (pg===2?'flex':pg===1||pg===3?'flex':'none') : 'none';
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // RENDER PAGE 1: MENSUAL
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function render1() {
   const hasData = DATA.length > 0;
   const hasSel  = ST[1].activePromos.size > 0;
@@ -1665,8 +1665,8 @@ function render1() {
   const col = unColor(1), vl = volLbl(1);
   ['ld1a','ld1b','ld1c'].forEach(id => { const e=document.getElementById(id); if(e) e.style.background=col; });
   document.getElementById('t1-hl').textContent    = `Volumen ${vl}`;
-  document.getElementById('t1-ytd-hl').textContent = `${vl} Â· YTD vs LYTD`;
-  document.getElementById('t1-comp-hl').textContent= `${vl} Â· Comparativa`;
+  document.getElementById('t1-ytd-hl').textContent = `${vl} · YTD vs LYTD`;
+  document.getElementById('t1-comp-hl').textContent= `${vl} · Comparativa`;
 
   const s25 = summarizeRows(getRows(2025, 1), r => volOf(r, 1));
   const s26 = summarizeRows(getRows(2026, 1), r => volOf(r, 1));
@@ -1694,9 +1694,9 @@ function render1() {
   makeComp('c1-comp-bd',  d26b, d25b, last, prev, col);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// RENDER PAGE 2: DÃAS DE VISITA
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
+// RENDER PAGE 2: DÍAS DE VISITA
+// ═══════════════════════════════════════════════════════════════
 function render2() {
   const hasData = DATA.length > 0;
   const hasSel  = ST[2].activePromos.size > 0;
@@ -1713,14 +1713,14 @@ function render2() {
   const fullList = isFullFreqSelection(fs);
   const extra = makeFreqExtra();
   const fLbl = hasAllData
-    ? 'Todos los dÃ­as'
+    ? 'Todos los días'
     : fullList
       ? 'Todas las frecuencias (lista completa)'
-      : (fs && fs.size ? [...fs].filter(k => k !== 'TODOS').map(freqLabelForKey).join(' Â· ') : 'Sin selecciÃ³n');
+      : (fs && fs.size ? [...fs].filter(k => k !== 'TODOS').map(freqLabelForKey).join(' · ') : 'Sin selección');
 
   ['ld2a','ld2b','ld2c'].forEach(id => { const e=document.getElementById(id); if(e) e.style.background=col; });
-  document.getElementById('t2-hl').textContent  = `Volumen ${vl} Â· Frecuencia: ${fLbl}`;
-  document.getElementById('t2-ccc').textContent = `CCC Â· Frecuencia: ${fLbl}`;
+  document.getElementById('t2-hl').textContent  = `Volumen ${vl} · Frecuencia: ${fLbl}`;
+  document.getElementById('t2-ccc').textContent = `CCC · Frecuencia: ${fLbl}`;
 
   const rows25 = getRows(2025, 2, extra);
   const rows26 = getRows(2026, 2, extra);
@@ -1737,11 +1737,11 @@ function render2() {
   const ytd26= m26.reduce((a,m)=>a+(d26v[m]||0),0);
   const ytd25= m26.reduce((a,m)=>a+(d25v[m]||0),0);
 
-  // Mejor Frecuencia: agrupar por grupo (LUÂ·JU, MAÂ·VI, MIÂ·SA)
+  // Mejor Frecuencia: agrupar por grupo (LU·JU, MA·VI, MI·SA)
   const FREQ_GRUPOS = [
-    { id:'LUJU', label:'LU Â· JU', keys:['LU','LU,JU','JU'] },
-    { id:'MAVI', label:'MA Â· VI', keys:['MA','MA,VI','VI'] },
-    { id:'MISA', label:'MI Â· SA', keys:['MI','MI,SA','SA'] },
+    { id:'LUJU', label:'LU · JU', keys:['LU','LU,JU','JU'] },
+    { id:'MAVI', label:'MA · VI', keys:['MA','MA,VI','VI'] },
+    { id:'MISA', label:'MI · SA', keys:['MI','MI,SA','SA'] },
   ];
   const volByGrupo = {};
   FREQ_GRUPOS.forEach(g => volByGrupo[g.id] = 0);
@@ -1764,14 +1764,14 @@ function render2() {
   const vl2 = volLbl(2);
   const t2ytd = document.getElementById('t2-ytd-hl');
   const t2comp = document.getElementById('t2-comp-hl');
-  if (t2ytd)  t2ytd.textContent  = `${vl2} Â· YTD vs LYTD`;
-  if (t2comp) t2comp.textContent = `${vl2} Â· Comparativa`;
+  if (t2ytd)  t2ytd.textContent  = `${vl2} · YTD vs LYTD`;
+  if (t2comp) t2comp.textContent = `${vl2} · Comparativa`;
 
   makeMonthly('c2-hl',  d25v, d26v, col);
   makeMonthly('c2-ccc', d25c, d26c, col);
   makeMonthly('c2-bd',  d25b, d26b, col);
   makeYTD('c2-ytd-hl',  d25v, d26v, m26, col);
-  // Cartera pg2: desde maestro si estÃ¡ cargado, sino desde CSV
+  // Cartera pg2: desde maestro si está cargado, sino desde CSV
   const allFreqs2 = freqHasAllDataMode(ST[2].freqSel) || isFullFreqSelection(ST[2].freqSel);
   const freqExtra2 = allFreqs2 ? null : makeFreqExtra();
   const cart2Maestro = getCarteraMaestro(2, freqExtra2);
@@ -1796,9 +1796,9 @@ function render2() {
   makeComp('c2-comp-bd',  d26b, d25b, last, prev, col);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // RENDER PAGE 3: CANAL
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 function render3() {
   const hasData = DATA.length > 0;
   const hasSel  = ST[3].activePromos.size > 0;
@@ -1811,9 +1811,9 @@ function render3() {
   const cLbl  = {TODOS:'Todos',KT:'K+T',AS:'AS',KTAS:'K+T/AS',REF:'REF',KTREF:'K+T/REF',MAYO_C:'MAYO'}[canal]||canal;
 
   ['ld3a','ld3b','ld3c'].forEach(id => { const e=document.getElementById(id); if(e) e.style.background=col; });
-  document.getElementById('t3-hl').textContent     = `Volumen ${vl} Â· Canal: ${cLbl}`;
-  document.getElementById('t3-ytd-hl').textContent  = `${vl} Â· YTD vs LYTD`;
-  document.getElementById('t3-comp-hl').textContent = `${vl} Â· Comparativa`;
+  document.getElementById('t3-hl').textContent     = `Volumen ${vl} · Canal: ${cLbl}`;
+  document.getElementById('t3-ytd-hl').textContent  = `${vl} · YTD vs LYTD`;
+  document.getElementById('t3-comp-hl').textContent = `${vl} · Comparativa`;
 
   const s25 = summarizeRows(getRows(2025, 3, extra), r => volOf(r, 3));
   const s26 = summarizeRows(getRows(2026, 3, extra), r => volOf(r, 3));
@@ -1850,9 +1850,9 @@ function renderPage(pg) {
 function renderAll() { render1(); render2(); render3(); if(ST[4]) render4(); if(ST[5]) render5(); if(ST[6]) render6(); buildCRMIndex(); if(CRM_CLI) renderCRM(); }
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // PAGE 4: CERVEZAS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 
 // State
 ST[4] = { un:'CERVEZAS CMQ', activePromos: initActivePromos(), calSel: new Set(), marcaSel: new Set() };
@@ -1885,11 +1885,11 @@ const CAL_LIST = [
     btn.classList.toggle('partial', st === 'partial');
     btn.classList.toggle('none',    st === 'none');
     if (st === 'all') {
-      btn.innerHTML = 'Calibres <span class="chv">â–¼</span>';
+      btn.innerHTML = 'Calibres <span class="chv">▼</span>';
     } else if (st === 'none') {
-      btn.innerHTML = 'Calibres (0) <span class="chv">â–¼</span>';
+      btn.innerHTML = 'Calibres (0) <span class="chv">▼</span>';
     } else {
-      btn.innerHTML = 'Calibres (' + ST[4].calSel.size + ') <span class="chv">â–¼</span>';
+      btn.innerHTML = 'Calibres (' + ST[4].calSel.size + ') <span class="chv">▼</span>';
     }
   }
 
@@ -1970,9 +1970,9 @@ const MARCA_LIST = [
     btn.classList.toggle('all',     st === 'all');
     btn.classList.toggle('partial', st === 'partial');
     btn.classList.toggle('none',    st === 'none');
-    if (st === 'all')  btn.innerHTML = 'Marcas <span class="chv">â–¼</span>';
-    else if (st === 'none') btn.innerHTML = 'Marcas (0) <span class="chv">â–¼</span>';
-    else btn.innerHTML = 'Marcas (' + ST[4].marcaSel.size + ') <span class="chv">â–¼</span>';
+    if (st === 'all')  btn.innerHTML = 'Marcas <span class="chv">▼</span>';
+    else if (st === 'none') btn.innerHTML = 'Marcas (0) <span class="chv">▼</span>';
+    else btn.innerHTML = 'Marcas (' + ST[4].marcaSel.size + ') <span class="chv">▼</span>';
   }
 
   function syncHdr() {
@@ -2086,10 +2086,10 @@ const BC_COLORS = {
 const BRAND_COLORS = {
   'BRAHMA':  '#3b82f6',   // azul medio
   'QUILMES': '#94a3b8',   // gris azulado
-  'BUDWEISER':'#f59e0b',  // Ã¡mbar
+  'BUDWEISER':'#f59e0b',  // ámbar
   '1890':    '#fcd34d',   // amarillo suave
-  'ANDES':   '#a16207',   // marrÃ³n dorado
-  'MICHELOB':'#6366f1',   // Ã­ndigo
+  'ANDES':   '#a16207',   // marrón dorado
+  'MICHELOB':'#6366f1',   // índigo
   'STELLA':  '#34d399',   // verde menta
   'CORONA':  '#fb923c',   // naranja suave
   'PATAGONIA':'#a78bfa'   // violeta suave
@@ -2104,7 +2104,7 @@ function getRows4(yr, extraFilter) {
     const marca = getMarca(r.prod2);
     if (!marca) return false; // exclude OTROS
     if (r.hl <= 0) return false; // only actual sales
-    // Calibre filter (multi-select; calSel vacÃ­o = todos)
+    // Calibre filter (multi-select; calSel vacío = todos)
     if (!ST[4].calSel.has(r.calibre)) return false;
     // Marca filter
     if (!ST[4].marcaSel.has(marca)) return false;
@@ -2195,15 +2195,15 @@ function render4() {
 
   const nCal = ST[4].calSel.size < CAL_LIST.length ? ST[4].calSel.size+' cal' : '';
   const nMarca = ST[4].marcaSel.size < MARCA_LIST.length ? ST[4].marcaSel.size+' marcas' : '';
-  const lbl = [nCal, nMarca].filter(Boolean).join(' Â· ') || 'Todas las marcas';
-  document.getElementById('t4-hl').textContent = 'Volumen HL Â· ' + lbl;
+  const lbl = [nCal, nMarca].filter(Boolean).join(' · ') || 'Todas las marcas';
+  document.getElementById('t4-hl').textContent = 'Volumen HL · ' + lbl;
 
   setKPI('k4-0', `HL ${last}`,      d26v[last], pct(d26v[last],d25v[last]), ' HL');
   setKPI('k4-1', `CCC ${last}`,     d26c[last], pct(d26c[last],d25c[last]));
   setKPI('k4-2', `SKU/PDV ${last}`, sku26,      pct(sku26,sku25), '', 2);
   setKPI('k4-3', `TBD ${last}`,     d26b[last], pct(d26b[last],d25b[last]));
 
-  // Donuts â€” Ãºltimo mes de 2026
+  // Donuts — último mes de 2026
   makeDonut('d-cv', r => SEG_CV.has(getMarca(r.prod2)), 2026, last);
   makeDonut('d-ac', r => SEG_AC.has(getMarca(r.prod2)), 2026, last);
   makeDonut('d-bc', r => isBC(r), 2026, last, true);
@@ -2221,9 +2221,9 @@ function render4() {
 }
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // PAGE 5: NABS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 
 ST[5] = { un:'UNG', activePromos: initActivePromos(),
   calSel: new Set(['500 CC PET','350 CC PET','354 CC LATA','2000 RECO','2250 CC PET','1500 CC PET','1250 CC PET','354 CC','250 CC LATAS','2000 CC PET','500 CC VD S/R','269 CC LATA','750 CC PET','355 CC LATA','473 CC','2.25L','TETRA 200CC','TETRA 1L','3000 CC PET']),
@@ -2277,9 +2277,9 @@ function makeDropdown5(listArr, stKey, btnId, panelId, hdrId, label, renderFn) {
     btn.classList.toggle('all',     st === 'all');
     btn.classList.toggle('partial', st === 'partial');
     btn.classList.toggle('none',    st === 'none');
-    if (st === 'all')       btn.innerHTML = label + ' <span class="chv">â–¼</span>';
-    else if (st === 'none') btn.innerHTML = label + ' (0) <span class="chv">â–¼</span>';
-    else                    btn.innerHTML = label + ' (' + ST[5][stKey].size + ') <span class="chv">â–¼</span>';
+    if (st === 'all')       btn.innerHTML = label + ' <span class="chv">▼</span>';
+    else if (st === 'none') btn.innerHTML = label + ' (0) <span class="chv">▼</span>';
+    else                    btn.innerHTML = label + ' (' + ST[5][stKey].size + ') <span class="chv">▼</span>';
   }
   function syncHdr() {
     const allOn  = ST[5][stKey].size === listArr.length;
@@ -2367,8 +2367,8 @@ function render5() {
   const sku25= d25c[last] ? d25b[last]/d25c[last] : 0;
   const nCal5   = ST[5].calSel.size < CAL5_LIST.length   ? ST[5].calSel.size+' cal' : '';
   const nMarca5 = ST[5].marcaSel.size < MARCA5_LIST.length ? ST[5].marcaSel.size+' marcas' : '';
-  const lbl = [nCal5, nMarca5].filter(Boolean).join(' Â· ') || 'Todas las marcas';
-  document.getElementById('t5-hl').textContent = 'Volumen HL Â· ' + lbl;
+  const lbl = [nCal5, nMarca5].filter(Boolean).join(' · ') || 'Todas las marcas';
+  document.getElementById('t5-hl').textContent = 'Volumen HL · ' + lbl;
 
   setKPI('k5-0', `HL ${last}`,   d26v[last], pct(d26v[last],d25v[last]), ' HL');
   setKPI('k5-1', `CCC ${last}`,      d26c[last], pct(d26c[last],d25c[last]));
@@ -2387,9 +2387,9 @@ function render5() {
 }
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // PAGE 6: RANKING
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 
 ST[6] = { un: 'CERVEZAS CMQ', activePromos: initActivePromos(), canal: 'TODOS', seg: 'TODOS',
   marcaSel: new Set(), calSel: new Set() };
@@ -2439,7 +2439,7 @@ function initMarca6UI(list) {
   function updateBtn() {
     const st = getState();
     btn.classList.toggle('all', st==='all'); btn.classList.toggle('partial', st==='partial'); btn.classList.toggle('none', st==='none');
-    btn.innerHTML = (st==='all' ? 'Marcas' : 'Marcas ('+ST[6].marcaSel.size+')') + ' <span class="chv">â–¼</span>';
+    btn.innerHTML = (st==='all' ? 'Marcas' : 'Marcas ('+ST[6].marcaSel.size+')') + ' <span class="chv">▼</span>';
   }
   function syncHdr() {
     const allOn = ST[6].marcaSel.size === list.length;
@@ -2503,7 +2503,7 @@ function initCal6UI(list) {
   function updateBtn() {
     const st = getState();
     btn.classList.toggle('all', st==='all'); btn.classList.toggle('partial', st==='partial'); btn.classList.toggle('none', st==='none');
-    btn.innerHTML = (st==='all' ? 'Calibres' : 'Calibres ('+ST[6].calSel.size+')') + ' <span class="chv">â–¼</span>';
+    btn.innerHTML = (st==='all' ? 'Calibres' : 'Calibres ('+ST[6].calSel.size+')') + ' <span class="chv">▼</span>';
   }
   function syncHdr() {
     const allOn = ST[6].calSel.size === list.length;
@@ -2550,7 +2550,7 @@ function initCal6UI(list) {
 initMarca6UI(MARCA6_CERV_LIST);
 initCal6UI(CAL6_CERV_LIST);
 
-// Mostrar/ocultar segmento segÃºn UN
+// Mostrar/ocultar segmento según UN
 function updateSeg6Visibility() {
   const isCerv = ST[6].un === 'CERVEZAS CMQ';
   document.getElementById('seg6-tabs').style.display = isCerv ? 'flex' : 'none';
@@ -2567,7 +2567,7 @@ function seg6Filter(r) {
   return true;
 }
 
-// Helper: canal filter pg6 â€” mismo criterio que pestaÃ±a Canal (pg3)
+// Helper: canal filter pg6 — mismo criterio que pestaña Canal (pg3)
 function canal6Filter(r) {
   return canalFilter(r, ST[6].canal);
 }
@@ -2604,7 +2604,7 @@ function getRows6(yr, extra) {
   });
 }
 
-// Calcular top 50 clientes por HL acumulado en Ãºltimos 3 meses de 2026
+// Calcular top 50 clientes por HL acumulado en últimos 3 meses de 2026
 function getTop50(lastMes3) {
   const rows = getRows6(2026);
   const hlByCli = {};
@@ -2619,18 +2619,18 @@ function getTop50(lastMes3) {
     .map(([cli]) => cli);
 }
 
-// Mix chart: peso de top50 sobre total de la UN en el Ãºltimo mes
+// Mix chart: peso de top50 sobre total de la UN en el último mes
 function makeMix6(top50Clis, last, lastYr) {
   const chart = getEC('c6-mix');
   if (!chart) return;
 
-  // Total de la UN en el Ãºltimo mes (sin filtro de clientes)
+  // Total de la UN en el último mes (sin filtro de clientes)
   const pf = makePromoFilter(6);
   if (!pf) return;
   const totalHL = DATA.filter(r => r.yr == lastYr && r.un === ST[6].un && r.mes === last && r.hl > 0 && pf(r))
     .reduce((a,r) => a + r.hl, 0);
 
-  // HL de top50 en el Ãºltimo mes
+  // HL de top50 en el último mes
   const top50Set = new Set(top50Clis);
   const top50HL = DATA.filter(r => r.yr == lastYr && r.un === ST[6].un && r.mes === last && r.hl > 0 && pf(r) && top50Set.has(r.cli))
     .reduce((a,r) => a + r.hl, 0);
@@ -2658,7 +2658,7 @@ function makeMix6(top50Clis, last, lastYr) {
 function render6() {
   if (!ST[6]) return;
 
-  // Actualizar listas de marca/calibre segÃºn UN
+  // Actualizar listas de marca/calibre según UN
   const isCerv = ST[6].un === 'CERVEZAS CMQ';
   updateSeg6Visibility();
 
@@ -2677,7 +2677,7 @@ function render6() {
   const ld6a = document.getElementById('ld6a'); if (ld6a) ld6a.style.background = col;
   const ld6b = document.getElementById('ld6b'); if (ld6b) ld6b.style.background = col;
 
-  // Determinar Ãºltimos 3 meses de 2026
+  // Determinar últimos 3 meses de 2026
   const rows26all = DATA.filter(r => r.yr == 2026 && r.un === ST[6].un && r.hl > 0);
   const mesesConDatos = MESES.filter(m => rows26all.some(r => r.mes === m));
   const last = mesesConDatos[mesesConDatos.length - 1] || MESES[0];
@@ -2685,7 +2685,7 @@ function render6() {
   const lastMes3 = MESES.slice(Math.max(0, lastIdx - 2), lastIdx + 1);
   const prev = MESES[lastIdx - 1] || null;
 
-  // Top 50 clientes por HL acumulado en Ãºltimos 3 meses
+  // Top 50 clientes por HL acumulado en últimos 3 meses
   const top50Clis = getTop50(lastMes3);
   const top50Set = new Set(top50Clis);
 
@@ -2700,15 +2700,15 @@ function render6() {
   const sku26 = d26c[last] ? d26b[last]/d26c[last] : 0;
   const sku25 = d25c[last] ? d25b[last]/d25c[last] : 0;
 
-  // PerÃ­odo de 3 meses en el label
+  // Período de 3 meses en el label
   const per3lbl = lastMes3.map(m => m.slice(0,3).toUpperCase()).join('-');
   const t6 = document.getElementById('t6-hl');
-  if (t6) t6.textContent = `Volumen HL Â· Top 50 Â· ${per3lbl}`;
+  if (t6) t6.textContent = `Volumen HL · Top 50 · ${per3lbl}`;
 
   setKPI('k6-0', `HL ${last}`,      d26v[last], pct(d26v[last],d25v[last]), ' HL');
   setKPI('k6-1', `SKU/PDV ${last}`, sku26, pct(sku26,sku25), '', 2);
   setKPI('k6-2', `SKU/PDV ${last}`, sku26,      pct(sku26,sku25), '', 2);
-  setKPI('k6-3', `Top 50 Â· ${per3lbl}`, top50Clis.length, null, ' clientes', 0, '');
+  setKPI('k6-3', `Top 50 · ${per3lbl}`, top50Clis.length, null, ' clientes', 0, '');
 
   makeMonthly('c6-hl',  d25v, d26v, col);
 
@@ -2726,7 +2726,7 @@ function render6() {
   const tbody = document.getElementById('t6-tbody');
   if (tbody) {
     tbody.innerHTML = '';
-    // Recopilar info de cada cliente top50: HL Ãºltimos 3 meses, nombre, UN, promotor, supervisor
+    // Recopilar info de cada cliente top50: HL últimos 3 meses, nombre, UN, promotor, supervisor
     const rows26 = getRows6(2026);
     const cliInfo = {};
     rows26.filter(r => lastMes3.includes(r.mes) && r.hl > 0 && top50Set.has(r.cli)).forEach(r => {
@@ -2740,7 +2740,7 @@ function render6() {
       const tr = document.createElement('tr');
       const rank = idx + 1;
       const rankCls = rank <= 3 ? 'rank top3' : 'rank';
-      const medal = rank === 1 ? 'ðŸ¥‡' : rank === 2 ? 'ðŸ¥ˆ' : rank === 3 ? 'ðŸ¥‰' : rank;
+      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
       tr.innerHTML =
         `<td class="${rankCls}">${medal}</td>` +
         `<td>${cli}</td>` +
@@ -2766,13 +2766,13 @@ document.getElementById('un-dd6')?.addEventListener('click', () => {
 
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // PAGE 7: CRM
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 
 let CRM_CLI = null; // cliente seleccionado actualmente
 
-// Ãndice de clientes â€” se construye cuando se cargan los datos
+// Índice de clientes — se construye cuando se cargan los datos
 let CRM_INDEX = {}; // { cli_code: { name, canal, sup, prom, dias, un } }
 
 function buildCRMIndex() {
@@ -2782,31 +2782,31 @@ function buildCRMIndex() {
     if (!CRM_INDEX[r.cli]) {
       CRM_INDEX[r.cli] = {
         name: r.cliN || r.cli,
-        canal: r.canal || 'â€”',
-        sup: r.sdv || 'â€”',
-        prom: r.sdv2 || 'â€”',
-        dias: r.dias || 'â€”',
-        un: r.un || 'â€”',
+        canal: r.canal || '—',
+        sup: r.sdv || '—',
+        prom: r.sdv2 || '—',
+        dias: r.dias || '—',
+        un: r.un || '—',
         lastFecha: r.fecha || ''
       };
     } else if (r.fecha && r.fecha > CRM_INDEX[r.cli].lastFecha) {
       CRM_INDEX[r.cli].lastFecha = r.fecha;
     }
   });
-  // Enriquecer con datos del maestro si estÃ¡ cargado
+  // Enriquecer con datos del maestro si está cargado
   if (MAESTRO && Object.keys(MAESTRO).length > 0) {
     Object.entries(MAESTRO).forEach(([cli, m]) => {
       if (!CRM_INDEX[cli]) {
         CRM_INDEX[cli] = {
-          name: m.razon || cli, canal: 'â€”', sup: 'â€”',
-          prom: m.promotor || 'â€”', dias: m.dias || 'â€”',
-          un: 'â€”', lastFecha: ''
+          name: m.razon || cli, canal: '—', sup: '—',
+          prom: m.promotor || '—', dias: m.dias || '—',
+          un: '—', lastFecha: ''
         };
       } else {
         // Completar datos faltantes del CSV con el maestro
         if (m.razon) CRM_INDEX[cli].name = m.razon;
-        if (m.dias && CRM_INDEX[cli].dias === 'â€”') CRM_INDEX[cli].dias = m.dias;
-        if (m.promotor && CRM_INDEX[cli].prom === 'â€”') CRM_INDEX[cli].prom = m.promotor;
+        if (m.dias && CRM_INDEX[cli].dias === '—') CRM_INDEX[cli].dias = m.dias;
+        if (m.promotor && CRM_INDEX[cli].prom === '—') CRM_INDEX[cli].prom = m.promotor;
       }
       CRM_INDEX[cli].licencia = m.licencia;
       CRM_INDEX[cli].alta = m.alta;
@@ -2836,7 +2836,7 @@ function buildCRMIndex() {
     matches.forEach(([code, info]) => {
       const opt = document.createElement('div');
       opt.className = 'crm-opt';
-      opt.innerHTML = `${info.name} <small>${code} Â· ${info.canal} Â· ${info.un}</small>`;
+      opt.innerHTML = `${info.name} <small>${code} · ${info.canal} · ${info.un}</small>`;
       opt.addEventListener('click', () => {
         input.value = info.name;
         dd.classList.remove('open');
@@ -2869,13 +2869,13 @@ function renderCRM() {
   // Ficha
   const ficha = document.getElementById('crm-ficha');
   if (ficha) ficha.style.display = 'flex';
-  const fmt = s => s ? s.split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ') : 'â€”';
+  const fmt = s => s ? s.split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ') : '—';
   const el = id => document.getElementById(id);
-  if (el('crm-canal')) el('crm-canal').textContent = info.canal || 'â€”';
+  if (el('crm-canal')) el('crm-canal').textContent = info.canal || '—';
   if (el('crm-sup'))   el('crm-sup').textContent   = fmt(info.sup);
   if (el('crm-prom'))  el('crm-prom').textContent  = fmt(info.prom);
-  if (el('crm-dias'))  el('crm-dias').textContent  = info.dias || 'â€”';
-  if (el('crm-un'))    el('crm-un').textContent    = info.un || 'â€”';
+  if (el('crm-dias'))  el('crm-dias').textContent  = info.dias || '—';
+  if (el('crm-un'))    el('crm-un').textContent    = info.un || '—';
   const tagLic = document.getElementById('crm-tag-lic');
   if (tagLic && info.licencia !== undefined) {
     tagLic.style.display = 'inline-flex';
@@ -2885,7 +2885,7 @@ function renderCRM() {
   }
   if (el('crm-fecha')) {
     const f = info.lastFecha;
-    el('crm-fecha').textContent = f ? f.split('-').reverse().join('/') : 'â€”';
+    el('crm-fecha').textContent = f ? f.split('-').reverse().join('/') : '—';
   }
 
   // Filtrar datos del cliente
@@ -2894,7 +2894,7 @@ function renderCRM() {
 
   if (!rows26.length && !rows25.length) return;
 
-  // Ãšltimo mes con datos
+  // Último mes con datos
   const meses26 = MESES.filter(m => rows26.some(r => r.mes === m && r.hl > 0));
   const last = meses26[meses26.length-1] || MESES[0];
   const prev = MESES[MESES.indexOf(last)-1] || null;
@@ -2939,27 +2939,27 @@ function renderCRM() {
   if (body7) body7.style.display = 'flex';
   if (empty) empty.style.display = 'none';
 
-  if (el('t7-hl')) el('t7-hl').textContent = `Volumen HL Â· ${info.name}`;
+  if (el('t7-hl')) el('t7-hl').textContent = `Volumen HL · ${info.name}`;
 
   setKPI('k7-0', `HL ${last}`,      hlLast26, pct(hlLast26, hlLast25), ' HL');
   setKPI('k7-1', `SKU/PDV ${last}`, skuLast,  pct(skuLast, skuLast25), '', 0);
   setKPI('k7-2', `HL YTD`,          ytd26,    pct(ytd26, ytd25), ' HL');
-  const diasFmt = info.dias ? info.dias.replace(/,/g,' Â· ') : 'â€”';
+  const diasFmt = info.dias ? info.dias.replace(/,/g,' · ') : '—';
   setKPI('k7-3', 'Frec. visita', 0, null, '', 0, diasFmt);
 
-  // GrÃ¡ficos
+  // Gráficos
   makeMonthly('c7-hl',  vol25, vol26, col);
   makeSKUMonthly('c7-sku', sku25m, sku26m, col);
   makeComp('c7-comp', vol26, vol25, last, prev, col);
 
-  // Fecha Ãºltima compra en panel derecho
+  // Fecha última compra en panel derecho
   const elLastFecha = document.getElementById('crm-last-fecha');
   if (elLastFecha) {
     const f = info.lastFecha;
-    elLastFecha.textContent = f ? f.split('-').reverse().join('/') : 'â€”';
+    elLastFecha.textContent = f ? f.split('-').reverse().join('/') : '—';
   }
 
-  // Tabla de productos del Ãºltimo mes
+  // Tabla de productos del último mes
   const tbody = document.getElementById('t7-tbody');
   if (tbody) {
     tbody.innerHTML = '';
@@ -2967,7 +2967,7 @@ function renderCRM() {
     const prodMap = {};
     prodRows.forEach(r => {
       const key = r.prod;
-      if (!prodMap[key]) prodMap[key] = { name: r.prod2 || r.prod, marca: r.marca || 'â€”', calibre: r.calibre || 'â€”', hl: 0 };
+      if (!prodMap[key]) prodMap[key] = { name: r.prod2 || r.prod, marca: r.marca || '—', calibre: r.calibre || '—', hl: 0 };
       prodMap[key].hl += r.hl;
     });
     Object.values(prodMap)
@@ -2993,8 +2993,8 @@ function renderCRM() {
 
   if (autoCount > 0) {
     if (el) {
-      const years = [...new Set(DATA.map(r => r.yr))].sort().join(' Â· ');
-      el.textContent = 'âœ“ Auto CSV Â· ' + years + ' Â· ' + DATA.length.toLocaleString() + ' filas';
+      const years = [...new Set(DATA.map(r => r.yr))].sort().join(' · ');
+      el.textContent = '✓ Auto CSV · ' + years + ' · ' + DATA.length.toLocaleString() + ' filas';
       el.className = 'fst ok';
     }
     renderAll();
@@ -3006,9 +3006,9 @@ function renderCRM() {
   if (!snap || !Array.isArray(snap.rows) || !snap.rows.length) return;
   DATA = snap.rows;
   if (el) {
-    const years = (snap.years && snap.years.length) ? snap.years.join(' Â· ') : [...new Set(DATA.map(r=>r.yr))].sort().join(' Â· ');
+    const years = (snap.years && snap.years.length) ? snap.years.join(' · ') : [...new Set(DATA.map(r=>r.yr))].sort().join(' · ');
     const when = snap.savedAt ? new Date(snap.savedAt).toLocaleDateString('es-AR') : '';
-    el.textContent = 'âœ“ Cache local Â· ' + years + ' Â· ' + DATA.length.toLocaleString() + ' filas' + (when ? ' Â· ' + when : '');
+    el.textContent = '✓ Cache local · ' + years + ' · ' + DATA.length.toLocaleString() + ' filas' + (when ? ' · ' + when : '');
     el.className = 'fst ok';
   }
   renderAll();
