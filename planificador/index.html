@@ -1875,13 +1875,19 @@
         
         for (const promoter in daySales) {
           let trackedPromoter = null;
-          const normalizeName = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
-          const normPromoter = normalizeName(promoter);
+          const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
+          const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
+          const csvParts = normalizeParts(promoter);
+          const csvFlat = normalizeFlat(promoter);
           
           for (const spv in SPV_DATA) {
             const match = SPV_DATA[spv].find(p => {
-              const normP = normalizeName(p);
-              return normP === normPromoter || normP.includes(normPromoter) || normPromoter.includes(normP);
+              const pParts = normalizeParts(p);
+              const pFlat = normalizeFlat(p);
+              const pInCsv = pParts.every(part => csvParts.includes(part));
+              const csvInP = csvParts.every(part => pParts.includes(part));
+              const isFlatMatch = pFlat === csvFlat || pFlat.includes(csvFlat) || csvFlat.includes(pFlat);
+              return pInCsv || csvInP || isFlatMatch;
             });
             if (match) {
               trackedPromoter = match;
