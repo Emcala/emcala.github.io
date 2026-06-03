@@ -704,13 +704,47 @@
 
   <div id="spv-kpi-bar" style="display:none; background:#f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 20px; align-items: center; justify-content: flex-start; gap: 15px; font-family: 'Bricolage Grotesque', sans-serif;">
     <span style="font-size: 11px; font-weight: 800; color: #0f172a;">🎯 CONFIGURACIÓN GLOBAL DE KPI:</span>
-    <div style="display: flex; align-items: center; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 4px;">
       <span style="font-size: 10px; font-weight: 700; color: #64748b;">KPI I:</span>
-      <select id="spv-kpi1-select" style="padding: 4px 8px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; cursor: pointer;"></select>
+      <select id="spv-kpi1-met" style="padding: 4px 6px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; cursor: pointer;">
+        <option value="">- Mét -</option>
+        <option value="VOL">VOL</option>
+        <option value="CCC">CCC</option>
+        <option value="TBD">TBD</option>
+        <option value="CV">CV</option>
+      </select>
+      <select id="spv-kpi1-tar" style="padding: 4px 6px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; cursor: pointer;">
+        <option value="">- Tarea -</option>
+        <option value="TOTAL CERVEZA">T. CERVEZA</option>
+        <option value="ABOVE CORE">ABOVE CORE</option>
+        <option value="LATONES">LATONES</option>
+        <option value="BALANCED CHOICES">BALANCED</option>
+        <option value="NABS">NABS</option>
+        <option value="AGUAS">AGUAS</option>
+        <option value="UNG TOP">UNG TOP</option>
+        <option value="EFICIENCIA DE VENTAS">EFICIENCIA</option>
+      </select>
     </div>
-    <div style="display: flex; align-items: center; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 4px; margin-left: 10px;">
       <span style="font-size: 10px; font-weight: 700; color: #64748b;">KPI II:</span>
-      <select id="spv-kpi2-select" style="padding: 4px 8px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; cursor: pointer;"></select>
+      <select id="spv-kpi2-met" style="padding: 4px 6px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; cursor: pointer;">
+        <option value="">- Mét -</option>
+        <option value="VOL">VOL</option>
+        <option value="CCC">CCC</option>
+        <option value="TBD">TBD</option>
+        <option value="CV">CV</option>
+      </select>
+      <select id="spv-kpi2-tar" style="padding: 4px 6px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; cursor: pointer;">
+        <option value="">- Tarea -</option>
+        <option value="TOTAL CERVEZA">T. CERVEZA</option>
+        <option value="ABOVE CORE">ABOVE CORE</option>
+        <option value="LATONES">LATONES</option>
+        <option value="BALANCED CHOICES">BALANCED</option>
+        <option value="NABS">NABS</option>
+        <option value="AGUAS">AGUAS</option>
+        <option value="UNG TOP">UNG TOP</option>
+        <option value="EFICIENCIA DE VENTAS">EFICIENCIA</option>
+      </select>
     </div>
     <button id="btn-apply-kpi" style="background: var(--acc); color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 10px; font-weight: 700; cursor: pointer; margin-left: auto;">Aplicar</button>
   </div>
@@ -840,51 +874,21 @@
       Object.assign(SPV_DATA, RAW_SPV_DATA);
     }
 
-    const kpiOptions = [
-      { met: '', tar: '', label: '- NO ASIGNADO -' },
-      { met: 'VOL', tar: 'TOTAL CERVEZA', label: 'VOL: T. CERVEZA' },
-      { met: 'VOL', tar: 'ABOVE CORE', label: 'VOL: ABOVE CORE' },
-      { met: 'VOL', tar: 'LATONES', label: 'VOL: LATONES' },
-      { met: 'VOL', tar: 'BALANCED CHOICES', label: 'VOL: BALANCED' },
-      { met: 'VOL', tar: 'NABS', label: 'VOL: NABS' },
-      { met: 'CCC', tar: 'TOTAL CERVEZA', label: 'CCC: T. CERVEZA' },
-      { met: 'CCC', tar: 'ABOVE CORE', label: 'CCC: ABOVE CORE' },
-      { met: 'CCC', tar: 'LATONES', label: 'CCC: LATONES' },
-      { met: 'CCC', tar: 'BALANCED CHOICES', label: 'CCC: BALANCED' },
-      { met: 'CCC', tar: 'NABS', label: 'CCC: NABS' },
-      { met: 'TBD', tar: 'TOTAL CERVEZA', label: 'TBD: T. CERVEZA' },
-      { met: 'TBD', tar: 'ABOVE CORE', label: 'TBD: ABOVE CORE' },
-      { met: 'TBD', tar: 'LATONES', label: 'TBD: LATONES' },
-      { met: 'TBD', tar: 'BALANCED CHOICES', label: 'TBD: BALANCED' },
-      { met: 'TBD', tar: 'NABS', label: 'TBD: NABS' },
-      { met: 'CV', tar: 'TOTAL CERVEZA', label: 'CV: T. CERVEZA' },
-      { met: 'CV', tar: 'ABOVE CORE', label: 'CV: ABOVE CORE' },
-      { met: 'CV', tar: 'LATONES', label: 'CV: LATONES' },
-      { met: 'CV', tar: 'BALANCED CHOICES', label: 'CV: BALANCED' },
-      { met: 'CV', tar: 'NABS', label: 'CV: NABS' },
-      { met: 'CV', tar: 'AGUAS', label: 'CV: AGUAS' },
-      { met: 'CV', tar: 'UNG TOP', label: 'CV: UNG TOP' },
-      { met: 'CV', tar: 'EFICIENCIA DE VENTAS', label: 'CV: EFICIENCIA' }
-    ];
-
     if (isSupervisor) {
       document.getElementById('spv-kpi-bar').style.display = 'flex';
-      const sel1 = document.getElementById('spv-kpi1-select');
-      const sel2 = document.getElementById('spv-kpi2-select');
-      kpiOptions.forEach(opt => {
-        sel1.add(new Option(opt.label, `${opt.met}|${opt.tar}`));
-        sel2.add(new Option(opt.label, `${opt.met}|${opt.tar}`));
-      });
+      const met1 = document.getElementById('spv-kpi1-met');
+      const tar1 = document.getElementById('spv-kpi1-tar');
+      const met2 = document.getElementById('spv-kpi2-met');
+      const tar2 = document.getElementById('spv-kpi2-tar');
+      
       document.getElementById('btn-apply-kpi').addEventListener('click', () => {
-        const p1 = sel1.value.split('|');
-        const p2 = sel2.value.split('|');
         const promotores = SPV_DATA[Object.keys(SPV_DATA)[0]];
         promotores.forEach(prom => {
           if (!volData[prom]) volData[prom] = {};
-          volData[prom]['k1-met'] = p1[0];
-          volData[prom]['k1-tar'] = p1[1];
-          volData[prom]['k2-met'] = p2[0];
-          volData[prom]['k2-tar'] = p2[1];
+          volData[prom]['k1-met'] = met1.value;
+          volData[prom]['k1-tar'] = tar1.value;
+          volData[prom]['k2-met'] = met2.value;
+          volData[prom]['k2-tar'] = tar2.value;
         });
         saveData();
         renderTables();
@@ -1870,10 +1874,15 @@
         const daySales = allDatesSales[pDate];
         
         for (const promoter in daySales) {
-          // Encontrar si este promotor existe en nuestro SPV_DATA para asociarlo correctamente
           let trackedPromoter = null;
+          const normalizeName = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
+          const normPromoter = normalizeName(promoter);
+          
           for (const spv in SPV_DATA) {
-            const match = SPV_DATA[spv].find(p => p.toUpperCase() === promoter);
+            const match = SPV_DATA[spv].find(p => {
+              const normP = normalizeName(p);
+              return normP === normPromoter || normP.includes(normPromoter) || normPromoter.includes(normP);
+            });
             if (match) {
               trackedPromoter = match;
               break;
