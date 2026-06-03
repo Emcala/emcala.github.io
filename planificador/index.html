@@ -194,10 +194,11 @@
       border-bottom: 1px solid var(--txt);
       padding: 1px;
       height: 14px;
+      line-height: 14px;
       overflow: hidden;
       white-space: nowrap;
-      vertical-align: middle;
-      text-align: center;
+      vertical-align: middle !important;
+      text-align: center !important;
     }
 
     td {
@@ -205,10 +206,11 @@
       border-bottom: 1px solid var(--txt);
       padding: 0;
       height: 14px;
+      line-height: 14px;
       overflow: hidden;
       white-space: nowrap;
-      vertical-align: middle;
-      text-align: center;
+      vertical-align: middle !important;
+      text-align: center !important;
     }
 
     /* ENCABEZADOS STICKY */
@@ -361,12 +363,32 @@
       background: #fff;
     }
 
+    tbody tr:not(.spv-header) {
+      transition: all 0.2s ease;
+    }
+    tbody tr:not(.spv-header):hover td {
+      box-shadow: inset 0 0 0 9999px rgba(15, 23, 42, 0.05) !important;
+    }
+    tbody tr:not(.spv-header):hover td input {
+      background-color: transparent !important;
+    }
+    
+    .prom-name-cell {
+      cursor: pointer;
+    }
+    
+    .prom-name-cell:hover {
+      text-decoration: underline;
+      color: #dc2626 !important; /* Red to indicate delete */
+    }
+
     .cell-input {
       width: 100%;
       height: 100%;
       border: none;
       background: transparent;
-      text-align: center;
+      text-align: center !important;
+      vertical-align: middle !important;
       font-family: 'Aptos Display', 'Aptos', 'Barlow', sans-serif;
       font-size: 10.5px;
       font-weight: 600;
@@ -374,6 +396,7 @@
       outline: none;
       padding: 0;
       margin: 0;
+      line-height: 14px;
     }
 
     .cell-input:focus:not([readonly]) {
@@ -409,7 +432,7 @@
       font-family: 'Barlow', sans-serif;
       font-size: 8px;
       text-align: center;
-      padding-left: 6px;
+      padding: 0;
       color: #fff;
       cursor: pointer;
       user-select: none;
@@ -462,8 +485,8 @@
       font-size: var(--fs-hdr);
       color: #fff;
       background: #0f172a;
-      padding-left: 4px;
-      text-align: left;
+      padding: 0;
+      text-align: center;
     }
 
     tfoot .tot-val {
@@ -472,8 +495,14 @@
     }
 
     @media print {
-      .hdr {
-        display: none;
+      .hdr, #emcala-toast {
+        display: none !important;
+      }
+
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
       }
 
       body {
@@ -495,6 +524,7 @@
         height: auto;
         min-width: 0;
         overflow: visible;
+        margin: 0;
       }
 
       table {
@@ -509,13 +539,16 @@
         position: static;
       }
 
-      th[class^="bg-"] {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
       .cell-input::-webkit-input-placeholder {
         color: transparent;
+      }
+      
+      /* Make sure inputs print their text clearly */
+      .cell-input {
+        color: #000 !important;
+      }
+      .cell-input.plan {
+        color: #64748b !important;
       }
     }
 
@@ -565,13 +598,15 @@
       left: 0;
       height: 100%;
       background: rgba(34, 197, 94, 0.3);
-      transition: width 0.3s;
+      transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
       z-index: 0;
+      border-right: 1px solid rgba(0, 0, 0, 0.15);
     }
 
     .progress-cell span {
       position: relative;
       z-index: 1;
+      text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9), 0 0 2px rgba(255, 255, 255, 1);
     }
 
     /* Toast Notification Premium */
@@ -654,11 +689,12 @@
     <div class="hdr-left">
       <button class="btn-action btn-outline" id="btn-sync" style="border-color:var(--green); color:var(--green)">🔄
         Sincronizar Todos</button>
-      <button class="btn-action" id="btn-save" style="background:var(--green); color:white; border:none;">💾 Guardar
+      <button class="btn-action" id="btn-save" style="display:none; background:var(--green); color:white; border:none;">💾 Guardar
         Datos</button>
-      <button class="btn-action btn-outline" id="btn-demo">🧪 Cargar Demo</button>
       <button class="btn-action btn-outline" id="btn-import-csv" style="border-color:var(--c-yellow); color:var(--c-yellow)">📂 Cargar Ventas CSV</button>
       <input type="file" id="csv-file-input" style="display:none;" accept=".csv">
+      <button class="btn-action btn-outline" id="btn-import-skus" style="border-color:var(--c-pink); color:var(--c-pink)">📋 Cargar SKUs CSV</button>
+      <input type="file" id="csv-skus-input" style="display:none;" accept=".csv">
       <button class="btn-action btn-outline" id="btn-copy-img">📸 Copiar Foto</button>
       <button class="btn-action btn-outline" id="btn-clear">Limpiar Día</button>
       <button class="btn-action" id="btn-print">🖨️ Imprimir</button>
@@ -894,6 +930,20 @@
       localStorage.setItem(getStorageKey(), JSON.stringify(volData));
     }
 
+    function deletePromoterData(prom) {
+      if (confirm(`¿Estás seguro de que deseas borrar SOLO la planificación de ${prom}? (Se mantendrán sus ventas)`)) {
+        if (volData[prom]) {
+          const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
+          planFields.forEach(f => {
+            delete volData[prom][f];
+          });
+          saveData();
+          renderTables();
+          document.getElementById('btn-save').click(); // Auto-save to server
+        }
+      }
+    }
+
     function val(prom, field) { 
       if (volData[prom] && volData[prom][field] !== undefined && volData[prom][field] !== '') {
         const v = volData[prom][field];
@@ -955,7 +1005,8 @@
         } else {
           hue = 55 + ((pct - 90) / 10) * 80; // 55 a 135 (Solo aquí se vuelve Verde)
         }
-        barEl.style.backgroundColor = `hsla(${hue}, 95%, 40%, 0.5)`;
+        barEl.style.background = `linear-gradient(90deg, hsla(${hue}, 90%, 45%, 0.85), hsla(${hue}, 85%, 55%, 0.95))`;
+        barEl.style.boxShadow = `inset 0 1px 2px hsla(0, 0%, 100%, 0.4), inset 0 -1px 2px hsla(0, 0%, 0%, 0.15)`;
       }
     }
 
@@ -1195,7 +1246,7 @@
           const inpStyle = isLemos ? 'style="color: #ffffff !important; background: var(--acc) !important;"' : '';
 
           tr.innerHTML = `
-            <td class="text-left" style="${isLemos ? 'background: var(--acc); color: #fff;' : ''}">${p}</td>
+            <td class="text-left prom-name-cell" onclick="deletePromoterData('${p}')" title="Borrar planificación de ${p}" style="${isLemos ? 'background: var(--acc); color: #fff;' : ''}">${p}</td>
             <!-- I -->
             <td style="${tdBg}"><input type="text" class="cell-input plan" ${inpStyle} data-prom="${p}" data-field="f1-p" value="${val(p, 'f1-p')}" readonly tabindex="-1"></td>
             <td style="${tdBg}"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f1-v" value="${val(p, 'f1-v')}"></td>
@@ -1222,7 +1273,7 @@
             <td style="background:#fef08a; font-size: 10px; font-weight: 700; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px;">
               ${val(p, 'k1-met') ? '<span style="color:var(--muted)">' + val(p, 'k1-met') + ':</span> ' : ''}${(val(p, 'k1-tar') || '-').toUpperCase()}
             </td>
-            <td style="background:#fef08a"><input type="text" class="cell-input plan" data-prom="${p}" data-field="k1-p" value="${val(p, 'k1-p')}" readonly tabindex="-1"></td>
+            <td style="background:#ffffff"><input type="text" class="cell-input plan" data-prom="${p}" data-field="k1-p" value="${val(p, 'k1-p')}" readonly tabindex="-1"></td>
             <td style="background:#fef08a"><input type="text" class="cell-input real" data-prom="${p}" data-field="k1-v" value="${val(p, 'k1-v')}"></td>
             <td class="progress-cell"><span id="prog-${p}-k1">0%</span><div class="progress-bar-bg"><div id="bar-${p}-k1" class="progress-bar-fill" style="width:0%"></div></div></td>
             `}
@@ -1236,7 +1287,7 @@
             <td style="background:#e9d5ff; font-size: 10px; font-weight: 700; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px;">
               ${val(p, 'k2-met') ? '<span style="color:var(--muted)">' + val(p, 'k2-met') + ':</span> ' : ''}${(val(p, 'k2-tar') || '-').toUpperCase()}
             </td>
-            <td style="background:#e9d5ff"><input type="text" class="cell-input plan" data-prom="${p}" data-field="k2-p" value="${val(p, 'k2-p')}" readonly tabindex="-1"></td>
+            <td style="background:#ffffff"><input type="text" class="cell-input plan" data-prom="${p}" data-field="k2-p" value="${val(p, 'k2-p')}" readonly tabindex="-1"></td>
             <td style="background:#e9d5ff"><input type="text" class="cell-input real" data-prom="${p}" data-field="k2-v" value="${val(p, 'k2-v')}"></td>
             <td class="progress-cell"><span id="prog-${p}-k2">0%</span><div class="progress-bar-bg"><div id="bar-${p}-k2" class="progress-bar-fill" style="width:0%"></div></div></td>
             `}
@@ -1278,43 +1329,6 @@
 
     document.getElementById('date-input').addEventListener('change', renderTables);
     document.getElementById('btn-print').addEventListener('click', () => { window.print(); });
-
-    document.getElementById('btn-demo').addEventListener('click', () => {
-      if (!confirm('¿Cargar datos de prueba aleatorios?')) return;
-
-      const metas = ['CCC', 'TBD', 'VOL', 'CV'];
-      const tareas = ['Total Cerveza', 'Above Core', 'Latones', 'Balanced choices', 'Nabs', 'Eficiencia de ventas'];
-
-      for (const spv in SPV_DATA) {
-        SPV_DATA[spv].forEach(p => {
-          const f1p = Math.floor(Math.random() * 150 + 100);
-          const f1v = Math.floor(f1p * (Math.random() * 0.4 + 0.7)); // 70-110% de cumplimiento
-          const f2p = Math.floor(Math.random() * 40 + 30);
-          const f2v = Math.floor(f2p * (Math.random() * 0.5 + 0.6));
-
-          volData[p] = {
-            'f1-p': f1p.toFixed(2),
-            'f1-v': '', // Se calculará con CSV
-            'f1-cv': '',
-            'f1-ac': '',
-            'f2-p': f2p.toFixed(2),
-            'f2-v': '',
-            'f2-up': '',
-            'f2-ag': '',
-            'k1-met': metas[Math.floor(Math.random() * metas.length)],
-            'k1-tar': tareas[Math.floor(Math.random() * tareas.length)],
-            'k1-p': (Math.random() * 5 + 10).toFixed(2),
-            'k1-v': '', // Se calculará con CSV
-            'k2-met': metas[Math.floor(Math.random() * metas.length)],
-            'k2-tar': tareas[Math.floor(Math.random() * tareas.length)],
-            'k2-p': (Math.random() * 10 + 5).toFixed(2),
-            'k2-v': '' // Se calculará con CSV
-          };
-        });
-      }
-      saveData();
-      renderTables();
-    });
 
     document.getElementById('btn-copy-img').addEventListener('click', async () => {
       const btn = document.getElementById('btn-copy-img');
@@ -1759,6 +1773,21 @@
             }
           }
         }
+
+        // Borrar las ventas reales ("lo que estaba") para que se pise con lo nuevo
+        const realFields = [
+          'f1-v', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt',
+          'f2-v', 'f2-ung', 'f2-up', 'f2-ag',
+          'k1-v', 'k2-v', 'bol-v',
+          'ccc-cerveza', 'ccc-abovecore', 'ccc-latones', 'ccc-balanced', 'ccc-nabs',
+          'tbd-cerveza', 'tbd-abovecore', 'tbd-latones', 'tbd-balanced', 'tbd-nabs',
+          'cv-cerveza', 'cv-abovecore', 'cv-latones', 'cv-balanced', 'cv-nabs', 'cv-aguas', 'cv-ungtop', 'cv-eficiencia'
+        ];
+        for (const prom in existingData) {
+          for (const rf of realFields) {
+            existingData[prom][rf] = '';
+          }
+        }
         
         let dateMatches = 0;
         const daySales = allDatesSales[pDate];
@@ -1842,6 +1871,11 @@
       calcTotals();
       
       alert(`¡Ventas Reales importadas con éxito para múltiples días!\nSe procesaron ${processedDatesCount} fechas distintas del CSV.\nEl calendario se actualizó automáticamente a la fecha del archivo: ${latestDateStr}`);
+      
+      // AUTO-GUARDADO
+      setTimeout(() => {
+        document.getElementById('btn-save').click();
+      }, 500);
     }
 
     // Event listener para botón de Importar CSV
@@ -1881,6 +1915,79 @@
       reader.onload = (evt) => {
         parseCSVAndApply(evt.target.result);
         csvFileInput.value = ''; // Reset
+      };
+      reader.readAsText(file);
+    });
+
+    const btnImportSkus = document.getElementById('btn-import-skus');
+    const csvSkusInput = document.getElementById('csv-skus-input');
+
+    btnImportSkus.addEventListener('click', () => {
+      csvSkusInput.click();
+    });
+
+    csvSkusInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const text = evt.target.result;
+        csvSkusInput.value = ''; // Reset
+        
+        const lines = text.split('\n');
+        if (lines.length < 2) { alert('CSV vacío o sin datos'); return; }
+        
+        // Detectar separador
+        const firstLine = lines[0];
+        const separator = firstLine.includes(';') ? ';' : ',';
+        
+        // Autodetectar columnas
+        const headers = firstLine.split(separator).map(s => s.trim().toLowerCase());
+        let idxId = headers.findIndex(h => h.includes('sku') || h.includes('código') || h.includes('codigo') || h.includes('id'));
+        let idxShort = headers.findIndex(h => h.includes('short') || h.includes('corta') || (h.includes('desc') && !h.includes('full') && !h.includes('larga')));
+        let idxFull = headers.findIndex(h => h.includes('full') || h.includes('larga'));
+        
+        // Fallbacks por si no encuentra el texto exacto
+        if (idxId === -1) idxId = 0;
+        if (idxShort === -1) idxShort = 1;
+        if (idxFull === -1) idxFull = 2;
+        
+        const skus = [];
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const cols = line.split(separator).map(s => s.trim());
+          // Asegurar que la fila tiene suficientes columnas
+          if (cols.length > Math.max(idxId, idxShort, idxFull) && cols[idxId]) {
+            skus.push({ id: cols[idxId], s: cols[idxShort] || '', f: cols[idxFull] || '' });
+          }
+        }
+        
+        if (skus.length === 0) { alert('No se encontraron SKUs en el CSV.'); return; }
+        
+        const origText = btnImportSkus.innerHTML;
+        btnImportSkus.innerHTML = '⏳ Subiendo...';
+        btnImportSkus.disabled = true;
+        
+        try {
+          const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ req: 'upload_skus', skus: skus })
+          });
+          const result = await response.json();
+          if (result.status === 'success') {
+            alert('¡Maestro de SKUs actualizado correctamente en la nube!\nTodos los usuarios verán los nuevos SKUs en su próxima sincronización.');
+            document.getElementById('btn-sync').click(); // Auto sync
+          } else {
+            alert('Hubo un problema: ' + result.message);
+          }
+        } catch(err) {
+          console.error(err);
+          alert('Error de conexión al subir SKUs: ' + err.message + '\n\nRevisa si actualizaste la SCRIPT_URL correctamente en el código HTML.');
+        }
+        btnImportSkus.innerHTML = origText;
+        btnImportSkus.disabled = false;
       };
       reader.readAsText(file);
     });
@@ -1972,6 +2079,14 @@
     });
 
     renderTables();
+    
+    // AUTO-SINCRONIZACIÓN AL CARGAR LA PÁGINA
+    window.addEventListener('DOMContentLoaded', () => {
+      // Pequeño delay para asegurar que el DOM y las fechas estén listos
+      setTimeout(() => {
+        document.getElementById('btn-sync').click();
+      }, 500);
+    });
   </script>
   <script>
     EmcalaAuth.renderUserBadge('userBadgeContainer');
