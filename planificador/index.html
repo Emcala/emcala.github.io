@@ -2120,6 +2120,7 @@
       try {
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
         const result = await response.json();
@@ -2152,10 +2153,15 @@
           const result = await response.json();
           if (result.status === 'success') {
             const fetched = result.data || {};
-            for (const prom in fetched) {
+            for (let prom in fetched) {
+              // Parche de seguridad para problemas de codificación de la Ñ desde Google Sheets
+              if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) {
+                prom = 'MIÑO RENZO';
+              }
+              
               if (!volData[prom]) volData[prom] = {};
               const pD = fetched[prom];
-              ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'f1-v', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt', 'f2-v', 'f2-ung', 'f2-up', 'f2-ag', 'k1-v', 'k2-v', 'bol-p'].forEach(f => {
+              ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'f1-v', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt', 'f2-v', 'f2-ung', 'f2-up', 'f2-ag', 'k1-v', 'k2-v', 'bol-p', 'bol-v'].forEach(f => {
                 if (pD[f] !== undefined && pD[f] !== "") volData[prom][f] = pD[f];
               });
             }
