@@ -113,11 +113,11 @@
     }
 
     .btn-action {
-      background: #fff;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
       color: var(--acc);
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.05);
+      padding: 7px 14px;
+      border-radius: 8px;
       font-family: 'Bricolage Grotesque', sans-serif;
       font-weight: 800;
       font-size: 11px;
@@ -125,22 +125,32 @@
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 4px;
-      transition: opacity 0.2s;
+      gap: 6px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
     .btn-action:hover {
-      opacity: 0.9;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 12px -1px rgba(0, 0, 0, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-action:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
     }
 
     .btn-outline {
-      background: transparent;
+      background: rgba(255, 255, 255, 0.05);
       color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
 
     .btn-outline:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.5);
     }
 
     /* CONTENEDOR TABLA */
@@ -367,10 +377,7 @@
       transition: all 0.2s ease;
     }
     tbody tr:not(.spv-header):hover td {
-      box-shadow: inset 0 0 0 9999px rgba(15, 23, 42, 0.05) !important;
-    }
-    tbody tr:not(.spv-header):hover td input {
-      background-color: transparent !important;
+      box-shadow: inset 0 0 0 9999px rgba(27, 95, 168, 0.15) !important;
     }
     
     .prom-name-cell {
@@ -715,13 +722,13 @@
       </select>
       <select id="spv-kpi1-tar" style="padding: 4px 6px; font-size: 10px; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; cursor: pointer;">
         <option value="">- Tarea -</option>
-        <option value="TOTAL CERVEZA">T. CERVEZA</option>
+        <option value="TOTAL CZA">TOTAL CZA</option>
+        <option value="CORE">CORE</option>
+        <option value="VALUE">VALUE</option>
         <option value="ABOVE CORE">ABOVE CORE</option>
-        <option value="LATONES">LATONES</option>
+        <option value="LATONES 710">LATONES 710</option>
         <option value="BALANCED CHOICES">BALANCED</option>
         <option value="NABS">NABS</option>
-        <option value="AGUAS">AGUAS</option>
-        <option value="UNG TOP">UNG TOP</option>
         <option value="EFICIENCIA DE VENTAS">EFICIENCIA</option>
       </select>
     </div>
@@ -917,6 +924,8 @@
       const desc = (String(fullDesc) + " " + String(shortDesc)).toUpperCase();
       
       const isCerveza = /QUILMES|BRAHMA|BUDWEISER|BUD|STELLA|ANDES|CORONA|PATAGONIA|1890|BAJO\s+CERO|GOOSE|MICHELOB|VALUE|CERVEZA|LATON/i.test(desc);
+      const isValue = /1890/i.test(desc);
+      const isCore = /QUILMES|BRAHMA|BUDWEISER|BUD/i.test(desc) && !isValue;
       const isAboveCore = /STELLA|ANDES|PATAGONIA|CORONA|GOOSE/i.test(desc);
       const isLatones = /LATON\s+710|LATONES\s+710/i.test(desc);
       const isBalanced = /SIN\s+ALCOHOL|CERO|MICHELOB\s+ULTRA|BAJO\s+CERO/i.test(desc);
@@ -934,6 +943,8 @@
       
       return {
         cerveza: isCerveza,
+        core: isCore,
+        value: isValue,
         aboveCore: isAboveCore,
         latones: isLatones,
         balanced: isBalanced,
@@ -1107,27 +1118,37 @@
             if (tar === 'EFICIENCIA DE VENTAS') {
               kpiVal = d['cv-eficiencia'] !== undefined ? d['cv-eficiencia'] : 0;
             } else if (met === 'CCC') {
-              if (tar === 'TOTAL CERVEZA') kpiVal = d['ccc-cerveza'];
+              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['ccc-cerveza'];
+              else if (tar === 'CORE') kpiVal = d['ccc-core'];
+              else if (tar === 'VALUE') kpiVal = d['ccc-value'];
               else if (tar === 'ABOVE CORE') kpiVal = d['ccc-abovecore'];
-              else if (tar === 'LATONES') kpiVal = d['ccc-latones'];
+              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['ccc-latones'];
               else if (tar === 'BALANCED CHOICES') kpiVal = d['ccc-balanced'];
               else if (tar === 'NABS') kpiVal = d['ccc-nabs'];
             } else if (met === 'TBD') {
-              if (tar === 'TOTAL CERVEZA') kpiVal = d['tbd-cerveza'];
+              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['tbd-cerveza'];
+              else if (tar === 'CORE') kpiVal = d['tbd-core'];
+              else if (tar === 'VALUE') kpiVal = d['tbd-value'];
               else if (tar === 'ABOVE CORE') kpiVal = d['tbd-abovecore'];
-              else if (tar === 'LATONES') kpiVal = d['tbd-latones'];
+              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['tbd-latones'];
               else if (tar === 'BALANCED CHOICES') kpiVal = d['tbd-balanced'];
               else if (tar === 'NABS') kpiVal = d['tbd-nabs'];
             } else if (met === 'VOL') {
-              if (tar === 'TOTAL CERVEZA') kpiVal = d['f1-v'];
+              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['f1-v'];
+              else if (tar === 'CORE') kpiVal = d['f1-core'];
+              else if (tar === 'VALUE') kpiVal = d['f1-value'];
               else if (tar === 'ABOVE CORE') kpiVal = d['f1-ac'];
-              else if (tar === 'LATONES') kpiVal = d['f1-lt'];
+              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['f1-lt'];
               else if (tar === 'BALANCED CHOICES') kpiVal = d['f1-bc'];
               else if (tar === 'NABS') kpiVal = d['f2-v'];
+              else if (tar === 'AGUAS') kpiVal = d['f2-ag'];
+              else if (tar === 'UNG TOP') kpiVal = d['f2-up'];
             } else if (met === 'CV') {
-              if (tar === 'TOTAL CERVEZA') kpiVal = d['cv-cerveza'];
+              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['cv-cerveza'];
+              else if (tar === 'CORE') kpiVal = d['cv-core'];
+              else if (tar === 'VALUE') kpiVal = d['cv-value'];
               else if (tar === 'ABOVE CORE') kpiVal = d['cv-abovecore'];
-              else if (tar === 'LATONES') kpiVal = d['cv-latones'];
+              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['cv-latones'];
               else if (tar === 'BALANCED CHOICES') kpiVal = d['cv-balanced'];
               else if (tar === 'NABS') kpiVal = d['cv-nabs'];
               else if (tar === 'AGUAS') kpiVal = d['cv-aguas'];
@@ -1470,20 +1491,20 @@
             await navigator.clipboard.write(data);
             showCopyToast(titleText);
           } catch (err) {
-            console.error(err);
+            console.warn("Clipboard API no soportada. Descargando imagen...", err);
             // Fallback: descargar si falla el portapapeles
             const link = document.createElement('a');
             link.download = `Planificador_EMCALA_${formattedDate.replace(/\//g, '-')}.png`;
             link.href = canvas.toDataURL();
             link.click();
-            alert('No se pudo copiar directo al portapapeles, pero se descargó la foto.');
+            showCopyToast(" Foto descargada a tu PC ⬇️");
           }
           btn.innerHTML = orig;
           btn.disabled = false;
-        });
+        }, "image/png");
       } catch (e) {
         console.error(e);
-        alert('Error al generar la captura.');
+        alert('Hubo un pequeño inconveniente al generar la captura. Por favor, reintenta.');
         btn.innerHTML = orig;
         btn.disabled = false;
       }
@@ -1664,15 +1685,15 @@
         if (!allDatesSales[plannerDate][promoter]) {
           allDatesSales[plannerDate][promoter] = {
             // Volúmenes (VOL)
-            cerveza: 0, nabs: 0, coreValue: 0, aboveCore: 0, balanced: 0, latones: 0, ungTop: 0, aguas: 0, totalUng: 0,
+            cerveza: 0, nabs: 0, core: 0, value: 0, aboveCore: 0, balanced: 0, latones: 0, ungTop: 0, aguas: 0, totalUng: 0,
             // Clientes únicos por segmento (CCC)
-            clientsTotalCerveza: new Set(), clientsAboveCore: new Set(), clientsLatones: new Set(),
+            clientsTotalCerveza: new Set(), clientsCore: new Set(), clientsValue: new Set(), clientsAboveCore: new Set(), clientsLatones: new Set(),
             clientsBalanced: new Set(), clientsNabs: new Set(), clientsAll: new Set(),
             // Transacciones por segmento (TBD)
-            txTotalCerveza: 0, txAboveCore: 0, txLatones: 0, txBalanced: 0, txNabs: 0, txAll: 0,
+            txTotalCerveza: 0, txCore: 0, txValue: 0, txAboveCore: 0, txLatones: 0, txBalanced: 0, txNabs: 0, txAll: 0,
             
             // Clientes únicos con venta de SKU de validación de tarea (CV)
-            cvClientsCerveza: new Set(), cvClientsAboveCore: new Set(), cvClientsLatones: new Set(),
+            cvClientsCerveza: new Set(), cvClientsCore: new Set(), cvClientsValue: new Set(), cvClientsAboveCore: new Set(), cvClientsLatones: new Set(),
             cvClientsBalanced: new Set(), cvClientsNabs: new Set(), cvClientsAguas: new Set(),
             cvClientsUngTop: new Set(), cvClientsEficiencia: new Set()
           };
@@ -1701,8 +1722,8 @@
         let isLatones = false;
         let isNabs = false;
         let isAguas = false;
-        let isUngTop = false;
-        let isCoreValue = false;
+        let isCore = false;
+        let isValue = false;
         
         // Calcular dinámicamente calibre para UNG TOP basado en las columnas de la fila
         const brand = cols[cm.brand] ? cols[cm.brand].trim().toUpperCase() : '';
@@ -1718,6 +1739,8 @@
           // Si está en el maestro de SKUs, usamos su clasificación
           const c = skuData.classification;
           isCerveza = c.cerveza;
+          isCore = c.core;
+          isValue = c.value;
           isAboveCore = c.aboveCore;
           isLatones = c.latones;
           isBalanced = c.balanced;
@@ -1725,13 +1748,11 @@
           isAguas = c.aguas;
           isUngTop = c.ungTop || calcUngTop; // Forzar UNG TOP si el calibre en CSV lo confirma
           
-          if (isCerveza && !isAboveCore) {
-            isCoreValue = true;
-          }
-          
           // Como es un SKU del maestro, acumulamos en los sets de CV
           pSales.cvClientsEficiencia.add(clientId);
           if (isCerveza) pSales.cvClientsCerveza.add(clientId);
+          if (isCore) pSales.cvClientsCore.add(clientId);
+          if (isValue) pSales.cvClientsValue.add(clientId);
           if (isAboveCore) pSales.cvClientsAboveCore.add(clientId);
           if (isLatones) pSales.cvClientsLatones.add(clientId);
           if (isBalanced) pSales.cvClientsBalanced.add(clientId);
@@ -1744,16 +1765,15 @@
             isCerveza = true;
             const articleName = cols[cm.article] ? cols[cm.article].trim().toUpperCase() : '';
             
-            const isQuilmes1890 = (brand === 'QUILMES 1890');
+            const isQuilmes1890 = (brand === 'QUILMES 1890' || articleName.includes('1890'));
             const isQuilmesOther = (brand.includes('QUILMES') && !isQuilmes1890);
             const isBrahma = brand.startsWith('BRAHMA');
             const isBud = brand.startsWith('BUDWEISER') || brand.startsWith('BUD');
             
             isBalanced = (articleName.includes('0.0') || articleName.includes('CERO') || articleName.includes('MICHELOB') || brand.includes('MICHELOB'));
             
-            if ((isQuilmes1890 || isQuilmesOther || isBrahma || isBud) && !isBalanced) {
-              isCoreValue = true;
-            }
+            if (isQuilmes1890) isValue = true;
+            if (isQuilmesOther || isBrahma || isBud) isCore = true;
             
             const isAndes = brand.startsWith('ANDES');
             const isMichelob = brand.startsWith('MICHELOB');
@@ -1779,43 +1799,53 @@
         // Acumular volúmenes, CCC y TBD generales (tanto para maestro como para fallback)
         if (isCerveza) {
           pSales.cerveza += volume;
-          pSales.clientsTotalCerveza.add(clientId);
+          if (clientId) pSales.clientsTotalCerveza.add(clientId);
           pSales.txTotalCerveza += invoices;
-          
-          if (isCoreValue) pSales.coreValue += volume;
-          if (isAboveCore) {
-            pSales.aboveCore += volume;
-            pSales.clientsAboveCore.add(clientId);
-            pSales.txAboveCore += invoices;
-          }
-          if (isBalanced) {
-            pSales.balanced += volume;
-            pSales.clientsBalanced.add(clientId);
-            pSales.txBalanced += invoices;
-          }
-          if (isLatones) {
-            pSales.latones += volume;
-            pSales.clientsLatones.add(clientId);
-            pSales.txLatones += invoices;
-          }
-          totalLinesProcessed++;
-        } else if (isNabs || isAguas) {
-          if (isNabs) {
-            pSales.nabs += volume;
-            pSales.clientsNabs.add(clientId);
-            pSales.txNabs += invoices;
-          }
-          
-          if (isUngTop) pSales.ungTop += volume;
-          if (isAguas) {
-            pSales.aguas += volume;
-          }
-          totalLinesProcessed++;
+        }
+        
+        if (isCore) {
+          pSales.core += volume;
+          if (clientId) pSales.clientsCore.add(clientId);
+          pSales.txCore += invoices;
+        }
+        
+        if (isValue) {
+          pSales.value += volume;
+          if (clientId) pSales.clientsValue.add(clientId);
+          pSales.txValue += invoices;
+        }
+        
+        if (isAboveCore) {
+          pSales.aboveCore += volume;
+          if (clientId) pSales.clientsAboveCore.add(clientId);
+          pSales.txAboveCore += invoices;
+        }
+        if (isBalanced) {
+          pSales.balanced += volume;
+          if (clientId) pSales.clientsBalanced.add(clientId);
+          pSales.txBalanced += invoices;
+        }
+        if (isLatones) {
+          pSales.latones += volume;
+          if (clientId) pSales.clientsLatones.add(clientId);
+          pSales.txLatones += invoices;
+        }
+        
+        if (isNabs) {
+          pSales.nabs += volume;
+          if (clientId) pSales.clientsNabs.add(clientId);
+          pSales.txNabs += invoices;
+        }
+        
+        if (isUngTop) pSales.ungTop += volume;
+        if (isAguas) {
+          pSales.aguas += volume;
         }
         
         if (isGaseosa) {
           pSales.totalUng += volume;
         }
+        totalLinesProcessed++;
       }
       
       if (totalLinesProcessed === 0) {
@@ -1857,12 +1887,12 @@
 
         // Borrar las ventas reales ("lo que estaba") para que se pise con lo nuevo
         const realFields = [
-          'f1-v', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt',
+          'f1-v', 'f1-core', 'f1-value', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt',
           'f2-v', 'f2-ung', 'f2-up', 'f2-ag',
           'k1-v', 'k2-v', 'bol-v',
-          'ccc-cerveza', 'ccc-abovecore', 'ccc-latones', 'ccc-balanced', 'ccc-nabs',
-          'tbd-cerveza', 'tbd-abovecore', 'tbd-latones', 'tbd-balanced', 'tbd-nabs',
-          'cv-cerveza', 'cv-abovecore', 'cv-latones', 'cv-balanced', 'cv-nabs', 'cv-aguas', 'cv-ungtop', 'cv-eficiencia'
+          'ccc-cerveza', 'ccc-core', 'ccc-value', 'ccc-abovecore', 'ccc-latones', 'ccc-balanced', 'ccc-nabs',
+          'tbd-cerveza', 'tbd-core', 'tbd-value', 'tbd-abovecore', 'tbd-latones', 'tbd-balanced', 'tbd-nabs',
+          'cv-cerveza', 'cv-core', 'cv-value', 'cv-abovecore', 'cv-latones', 'cv-balanced', 'cv-nabs', 'cv-aguas', 'cv-ungtop', 'cv-eficiencia'
         ];
         for (const prom in existingData) {
           for (const rf of realFields) {
@@ -1900,44 +1930,51 @@
               existingData[trackedPromoter] = {};
             }
             
-            const s = daySales[promoter];
+            const pSales = daySales[promoter];
             
             // Guardar volúmenes (Focos I y II)
-            existingData[trackedPromoter]['f1-v'] = s.cerveza > 0 ? parseFloat(s.cerveza.toFixed(2)) : '';
-            existingData[trackedPromoter]['f1-cv'] = s.coreValue > 0 ? parseFloat(s.coreValue.toFixed(2)) : '';
-            existingData[trackedPromoter]['f1-ac'] = s.aboveCore > 0 ? parseFloat(s.aboveCore.toFixed(2)) : '';
-            existingData[trackedPromoter]['f1-bc'] = s.balanced > 0 ? parseFloat(s.balanced.toFixed(2)) : '';
-            existingData[trackedPromoter]['f1-lt'] = s.latones > 0 ? parseFloat(s.latones.toFixed(2)) : '';
+            existingData[trackedPromoter]['f1-v'] = pSales.cerveza > 0 ? parseFloat(pSales.cerveza.toFixed(2)) : '';
+            existingData[trackedPromoter]['f1-core'] = pSales.core > 0 ? parseFloat(pSales.core.toFixed(2)) : '';
+            existingData[trackedPromoter]['f1-value'] = pSales.value > 0 ? parseFloat(pSales.value.toFixed(2)) : '';
+            existingData[trackedPromoter]['f1-ac'] = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : '';
+            existingData[trackedPromoter]['f1-bc'] = pSales.balanced > 0 ? parseFloat(pSales.balanced.toFixed(2)) : '';
+            existingData[trackedPromoter]['f1-lt'] = pSales.latones > 0 ? parseFloat(pSales.latones.toFixed(2)) : '';
             
-            existingData[trackedPromoter]['f2-v'] = s.nabs > 0 ? parseFloat(s.nabs.toFixed(2)) : '';
-            existingData[trackedPromoter]['f2-ung'] = s.totalUng > 0 ? parseFloat(s.totalUng.toFixed(2)) : '';
-            existingData[trackedPromoter]['f2-up'] = s.ungTop > 0 ? parseFloat(s.ungTop.toFixed(2)) : '';
-            existingData[trackedPromoter]['f2-ag'] = s.aguas > 0 ? parseFloat(s.aguas.toFixed(2)) : '';
+            existingData[trackedPromoter]['f2-v'] = pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : '';
+            existingData[trackedPromoter]['f2-ung'] = pSales.totalUng > 0 ? parseFloat(pSales.totalUng.toFixed(2)) : '';
+            existingData[trackedPromoter]['f2-up'] = pSales.ungTop > 0 ? parseFloat(pSales.ungTop.toFixed(2)) : '';
+            existingData[trackedPromoter]['f2-ag'] = pSales.aguas > 0 ? parseFloat(pSales.aguas.toFixed(2)) : '';
             
-            existingData[trackedPromoter]['bol-v'] = s.clientsAll.size > 0 ? s.clientsAll.size : '';
+            existingData[trackedPromoter]['bol-v'] = pSales.clientsAll.size > 0 ? pSales.clientsAll.size : '';
             
             // Guardar datos de segmento para CCC y TBD (persistidos para auto-cálculo)
-            existingData[trackedPromoter]['ccc-cerveza'] = s.clientsTotalCerveza.size;
-            existingData[trackedPromoter]['ccc-abovecore'] = s.clientsAboveCore.size;
-            existingData[trackedPromoter]['ccc-latones'] = s.clientsLatones.size;
-            existingData[trackedPromoter]['ccc-balanced'] = s.clientsBalanced.size;
-            existingData[trackedPromoter]['ccc-nabs'] = s.clientsNabs.size;
+            existingData[trackedPromoter]['ccc-cerveza'] = pSales.clientsTotalCerveza.size;
+            existingData[trackedPromoter]['ccc-core'] = pSales.clientsCore.size;
+            existingData[trackedPromoter]['ccc-value'] = pSales.clientsValue.size;
+            existingData[trackedPromoter]['ccc-abovecore'] = pSales.clientsAboveCore.size;
+            existingData[trackedPromoter]['ccc-latones'] = pSales.clientsLatones.size;
+            existingData[trackedPromoter]['ccc-balanced'] = pSales.clientsBalanced.size;
+            existingData[trackedPromoter]['ccc-nabs'] = pSales.clientsNabs.size;
             
-            existingData[trackedPromoter]['tbd-cerveza'] = parseFloat(s.txTotalCerveza.toFixed(2));
-            existingData[trackedPromoter]['tbd-abovecore'] = parseFloat(s.txAboveCore.toFixed(2));
-            existingData[trackedPromoter]['tbd-latones'] = parseFloat(s.txLatones.toFixed(2));
-            existingData[trackedPromoter]['tbd-balanced'] = parseFloat(s.txBalanced.toFixed(2));
-            existingData[trackedPromoter]['tbd-nabs'] = parseFloat(s.txNabs.toFixed(2));
+            existingData[trackedPromoter]['tbd-cerveza'] = parseFloat(pSales.txTotalCerveza.toFixed(2));
+            existingData[trackedPromoter]['tbd-core'] = parseFloat(pSales.txCore.toFixed(2));
+            existingData[trackedPromoter]['tbd-value'] = parseFloat(pSales.txValue.toFixed(2));
+            existingData[trackedPromoter]['tbd-abovecore'] = parseFloat(pSales.txAboveCore.toFixed(2));
+            existingData[trackedPromoter]['tbd-latones'] = parseFloat(pSales.txLatones.toFixed(2));
+            existingData[trackedPromoter]['tbd-balanced'] = parseFloat(pSales.txBalanced.toFixed(2));
+            existingData[trackedPromoter]['tbd-nabs'] = parseFloat(pSales.txNabs.toFixed(2));
             
             // Guardar datos para métrica CV
-            existingData[trackedPromoter]['cv-cerveza'] = s.cvClientsCerveza.size;
-            existingData[trackedPromoter]['cv-abovecore'] = s.cvClientsAboveCore.size;
-            existingData[trackedPromoter]['cv-latones'] = s.cvClientsLatones.size;
-            existingData[trackedPromoter]['cv-balanced'] = s.cvClientsBalanced.size;
-            existingData[trackedPromoter]['cv-nabs'] = s.cvClientsNabs.size;
-            existingData[trackedPromoter]['cv-aguas'] = s.cvClientsAguas.size;
-            existingData[trackedPromoter]['cv-ungtop'] = s.cvClientsUngTop.size;
-            existingData[trackedPromoter]['cv-eficiencia'] = s.cvClientsEficiencia.size;
+            existingData[trackedPromoter]['cv-cerveza'] = pSales.cvClientsCerveza.size;
+            existingData[trackedPromoter]['cv-core'] = pSales.cvClientsCore.size;
+            existingData[trackedPromoter]['cv-value'] = pSales.cvClientsValue.size;
+            existingData[trackedPromoter]['cv-abovecore'] = pSales.cvClientsAboveCore.size;
+            existingData[trackedPromoter]['cv-latones'] = pSales.cvClientsLatones.size;
+            existingData[trackedPromoter]['cv-balanced'] = pSales.cvClientsBalanced.size;
+            existingData[trackedPromoter]['cv-nabs'] = pSales.cvClientsNabs.size;
+            existingData[trackedPromoter]['cv-aguas'] = pSales.cvClientsAguas.size;
+            existingData[trackedPromoter]['cv-ungtop'] = pSales.cvClientsUngTop.size;
+            existingData[trackedPromoter]['cv-eficiencia'] = pSales.cvClientsEficiencia.size;
             
             dateMatches++;
             totalMatchCount++;
