@@ -160,6 +160,15 @@
       width: 100%;
       display: flex;
       flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    #capture-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
       overflow: hidden;
     }
 
@@ -171,8 +180,9 @@
       width: 98%;
       max-width: 1400px;
       margin: 10px auto;
-      flex: 1 1 auto;
-      overflow: hidden;
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
       min-width: 800px;
     }
 
@@ -210,12 +220,23 @@
       text-align: center !important;
     }
 
-    /* ENCABEZADOS STICKY */
     thead th {
       position: sticky;
       z-index: 10;
       border-top: 1px solid var(--txt);
       border-bottom: 2px solid var(--txt);
+      background: inherit;
+    }
+
+    /* Asegurar que cada grupo de foco tenga background sólido en sticky */
+    thead tr:nth-child(1) th {
+      background: var(--acc);
+    }
+    thead tr:nth-child(1) th.prom-col {
+      background: #fff;
+    }
+    thead tr:nth-child(1) th.extra-header {
+      background: var(--surf);
     }
 
     thead th:first-child {
@@ -393,6 +414,9 @@
 
     .cell-input.plan {
       color: var(--muted);
+    }
+    
+    .cell-input.plan[readonly] {
       cursor: default;
       pointer-events: none;
     }
@@ -662,6 +686,443 @@
     .toast-btn.copied {
       background: var(--green);
     }
+
+    /* KPI label cells (previously inline styled) */
+    .kpi-label-cell {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--txt);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 2px;
+    }
+
+    /* ========================================
+       RESPONSIVE: PANTALLAS GRANDES (≥1600px)
+       ======================================== */
+    @media screen and (min-width: 1600px) {
+      :root {
+        --fs-base: 11px;
+        --fs-sm: 11.5px;
+        --fs-hdr: 11.5px;
+        --fs-title: 18px;
+      }
+
+      .hdr {
+        padding: 12px 24px;
+        gap: 16px;
+      }
+
+      .hdr h1 {
+        font-size: 20px;
+        gap: 10px;
+      }
+
+      .hdr h1 span {
+        font-size: 14px;
+      }
+
+      .date-picker input {
+        font-size: 13px;
+        padding: 6px 12px;
+        border-radius: 8px;
+      }
+
+      .btn-action {
+        padding: 9px 18px;
+        font-size: 12.5px;
+        border-radius: 10px;
+        gap: 8px;
+      }
+
+      .table-container {
+        max-width: 98%;
+        width: 99%;
+        border-radius: 14px;
+      }
+
+      th, td {
+        height: 20px;
+        line-height: 20px;
+        padding: 1px 2px;
+      }
+
+      thead tr:nth-child(1) th {
+        height: 24px;
+      }
+
+      thead tr:nth-child(2) th {
+        top: 24px;
+        height: 32px;
+      }
+
+      .foco-header {
+        font-size: 12px;
+        padding: 5px 0;
+      }
+
+      .extra-header {
+        font-size: 11px;
+      }
+
+      th[class^="bg-"] {
+        font-size: var(--fs-sm);
+      }
+
+      .prom-col {
+        font-size: 10px;
+        width: 140px;
+        min-width: 140px;
+      }
+
+      .w-55 { width: 70px; }
+      .w-70 { width: 90px; }
+      .w-110 { width: 140px; }
+
+      .cell-input {
+        font-size: 13px;
+        line-height: 20px;
+      }
+
+      tbody td.text-left {
+        font-size: 10px;
+      }
+
+      .spv-header {
+        height: 22px;
+      }
+
+      .spv-header td {
+        font-size: 13px;
+      }
+
+      .spv-header td.spv-name {
+        font-size: 10px;
+      }
+
+      .toggle-icon {
+        font-size: 10px;
+        width: 14px;
+      }
+
+      .progress-cell {
+        width: 70px;
+        min-width: 70px;
+        font-size: 11px;
+      }
+
+      tfoot td {
+        font-size: 16px;
+        height: 30px;
+      }
+
+      tfoot .text-left {
+        font-size: 15px;
+      }
+
+      .toast-container {
+        font-size: 13px;
+        width: 320px;
+        padding: 14px 20px;
+      }
+
+      .toast-title {
+        font-size: 15px;
+      }
+
+      .toast-btn {
+        font-size: 12px;
+        padding: 8px 14px;
+      }
+
+      /* KPI bar scaling */
+      #spv-kpi-bar {
+        padding: 14px 28px !important;
+        gap: 20px !important;
+      }
+
+      #spv-kpi-bar span {
+        font-size: 13px !important;
+      }
+
+      #spv-kpi-bar select {
+        font-size: 12px !important;
+        padding: 6px 10px !important;
+      }
+
+      #btn-apply-kpi {
+        font-size: 12px !important;
+        padding: 7px 16px !important;
+      }
+
+      .kpi-label-cell {
+        font-size: 12px;
+        padding: 0 4px;
+      }
+    }
+
+    /* =============================================
+       RESPONSIVE: PANTALLAS MUY GRANDES ≥1920px
+       (TV 44", monitores externos Full HD+)
+       ============================================= */
+    @media screen and (min-width: 1920px) {
+      :root {
+        --fs-base: 13px;
+        --fs-sm: 13.5px;
+        --fs-hdr: 13.5px;
+        --fs-title: 22px;
+      }
+
+      .hdr {
+        padding: 14px 32px;
+        gap: 20px;
+      }
+
+      .hdr h1 {
+        font-size: 24px;
+        gap: 12px;
+      }
+
+      .hdr h1 span {
+        font-size: 16px;
+      }
+
+      .date-picker input {
+        font-size: 15px;
+        padding: 8px 14px;
+        border-radius: 8px;
+      }
+
+      .btn-action {
+        padding: 11px 22px;
+        font-size: 14px;
+        border-radius: 10px;
+        gap: 10px;
+      }
+
+      .container {
+        padding: 6px;
+      }
+
+      .table-container {
+        max-width: 100%;
+        width: 100%;
+        margin: 6px auto;
+        border-radius: 16px;
+      }
+
+      th, td {
+        height: 26px;
+        line-height: 26px;
+        padding: 2px 4px;
+      }
+
+      thead tr:nth-child(1) th {
+        height: 30px;
+      }
+
+      thead tr:nth-child(2) th {
+        top: 30px;
+        height: 38px;
+      }
+
+      .foco-header {
+        font-size: 14px;
+        padding: 6px 0;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .extra-header {
+        font-size: 13px;
+      }
+
+      th[class^="bg-"] {
+        font-size: var(--fs-sm);
+      }
+
+      .prom-col {
+        font-size: 12px;
+        width: 170px;
+        min-width: 170px;
+      }
+
+      .w-55 { width: 85px; }
+      .w-70 { width: 110px; }
+      .w-110 { width: 170px; }
+
+      .cell-input {
+        font-size: 15px;
+        line-height: 26px;
+      }
+
+      tbody td.text-left {
+        font-size: 12px;
+      }
+
+      .spv-header {
+        height: 28px;
+      }
+
+      .spv-header td {
+        font-size: 15px;
+      }
+
+      .spv-header td.spv-name {
+        font-size: 12px;
+      }
+
+      .toggle-icon {
+        font-size: 12px;
+        width: 16px;
+      }
+
+      .progress-cell {
+        width: 85px;
+        min-width: 85px;
+        font-size: 13px;
+      }
+
+      tfoot td {
+        font-size: 18px;
+        height: 36px;
+      }
+
+      tfoot .text-left {
+        font-size: 17px;
+      }
+
+      .toast-container {
+        font-size: 14px;
+        width: 360px;
+        padding: 16px 24px;
+        border-radius: 14px;
+      }
+
+      .toast-title {
+        font-size: 17px;
+      }
+
+      .toast-btn {
+        font-size: 13px;
+        padding: 10px 16px;
+        border-radius: 8px;
+      }
+
+      /* KPI bar scaling */
+      #spv-kpi-bar {
+        padding: 16px 36px !important;
+        gap: 24px !important;
+      }
+
+      #spv-kpi-bar span {
+        font-size: 15px !important;
+      }
+
+      #spv-kpi-bar select {
+        font-size: 14px !important;
+        padding: 8px 12px !important;
+        border-radius: 6px !important;
+      }
+
+      #btn-apply-kpi {
+        font-size: 14px !important;
+        padding: 9px 20px !important;
+        border-radius: 6px !important;
+      }
+
+      .kpi-label-cell {
+        font-size: 14px;
+        padding: 0 6px;
+      }
+    }
+
+    /* =============================================
+       RESPONSIVE: PANTALLAS 2K/4K (≥2560px)
+       ============================================= */
+    @media screen and (min-width: 2560px) {
+      :root {
+        --fs-base: 16px;
+        --fs-sm: 16.5px;
+        --fs-hdr: 16.5px;
+        --fs-title: 28px;
+      }
+
+      .hdr {
+        padding: 18px 40px;
+      }
+
+      .hdr h1 {
+        font-size: 30px;
+      }
+
+      .hdr h1 span {
+        font-size: 20px;
+      }
+
+      .btn-action {
+        padding: 14px 28px;
+        font-size: 16px;
+      }
+
+      th, td {
+        height: 32px;
+        line-height: 32px;
+        padding: 3px 6px;
+      }
+
+      thead tr:nth-child(1) th {
+        height: 36px;
+      }
+
+      thead tr:nth-child(2) th {
+        top: 36px;
+        height: 44px;
+      }
+
+      .foco-header {
+        font-size: 17px;
+      }
+
+      .prom-col {
+        font-size: 14px;
+        width: 210px;
+        min-width: 210px;
+      }
+
+      .w-55 { width: 105px; }
+      .w-70 { width: 135px; }
+      .w-110 { width: 210px; }
+
+      .cell-input {
+        font-size: 18px;
+        line-height: 32px;
+      }
+
+      .spv-header {
+        height: 34px;
+      }
+
+      .spv-header td {
+        font-size: 18px;
+      }
+
+      .progress-cell {
+        width: 105px;
+        min-width: 105px;
+        font-size: 16px;
+      }
+
+      tfoot td {
+        font-size: 22px;
+        height: 44px;
+      }
+
+      .kpi-label-cell {
+        font-size: 17px;
+        padding: 0 8px;
+      }
+    }
   </style>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
@@ -739,7 +1200,7 @@
 
   <div class="container">
     <div id="capture-area">
-      <div class="table-container">
+      <div class="table-container" tabindex="0">
         <table id="main-table" class="emcala-table hide-f1-extra hide-f2-extra">
         <thead>
           <tr>
@@ -759,8 +1220,8 @@
             <th class="bg-red w-55">AVANCE</th>
             <th class="bg-yellow f1-extra w-55">CORE+VALUE</th>
             <th class="bg-green f1-extra w-55">ABOVE CORE</th>
-            <th class="f1-extra w-55" style="background:#cbd5e1 !important; color:#000; font-family:'Bricolage Grotesque', sans-serif; font-weight:800; font-size:9px;">BALANCED</th>
-            <th class="f1-extra w-55" style="background:#fdba74 !important; color:#000; font-family:'Bricolage Grotesque', sans-serif; font-weight:800; font-size:9px;">LATONES</th>
+            <th class="f1-extra w-55" style="background:#cbd5e1 !important; color:#000; font-family:'Bricolage Grotesque', sans-serif; font-weight:800; font-size:var(--fs-sm);">BALANCED</th>
+            <th class="f1-extra w-55" style="background:#fdba74 !important; color:#000; font-family:'Bricolage Grotesque', sans-serif; font-weight:800; font-size:var(--fs-sm);">LATONES</th>
             <!-- II -->
             <th class="bg-blue w-70">PLANIFICADO</th>
             <th class="bg-blue w-55">VENTA</th>
@@ -1325,11 +1786,12 @@
           const isLemos = (p === 'LEMOS PATRICIA');
           const tdBg = isLemos ? 'background: var(--acc) !important;' : '';
           const inpStyle = isLemos ? 'style="color: #ffffff !important; background: var(--acc) !important;"' : '';
+          const planReadonly = ''; // Habilitado para supervisor y auditor
 
           tr.innerHTML = `
             <td class="text-left prom-name-cell" onclick="deletePromoterData('${p}')" title="Borrar planificación de ${p}" style="${isLemos ? 'background: var(--acc); color: #fff;' : ''}">${p}</td>
             <!-- I -->
-            <td style="${tdBg}"><input type="text" class="cell-input plan" ${inpStyle} data-prom="${p}" data-field="f1-p" value="${val(p, 'f1-p')}" readonly tabindex="-1"></td>
+            <td style="${tdBg}"><input type="text" class="cell-input plan" ${inpStyle} data-prom="${p}" data-field="f1-p" value="${val(p, 'f1-p')}" ${planReadonly}></td>
             <td style="${tdBg}"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f1-v" value="${val(p, 'f1-v')}"></td>
             <td class="progress-cell"><span id="prog-${p}-f1">0%</span><div class="progress-bar-bg"><div id="bar-${p}-f1" class="progress-bar-fill" style="width:0%"></div></div></td>
             <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#fef9c3'}" class="f1-extra"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f1-cv" value="${val(p, 'f1-cv')}"></td>
@@ -1337,7 +1799,7 @@
             <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#f1f5f9'}" class="f1-extra"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f1-bc" value="${val(p, 'f1-bc')}"></td>
             <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#ffedd5'}" class="f1-extra"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f1-lt" value="${val(p, 'f1-lt')}"></td>
             <!-- II -->
-            <td style="${tdBg}"><input type="text" class="cell-input plan" ${inpStyle} data-prom="${p}" data-field="f2-p" value="${val(p, 'f2-p')}" readonly tabindex="-1"></td>
+            <td style="${tdBg}"><input type="text" class="cell-input plan" ${inpStyle} data-prom="${p}" data-field="f2-p" value="${val(p, 'f2-p')}" ${planReadonly}></td>
             <td style="${tdBg}"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f2-v" value="${val(p, 'f2-v')}"></td>
             <td class="progress-cell"><span id="prog-${p}-f2">0%</span><div class="progress-bar-bg"><div id="bar-${p}-f2" class="progress-bar-fill" style="width:0%"></div></div></td>
 	    <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#fce7f3'}" class="f2-extra"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f2-ung" value="${val(p,'f2-ung')}">
@@ -1351,10 +1813,10 @@
             <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
             <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
             ` : `
-            <td style="background:#fef08a; font-size: 10px; font-weight: 700; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px;">
+            <td class="kpi-label-cell" style="background:#fef08a;">
               ${val(p, 'k1-met') ? '<span style="color:var(--muted)">' + val(p, 'k1-met') + ':</span> ' : ''}${(val(p, 'k1-tar') || '-').toUpperCase()}
             </td>
-            <td style="background:#ffffff"><input type="text" class="cell-input plan" data-prom="${p}" data-field="k1-p" value="${val(p, 'k1-p')}" readonly tabindex="-1"></td>
+            <td style="background:#ffffff"><input type="text" class="cell-input plan" data-prom="${p}" data-field="k1-p" value="${val(p, 'k1-p')}" ${planReadonly}></td>
             <td style="background:#fef08a"><input type="text" class="cell-input real" data-prom="${p}" data-field="k1-v" value="${val(p, 'k1-v')}"></td>
             <td class="progress-cell"><span id="prog-${p}-k1">0%</span><div class="progress-bar-bg"><div id="bar-${p}-k1" class="progress-bar-fill" style="width:0%"></div></div></td>
             `}
@@ -1365,10 +1827,10 @@
             <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
             <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
             ` : `
-            <td style="background:#e9d5ff; font-size: 10px; font-weight: 700; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px;">
+            <td class="kpi-label-cell" style="background:#e9d5ff;">
               ${val(p, 'k2-met') ? '<span style="color:var(--muted)">' + val(p, 'k2-met') + ':</span> ' : ''}${(val(p, 'k2-tar') || '-').toUpperCase()}
             </td>
-            <td style="background:#ffffff"><input type="text" class="cell-input plan" data-prom="${p}" data-field="k2-p" value="${val(p, 'k2-p')}" readonly tabindex="-1"></td>
+            <td style="background:#ffffff"><input type="text" class="cell-input plan" data-prom="${p}" data-field="k2-p" value="${val(p, 'k2-p')}" ${planReadonly}></td>
             <td style="background:#e9d5ff"><input type="text" class="cell-input real" data-prom="${p}" data-field="k2-v" value="${val(p, 'k2-v')}"></td>
             <td class="progress-cell"><span id="prog-${p}-k2">0%</span><div class="progress-bar-bg"><div id="bar-${p}-k2" class="progress-bar-fill" style="width:0%"></div></div></td>
             `}
@@ -1378,7 +1840,7 @@
             <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
             <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
             ` : `
-            <td style="background:#bfdbfe"><input type="text" class="cell-input plan" data-prom="${p}" data-field="bol-p" value="${val(p, 'bol-p')}" readonly tabindex="-1"></td>
+            <td style="background:#bfdbfe"><input type="text" class="cell-input plan" data-prom="${p}" data-field="bol-p" value="${val(p, 'bol-p')}" ${planReadonly}></td>
             <td style="background:#bfdbfe"><input type="text" class="cell-input real" data-prom="${p}" data-field="bol-v" value="${val(p, 'bol-v')}" style="font-weight:bold" readonly tabindex="-1"></td>
             <td class="progress-cell"><span id="prog-${p}-bol">0%</span><div class="progress-bar-bg"><div id="bar-${p}-bol" class="progress-bar-fill" style="width:0%"></div></div></td>
             `}
