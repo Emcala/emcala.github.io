@@ -1451,7 +1451,7 @@
           width: 100%;
           text-align: center;
           color: #ffffff;
-          background: linear-gradient(90deg, #0B2559 0%, #1B5FA8 50%, #0B2559 100%);
+          background: #1B5FA8;
           padding: 8px 0;
           font-family: 'Bricolage Grotesque', sans-serif;
           font-size: 13px;
@@ -1460,7 +1460,7 @@
           border-bottom: 2px solid #0f172a;
           border-radius: 12px 12px 0 0;
         `;
-        tempBanner.innerHTML = `🏆 ${titleText.toUpperCase()}`;
+        tempBanner.innerHTML = `📅 ${titleText.toUpperCase()}`;
 
         // Insertar al inicio de la tabla
         table.insertBefore(tempBanner, table.firstChild);
@@ -1468,6 +1468,9 @@
         // Guardar border-radius original de la tabla y setear uno para la captura
         const origRadius = table.style.borderRadius;
         table.style.borderRadius = '12px';
+
+        // Esperar 50ms para asegurar que el navegador calcule el ancho/alto real
+        await new Promise(r => setTimeout(r, 50));
 
         const canvas = await html2canvas(table, {
           backgroundColor: '#0B2559',
