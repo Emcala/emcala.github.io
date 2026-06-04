@@ -171,22 +171,9 @@
       width: 98%;
       max-width: 1400px;
       margin: 10px auto;
-      flex: 0 1 auto;
-      overflow: auto;
+      flex: 1 1 auto;
+      overflow: hidden;
       min-width: 800px;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-
-    .table-container::-webkit-scrollbar {
-      display: none;
-    }
-
-    @media (min-width: 1024px) {
-      .table-container {
-        width: fit-content;
-        max-width: 95%;
-      }
     }
 
     table {
@@ -280,21 +267,15 @@
     }
 
     .w-55 {
-      width: 55px !important;
-      min-width: 55px !important;
-      max-width: 55px !important;
+      width: 55px;
     }
 
     .w-70 {
-      width: 70px !important;
-      min-width: 70px !important;
-      max-width: 70px !important;
+      width: 70px;
     }
 
     .w-110 {
-      width: 110px !important;
-      min-width: 110px !important;
-      max-width: 110px !important;
+      width: 110px;
     }
 
     th[class^="bg-"] {
@@ -376,8 +357,8 @@
     tbody tr:not(.spv-header) {
       transition: all 0.2s ease;
     }
-    tbody tr:not(.spv-header):hover td {
-      box-shadow: inset 0 0 0 9999px rgba(27, 95, 168, 0.15) !important;
+    tbody tr:not(.spv-header):hover {
+      filter: brightness(0.95);
     }
     
     .prom-name-cell {
@@ -478,18 +459,18 @@
 
     tfoot td {
       font-family: 'Aptos Display', 'Aptos', 'Barlow', sans-serif;
-      font-size: 11.5px;
+      font-size: 13.5px;
       border-color: #334155;
       position: sticky;
       bottom: 0;
       z-index: 10;
       border-top: 2px solid var(--txt);
-      height: 18px;
+      height: 24px;
     }
 
     tfoot .text-left {
       font-family: 'Barlow', sans-serif;
-      font-size: var(--fs-hdr);
+      font-size: 13px;
       color: #fff;
       background: #0f172a;
       padding: 0;
@@ -565,11 +546,11 @@
       transition: all 0.2s;
     }
 
-    #main-table.hide-f1-extra .f1-extra {
+    .emcala-table.hide-f1-extra .f1-extra {
       display: none;
     }
 
-    #main-table.hide-f2-extra .f2-extra {
+    .emcala-table.hide-f2-extra .f2-extra {
       display: none;
     }
 
@@ -757,8 +738,9 @@
   </div>
 
   <div class="container">
-    <div class="table-container">
-      <table id="main-table" class="hide-f1-extra hide-f2-extra">
+    <div id="capture-area">
+      <div class="table-container">
+        <table id="main-table" class="emcala-table hide-f1-extra hide-f2-extra">
         <thead>
           <tr>
             <th rowspan="2" class="prom-col w-110">SUPERVISOR / PROMOTOR</th>
@@ -783,7 +765,7 @@
             <th class="bg-blue w-70">PLANIFICADO</th>
             <th class="bg-blue w-55">VENTA</th>
             <th class="bg-blue w-55">AVANCE</th>
-	    <th class="bg-pink f2-extra w-55">TOTAL UNG</th>
+            <th class="bg-pink f2-extra w-55">TOTAL UNG</th>
             <th class="bg-pink f2-extra w-55">UNG TOP</th>
             <th class="bg-lightblue f2-extra w-55">AGUAS</th>
             <!-- III -->
@@ -825,7 +807,7 @@
                 <div id="bar-grand-f2" class="progress-bar-fill" style="width:0%"></div>
               </div>
             </td>
-	    <td id="grand-f2-ung" class="tot-val f2-extra">0.00</td>
+            <td id="grand-f2-ung" class="tot-val f2-extra">0.00</td>
             <td id="grand-f2-up" class="tot-val f2-extra">0.00</td>
             <td id="grand-f2-ag" class="tot-val f2-extra">0.00</td>
 
@@ -839,6 +821,7 @@
       </table>
     </div>
   </div>
+</div>
 
   <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
@@ -1088,8 +1071,13 @@
         } else {
           hue = 55 + ((pct - 90) / 10) * 80; // 55 a 135 (Solo aquí se vuelve Verde)
         }
-        barEl.style.background = `linear-gradient(90deg, hsla(${hue}, 90%, 45%, 0.85), hsla(${hue}, 85%, 55%, 0.95))`;
-        barEl.style.boxShadow = `inset 0 1px 2px hsla(0, 0%, 100%, 0.4), inset 0 -1px 2px hsla(0, 0%, 0%, 0.15)`;
+        if (pct === 0) {
+          barEl.style.background = 'transparent';
+          barEl.style.boxShadow = 'none';
+        } else {
+          barEl.style.background = `hsl(${hue}, 85%, 50%)`;
+          barEl.style.boxShadow = 'none';
+        }
       }
     }
 
@@ -1358,10 +1346,10 @@
             <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#e0f2fe'}" class="f2-extra"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f2-ag" value="${val(p, 'f2-ag')}"></td>
             <!-- III -->
             ${isLemos ? `
-            <td style="background: var(--acc) !important;"></td>
-            <td style="background: var(--acc) !important;"></td>
-            <td style="background: var(--acc) !important;"></td>
-            <td style="background: var(--acc) !important;"></td>
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
             ` : `
             <td style="background:#fef08a; font-size: 10px; font-weight: 700; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px;">
               ${val(p, 'k1-met') ? '<span style="color:var(--muted)">' + val(p, 'k1-met') + ':</span> ' : ''}${(val(p, 'k1-tar') || '-').toUpperCase()}
@@ -1372,10 +1360,10 @@
             `}
             <!-- IV -->
             ${isLemos ? `
-            <td style="background: var(--acc) !important;"></td>
-            <td style="background: var(--acc) !important;"></td>
-            <td style="background: var(--acc) !important;"></td>
-            <td style="background: var(--acc) !important;"></td>
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
             ` : `
             <td style="background:#e9d5ff; font-size: 10px; font-weight: 700; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px;">
               ${val(p, 'k2-met') ? '<span style="color:var(--muted)">' + val(p, 'k2-met') + ':</span> ' : ''}${(val(p, 'k2-tar') || '-').toUpperCase()}
@@ -1384,9 +1372,16 @@
             <td style="background:#e9d5ff"><input type="text" class="cell-input real" data-prom="${p}" data-field="k2-v" value="${val(p, 'k2-v')}"></td>
             <td class="progress-cell"><span id="prog-${p}-k2">0%</span><div class="progress-bar-bg"><div id="bar-${p}-k2" class="progress-bar-fill" style="width:0%"></div></div></td>
             `}
+            <!-- V (Boletas) -->
+            ${isLemos ? `
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            <td style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            ` : `
             <td style="background:#bfdbfe"><input type="text" class="cell-input plan" data-prom="${p}" data-field="bol-p" value="${val(p, 'bol-p')}" readonly tabindex="-1"></td>
             <td style="background:#bfdbfe"><input type="text" class="cell-input real" data-prom="${p}" data-field="bol-v" value="${val(p, 'bol-v')}" style="font-weight:bold" readonly tabindex="-1"></td>
             <td class="progress-cell"><span id="prog-${p}-bol">0%</span><div class="progress-bar-bg"><div id="bar-${p}-bol" class="progress-bar-fill" style="width:0%"></div></div></td>
+            `}
           `;
           tbody.appendChild(tr);
         });
@@ -1430,7 +1425,7 @@
       btn.disabled = true;
 
       try {
-        const table = document.querySelector('.table-container');
+        const captureEl = document.querySelector('#capture-area');
         
         // 1. Obtener fecha y hora actuales
         const dateInputVal = document.getElementById('date-input').value; // AAAA-MM-DD
@@ -1460,28 +1455,55 @@
           border-bottom: 2px solid #0f172a;
           border-radius: 12px 12px 0 0;
         `;
-        tempBanner.innerHTML = `📅 ${titleText.toUpperCase()}`;
+        tempBanner.innerHTML = `
+            <h2 style="margin:0; font-family:'Bricolage Grotesque', sans-serif; font-size:20px; font-weight:800; letter-spacing:1px; color:#ffffff;">
+              <span style="color:var(--c-blue)">EMCALA</span> | ${titleText}
+            </h2>
+          `;
+          captureEl.insertBefore(tempBanner, captureEl.firstChild);
 
-        // Insertar al inicio de la tabla
-        table.insertBefore(tempBanner, table.firstChild);
-
-        // Guardar border-radius original de la tabla y setear uno para la captura
-        const origRadius = table.style.borderRadius;
-        table.style.borderRadius = '12px';
+          // Replace inputs with spans for html2canvas (it can't center text in inputs)
+          const inputBackup = [];
+          captureEl.querySelectorAll('input.cell-input').forEach(inp => {
+            const span = document.createElement('span');
+            span.textContent = inp.value;
+            span.style.cssText = window.getComputedStyle(inp).cssText;
+            span.style.display = 'inline-block';
+            span.style.width = '100%';
+            span.style.height = '100%';
+            span.style.textAlign = 'center';
+            span.style.verticalAlign = 'middle';
+            span.style.lineHeight = inp.parentElement.style.height || '14px';
+            span.style.fontSize = '10.5px';
+            span.style.fontWeight = inp.classList.contains('real') ? '800' : '600';
+            span.style.fontFamily = "'Aptos Display', 'Aptos', 'Barlow', sans-serif";
+            span.style.padding = '0';
+            span.style.margin = '0';
+            span.style.border = 'none';
+            span.style.background = 'transparent';
+            span.className = 'capture-span';
+            inputBackup.push({ input: inp, parent: inp.parentElement });
+            inp.parentElement.replaceChild(span, inp);
+          });
 
         // Esperar 50ms para asegurar que el navegador calcule el ancho/alto real
         await new Promise(r => setTimeout(r, 50));
 
-        const canvas = await html2canvas(table, {
+        const canvas = await html2canvas(captureEl, {
           backgroundColor: '#0B2559',
           scale: 2,
           logging: false,
           useCORS: true
         });
 
+        // Restore inputs
+        inputBackup.forEach(({ input, parent }) => {
+          const span = parent.querySelector('.capture-span');
+          if (span) parent.replaceChild(input, span);
+        });
+
         // Limpiar elementos temporales
         tempBanner.remove();
-        table.style.borderRadius = origRadius;
 
         canvas.toBlob(async (blob) => {
           try {
