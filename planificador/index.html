@@ -511,7 +511,7 @@
     }
 
     @media print {
-      .hdr, #emcala-toast {
+      .hdr, #emcala-toast, #btn-toggle-hdr, #btn-floating-copy {
         display: none !important;
       }
 
@@ -1133,6 +1133,7 @@
 
 <body>
   <button class="btn-action btn-outline" id="btn-toggle-hdr" style="display:none; position: fixed; bottom: 20px; left: 20px; z-index: 9999; padding: 8px; font-size: 18px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.5); background: var(--acc); border: 2px solid white; justify-content: center;" title="Ocultar/Mostrar Encabezado">👁️</button>
+  <button class="btn-action" id="btn-floating-copy" style="display:none; position: fixed; bottom: 20px; left: 75px; z-index: 9999; padding: 8px 16px; font-size: 14px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); background: var(--acc); color: white; border: 2px solid white; justify-content: center;" title="Tomar captura de la tabla">📸 Copiar Foto</button>
 
   <div class="hdr" id="main-hdr">
     <div class="hdr-left">
@@ -1318,12 +1319,15 @@
       if (toggleBtn && mainHdr) {
         toggleBtn.style.display = 'flex';
         toggleBtn.addEventListener('click', () => {
+          const floatingCopyBtn = document.getElementById('btn-floating-copy');
           if (mainHdr.style.display === 'none') {
             mainHdr.style.display = 'flex';
             toggleBtn.textContent = '👁️';
+            if (floatingCopyBtn) floatingCopyBtn.style.display = 'none';
           } else {
             mainHdr.style.display = 'none';
             toggleBtn.textContent = '🙈';
+            if (floatingCopyBtn) floatingCopyBtn.style.display = 'flex';
           }
         });
       }
@@ -1928,6 +1932,22 @@
 
     document.getElementById('date-input').addEventListener('change', renderTables);
     document.getElementById('btn-print').addEventListener('click', () => { window.print(); });
+
+    document.getElementById('btn-floating-copy').addEventListener('click', function() {
+      const mainBtn = document.getElementById('btn-copy-img');
+      const orig = this.innerHTML;
+      this.innerHTML = '⏳ Capturando...';
+      this.disabled = true;
+      const observer = new MutationObserver(() => {
+        if (!mainBtn.disabled) {
+          this.innerHTML = orig;
+          this.disabled = false;
+          observer.disconnect();
+        }
+      });
+      observer.observe(mainBtn, { attributes: true, attributeFilter: ['disabled'] });
+      mainBtn.click();
+    });
 
     document.getElementById('btn-copy-img').addEventListener('click', async () => {
       const btn = document.getElementById('btn-copy-img');
