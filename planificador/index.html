@@ -1132,15 +1132,15 @@
 </head>
 
 <body>
+  <button class="btn-action btn-outline" id="btn-toggle-hdr" style="display:none; position: fixed; bottom: 20px; left: 20px; z-index: 9999; padding: 8px; font-size: 18px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.5); background: var(--acc); border: 2px solid white; justify-content: center;" title="Ocultar/Mostrar Encabezado">👁️</button>
 
-  <div class="hdr">
+  <div class="hdr" id="main-hdr">
     <div class="hdr-left">
       <h1>EMCALA <span>| Planificador Matinal General</span></h1>
       <div class="date-picker"><input type="date" id="date-input"></div>
-      <button class="btn-action btn-outline" id="btn-toggle-toolbar" style="display:none; padding: 4px 8px; font-size: 14px;" title="Ocultar/Mostrar Botones">👁️</button>
     </div>
 
-    <div class="hdr-left" id="toolbar-buttons">
+    <div class="hdr-left">
       <button class="btn-action btn-outline" id="btn-sync" style="border-color:var(--green); color:var(--green)">🔄
         Sincronizar Todos</button>
       <button class="btn-action" id="btn-save" style="background:var(--green); color:white; border:none;">💾 Guardar
@@ -1313,16 +1313,16 @@
     const MY_SPV = session ? session.nombre.toUpperCase() : '';
 
     if (isAuditor) {
-      const toggleBtn = document.getElementById('btn-toggle-toolbar');
-      const toolbarButtons = document.getElementById('toolbar-buttons');
-      if (toggleBtn && toolbarButtons) {
+      const toggleBtn = document.getElementById('btn-toggle-hdr');
+      const mainHdr = document.getElementById('main-hdr');
+      if (toggleBtn && mainHdr) {
         toggleBtn.style.display = 'flex';
         toggleBtn.addEventListener('click', () => {
-          if (toolbarButtons.style.display === 'none') {
-            toolbarButtons.style.display = 'flex';
+          if (mainHdr.style.display === 'none') {
+            mainHdr.style.display = 'flex';
             toggleBtn.textContent = '👁️';
           } else {
-            toolbarButtons.style.display = 'none';
+            mainHdr.style.display = 'none';
             toggleBtn.textContent = '🙈';
           }
         });
