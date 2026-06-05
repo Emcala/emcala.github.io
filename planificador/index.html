@@ -1753,7 +1753,6 @@
     }
 
     function renderTables() {
-      loadData();
       tbody.innerHTML = '';
 
       for (const spv in SPV_DATA) {
@@ -1930,7 +1929,9 @@
       }
     };
 
-    document.getElementById('date-input').addEventListener('change', renderTables);
+    document.getElementById('date-input').addEventListener('change', () => {
+      document.getElementById('btn-sync').click();
+    });
     document.getElementById('btn-print').addEventListener('click', () => { window.print(); });
 
     document.getElementById('btn-floating-copy').addEventListener('click', function() {
@@ -2842,7 +2843,7 @@
       }
     }
 
-    document.getElementById('btn-sync').addEventListener('click', async () => {
+    document.getElementById('btn-sync').addEventListener('click', async (e) => {
       const date = document.getElementById('date-input').value;
       if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') { alert('Falta URL de Sheets'); return; }
 
@@ -2850,14 +2851,21 @@
       const orig = btn.innerHTML;
       btn.innerHTML = '⏳ Sincronizando...'; btn.disabled = true;
 
+      // Determinamos si fue un click manual o el auto-sync al cargar la página
+      const isAutoSync = !e.isTrusted;
+
       try {
-        // 1. Guardar datos locales al servidor PRIMERO (para no perder ediciones)
-        await saveToServer(true);
+        // Solo guardamos automáticamente ANTES de sincronizar si fue un clic manual del usuario.
+        // Si es auto-sync al abrir la app, NO guardamos, para no pisar la nube con caché viejo local.
+        if (!isAutoSync) {
+          await saveToServer(true);
+        }
 
         // 2. Sincronizar maestro de SKUs
         await syncSkus();
 
-        // 3. Traer datos actualizados del servidor
+        // 3. Traer datos actualizados del servidor — SIEMPRE reemplaza volData completo
+        const cloudData = {};
         const promises = Object.keys(SPV_DATA).map(async (spv) => {
           const response = await fetch(`${SCRIPT_URL}?date=${date}&spv=${encodeURIComponent(spv)}`);
           const result = await response.json();
@@ -2868,32 +2876,50 @@
               if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) {
                 prom = 'MIÑO RENZO';
               }
-              
-              if (!volData[prom]) volData[prom] = {};
-              const pD = fetched[prom];
-              ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'f1-v', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt', 'f2-v', 'f2-ung', 'f2-up', 'f2-rb', 'f2-ag', 'bol-p', 'bol-v'].forEach(f => {
-                if (pD[f] !== undefined && pD[f] !== "") volData[prom][f] = pD[f];
-              });
+              cloudData[prom] = fetched[prom];
             }
           }
         });
 
         await Promise.all(promises);
+
+        // Reemplazar volData con datos de la nube (no merge, reemplazo completo)
+        volData = cloudData;
         saveData();
         renderTables();
-      } catch (e) { alert('Error de conexión al sincronizar.'); }
 
-      btn.innerHTML = orig; btn.disabled = false;
+        // Indicador visual de éxito
+        btn.innerHTML = '✅ Sincronizado'; btn.disabled = false;
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+        return;
+
+      } catch (e) {
+        console.warn('Error de sincronización, intentando caché local:', e);
+        // FALLBACK: si falla la nube, intentar cargar de localStorage
+        loadData();
+        renderTables();
+        btn.innerHTML = '⚠️ Sin conexión (datos locales)';
+        btn.disabled = false;
+        btn.style.borderColor = '#ef4444';
+        btn.style.color = '#ef4444';
+        setTimeout(() => {
+          btn.innerHTML = orig;
+          btn.style.borderColor = '';
+          btn.style.color = '';
+        }, 4000);
+        return;
+      }
     });
 
+    // Render inicial: mostrar tabla vacía con estructura, sin datos viejos
     renderTables();
     
-    // AUTO-SINCRONIZACIÓN AL CARGAR LA PÁGINA
+    // AUTO-SINCRONIZACIÓN AL CARGAR LA PÁGINA — siempre desde la nube
     window.addEventListener('DOMContentLoaded', () => {
       // Pequeño delay para asegurar que el DOM y las fechas estén listos
       setTimeout(() => {
         document.getElementById('btn-sync').click();
-      }, 500);
+      }, 300);
     });
   </script>
   <script>
