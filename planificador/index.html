@@ -2206,24 +2206,26 @@
           const articleName = cols[cm.article] ? cols[cm.article].trim().toUpperCase() : '';
           
           const isQuilmes1890 = (brand === 'QUILMES 1890' || brand === '1890' || articleName.includes('1890'));
-          const isQuilmesOther = (brand.includes('QUILMES') && !isQuilmes1890);
-          const isBrahma = brand.startsWith('BRAHMA');
-          const isBud = brand.startsWith('BUDWEISER') || brand.startsWith('BUD');
           const isStellaPureGold = (brand.includes('STELLA') && articleName.includes('PURE GOLD'));
           
           isBalanced = (articleName.includes('0.0') || articleName.includes('SIN ALCOHOL') || articleName.includes('MICHELOB') || brand.includes('MICHELOB') || isStellaPureGold);
-          
-          if (isQuilmes1890) isValue = true;
-          if (isQuilmesOther || isBrahma || isBud) isCore = true;
           
           const isAndes = brand.startsWith('ANDES');
           const isMichelob = brand.startsWith('MICHELOB');
           const isStella = brand.startsWith('STELLA');
           const isPatagonia = brand.startsWith('PATAGONIA');
           const isCorona = brand.startsWith('CORONA');
+          const isGoose = brand.startsWith('GOOSE');
+          const isTemple = brand.startsWith('TEMPLE');
           
-          if (isAndes || isMichelob || isStella || isPatagonia || isCorona) {
+          if (isAndes || isMichelob || isStella || isPatagonia || isCorona || isGoose || isTemple) {
             isAboveCore = true;
+          } else {
+            if (isQuilmes1890) {
+              isValue = true;
+            } else {
+              isCore = true; // Todo lo que no sea Above Core o Value, cae en Core (incluye Quilmes, Brahma, Bud, Iguana, Norte, Bajo Cero, etc.)
+            }
           }
           
           if (calibreDesc === '710 CC LATAS' || articleName.includes('LATON 710')) {
