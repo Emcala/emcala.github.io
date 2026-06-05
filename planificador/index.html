@@ -1993,10 +1993,16 @@
           captureEl.insertBefore(tempBanner, captureEl.firstChild);
 
           const tableCont = captureEl.querySelector('.table-container');
+          let origTableMaxHeight = '';
+          let origTableOverflowY = '';
           if (tableCont) {
+            origTableMaxHeight = tableCont.style.maxHeight;
+            origTableOverflowY = tableCont.style.overflowY;
             tableCont.style.marginTop = '0';
             tableCont.style.borderTopLeftRadius = '0';
             tableCont.style.borderTopRightRadius = '0';
+            tableCont.style.maxHeight = 'none';
+            tableCont.style.overflowY = 'visible';
           }
 
           // Replace inputs with spans for html2canvas (it can't center text in inputs)
@@ -2055,6 +2061,8 @@
         if (tableCont) {
           tableCont.style.marginTop = '';
           tableCont.style.borderRadius = '';
+          tableCont.style.maxHeight = origTableMaxHeight;
+          tableCont.style.overflowY = origTableOverflowY;
         }
 
         canvas.toBlob(async (blob) => {
