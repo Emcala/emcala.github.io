@@ -1365,13 +1365,18 @@
     }
 
     function loadSkuMaster() {
-      const saved = localStorage.getItem('emcala_skus');
-      if (saved) {
-        try {
-          skuMaster = JSON.parse(saved);
-        } catch(e) {
-          skuMaster = [];
+      try {
+        const saved = localStorage.getItem('emcala_skus');
+        if (saved) {
+          try {
+            skuMaster = JSON.parse(saved);
+          } catch(e) {
+            skuMaster = [];
+          }
         }
+      } catch (e) {
+        console.warn('localStorage no disponible para skuMaster');
+        skuMaster = [];
       }
     }
 
@@ -1402,20 +1407,24 @@
     function loadData() {
       const date = document.getElementById('date-input').value;
       const mainKey = getStorageKey();
-      const saved = localStorage.getItem(mainKey);
-
-      if (saved) {
-        volData = JSON.parse(saved);
-      } else {
-        volData = {};
-        for (const spv in SPV_DATA) {
-          const oldKey = `emcala_vol_${spv}_${date}_v2`;
-          const oldSaved = localStorage.getItem(oldKey);
-          if (oldSaved) {
-            Object.assign(volData, JSON.parse(oldSaved));
+      try {
+        const saved = localStorage.getItem(mainKey);
+        if (saved) {
+          volData = JSON.parse(saved);
+        } else {
+          volData = {};
+          for (const spv in SPV_DATA) {
+            const oldKey = `emcala_vol_${spv}_${date}_v2`;
+            const oldSaved = localStorage.getItem(oldKey);
+            if (oldSaved) {
+              Object.assign(volData, JSON.parse(oldSaved));
+            }
           }
+          saveData();
         }
-        saveData();
+      } catch (e) {
+        console.warn('localStorage no disponible para loadData');
+        volData = {};
       }
     }
 
@@ -2133,7 +2142,7 @@
         const rawInvoices = cols[cm.invoices] ? cols[cm.invoices].trim().replace(',', '.') : '0';
         const invoices = parseFloat(rawInvoices || 0);
         const divisionVal = cols[cm.division] ? cols[cm.division].trim() : '';
-        const isGaseosa = (divisionVal === '1');
+        let isGaseosa = (divisionVal === '1');
         
         if (!allDatesSales[plannerDate]) {
           allDatesSales[plannerDate] = {};
@@ -2189,6 +2198,7 @@
         let isAguas = false;
         let isCore = false;
         let isValue = false;
+        let isUngTop = false;
         
         // Calcular dinámicamente calibre para UNG TOP basado en las columnas de la fila
         const brand = cols[cm.brand] ? cols[cm.brand].trim().toUpperCase() : '';
@@ -2201,7 +2211,7 @@
         const calcUngTop = isGatorade || isRedBull || isRockstar || cc <= 500;
         
         // 1) CLASIFICACIÓN USANDO SIEMPRE LAS COLUMNAS DEL CSV (Marca / Categoría / Artículo)
-        if (category === 'CERVEZAS CMQ') {
+        if (category.includes('CERVEZA') || category.includes('ARTESANAL')) {
           isCerveza = true;
           const articleName = cols[cm.article] ? cols[cm.article].trim().toUpperCase() : '';
           
@@ -2210,13 +2220,13 @@
           
           isBalanced = (articleName.includes('0.0') || articleName.includes('SIN ALCOHOL') || articleName.includes('MICHELOB') || brand.includes('MICHELOB') || isStellaPureGold);
           
-          const isAndes = brand.startsWith('ANDES');
-          const isMichelob = brand.startsWith('MICHELOB');
-          const isStella = brand.startsWith('STELLA');
-          const isPatagonia = brand.startsWith('PATAGONIA');
-          const isCorona = brand.startsWith('CORONA');
-          const isGoose = brand.startsWith('GOOSE');
-          const isTemple = brand.startsWith('TEMPLE');
+          const isAndes = brand.includes('ANDES');
+          const isMichelob = brand.includes('MICHELOB');
+          const isStella = brand.includes('STELLA');
+          const isPatagonia = brand.includes('PATAGONIA');
+          const isCorona = brand.includes('CORONA');
+          const isGoose = brand.includes('GOOSE');
+          const isTemple = brand.includes('TEMPLE');
           
           if (isAndes || isMichelob || isStella || isPatagonia || isCorona || isGoose || isTemple) {
             isAboveCore = true;
@@ -2234,7 +2244,9 @@
         } else if (category === 'UNG' || category === 'NABS') {
           isNabs = true;
           isUngTop = calcUngTop;
+          isGaseosa = true;
         } else if (category === 'AGUAS ECO' || category === 'AGUAS') {
+          isNabs = true;
           isAguas = true;
         }
 
