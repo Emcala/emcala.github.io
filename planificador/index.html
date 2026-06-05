@@ -1137,9 +1137,10 @@
     <div class="hdr-left">
       <h1>EMCALA <span>| Planificador Matinal General</span></h1>
       <div class="date-picker"><input type="date" id="date-input"></div>
+      <button class="btn-action btn-outline" id="btn-toggle-toolbar" style="display:none; padding: 4px 8px; font-size: 14px;" title="Ocultar/Mostrar Botones">👁️</button>
     </div>
 
-    <div class="hdr-left">
+    <div class="hdr-left" id="toolbar-buttons">
       <button class="btn-action btn-outline" id="btn-sync" style="border-color:var(--green); color:var(--green)">🔄
         Sincronizar Todos</button>
       <button class="btn-action" id="btn-save" style="background:var(--green); color:white; border:none;">💾 Guardar
@@ -1308,7 +1309,25 @@
     let SPV_DATA = {};
     const session = typeof EmcalaAuth !== 'undefined' ? EmcalaAuth.getSession() : null;
     const isSupervisor = session && session.rol.toLowerCase() === 'supervisor';
+    const isAuditor = session && session.rol.toLowerCase() === 'auditor';
     const MY_SPV = session ? session.nombre.toUpperCase() : '';
+
+    if (isAuditor) {
+      const toggleBtn = document.getElementById('btn-toggle-toolbar');
+      const toolbarButtons = document.getElementById('toolbar-buttons');
+      if (toggleBtn && toolbarButtons) {
+        toggleBtn.style.display = 'flex';
+        toggleBtn.addEventListener('click', () => {
+          if (toolbarButtons.style.display === 'none') {
+            toolbarButtons.style.display = 'flex';
+            toggleBtn.textContent = '👁️';
+          } else {
+            toolbarButtons.style.display = 'none';
+            toggleBtn.textContent = '🙈';
+          }
+        });
+      }
+    }
 
     if (isSupervisor) {
       const btnClear = document.getElementById('btn-clear');
