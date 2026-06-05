@@ -1208,7 +1208,7 @@
             <th colspan="3" class="foco-header" onclick="toggleFocoExtra(1)">FOCO I (TOTAL CVZA)</th>
             <th colspan="4" class="extra-header f1-extra"></th>
             <th colspan="3" class="foco-header" onclick="toggleFocoExtra(2)">FOCO II (TOTAL NABS)</th>
-            <th colspan="3" class="extra-header f2-extra"></th>
+            <th colspan="4" class="extra-header f2-extra"></th>
             <th colspan="4" class="foco-header">FOCO III (KPI 1)</th>
             <th colspan="4" class="foco-header">FOCO IV (KPI 2)</th>
             <th colspan="3" class="foco-header" style="background:#023e8a">EFECTIVIDAD</th>
@@ -1228,6 +1228,7 @@
             <th class="bg-blue w-55">AVANCE</th>
             <th class="bg-pink f2-extra w-55">TOTAL UNG</th>
             <th class="bg-pink f2-extra w-55">UNG TOP</th>
+            <th class="bg-blue f2-extra w-55">REDBULL</th>
             <th class="bg-lightblue f2-extra w-55">AGUAS</th>
             <!-- III -->
             <th class="bg-yellow2 w-110">KPI I</th>
@@ -1270,6 +1271,7 @@
             </td>
             <td id="grand-f2-ung" class="tot-val f2-extra">0.00</td>
             <td id="grand-f2-up" class="tot-val f2-extra">0.00</td>
+            <td id="grand-f2-rb" class="tot-val f2-extra">0.00</td>
             <td id="grand-f2-ag" class="tot-val f2-extra">0.00</td>
 
             <td colspan="4" class="progress-cell"><span id="prog-grand-k1">0%</span><div class="progress-bar-bg"><div id="bar-grand-k1" class="progress-bar-fill" style="width:0%"></div></div></td>
@@ -1600,12 +1602,12 @@
       // Recalcular KPI Real antes de mostrar totales
       computeAllKpiReal();
       
-      let grandTots = { 'f1-p':0,'f1-v':0,'f1-cv':0,'f1-ac':0,'f1-bc':0,'f1-lt':0,'f2-p':0,'f2-v':0,'f2-ung':0,'f2-up':0,'f2-ag':0,'k1-p':0,'k1-v':0,'k2-p':0,'k2-v':0,'bol-p':0,'bol-v':0 };
+      let grandTots = { 'f1-p':0,'f1-v':0,'f1-cv':0,'f1-ac':0,'f1-bc':0,'f1-lt':0,'f2-p':0,'f2-v':0,'f2-ung':0,'f2-up':0,'f2-rb':0,'f2-ag':0,'k1-p':0,'k1-v':0,'k2-p':0,'k2-v':0,'bol-p':0,'bol-v':0 };
       let grandK1Pcts = [];
       let grandK2Pcts = [];
 
       for (const spv in SPV_DATA) {
-        let spvTots = { 'f1-p':0,'f1-v':0,'f1-cv':0,'f1-ac':0,'f1-bc':0,'f1-lt':0,'f2-p':0,'f2-v':0,'f2-ung':0,'f2-up':0,'f2-ag':0,'k1-p':0,'k1-v':0,'k2-p':0,'k2-v':0,'bol-p':0,'bol-v':0 };
+        let spvTots = { 'f1-p':0,'f1-v':0,'f1-cv':0,'f1-ac':0,'f1-bc':0,'f1-lt':0,'f2-p':0,'f2-v':0,'f2-ung':0,'f2-up':0,'f2-rb':0,'f2-ag':0,'k1-p':0,'k1-v':0,'k2-p':0,'k2-v':0,'bol-p':0,'bol-v':0 };
         let k1Pcts = [];
         let k2Pcts = [];
         const promotores = SPV_DATA[spv];
@@ -1751,6 +1753,7 @@
           <td class="progress-cell"><span id="prog-${spvId}-f2">0%</span><div class="progress-bar-bg"><div id="bar-${spvId}-f2" class="progress-bar-fill" style="width:0%"></div></div></td>
 	  <td id="tot-${spvId}-f2-ung" class="tot-val f2-extra">0.00</td>
           <td id="tot-${spvId}-f2-up" class="tot-val f2-extra">0.00</td>
+          <td id="tot-${spvId}-f2-rb" class="tot-val f2-extra">0.00</td>
           <td id="tot-${spvId}-f2-ag" class="tot-val f2-extra">0.00</td>
           
           <td colspan="4" class="progress-cell"><span id="prog-${spvId}-k1">0%</span><div class="progress-bar-bg"><div id="bar-${spvId}-k1" class="progress-bar-fill" style="width:0%"></div></div></td>
@@ -1784,6 +1787,7 @@
 	    <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#fce7f3'}" class="f2-extra"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f2-ung" value="${val(p,'f2-ung')}">
 </td>
             <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#fce7f3'}" class="f2-extra"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f2-up" value="${val(p, 'f2-up')}"></td>
+            <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#bfdbfe'}" class="f2-extra"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f2-rb" value="${val(p, 'f2-rb')}"></td>
             <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#e0f2fe'}" class="f2-extra"><input type="text" class="cell-input real" ${inpStyle} data-prom="${p}" data-field="f2-ag" value="${val(p, 'f2-ag')}"></td>
             <!-- III -->
             ${isLemos ? `
@@ -1927,15 +1931,26 @@
             inp.parentElement.replaceChild(span, inp);
           });
 
+        // Forzar resolución de captura a 1360px
+        const originalWidth = captureEl.style.width;
+        const originalMinWidth = captureEl.style.minWidth;
+        captureEl.style.width = '1360px';
+        captureEl.style.minWidth = '1360px';
+
         // Esperar 50ms para asegurar que el navegador calcule el ancho/alto real
         await new Promise(r => setTimeout(r, 50));
 
         const canvas = await html2canvas(captureEl, {
           backgroundColor: '#0B2559',
           scale: 2,
+          windowWidth: 1360,
           logging: false,
           useCORS: true
         });
+
+        // Restaurar ancho original
+        captureEl.style.width = originalWidth;
+        captureEl.style.minWidth = originalMinWidth;
 
         // Restore inputs
         inputBackup.forEach(({ input, parent }) => {
@@ -2150,7 +2165,7 @@
         if (!allDatesSales[plannerDate][promoter]) {
           allDatesSales[plannerDate][promoter] = {
             // Volúmenes (VOL) - GENERALES (Foco I y II, suma todo)
-            cerveza: 0, nabs: 0, core: 0, value: 0, aboveCore: 0, balanced: 0, latones: 0, ungTop: 0, aguas: 0, totalUng: 0,
+            cerveza: 0, nabs: 0, core: 0, value: 0, aboveCore: 0, balanced: 0, latones: 0, ungTop: 0, redbull: 0, aguas: 0, totalUng: 0,
             // Clientes únicos por segmento (CCC) - GENERALES
             clientsTotalCerveza: new Set(), clientsCore: new Set(), clientsValue: new Set(), clientsAboveCore: new Set(), clientsLatones: new Set(),
             clientsBalanced: new Set(), clientsNabs: new Set(), clientsAll: new Set(),
@@ -2325,6 +2340,7 @@
         }
         
         if (isUngTop) pSales.ungTop += volume;
+        if (isRedBull) pSales.redbull += volume;
         if (isAguas) {
           pSales.aguas += volume;
         }
@@ -2375,7 +2391,7 @@
         // Borrar las ventas reales ("lo que estaba") para que se pise con lo nuevo
         const realFields = [
           'f1-v', 'f1-core', 'f1-value', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt',
-          'f2-v', 'f2-ung', 'f2-up', 'f2-ag',
+          'f2-v', 'f2-ung', 'f2-up', 'f2-rb', 'f2-ag',
           'k1-v', 'k2-v', 'bol-v',
           'ccc-cerveza', 'ccc-core', 'ccc-value', 'ccc-abovecore', 'ccc-latones', 'ccc-balanced', 'ccc-nabs',
           'tbd-cerveza', 'tbd-core', 'tbd-value', 'tbd-abovecore', 'tbd-latones', 'tbd-balanced', 'tbd-nabs',
@@ -2436,6 +2452,7 @@
             existingData[trackedPromoter]['f2-v'] = pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : '';
             existingData[trackedPromoter]['f2-ung'] = pSales.totalUng > 0 ? parseFloat(pSales.totalUng.toFixed(2)) : '';
             existingData[trackedPromoter]['f2-up'] = pSales.ungTop > 0 ? parseFloat(pSales.ungTop.toFixed(2)) : '';
+            existingData[trackedPromoter]['f2-rb'] = pSales.redbull > 0 ? parseFloat(pSales.redbull.toFixed(2)) : '';
             existingData[trackedPromoter]['f2-ag'] = pSales.aguas > 0 ? parseFloat(pSales.aguas.toFixed(2)) : '';
             
             existingData[trackedPromoter]['bol-v'] = pSales.clientsAll.size > 0 ? pSales.clientsAll.size : '';
@@ -2717,7 +2734,7 @@
               
               if (!volData[prom]) volData[prom] = {};
               const pD = fetched[prom];
-              ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'f1-v', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt', 'f2-v', 'f2-ung', 'f2-up', 'f2-ag', 'k1-v', 'k2-v', 'bol-p', 'bol-v'].forEach(f => {
+              ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'f1-v', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt', 'f2-v', 'f2-ung', 'f2-up', 'f2-rb', 'f2-ag', 'bol-p', 'bol-v'].forEach(f => {
                 if (pD[f] !== undefined && pD[f] !== "") volData[prom][f] = pD[f];
               });
             }
