@@ -409,7 +409,10 @@
     }
 
     .cell-input:focus:not([readonly]) {
-      background: #e0f2fe;
+      background: #bae6fd !important;
+      outline: 2px solid #0284c7;
+      outline-offset: -2px;
+      box-shadow: inset 0 0 0 1px #0284c7;
     }
 
     .cell-input.plan {
@@ -437,6 +440,7 @@
       font-size: 11px;
       font-weight: 800;
       border-color: #0f172a;
+      border-bottom: 3px solid #0f172a !important;
     }
 
     .spv-header td.spv-name {
@@ -1843,6 +1847,49 @@
           if (this.value && !isNaN(this.value.replace(',', '.'))) {
             this.value = formatNum(this.value.replace(',', '.'));
             handleInput({ target: this });
+          }
+        });
+        inp.addEventListener('keydown', function(e) {
+          const key = e.key;
+          if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(key)) return;
+          
+          const td = this.closest('td');
+          const tr = td.closest('tr');
+          const tbody = tr.closest('tbody');
+          
+          if (key === 'ArrowLeft' || key === 'ArrowRight') {
+            // Solo navegar si el cursor está al inicio/final del texto
+            if (key === 'ArrowLeft' && this.selectionStart > 0) return;
+            if (key === 'ArrowRight' && this.selectionEnd < this.value.length) return;
+            
+            const rowInputs = Array.from(tr.querySelectorAll('.cell-input:not([readonly])'));
+            const index = rowInputs.indexOf(this);
+            
+            e.preventDefault();
+            if (key === 'ArrowLeft' && index > 0) {
+              rowInputs[index - 1].focus();
+            } else if (key === 'ArrowRight' && index < rowInputs.length - 1) {
+              rowInputs[index + 1].focus();
+            }
+          } else if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'Enter') {
+            e.preventDefault();
+            const rows = Array.from(tbody.querySelectorAll('tr:not(.spv-header)'));
+            const rowIndex = rows.indexOf(tr);
+            const tds = Array.from(tr.querySelectorAll('td'));
+            const tdIndex = tds.indexOf(td);
+            
+            let targetRowIndex = rowIndex;
+            if (key === 'ArrowUp') targetRowIndex--;
+            else if (key === 'ArrowDown' || key === 'Enter') targetRowIndex++;
+            
+            if (targetRowIndex >= 0 && targetRowIndex < rows.length) {
+              const targetTr = rows[targetRowIndex];
+              const targetTd = targetTr.querySelectorAll('td')[tdIndex];
+              if (targetTd) {
+                const targetInput = targetTd.querySelector('.cell-input:not([readonly])');
+                if (targetInput) targetInput.focus();
+              }
+            }
           }
         });
       });
