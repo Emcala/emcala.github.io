@@ -1138,7 +1138,7 @@
     <div class="hdr-left">
       <button class="btn-action btn-outline" id="btn-sync" style="border-color:var(--green); color:var(--green)">🔄
         Sincronizar Todos</button>
-      <button class="btn-action" id="btn-save" style="display:none; background:var(--green); color:white; border:none;">💾 Guardar
+      <button class="btn-action" id="btn-save" style="background:var(--green); color:white; border:none;">💾 Guardar
         Datos</button>
       <button class="btn-action btn-outline" id="btn-import-csv" style="border-color:var(--c-yellow); color:var(--c-yellow)">📂 Cargar Ventas CSV</button>
       <input type="file" id="csv-file-input" style="display:none;" accept=".csv">
@@ -1544,36 +1544,36 @@
             if (tar === 'EFICIENCIA DE VENTAS') {
               kpiVal = d['cv-eficiencia'] !== undefined ? d['cv-eficiencia'] : 0;
             } else if (met === 'CCC') {
-              // Solo SKUs validados del maestro
-              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['vccc-cerveza'];
-              else if (tar === 'CORE') kpiVal = d['vccc-core'];
-              else if (tar === 'VALUE') kpiVal = d['vccc-value'];
-              else if (tar === 'ABOVE CORE') kpiVal = d['vccc-abovecore'];
-              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['vccc-latones'];
-              else if (tar === 'BALANCED CHOICES') kpiVal = d['vccc-balanced'];
-              else if (tar === 'NABS') kpiVal = d['vccc-nabs'];
+              // Todo el universo (clientes únicos por segmento general)
+              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['ccc-cerveza'];
+              else if (tar === 'CORE') kpiVal = d['ccc-core'];
+              else if (tar === 'VALUE') kpiVal = d['ccc-value'];
+              else if (tar === 'ABOVE CORE') kpiVal = d['ccc-abovecore'];
+              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['ccc-latones'];
+              else if (tar === 'BALANCED CHOICES') kpiVal = d['ccc-balanced'];
+              else if (tar === 'NABS') kpiVal = d['ccc-nabs'];
             } else if (met === 'TBD') {
-              // Solo SKUs validados del maestro
-              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['vtbd-cerveza'];
-              else if (tar === 'CORE') kpiVal = d['vtbd-core'];
-              else if (tar === 'VALUE') kpiVal = d['vtbd-value'];
-              else if (tar === 'ABOVE CORE') kpiVal = d['vtbd-abovecore'];
-              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['vtbd-latones'];
-              else if (tar === 'BALANCED CHOICES') kpiVal = d['vtbd-balanced'];
-              else if (tar === 'NABS') kpiVal = d['vtbd-nabs'];
+              // Todo el universo (transacciones por segmento general)
+              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['tbd-cerveza'];
+              else if (tar === 'CORE') kpiVal = d['tbd-core'];
+              else if (tar === 'VALUE') kpiVal = d['tbd-value'];
+              else if (tar === 'ABOVE CORE') kpiVal = d['tbd-abovecore'];
+              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['tbd-latones'];
+              else if (tar === 'BALANCED CHOICES') kpiVal = d['tbd-balanced'];
+              else if (tar === 'NABS') kpiVal = d['tbd-nabs'];
             } else if (met === 'VOL') {
-              // Solo SKUs validados del maestro
-              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['vvol-cerveza'];
-              else if (tar === 'CORE') kpiVal = d['vvol-core'];
-              else if (tar === 'VALUE') kpiVal = d['vvol-value'];
-              else if (tar === 'ABOVE CORE') kpiVal = d['vvol-abovecore'];
-              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['vvol-latones'];
-              else if (tar === 'BALANCED CHOICES') kpiVal = d['vvol-balanced'];
-              else if (tar === 'NABS') kpiVal = d['vvol-nabs'];
-              else if (tar === 'AGUAS') kpiVal = d['vvol-aguas'];
-              else if (tar === 'UNG TOP') kpiVal = d['vvol-ungtop'];
+              // Todo el universo (volúmenes generales del foco I y II)
+              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['f1-v'];
+              else if (tar === 'CORE') kpiVal = d['f1-core'];
+              else if (tar === 'VALUE') kpiVal = d['f1-value'];
+              else if (tar === 'ABOVE CORE') kpiVal = d['f1-ac'];
+              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['f1-lt'];
+              else if (tar === 'BALANCED CHOICES') kpiVal = d['f1-bc'];
+              else if (tar === 'NABS') kpiVal = d['f2-v'];
+              else if (tar === 'AGUAS') kpiVal = d['f2-ag'];
+              else if (tar === 'UNG TOP') kpiVal = d['f2-up'];
             } else if (met === 'CV') {
-              // Solo SKUs validados del maestro (ya estaba así)
+              // Solo SKUs validados del maestro (clientes con venta de SKU que valida)
               if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['cv-cerveza'];
               else if (tar === 'CORE') kpiVal = d['cv-core'];
               else if (tar === 'VALUE') kpiVal = d['cv-value'];
@@ -2709,6 +2709,35 @@
       btn.innerHTML = orig; btn.disabled = false;
     });
 
+    // Función reutilizable para guardar datos al servidor (sin alertas)
+    async function saveToServer(silent) {
+      const date = document.getElementById('date-input').value;
+      if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') return false;
+
+      const payload = [];
+      for (const spv in SPV_DATA) {
+        SPV_DATA[spv].forEach(prom => {
+          if (volData[prom]) {
+            payload.push({ date, spv, promotor: prom, ...volData[prom] });
+          }
+        });
+      }
+      if (payload.length === 0) return false;
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        return result.status === 'success';
+      } catch (e) {
+        if (!silent) console.error('Error guardando al servidor:', e);
+        return false;
+      }
+    }
+
     document.getElementById('btn-sync').addEventListener('click', async () => {
       const date = document.getElementById('date-input').value;
       if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') { alert('Falta URL de Sheets'); return; }
@@ -2718,9 +2747,13 @@
       btn.innerHTML = '⏳ Sincronizando...'; btn.disabled = true;
 
       try {
-        // Sincronizar maestro de SKUs
+        // 1. Guardar datos locales al servidor PRIMERO (para no perder ediciones)
+        await saveToServer(true);
+
+        // 2. Sincronizar maestro de SKUs
         await syncSkus();
 
+        // 3. Traer datos actualizados del servidor
         const promises = Object.keys(SPV_DATA).map(async (spv) => {
           const response = await fetch(`${SCRIPT_URL}?date=${date}&spv=${encodeURIComponent(spv)}`);
           const result = await response.json();
