@@ -1364,40 +1364,6 @@
       return s;
     }
 
-    function classifySkuDescription(fullDesc, shortDesc) {
-      const desc = (String(fullDesc) + " " + String(shortDesc)).toUpperCase();
-      
-      const isCerveza = /QUILMES|BRAHMA|BUDWEISER|BUD|STELLA|ANDES|CORONA|PATAGONIA|1890|BAJO\s+CERO|GOOSE|MICHELOB|VALUE|CERVEZA|LATON/i.test(desc);
-      const isValue = /1890/i.test(desc);
-      const isCore = /QUILMES|BRAHMA|BUDWEISER|BUD/i.test(desc) && !isValue;
-      const isAboveCore = /STELLA|ANDES|PATAGONIA|CORONA|GOOSE/i.test(desc);
-      const isLatones = /LATON\s+710|LATONES\s+710/i.test(desc);
-      const isBalanced = /SIN\s+ALCOHOL|CERO|MICHELOB\s+ULTRA|BAJO\s+CERO/i.test(desc);
-      const isNabs = /PEPSI|7\s*UP|7UP|MIRINDA|PASO\s+DE\s+LOS\s+TOROS|GATORADE|RED\s*BULL|REDBULL|ROCKSTAR|H2OH|TEMPLE|UNG/i.test(desc);
-      const isAguas = /AGUAS/i.test(desc);
-      let isUngTop = /GATORADE|RED\s*BULL|REDBULL|ROCKSTAR/i.test(desc);
-      
-      const ccMatch = desc.match(/(\d+)\s*(CC|ML)/i);
-      if (ccMatch) {
-        const cc = parseInt(ccMatch[1], 10);
-        if (cc <= 500) {
-          isUngTop = true;
-        }
-      }
-      
-      return {
-        cerveza: isCerveza,
-        core: isCore,
-        value: isValue,
-        aboveCore: isAboveCore,
-        latones: isLatones,
-        balanced: isBalanced,
-        nabs: isNabs,
-        aguas: isAguas,
-        ungTop: isUngTop
-      };
-    }
-
     function loadSkuMaster() {
       const saved = localStorage.getItem('emcala_skus');
       if (saved) {
@@ -1567,32 +1533,36 @@
             if (tar === 'EFICIENCIA DE VENTAS') {
               kpiVal = d['cv-eficiencia'] !== undefined ? d['cv-eficiencia'] : 0;
             } else if (met === 'CCC') {
-              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['ccc-cerveza'];
-              else if (tar === 'CORE') kpiVal = d['ccc-core'];
-              else if (tar === 'VALUE') kpiVal = d['ccc-value'];
-              else if (tar === 'ABOVE CORE') kpiVal = d['ccc-abovecore'];
-              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['ccc-latones'];
-              else if (tar === 'BALANCED CHOICES') kpiVal = d['ccc-balanced'];
-              else if (tar === 'NABS') kpiVal = d['ccc-nabs'];
+              // Solo SKUs validados del maestro
+              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['vccc-cerveza'];
+              else if (tar === 'CORE') kpiVal = d['vccc-core'];
+              else if (tar === 'VALUE') kpiVal = d['vccc-value'];
+              else if (tar === 'ABOVE CORE') kpiVal = d['vccc-abovecore'];
+              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['vccc-latones'];
+              else if (tar === 'BALANCED CHOICES') kpiVal = d['vccc-balanced'];
+              else if (tar === 'NABS') kpiVal = d['vccc-nabs'];
             } else if (met === 'TBD') {
-              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['tbd-cerveza'];
-              else if (tar === 'CORE') kpiVal = d['tbd-core'];
-              else if (tar === 'VALUE') kpiVal = d['tbd-value'];
-              else if (tar === 'ABOVE CORE') kpiVal = d['tbd-abovecore'];
-              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['tbd-latones'];
-              else if (tar === 'BALANCED CHOICES') kpiVal = d['tbd-balanced'];
-              else if (tar === 'NABS') kpiVal = d['tbd-nabs'];
+              // Solo SKUs validados del maestro
+              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['vtbd-cerveza'];
+              else if (tar === 'CORE') kpiVal = d['vtbd-core'];
+              else if (tar === 'VALUE') kpiVal = d['vtbd-value'];
+              else if (tar === 'ABOVE CORE') kpiVal = d['vtbd-abovecore'];
+              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['vtbd-latones'];
+              else if (tar === 'BALANCED CHOICES') kpiVal = d['vtbd-balanced'];
+              else if (tar === 'NABS') kpiVal = d['vtbd-nabs'];
             } else if (met === 'VOL') {
-              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['f1-v'];
-              else if (tar === 'CORE') kpiVal = d['f1-core'];
-              else if (tar === 'VALUE') kpiVal = d['f1-value'];
-              else if (tar === 'ABOVE CORE') kpiVal = d['f1-ac'];
-              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['f1-lt'];
-              else if (tar === 'BALANCED CHOICES') kpiVal = d['f1-bc'];
-              else if (tar === 'NABS') kpiVal = d['f2-v'];
-              else if (tar === 'AGUAS') kpiVal = d['f2-ag'];
-              else if (tar === 'UNG TOP') kpiVal = d['f2-up'];
+              // Solo SKUs validados del maestro
+              if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['vvol-cerveza'];
+              else if (tar === 'CORE') kpiVal = d['vvol-core'];
+              else if (tar === 'VALUE') kpiVal = d['vvol-value'];
+              else if (tar === 'ABOVE CORE') kpiVal = d['vvol-abovecore'];
+              else if (tar === 'LATONES 710' || tar === 'LATONES') kpiVal = d['vvol-latones'];
+              else if (tar === 'BALANCED CHOICES') kpiVal = d['vvol-balanced'];
+              else if (tar === 'NABS') kpiVal = d['vvol-nabs'];
+              else if (tar === 'AGUAS') kpiVal = d['vvol-aguas'];
+              else if (tar === 'UNG TOP') kpiVal = d['vvol-ungtop'];
             } else if (met === 'CV') {
+              // Solo SKUs validados del maestro (ya estaba así)
               if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['cv-cerveza'];
               else if (tar === 'CORE') kpiVal = d['cv-core'];
               else if (tar === 'VALUE') kpiVal = d['cv-value'];
@@ -2134,8 +2104,7 @@
             skuMap[normId] = {
               shortDesc: item.s,
               fullDesc: item.f,
-              skuId: item.id,
-              classification: classifySkuDescription(item.f, item.s)
+              skuId: item.id
             };
           }
         });
@@ -2171,14 +2140,23 @@
         }
         if (!allDatesSales[plannerDate][promoter]) {
           allDatesSales[plannerDate][promoter] = {
-            // Volúmenes (VOL)
+            // Volúmenes (VOL) - GENERALES (Foco I y II, suma todo)
             cerveza: 0, nabs: 0, core: 0, value: 0, aboveCore: 0, balanced: 0, latones: 0, ungTop: 0, aguas: 0, totalUng: 0,
-            // Clientes únicos por segmento (CCC)
+            // Clientes únicos por segmento (CCC) - GENERALES
             clientsTotalCerveza: new Set(), clientsCore: new Set(), clientsValue: new Set(), clientsAboveCore: new Set(), clientsLatones: new Set(),
             clientsBalanced: new Set(), clientsNabs: new Set(), clientsAll: new Set(),
-            // Transacciones por segmento (TBD)
-            txTotalCerveza: 0, txCore: 0, txValue: 0, txAboveCore: 0, txLatones: 0, txBalanced: 0, txNabs: 0, txAll: 0,
+            // Transacciones por segmento (TBD) - GENERALES (Set de 'clientId_skuCode')
+            txTotalCerveza: new Set(), txCore: new Set(), txValue: new Set(), txAboveCore: new Set(), txLatones: new Set(), txBalanced: new Set(), txNabs: new Set(), txAll: new Set(),
             
+            // === VALIDADOS (solo SKUs del maestro) - Para Foco III y IV (KPIs) ===
+            // VOL validado
+            vCerveza: 0, vNabs: 0, vCore: 0, vValue: 0, vAboveCore: 0, vBalanced: 0, vLatones: 0, vUngTop: 0, vAguas: 0, vTotalUng: 0,
+            // CCC validado
+            vCccCerveza: new Set(), vCccCore: new Set(), vCccValue: new Set(), vCccAboveCore: new Set(), vCccLatones: new Set(),
+            vCccBalanced: new Set(), vCccNabs: new Set(),
+            // TBD validado (Set de 'clientId_skuCode')
+            vTxCerveza: new Set(), vTxCore: new Set(), vTxValue: new Set(), vTxAboveCore: new Set(), vTxLatones: new Set(), vTxBalanced: new Set(), vTxNabs: new Set(),
+
             // Clientes únicos con venta de SKU de validación de tarea (CV)
             cvClientsCerveza: new Set(), cvClientsCore: new Set(), cvClientsValue: new Set(), cvClientsAboveCore: new Set(), cvClientsLatones: new Set(),
             cvClientsBalanced: new Set(), cvClientsNabs: new Set(), cvClientsAguas: new Set(),
@@ -2222,20 +2200,45 @@
         const isRockstar = brand.includes('ROCKSTAR');
         const calcUngTop = isGatorade || isRedBull || isRockstar || cc <= 500;
         
-        if (skuData) {
-          // Si está en el maestro de SKUs, usamos su clasificación
-          const c = skuData.classification;
-          isCerveza = c.cerveza;
-          isCore = c.core;
-          isValue = c.value;
-          isAboveCore = c.aboveCore;
-          isLatones = c.latones;
-          isBalanced = c.balanced;
-          isNabs = c.nabs;
-          isAguas = c.aguas;
-          isUngTop = c.ungTop || calcUngTop; // Forzar UNG TOP si el calibre en CSV lo confirma
+        // 1) CLASIFICACIÓN USANDO SIEMPRE LAS COLUMNAS DEL CSV (Marca / Categoría / Artículo)
+        if (category === 'CERVEZAS CMQ') {
+          isCerveza = true;
+          const articleName = cols[cm.article] ? cols[cm.article].trim().toUpperCase() : '';
           
-          // Como es un SKU del maestro, acumulamos en los sets de CV
+          const isQuilmes1890 = (brand === 'QUILMES 1890' || brand === '1890' || articleName.includes('1890'));
+          const isQuilmesOther = (brand.includes('QUILMES') && !isQuilmes1890);
+          const isBrahma = brand.startsWith('BRAHMA');
+          const isBud = brand.startsWith('BUDWEISER') || brand.startsWith('BUD');
+          const isStellaPureGold = (brand.includes('STELLA') && articleName.includes('PURE GOLD'));
+          
+          isBalanced = (articleName.includes('0.0') || articleName.includes('SIN ALCOHOL') || articleName.includes('MICHELOB') || brand.includes('MICHELOB') || isStellaPureGold);
+          
+          if (isQuilmes1890) isValue = true;
+          if (isQuilmesOther || isBrahma || isBud) isCore = true;
+          
+          const isAndes = brand.startsWith('ANDES');
+          const isMichelob = brand.startsWith('MICHELOB');
+          const isStella = brand.startsWith('STELLA');
+          const isPatagonia = brand.startsWith('PATAGONIA');
+          const isCorona = brand.startsWith('CORONA');
+          
+          if (isAndes || isMichelob || isStella || isPatagonia || isCorona) {
+            isAboveCore = true;
+          }
+          
+          if (calibreDesc === '710 CC LATAS' || articleName.includes('LATON 710')) {
+            isLatones = true;
+          }
+        } else if (category === 'UNG' || category === 'NABS') {
+          isNabs = true;
+          isUngTop = calcUngTop;
+        } else if (category === 'AGUAS ECO' || category === 'AGUAS') {
+          isAguas = true;
+        }
+
+        // 2) SI ESTÁ EN EL MAESTRO (VALIDADO), ACUMULAR PARA KPIs FOCO III/IV
+        if (skuData) {
+          // Acumular en los sets de CV
           pSales.cvClientsEficiencia.add(clientId);
           if (isCerveza) pSales.cvClientsCerveza.add(clientId);
           if (isCore) pSales.cvClientsCore.add(clientId);
@@ -2246,82 +2249,65 @@
           if (isNabs) pSales.cvClientsNabs.add(clientId);
           if (isAguas) pSales.cvClientsAguas.add(clientId);
           if (isUngTop) pSales.cvClientsUngTop.add(clientId);
-        } else {
-          // Fallback a las reglas hardcoded
-          if (category === 'CERVEZAS CMQ') {
-            isCerveza = true;
-            const articleName = cols[cm.article] ? cols[cm.article].trim().toUpperCase() : '';
-            
-            const isQuilmes1890 = (brand === 'QUILMES 1890' || articleName.includes('1890'));
-            const isQuilmesOther = (brand.includes('QUILMES') && !isQuilmes1890);
-            const isBrahma = brand.startsWith('BRAHMA');
-            const isBud = brand.startsWith('BUDWEISER') || brand.startsWith('BUD');
-            
-            isBalanced = (articleName.includes('0.0') || articleName.includes('CERO') || articleName.includes('MICHELOB') || brand.includes('MICHELOB'));
-            
-            if (isQuilmes1890) isValue = true;
-            if (isQuilmesOther || isBrahma || isBud) isCore = true;
-            
-            const isAndes = brand.startsWith('ANDES');
-            const isMichelob = brand.startsWith('MICHELOB');
-            const isStella = brand.startsWith('STELLA');
-            const isPatagonia = brand.startsWith('PATAGONIA');
-            const isCorona = brand.startsWith('CORONA');
-            
-            if (isAndes || isMichelob || isStella || isPatagonia || isCorona) {
-              isAboveCore = true;
-            }
-            
-            if (calibreDesc === '710 CC LATAS') {
-              isLatones = true;
-            }
-	  } else if (category === 'UNG') {
-  	    isNabs = true;
-  	    isUngTop = calcUngTop;
-	  } else if (category === 'AGUAS ECO') {
-            isAguas = true;
+          
+          const tbdKey = clientId + '_' + csvSkuCode;
+          // Acumular VOL/CCC/TBD VALIDADOS (solo maestro) para KPIs
+          if (isCerveza) {
+            pSales.vCerveza += volume;
+            if (clientId) pSales.vCccCerveza.add(clientId);
+            if (clientId && csvSkuCode) pSales.vTxCerveza.add(tbdKey);
           }
+          if (isCore) { pSales.vCore += volume; if (clientId) pSales.vCccCore.add(clientId); if (clientId && csvSkuCode) pSales.vTxCore.add(tbdKey); }
+          if (isValue) { pSales.vValue += volume; if (clientId) pSales.vCccValue.add(clientId); if (clientId && csvSkuCode) pSales.vTxValue.add(tbdKey); }
+          if (isAboveCore) { pSales.vAboveCore += volume; if (clientId) pSales.vCccAboveCore.add(clientId); if (clientId && csvSkuCode) pSales.vTxAboveCore.add(tbdKey); }
+          if (isBalanced) { pSales.vBalanced += volume; if (clientId) pSales.vCccBalanced.add(clientId); if (clientId && csvSkuCode) pSales.vTxBalanced.add(tbdKey); }
+          if (isLatones) { pSales.vLatones += volume; if (clientId) pSales.vCccLatones.add(clientId); if (clientId && csvSkuCode) pSales.vTxLatones.add(tbdKey); }
+          if (isNabs) { pSales.vNabs += volume; if (clientId) pSales.vCccNabs.add(clientId); if (clientId && csvSkuCode) pSales.vTxNabs.add(tbdKey); }
+          if (isUngTop) pSales.vUngTop += volume;
+          if (isAguas) pSales.vAguas += volume;
+          if (isGaseosa) pSales.vTotalUng += volume;
         }
         
+        const tbdKeyGen = clientId + '_' + csvSkuCode;
         // Acumular volúmenes, CCC y TBD generales (tanto para maestro como para fallback)
         if (isCerveza) {
           pSales.cerveza += volume;
           if (clientId) pSales.clientsTotalCerveza.add(clientId);
-          pSales.txTotalCerveza += invoices;
+          if (clientId && csvSkuCode) pSales.txTotalCerveza.add(tbdKeyGen);
         }
         
         if (isCore) {
           pSales.core += volume;
           if (clientId) pSales.clientsCore.add(clientId);
-          pSales.txCore += invoices;
+          if (clientId && csvSkuCode) pSales.txCore.add(tbdKeyGen);
         }
         
         if (isValue) {
           pSales.value += volume;
           if (clientId) pSales.clientsValue.add(clientId);
-          pSales.txValue += invoices;
+          if (clientId && csvSkuCode) pSales.txValue.add(tbdKeyGen);
         }
         
         if (isAboveCore) {
           pSales.aboveCore += volume;
           if (clientId) pSales.clientsAboveCore.add(clientId);
-          pSales.txAboveCore += invoices;
+          if (clientId && csvSkuCode) pSales.txAboveCore.add(tbdKeyGen);
         }
         if (isBalanced) {
           pSales.balanced += volume;
           if (clientId) pSales.clientsBalanced.add(clientId);
-          pSales.txBalanced += invoices;
+          if (clientId && csvSkuCode) pSales.txBalanced.add(tbdKeyGen);
         }
         if (isLatones) {
           pSales.latones += volume;
           if (clientId) pSales.clientsLatones.add(clientId);
-          pSales.txLatones += invoices;
+          if (clientId && csvSkuCode) pSales.txLatones.add(tbdKeyGen);
         }
         
         if (isNabs) {
           pSales.nabs += volume;
           if (clientId) pSales.clientsNabs.add(clientId);
-          pSales.txNabs += invoices;
+          if (clientId && csvSkuCode) pSales.txNabs.add(tbdKeyGen);
         }
         
         if (isUngTop) pSales.ungTop += volume;
@@ -2379,7 +2365,10 @@
           'k1-v', 'k2-v', 'bol-v',
           'ccc-cerveza', 'ccc-core', 'ccc-value', 'ccc-abovecore', 'ccc-latones', 'ccc-balanced', 'ccc-nabs',
           'tbd-cerveza', 'tbd-core', 'tbd-value', 'tbd-abovecore', 'tbd-latones', 'tbd-balanced', 'tbd-nabs',
-          'cv-cerveza', 'cv-core', 'cv-value', 'cv-abovecore', 'cv-latones', 'cv-balanced', 'cv-nabs', 'cv-aguas', 'cv-ungtop', 'cv-eficiencia'
+          'cv-cerveza', 'cv-core', 'cv-value', 'cv-abovecore', 'cv-latones', 'cv-balanced', 'cv-nabs', 'cv-aguas', 'cv-ungtop', 'cv-eficiencia',
+          'vvol-cerveza', 'vvol-core', 'vvol-value', 'vvol-abovecore', 'vvol-balanced', 'vvol-latones', 'vvol-nabs', 'vvol-aguas', 'vvol-ungtop', 'vvol-totalung',
+          'vccc-cerveza', 'vccc-core', 'vccc-value', 'vccc-abovecore', 'vccc-latones', 'vccc-balanced', 'vccc-nabs',
+          'vtbd-cerveza', 'vtbd-core', 'vtbd-value', 'vtbd-abovecore', 'vtbd-latones', 'vtbd-balanced', 'vtbd-nabs'
         ];
         for (const prom in existingData) {
           for (const rf of realFields) {
@@ -2423,6 +2412,9 @@
             existingData[trackedPromoter]['f1-v'] = pSales.cerveza > 0 ? parseFloat(pSales.cerveza.toFixed(2)) : '';
             existingData[trackedPromoter]['f1-core'] = pSales.core > 0 ? parseFloat(pSales.core.toFixed(2)) : '';
             existingData[trackedPromoter]['f1-value'] = pSales.value > 0 ? parseFloat(pSales.value.toFixed(2)) : '';
+            // Core+Value = suma de core + value
+            const coreValueSum = pSales.core + pSales.value;
+            existingData[trackedPromoter]['f1-cv'] = coreValueSum > 0 ? parseFloat(coreValueSum.toFixed(2)) : '';
             existingData[trackedPromoter]['f1-ac'] = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : '';
             existingData[trackedPromoter]['f1-bc'] = pSales.balanced > 0 ? parseFloat(pSales.balanced.toFixed(2)) : '';
             existingData[trackedPromoter]['f1-lt'] = pSales.latones > 0 ? parseFloat(pSales.latones.toFixed(2)) : '';
@@ -2443,13 +2435,13 @@
             existingData[trackedPromoter]['ccc-balanced'] = pSales.clientsBalanced.size;
             existingData[trackedPromoter]['ccc-nabs'] = pSales.clientsNabs.size;
             
-            existingData[trackedPromoter]['tbd-cerveza'] = parseFloat(pSales.txTotalCerveza.toFixed(2));
-            existingData[trackedPromoter]['tbd-core'] = parseFloat(pSales.txCore.toFixed(2));
-            existingData[trackedPromoter]['tbd-value'] = parseFloat(pSales.txValue.toFixed(2));
-            existingData[trackedPromoter]['tbd-abovecore'] = parseFloat(pSales.txAboveCore.toFixed(2));
-            existingData[trackedPromoter]['tbd-latones'] = parseFloat(pSales.txLatones.toFixed(2));
-            existingData[trackedPromoter]['tbd-balanced'] = parseFloat(pSales.txBalanced.toFixed(2));
-            existingData[trackedPromoter]['tbd-nabs'] = parseFloat(pSales.txNabs.toFixed(2));
+            existingData[trackedPromoter]['tbd-cerveza'] = pSales.txTotalCerveza.size;
+            existingData[trackedPromoter]['tbd-core'] = pSales.txCore.size;
+            existingData[trackedPromoter]['tbd-value'] = pSales.txValue.size;
+            existingData[trackedPromoter]['tbd-abovecore'] = pSales.txAboveCore.size;
+            existingData[trackedPromoter]['tbd-latones'] = pSales.txLatones.size;
+            existingData[trackedPromoter]['tbd-balanced'] = pSales.txBalanced.size;
+            existingData[trackedPromoter]['tbd-nabs'] = pSales.txNabs.size;
             
             // Guardar datos para métrica CV
             existingData[trackedPromoter]['cv-cerveza'] = pSales.cvClientsCerveza.size;
@@ -2462,6 +2454,32 @@
             existingData[trackedPromoter]['cv-aguas'] = pSales.cvClientsAguas.size;
             existingData[trackedPromoter]['cv-ungtop'] = pSales.cvClientsUngTop.size;
             existingData[trackedPromoter]['cv-eficiencia'] = pSales.cvClientsEficiencia.size;
+            
+            // Guardar datos VALIDADOS (solo SKUs del maestro) para KPIs (Foco III y IV)
+            existingData[trackedPromoter]['vvol-cerveza'] = pSales.vCerveza > 0 ? parseFloat(pSales.vCerveza.toFixed(2)) : 0;
+            existingData[trackedPromoter]['vvol-core'] = pSales.vCore > 0 ? parseFloat(pSales.vCore.toFixed(2)) : 0;
+            existingData[trackedPromoter]['vvol-value'] = pSales.vValue > 0 ? parseFloat(pSales.vValue.toFixed(2)) : 0;
+            existingData[trackedPromoter]['vvol-abovecore'] = pSales.vAboveCore > 0 ? parseFloat(pSales.vAboveCore.toFixed(2)) : 0;
+            existingData[trackedPromoter]['vvol-balanced'] = pSales.vBalanced > 0 ? parseFloat(pSales.vBalanced.toFixed(2)) : 0;
+            existingData[trackedPromoter]['vvol-latones'] = pSales.vLatones > 0 ? parseFloat(pSales.vLatones.toFixed(2)) : 0;
+            existingData[trackedPromoter]['vvol-nabs'] = pSales.vNabs > 0 ? parseFloat(pSales.vNabs.toFixed(2)) : 0;
+            existingData[trackedPromoter]['vvol-aguas'] = pSales.vAguas > 0 ? parseFloat(pSales.vAguas.toFixed(2)) : 0;
+            existingData[trackedPromoter]['vvol-ungtop'] = pSales.vUngTop > 0 ? parseFloat(pSales.vUngTop.toFixed(2)) : 0;
+            existingData[trackedPromoter]['vvol-totalung'] = pSales.vTotalUng > 0 ? parseFloat(pSales.vTotalUng.toFixed(2)) : 0;
+            existingData[trackedPromoter]['vccc-cerveza'] = pSales.vCccCerveza.size;
+            existingData[trackedPromoter]['vccc-core'] = pSales.vCccCore.size;
+            existingData[trackedPromoter]['vccc-value'] = pSales.vCccValue.size;
+            existingData[trackedPromoter]['vccc-abovecore'] = pSales.vCccAboveCore.size;
+            existingData[trackedPromoter]['vccc-latones'] = pSales.vCccLatones.size;
+            existingData[trackedPromoter]['vccc-balanced'] = pSales.vCccBalanced.size;
+            existingData[trackedPromoter]['vccc-nabs'] = pSales.vCccNabs.size;
+            existingData[trackedPromoter]['vtbd-cerveza'] = pSales.vTxCerveza.size;
+            existingData[trackedPromoter]['vtbd-core'] = pSales.vTxCore.size;
+            existingData[trackedPromoter]['vtbd-value'] = pSales.vTxValue.size;
+            existingData[trackedPromoter]['vtbd-abovecore'] = pSales.vTxAboveCore.size;
+            existingData[trackedPromoter]['vtbd-latones'] = pSales.vTxLatones.size;
+            existingData[trackedPromoter]['vtbd-balanced'] = pSales.vTxBalanced.size;
+            existingData[trackedPromoter]['vtbd-nabs'] = pSales.vTxNabs.size;
             
             dateMatches++;
             totalMatchCount++;
