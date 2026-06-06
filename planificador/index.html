@@ -247,12 +247,12 @@
 
     thead tr:nth-child(1) th {
       top: 0;
-      height: 14px;
+      height: 18px;
     }
 
     thead tr:nth-child(2) th {
-      top: 14px;
-      height: 14px;
+      top: 18px;
+      height: 18px;
     }
 
     thead tr:nth-child(1) th.prom-col {
@@ -2038,11 +2038,13 @@
             inp.parentElement.replaceChild(span, inp);
           });
 
-        // Forzar resolución de captura a 1360px
+        // Adaptar captura exactamente al tamaño de la grilla
+        // Adaptar captura exactamente al tamaño de la grilla
         const originalWidth = captureEl.style.width;
         const originalMinWidth = captureEl.style.minWidth;
-        captureEl.style.width = '1360px';
-        captureEl.style.minWidth = '1360px';
+        const targetWidth = (tableCont ? tableCont.scrollWidth + 60 : captureEl.scrollWidth) + 'px';
+        captureEl.style.width = targetWidth;
+        captureEl.style.minWidth = targetWidth;
 
         // Esperar 50ms para asegurar que el navegador calcule el ancho/alto real
         await new Promise(r => setTimeout(r, 50));
@@ -2050,7 +2052,7 @@
         const canvas = await html2canvas(captureEl, {
           backgroundColor: '#0B2559',
           scale: 2,
-          windowWidth: 1360,
+          windowWidth: tableCont ? tableCont.scrollWidth + 60 : captureEl.scrollWidth,
           logging: false,
           useCORS: true
         });
