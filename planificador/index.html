@@ -1148,16 +1148,14 @@
     </div>
 
     <div class="hdr-left">
-      <button class="btn-action btn-outline" id="btn-sync" style="border-color:var(--green); color:var(--green)">🔄
-        Sincronizar</button>
-      <button class="btn-action" id="btn-save" style="background:var(--green); color:white; border:none;">💾 Guardar
-        Cambios</button>
+      <button class="btn-action btn-outline" id="btn-sync" style="border-color:var(--green); color:var(--green)">🔄 Sincronizar y Guardar</button>
+      <button class="btn-action" id="btn-save" style="background:var(--green); color:white; border:none; display:none;">💾 Guardar Cambios</button>
       <button class="btn-action btn-outline" id="btn-import-csv" style="border-color:var(--c-yellow); color:var(--c-yellow)">📂 Cargar Ventas CSV</button>
       <input type="file" id="csv-file-input" style="display:none;" accept=".csv">
       <button class="btn-action btn-outline" id="btn-import-skus" style="border-color:var(--c-pink); color:var(--c-pink)">📋 Cargar SKUs CSV</button>
       <input type="file" id="csv-skus-input" style="display:none;" accept=".csv">
       <button class="btn-action btn-outline" id="btn-copy-img">📸 Copiar Foto</button>
-      <button class="btn-action btn-outline" id="btn-clear">Limpiar Día</button>
+      <button class="btn-action btn-outline" id="btn-clear">Borrar Planificación</button>
       <button class="btn-action" id="btn-print">🖨️ Imprimir</button>
       <div id="userBadgeContainer" style="margin-left: 12px;"></div>
     </div>
@@ -2766,7 +2764,17 @@
     });
 
     document.getElementById('btn-clear').addEventListener('click', () => {
-      if (confirm('¿Borrar TODOS los datos locales del día?')) { volData = {}; saveData(); renderTables(); }
+      if (confirm('¿Borrar toda la PLANIFICACIÓN de este día? (Se mantendrán los datos de ventas reales)')) {
+        const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
+        for (const prom in volData) {
+          planFields.forEach(f => {
+            delete volData[prom][f];
+          });
+        }
+        saveData();
+        renderTables();
+        document.getElementById('btn-save').click();
+      }
     });
 
     document.getElementById('btn-save').addEventListener('click', async () => {
@@ -2806,7 +2814,7 @@
         });
         const result = await response.json();
         if (result.status === 'success') {
-          alert('¡Ventas guardadas correctamente!');
+          console.log('¡Ventas guardadas correctamente!');
         } else {
           alert('Hubo un problema: ' + result.message);
         }
