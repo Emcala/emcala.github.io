@@ -1980,26 +1980,7 @@
         
         const titleText = `AVANCE VENTA · ${formattedDate} · ${formattedTime}`;
 
-        // 2. Crear banner de título temporal para la captura
-        const tempBanner = document.createElement('div');
-        tempBanner.style.cssText = `
-          width: 100%;
-          text-align: center;
-          color: #ffffff;
-          background: #1B5FA8;
-          padding: 4px 0;
-          font-family: 'Bricolage Grotesque', sans-serif;
-          font-weight: 800;
-          letter-spacing: 1px;
-          border-bottom: 2px solid #0f172a;
-          border-radius: 12px 12px 0 0;
-        `;
-        tempBanner.innerHTML = `
-            <h2 style="margin:0; font-family:'Bricolage Grotesque', sans-serif; font-size:14px; font-weight:800; letter-spacing:0.5px; color:#ffffff;">
-              <span style="color:var(--c-lightblue)">EMCALA</span> | ${titleText}
-            </h2>
-          `;
-          captureEl.insertBefore(tempBanner, captureEl.firstChild);
+
 
           const tableCont = captureEl.querySelector('.table-container');
           let origTableMaxHeight = '';
@@ -2007,9 +1988,6 @@
           if (tableCont) {
             origTableMaxHeight = tableCont.style.maxHeight;
             origTableOverflowY = tableCont.style.overflowY;
-            tableCont.style.marginTop = '0';
-            tableCont.style.borderTopLeftRadius = '0';
-            tableCont.style.borderTopRightRadius = '0';
             tableCont.style.maxHeight = 'none';
             tableCont.style.overflowY = 'visible';
           }
@@ -2079,11 +2057,7 @@
           if (span) parent.replaceChild(input, span);
         });
 
-        // Limpiar elementos temporales
-        tempBanner.remove();
         if (tableCont) {
-          tableCont.style.marginTop = '';
-          tableCont.style.borderRadius = '';
           tableCont.style.maxHeight = origTableMaxHeight;
           tableCont.style.overflowY = origTableOverflowY;
         }
