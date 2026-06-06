@@ -2763,8 +2763,8 @@
       reader.readAsText(file);
     });
 
-    document.getElementById('btn-clear').addEventListener('click', () => {
-      if (confirm('¿Borrar toda la PLANIFICACIÓN de este día? (Se mantendrán los datos de ventas reales)')) {
+    document.getElementById('btn-clear').addEventListener('click', async () => {
+      if (confirm('¿Seguro que deseas borrar TODA la planificación del día actual (sin afectar las ventas reales)?')) {
         const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
         for (const prom in volData) {
           planFields.forEach(f => {
@@ -2773,7 +2773,9 @@
         }
         saveData();
         renderTables();
-        document.getElementById('btn-save').click();
+        
+        // Ejecutar guardado silencioso para asegurar que la nube quede limpia de planificación también
+        await saveToServer(true);
       }
     });
 
@@ -2825,16 +2827,30 @@
       btn.innerHTML = orig; btn.disabled = false;
     });
 
-    // Función reutilizable para guardar datos al servidor (sin alertas)
     async function saveToServer(silent) {
       const date = document.getElementById('date-input').value;
       if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') return false;
 
       const payload = [];
+      const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
+      
       for (const spv in SPV_DATA) {
         SPV_DATA[spv].forEach(prom => {
           if (volData[prom]) {
-            payload.push({ date, spv, promotor: prom, ...volData[prom] });
+            const rowPayload = { date, spv, promotor: prom };
+            // Solo incluimos campos de planificación, NUNCA ventas.
+            // Esto asegura que si el usuario dejó la página abierta por horas,
+            // no sobrescriba las ventas reales de la nube con su caché local vieja.
+            let hasData = false;
+            planFields.forEach(f => {
+              if (volData[prom][f] !== undefined) {
+                rowPayload[f] = volData[prom][f];
+                hasData = true;
+              }
+            });
+            if (hasData) {
+              payload.push(rowPayload);
+            }
           }
         });
       }
