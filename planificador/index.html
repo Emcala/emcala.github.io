@@ -2046,6 +2046,14 @@
         captureEl.style.width = targetWidth;
         captureEl.style.minWidth = targetWidth;
 
+        // Permitir que captureEl crezca de alto
+        const origCaptureHeight = captureEl.style.height;
+        const origCaptureMaxHeight = captureEl.style.maxHeight;
+        const origCaptureOverflow = captureEl.style.overflow;
+        captureEl.style.height = 'auto';
+        captureEl.style.maxHeight = 'none';
+        captureEl.style.overflow = 'visible';
+
         // Esperar 50ms para asegurar que el navegador calcule el ancho/alto real
         await new Promise(r => setTimeout(r, 50));
 
@@ -2053,6 +2061,7 @@
           backgroundColor: '#0B2559',
           scale: 2,
           windowWidth: tableCont ? tableCont.scrollWidth + 60 : captureEl.scrollWidth,
+          windowHeight: captureEl.scrollHeight,
           logging: false,
           useCORS: true
         });
@@ -2060,6 +2069,9 @@
         // Restaurar ancho original
         captureEl.style.width = originalWidth;
         captureEl.style.minWidth = originalMinWidth;
+        captureEl.style.height = origCaptureHeight;
+        captureEl.style.maxHeight = origCaptureMaxHeight;
+        captureEl.style.overflow = origCaptureOverflow;
 
         // Restore inputs
         inputBackup.forEach(({ input, parent }) => {
