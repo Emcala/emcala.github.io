@@ -583,8 +583,6 @@
       display: none;
     }
 
-
-
     .progress-cell {
       position: relative;
       width: 55px;
@@ -601,12 +599,12 @@
 
     .progress-bar-bg {
       position: absolute;
-      top: 3px;
-      left: 3px;
-      width: calc(100% - 6px);
-      height: calc(100% - 6px);
+      top: 1px;
+      left: 1px;
+      width: calc(100% - 2px);
+      height: calc(100% - 2px);
       background: #4a5568;
-      border-radius: 12px;
+      border-radius: 4px;
       z-index: 0;
       overflow: hidden;
     }
@@ -616,7 +614,7 @@
       top: 0;
       left: 0;
       height: 100%;
-      border-radius: 12px;
+      border-radius: 3px;
       transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
       z-index: 0;
     }
@@ -625,7 +623,7 @@
       position: relative;
       z-index: 1;
       color: #ffffff;
-      font-size: 12.5px;
+      font-size: 11.5px;
       font-weight: 800;
       letter-spacing: 0.5px;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 1px rgba(0, 0, 0, 1);
@@ -2641,11 +2639,56 @@
       renderTables();
       calcTotals();
       
-      alert(`¡Ventas Reales importadas con éxito para múltiples días!\nSe procesaron ${processedDatesCount} fechas distintas del CSV.\nEl calendario se actualizó automáticamente a la fecha del archivo: ${latestDateStr}`);
+      alert(`¡Ventas Reales importadas localmente para múltiples días!\nSe procesaron ${processedDatesCount} fechas distintas del CSV.\nEl calendario se actualizó automáticamente a la fecha del archivo: ${latestDateStr}\n\nAguarde un momento mientras se suben los datos a la nube...`);
       
-      // AUTO-GUARDADO
-      setTimeout(() => {
-        document.getElementById('btn-save').click();
+      // AUTO-GUARDADO DE TODOS LOS DÍAS PROCESADOS DIRECTO A LA NUBE
+      setTimeout(async () => {
+        if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') {
+          alert('No se pueden subir a la nube porque falta SCRIPT_URL');
+          return;
+        }
+
+        const payload = [];
+        for (const pDate in allDatesSales) {
+          const storageKey = `emcala_vol_all_${pDate}_v3`;
+          const saved = localStorage.getItem(storageKey);
+          if (saved) {
+            try {
+              const existingData = JSON.parse(saved);
+              for (const spv in SPV_DATA) {
+                const promotores = SPV_DATA[spv];
+                promotores.forEach(prom => {
+                  if (existingData[prom]) {
+                    payload.push({
+                      date: pDate,
+                      spv: spv,
+                      promotor: prom,
+                      ...existingData[prom]
+                    });
+                  }
+                });
+              }
+            } catch(e) {}
+          }
+        }
+
+        if (payload.length > 0) {
+          try {
+            const response = await fetch(SCRIPT_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+              alert('✅ ¡Éxito! Todas las fechas procesadas del CSV ya se sincronizaron en la nube.');
+            } else {
+              alert('⚠️ Hubo un error en la nube: ' + result.message);
+            }
+          } catch (e) {
+            alert('❌ Error de conexión al intentar subir los múltiples días a la nube.');
+          }
+        }
       }, 500);
     }
 
