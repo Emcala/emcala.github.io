@@ -520,7 +520,6 @@
       * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-        color-adjust: exact !important;
       }
 
       body {
@@ -1345,8 +1344,16 @@
       if (btnClear) btnClear.style.display = 'none';
       
       let spvMatched = false;
+      const normalizeStr = (s) => String(s || '')
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Z0-9]/ig, "")
+        .toUpperCase();
+
+      const normMySpv = normalizeStr(MY_SPV);
       for (const key in RAW_SPV_DATA) {
-        if (MY_SPV.includes(key) || key.includes(MY_SPV)) {
+        const normKey = normalizeStr(key);
+        if (normMySpv.includes(normKey) || normKey.includes(normMySpv)) {
           SPV_DATA[key] = RAW_SPV_DATA[key];
           spvMatched = true;
           break;
