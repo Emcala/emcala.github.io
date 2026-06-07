@@ -2335,6 +2335,7 @@
           const articleName = cols[cm.article] ? cols[cm.article].trim().toUpperCase() : '';
           
           const isQuilmes1890 = (brand === 'QUILMES 1890' || brand === '1890' || articleName.includes('1890'));
+          const isBajoCero = (brand.includes('BAJO CERO') || articleName.includes('BAJO CERO'));
           const isStellaPureGold = (brand.includes('STELLA') && articleName.includes('PURE GOLD'));
           
           isBalanced = (articleName.includes('0.0') || articleName.includes('SIN ALCOHOL') || articleName.includes('MICHELOB') || brand.includes('MICHELOB') || isStellaPureGold);
@@ -2350,10 +2351,10 @@
           if (isAndes || isMichelob || isStella || isPatagonia || isCorona || isGoose || isTemple) {
             isAboveCore = true;
           } else {
-            if (isQuilmes1890) {
+            if (isQuilmes1890 || isBajoCero) {
               isValue = true;
             } else {
-              isCore = true; // Todo lo que no sea Above Core o Value, cae en Core (incluye Quilmes, Brahma, Bud, Iguana, Norte, Bajo Cero, etc.)
+              isCore = true; // Todo lo que no sea Above Core o Value, cae en Core (incluye Quilmes, Brahma, Bud, etc.)
             }
           }
           
@@ -2543,21 +2544,36 @@
             const pSales = daySales[promoter];
             
             // Guardar volúmenes (Focos I y II)
-            existingData[trackedPromoter]['f1-v'] = pSales.cerveza > 0 ? parseFloat(pSales.cerveza.toFixed(2)) : '';
-            existingData[trackedPromoter]['f1-core'] = pSales.core > 0 ? parseFloat(pSales.core.toFixed(2)) : '';
-            existingData[trackedPromoter]['f1-value'] = pSales.value > 0 ? parseFloat(pSales.value.toFixed(2)) : '';
-            // Core+Value = suma de core + value
-            const coreValueSum = pSales.core + pSales.value;
-            existingData[trackedPromoter]['f1-cv'] = coreValueSum > 0 ? parseFloat(coreValueSum.toFixed(2)) : '';
-            existingData[trackedPromoter]['f1-ac'] = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : '';
+            const rCore = pSales.core > 0 ? parseFloat(pSales.core.toFixed(2)) : 0;
+            const rValue = pSales.value > 0 ? parseFloat(pSales.value.toFixed(2)) : 0;
+            const rAc = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : 0;
+            const rUng = pSales.totalUng > 0 ? parseFloat(pSales.totalUng.toFixed(2)) : 0;
+            const rAg = pSales.aguas > 0 ? parseFloat(pSales.aguas.toFixed(2)) : 0;
+
+            existingData[trackedPromoter]['f1-core'] = rCore > 0 ? rCore : '';
+            existingData[trackedPromoter]['f1-value'] = rValue > 0 ? rValue : '';
+            
+            // Core+Value = suma exacta de redondeos
+            const coreValueSum = parseFloat((rCore + rValue).toFixed(2));
+            existingData[trackedPromoter]['f1-cv'] = coreValueSum > 0 ? coreValueSum : '';
+            
+            existingData[trackedPromoter]['f1-ac'] = rAc > 0 ? rAc : '';
+            
+            // Foco 1 Total (Cerveza) = suma exacta de (Core+Value) + Above Core
+            const f1TotalSum = parseFloat((coreValueSum + rAc).toFixed(2));
+            existingData[trackedPromoter]['f1-v'] = f1TotalSum > 0 ? f1TotalSum : (pSales.cerveza > 0 ? parseFloat(pSales.cerveza.toFixed(2)) : '');
+            
             existingData[trackedPromoter]['f1-bc'] = pSales.balanced > 0 ? parseFloat(pSales.balanced.toFixed(2)) : '';
             existingData[trackedPromoter]['f1-lt'] = pSales.latones > 0 ? parseFloat(pSales.latones.toFixed(2)) : '';
             
-            existingData[trackedPromoter]['f2-v'] = pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : '';
-            existingData[trackedPromoter]['f2-ung'] = pSales.totalUng > 0 ? parseFloat(pSales.totalUng.toFixed(2)) : '';
+            existingData[trackedPromoter]['f2-ung'] = rUng > 0 ? rUng : '';
             existingData[trackedPromoter]['f2-up'] = pSales.ungTop > 0 ? parseFloat(pSales.ungTop.toFixed(2)) : '';
             existingData[trackedPromoter]['f2-rb'] = pSales.redbull > 0 ? parseFloat(pSales.redbull.toFixed(2)) : '';
-            existingData[trackedPromoter]['f2-ag'] = pSales.aguas > 0 ? parseFloat(pSales.aguas.toFixed(2)) : '';
+            existingData[trackedPromoter]['f2-ag'] = rAg > 0 ? rAg : '';
+            
+            // Foco 2 Total (NABS) = suma exacta de redondeos de UNG + Aguas
+            const f2TotalSum = parseFloat((rUng + rAg).toFixed(2));
+            existingData[trackedPromoter]['f2-v'] = f2TotalSum > 0 ? f2TotalSum : (pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : '');
             
             existingData[trackedPromoter]['bol-v'] = pSales.clientsAll.size > 0 ? pSales.clientsAll.size : '';
             
