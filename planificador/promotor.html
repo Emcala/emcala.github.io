@@ -213,7 +213,7 @@
       document.getElementById('kpi2-container').innerHTML = `<div class="kpi-pending-text">Sincronizando...</div>`;
 
       try {
-        const response = await fetch(`${SCRIPT_URL}?date=${date}&spv=${encodeURIComponent(spv)}`);
+        const response = await fetch(`${SCRIPT_URL}?date=${date}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`);
         const result = await response.json();
         
         // El promotor aún no lo eligió necesariamente, así que buscamos en el primer promotor disponible o iteramos la data del spv
