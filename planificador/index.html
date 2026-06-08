@@ -990,6 +990,9 @@
         min-width: 85px;
         font-size: 13px;
       }
+      .progress-cell span {
+        font-size: 14.5px;
+      }
 
       tfoot td {
         font-size: 18px;
@@ -1119,6 +1122,9 @@
         width: 105px;
         min-width: 105px;
         font-size: 16px;
+      }
+      .progress-cell span {
+        font-size: 18px;
       }
 
       tfoot td {
@@ -2000,14 +2006,16 @@
           captureEl.querySelectorAll('input.cell-input').forEach(inp => {
             const span = document.createElement('span');
             span.textContent = inp.value;
-            span.style.cssText = window.getComputedStyle(inp).cssText;
+            const compStyle = window.getComputedStyle(inp);
+            span.style.cssText = compStyle.cssText;
             span.style.display = 'inline-block';
             span.style.width = '100%';
             span.style.height = '100%';
             span.style.textAlign = 'center';
             span.style.verticalAlign = 'middle';
-            span.style.lineHeight = inp.parentElement.style.height || '14px';
-            span.style.fontSize = '10.5px';
+            // Usamos el tamaño y line-height calculado real en vez de 10.5px fijo
+            span.style.lineHeight = compStyle.lineHeight !== 'normal' ? compStyle.lineHeight : (inp.parentElement.style.height || '14px');
+            span.style.fontSize = compStyle.fontSize;
             span.style.fontWeight = inp.classList.contains('real') ? '800' : '600';
             span.style.fontFamily = "'Aptos Display', 'Aptos', 'Barlow', sans-serif";
             span.style.padding = '0';
@@ -2020,20 +2028,26 @@
           });
 
         // Adaptar captura exactamente al tamaño de la grilla
-        // Adaptar captura exactamente al tamaño de la grilla
         const originalWidth = captureEl.style.width;
         const originalMinWidth = captureEl.style.minWidth;
         const targetWidth = (tableCont ? tableCont.scrollWidth + 60 : captureEl.scrollWidth) + 'px';
         captureEl.style.width = targetWidth;
         captureEl.style.minWidth = targetWidth;
 
+        // Guardamos las variables para restaurar luego (comportamiento unificado para todas las resoluciones)
+        const origMargin = captureEl.style.margin;
+        const origPosition = captureEl.style.position;
+        const origLeft = captureEl.style.left;
+
         // Permitir que captureEl crezca de alto
         const origCaptureHeight = captureEl.style.height;
         const origCaptureMaxHeight = captureEl.style.maxHeight;
         const origCaptureOverflow = captureEl.style.overflow;
+        const origCapturePaddingBottom = captureEl.style.paddingBottom;
         captureEl.style.height = 'auto';
         captureEl.style.maxHeight = 'none';
         captureEl.style.overflow = 'visible';
+        captureEl.style.paddingBottom = '15px'; // Evita que se corte la tabla abajo
 
         // Esperar 50ms para asegurar que el navegador calcule el ancho/alto real
         await new Promise(r => setTimeout(r, 50));
@@ -2042,7 +2056,7 @@
           backgroundColor: '#0B2559',
           scale: 2,
           windowWidth: tableCont ? tableCont.scrollWidth + 60 : captureEl.scrollWidth,
-          windowHeight: captureEl.scrollHeight,
+          windowHeight: captureEl.scrollHeight + 20,
           logging: false,
           useCORS: true
         });
@@ -2050,9 +2064,13 @@
         // Restaurar ancho original
         captureEl.style.width = originalWidth;
         captureEl.style.minWidth = originalMinWidth;
+        captureEl.style.margin = origMargin;
+        captureEl.style.position = origPosition;
+        captureEl.style.left = origLeft;
         captureEl.style.height = origCaptureHeight;
         captureEl.style.maxHeight = origCaptureMaxHeight;
         captureEl.style.overflow = origCaptureOverflow;
+        captureEl.style.paddingBottom = origCapturePaddingBottom;
 
         // Restore inputs
         inputBackup.forEach(({ input, parent }) => {
