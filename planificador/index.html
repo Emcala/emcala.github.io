@@ -2021,7 +2021,9 @@
             span.style.padding = '0';
             span.style.margin = '0';
             span.style.border = 'none';
-            span.style.background = 'transparent';
+            // Respetamos el color de fondo y de texto para que salga el rojo/verde/ambar
+            span.style.backgroundColor = compStyle.backgroundColor;
+            span.style.color = compStyle.color;
             span.className = 'capture-span';
             inputBackup.push({ input: inp, parent: inp.parentElement });
             inp.parentElement.replaceChild(span, inp);
