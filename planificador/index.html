@@ -2128,7 +2128,7 @@
         <div class="toast-body">
           La tabla se copió al portapapeles. Ya podés pegarla con <b>Ctrl+V</b> en tu chat.
         </div>
-        <button class="toast-btn" id="toast-btn-copy-txt">📋 Copiar Texto de Copete</button>
+        <button class="toast-btn" id="toast-btn-copy-txt">📋 Copiar Título</button>
       `;
       document.body.appendChild(toast);
 
@@ -2150,13 +2150,13 @@
         }
       });
 
-      // Auto dismiss a los 8 segundos
+      // Auto dismiss a los 20 segundos
       setTimeout(() => {
         if (toast && toast.parentNode) {
           toast.classList.remove('show');
           setTimeout(() => { if (toast.parentNode) toast.remove(); }, 400);
         }
-      }, 8000);
+      }, 20000);
     }
 
     // Helper para formatear fecha en formato CSV (d-mmm-yy)
@@ -2973,7 +2973,7 @@
         // 3. Traer datos actualizados del servidor — SIEMPRE reemplaza volData completo
         const cloudData = {};
         const promises = Object.keys(SPV_DATA).map(async (spv) => {
-          const response = await fetch(`${SCRIPT_URL}?date=${date}&spv=${encodeURIComponent(spv)}`);
+          const response = await fetch(`${SCRIPT_URL}?date=${date}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`);
           const result = await response.json();
           if (result.status === 'success') {
             const fetched = result.data || {};

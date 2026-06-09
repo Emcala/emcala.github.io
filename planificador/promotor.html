@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>App Promotor · EMCALA</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&display=swap');
@@ -93,39 +96,43 @@
       </div>
     </div>
 
-    <!-- FOCO 1 & 2 -->
-    <div class="row" style="display:flex; flex-direction:column;">
-      <div class="card foco1">
-        <div class="card-title" style="color:var(--foco1)">🍺 Cervezas</div>
-        <div class="form-group">
-          <label>Total Planificado (HL)</label>
-          <input type="number" id="f1-total" step="0.01" placeholder="0.00">
+    <!-- FOCOS 1 A 4 EN GRID 2x2 -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; text-align: center;">
+      
+      <!-- FOCO 1 -->
+      <div class="card foco1" style="padding: 12px; margin-bottom: 0;">
+        <div class="card-title" style="color:var(--foco1); font-size: 15px; margin-bottom: 8px;">🍺 Cervezas</div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 9px; margin-bottom: 4px;">Total Plan (HL)</label>
+          <input type="number" id="f1-total" step="0.01" placeholder="0.00" style="padding: 8px; font-size: 14px; text-align: center;">
         </div>
       </div>
       
-      <div class="card foco2">
-        <div class="card-title" style="color:var(--foco2)">🥤 NABS</div>
-        <div class="form-group">
-          <label>Total Planificado (HL)</label>
-          <input type="number" id="f2-total" step="0.01" placeholder="0.00">
+      <!-- FOCO 2 -->
+      <div class="card foco2" style="padding: 12px; margin-bottom: 0;">
+        <div class="card-title" style="color:var(--foco2); font-size: 15px; margin-bottom: 8px;">🥤 NABS</div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 9px; margin-bottom: 4px;">Total Plan (HL)</label>
+          <input type="number" id="f2-total" step="0.01" placeholder="0.00" style="padding: 8px; font-size: 14px; text-align: center;">
         </div>
       </div>
-    </div>
-
-    <!-- FOCO 3 -->
-    <div class="card foco3">
-      <div class="card-title" style="color:var(--foco3)">🎯 KPI 1</div>
-      <div id="kpi1-container">
-        <div class="kpi-pending-text">Elegí tu supervisor para ver el KPI...</div>
+      
+      <!-- FOCO 3 -->
+      <div class="card foco3" style="padding: 12px; margin-bottom: 0;">
+        <div class="card-title" style="color:var(--foco3); font-size: 15px; margin-bottom: 8px;">🎯 KPI 1</div>
+        <div id="kpi1-container">
+          <div class="kpi-pending-text" style="font-size: 10px; padding: 6px;">Elegí supervisor...</div>
+        </div>
       </div>
-    </div>
-
-    <!-- FOCO 4 -->
-    <div class="card foco4">
-      <div class="card-title" style="color:var(--foco4)">🎯 KPI 2</div>
-      <div id="kpi2-container">
-        <div class="kpi-pending-text">Elegí tu supervisor para ver el KPI...</div>
+  
+      <!-- FOCO 4 -->
+      <div class="card foco4" style="padding: 12px; margin-bottom: 0;">
+        <div class="card-title" style="color:var(--foco4); font-size: 15px; margin-bottom: 8px;">🎯 KPI 2</div>
+        <div id="kpi2-container">
+          <div class="kpi-pending-text" style="font-size: 10px; padding: 6px;">Elegí supervisor...</div>
+        </div>
       </div>
+      
     </div>
 
     <!-- FOCO 5 (BOLETAS) -->
@@ -177,6 +184,11 @@
 
     spvSelect.addEventListener('change', () => {
       const spv = spvSelect.value;
+      const isLemos = spv === 'LEMOS PATRICIA';
+      document.querySelector('.foco3').style.display = isLemos ? 'none' : '';
+      document.querySelector('.foco4').style.display = isLemos ? 'none' : '';
+      document.querySelector('.foco5').style.display = isLemos ? 'none' : '';
+
       promSelect.innerHTML = '<option value="">Selecciona tu nombre...</option>';
       if (spv) {
         SPV_DATA[spv].forEach(p => {
@@ -213,7 +225,10 @@
       document.getElementById('kpi2-container').innerHTML = `<div class="kpi-pending-text">Sincronizando...</div>`;
 
       try {
-        const response = await fetch(`${SCRIPT_URL}?date=${date}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`);
+        // En Apps Script no podemos enviar cabeceras personalizadas (provoca error CORS)
+        const response = await fetch(`${SCRIPT_URL}?date=${date}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`, {
+          cache: 'no-store'
+        });
         const result = await response.json();
         
         // El promotor aún no lo eligió necesariamente, así que buscamos en el primer promotor disponible o iteramos la data del spv
@@ -246,19 +261,21 @@
     function renderKpis() {
       if (currentKpiData) {
         document.getElementById('kpi1-container').innerHTML = `
-          <div class="kpi-fixed-text">${currentKpiData.k1m}: ${currentKpiData.k1t}</div>
-          <div class="form-group" style="margin-top:12px;">
-            <label>Planificado (Unidades/HL)</label>
-            <input type="number" id="kpi1-p" step="0.01" placeholder="0.00">
+          <div class="kpi-fixed-text" style="font-size: 11px; padding: 6px;">${currentKpiData.k1m}: ${currentKpiData.k1t}</div>
+          <div class="form-group" style="margin-top:8px; margin-bottom:0;">
+            <label style="font-size: 9px; margin-bottom: 4px;">Plan</label>
+            <input type="number" id="kpi1-p" step="0.01" placeholder="0.00" style="padding: 8px; font-size: 14px; text-align: center;">
           </div>
         `;
         document.getElementById('kpi2-container').innerHTML = `
-          <div class="kpi-fixed-text">${currentKpiData.k2m}: ${currentKpiData.k2t}</div>
-          <div class="form-group" style="margin-top:12px;">
-            <label>Planificado (Unidades/HL)</label>
-            <input type="number" id="kpi2-p" step="0.01" placeholder="0.00">
+          <div class="kpi-fixed-text" style="font-size: 11px; padding: 6px;">${currentKpiData.k2m}: ${currentKpiData.k2t}</div>
+          <div class="form-group" style="margin-top:8px; margin-bottom:0;">
+            <label style="font-size: 9px; margin-bottom: 4px;">Plan</label>
+            <input type="number" id="kpi2-p" step="0.01" placeholder="0.00" style="padding: 8px; font-size: 14px; text-align: center;">
           </div>
         `;
+        document.getElementById('kpi1-p').addEventListener('input', checkForm);
+        document.getElementById('kpi2-p').addEventListener('input', checkForm);
         checkForm();
       } else {
         const msg = `<div class="kpi-pending-text">${spvSelect.value ? 'El supervisor aún no ha definido los FOCOS KPI para esta fecha.' : 'Elegí tu supervisor para ver el KPI...'}</div>`;
@@ -269,17 +286,54 @@
     }
 
     function checkForm() {
-      if (spvSelect.value && promSelect.value && currentKpiData) {
+      const isLemos = spvSelect.value === 'LEMOS PATRICIA';
+
+      if (!spvSelect.value || !promSelect.value || (!currentKpiData && !isLemos)) {
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Enviar Planificación';
+        return;
+      }
+
+      const f1 = document.getElementById('f1-total')?.value.trim() || '';
+      const f2 = document.getElementById('f2-total')?.value.trim() || '';
+      const k1 = document.getElementById('kpi1-p')?.value.trim() || '';
+      const k2 = document.getElementById('kpi2-p')?.value.trim() || '';
+      const bol = document.getElementById('bol-total')?.value.trim() || '';
+      
+      let missing = [];
+      if (f1 === '') missing.push('Cervezas');
+      if (f2 === '') missing.push('NABS');
+      
+      if (!isLemos) {
+        if (k1 === '') missing.push('KPI 1');
+        if (k2 === '') missing.push('KPI 2');
+        if (bol === '') missing.push('Boletas');
+      }
+
+      if (missing.length === 0) {
         btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Enviar Planificación';
       } else {
         btnSubmit.disabled = true;
+        const totalCampos = isLemos ? 2 : 5;
+        if (missing.length === totalCampos) {
+          btnSubmit.textContent = `Faltan llenar los ${totalCampos} campos`;
+        } else if (missing.length > 2) {
+          btnSubmit.textContent = `Faltan llenar ${missing.length} campos`;
+        } else {
+          btnSubmit.textContent = 'Falta: ' + missing.join(' y ');
+        }
       }
     }
 
     promSelect.addEventListener('change', checkForm);
+    document.getElementById('f1-total').addEventListener('input', checkForm);
+    document.getElementById('f2-total').addEventListener('input', checkForm);
+    document.getElementById('bol-total').addEventListener('input', checkForm);
 
     btnSubmit.addEventListener('click', async () => {
-      if (!currentKpiData) {
+      const isLemos = spvSelect.value === 'LEMOS PATRICIA';
+      if (!currentKpiData && !isLemos) {
         alert('No hay KPIs definidos para hoy.'); return;
       }
       if (!promSelect.value) {
@@ -292,13 +346,13 @@
         promotor: promSelect.value,
         'f1-p': document.getElementById('f1-total').value || '',
         'f2-p': document.getElementById('f2-total').value || '',
-        'k1-met': currentKpiData.k1m,
-        'k1-tar': currentKpiData.k1t,
-        'k1-p': document.getElementById('kpi1-p').value || '',
-        'k2-met': currentKpiData.k2m,
-        'k2-tar': currentKpiData.k2t,
-        'k2-p': document.getElementById('kpi2-p').value || '',
-        'bol-p': document.getElementById('bol-total').value || ''
+        'k1-met': currentKpiData ? currentKpiData.k1m : '',
+        'k1-tar': currentKpiData ? currentKpiData.k1t : '',
+        'k1-p': (!isLemos && document.getElementById('kpi1-p')) ? document.getElementById('kpi1-p').value : '',
+        'k2-met': currentKpiData ? currentKpiData.k2m : '',
+        'k2-tar': currentKpiData ? currentKpiData.k2t : '',
+        'k2-p': (!isLemos && document.getElementById('kpi2-p')) ? document.getElementById('kpi2-p').value : '',
+        'bol-p': (!isLemos && document.getElementById('bol-total')) ? document.getElementById('bol-total').value : ''
       };
 
       const success = document.getElementById('success-msg');
@@ -308,10 +362,14 @@
       success.style.display = 'none';
 
       try {
+        // En Apps Script no podemos enviar cabeceras personalizadas adicionales al Content-Type
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
+          cache: 'no-store',
           body: JSON.stringify(payload),
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+          headers: { 
+            'Content-Type': 'text/plain;charset=utf-8'
+          }
         });
         const result = await response.json();
         if (result.status === 'success') {
