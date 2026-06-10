@@ -176,8 +176,11 @@
     }
 
     // Setear fecha actual
-    const _now = new Date();
-    dateInput.value = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
+    function setTodayDate() {
+      const _now = new Date();
+      return `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
+    }
+    dateInput.value = setTodayDate();
 
     // Estado global de los KPIs
     let currentKpiData = null;
@@ -376,9 +379,9 @@
           success.style.display = 'block';
           document.getElementById('f1-total').value = '';
           document.getElementById('f2-total').value = '';
-          document.getElementById('kpi1-p').value = '';
-          document.getElementById('kpi2-p').value = '';
-          document.getElementById('bol-total').value = '';
+          if (document.getElementById('kpi1-p')) document.getElementById('kpi1-p').value = '';
+          if (document.getElementById('kpi2-p')) document.getElementById('kpi2-p').value = '';
+          if (document.getElementById('bol-total')) document.getElementById('bol-total').value = '';
           promSelect.value = ''; // Reset promotor
           checkForm();
           window.scrollTo(0, 0);

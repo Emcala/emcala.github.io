@@ -154,6 +154,28 @@
       background: rgba(255, 255, 255, 0.15);
       border-color: rgba(255, 255, 255, 0.5);
     }
+    @keyframes pulseWarning {
+      0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
+        background: rgba(239, 68, 68, 0.15);
+      }
+      70% {
+        box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+        background: rgba(239, 68, 68, 0.3);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        background: rgba(239, 68, 68, 0.15);
+      }
+    }
+    .btn-needs-sync {
+      border-color: #ef4444 !important;
+      color: #ef4444 !important;
+      position: relative;
+      overflow: visible !important;
+      animation: pulseWarning 1.5s infinite !important;
+      background: rgba(239, 68, 68, 0.15) !important;
+    }
 
     /* CONTENEDOR TABLA */
     .container {
@@ -1154,9 +1176,9 @@
     <div class="hdr-left">
       <button class="btn-action btn-outline" id="btn-sync" style="border-color:var(--green); color:var(--green)">🔄 Sincronizar y Guardar</button>
       <button class="btn-action" id="btn-save" style="background:var(--green); color:white; border:none; display:none;">💾 Guardar Cambios</button>
-      <button class="btn-action btn-outline" id="btn-import-csv" style="border-color:var(--c-yellow); color:var(--c-yellow)">📂 Cargar Ventas CSV</button>
+      <button class="btn-action btn-outline" id="btn-import-csv" style="border-color:var(--c-yellow); color:var(--c-yellow);">📂 Cargar Ventas CSV</button>
       <input type="file" id="csv-file-input" style="display:none;" accept=".csv">
-      <button class="btn-action btn-outline" id="btn-import-skus" style="border-color:var(--c-pink); color:var(--c-pink)">📋 Cargar SKUs CSV</button>
+      <button class="btn-action btn-outline" id="btn-import-skus" style="border-color:var(--c-pink); color:var(--c-pink);">📋 Cargar SKUs CSV</button>
       <input type="file" id="csv-skus-input" style="display:none;" accept=".csv">
       <button class="btn-action btn-outline" id="btn-copy-img">📸 Copiar Foto</button>
       <button class="btn-action btn-outline" id="btn-clear">Borrar Planificación</button>
@@ -1303,8 +1325,12 @@
   <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
     // Usar fecha LOCAL (no UTC) para evitar desfase de zona horaria
-    const _now = new Date();
-    document.getElementById('date-input').value = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
+    function setTodayDate() {
+      const _now = new Date();
+      return `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
+    }
+    const dateInputEl = document.getElementById('date-input');
+    dateInputEl.value = setTodayDate();
 
     const RAW_SPV_DATA = {
       'ARES PEDRO': ['GALLO JONATHAN', 'DIAZ VALERIA', 'FERREYRA LEONARDO', 'MIÑO RENZO', 'LOPEZ PABLO', 'SANCHEZ ROCIO'],
@@ -1389,6 +1415,9 @@
         saveData();
         renderTables();
         document.getElementById('btn-save').click(); // Auto save to sheet
+        
+        const btnSync = document.getElementById('btn-sync');
+        if (btnSync) btnSync.classList.add('btn-needs-sync');
       });
     }
 
@@ -1763,6 +1792,9 @@
 
       saveData();
       calcTotals();
+
+      const btnSync = document.getElementById('btn-sync');
+      if (btnSync) btnSync.classList.add('btn-needs-sync');
     }
 
     function toggleFocoExtra(num) {
@@ -2218,6 +2250,19 @@
         return;
       }
       
+      // Validación estricta del formato CSV
+      let validColumns = 0;
+      const headerText = lines[0].toLowerCase();
+      if (headerText.includes('vendedor')) validColumns++;
+      if (headerText.includes('código') || headerText.includes('codigo')) validColumns++;
+      if (headerText.includes('cantidades')) validColumns++;
+      if (headerText.includes('cliente')) validColumns++;
+      
+      if (validColumns < 2) {
+        alert('❌ Error: El archivo CSV no tiene el formato correcto.\n\nPor favor, verificá que estás subiendo el reporte de Ventas correcto y no otro archivo.');
+        return;
+      }
+
       const h = lines[0].split(';').map(s => s.trim().toLowerCase());
       const cm = {
         date: h.indexOf('descripción período'),
@@ -2794,14 +2839,19 @@
         
         // Autodetectar columnas
         const headers = firstLine.split(separator).map(s => s.trim().toLowerCase());
-        let idxId = headers.findIndex(h => h.includes('sku') || h.includes('código') || h.includes('codigo') || h.includes('id'));
+        let idxId = headers.findIndex(h => h.includes('sku') || h.includes('código') || h.includes('codigo') || h.includes('id') || h.includes('material'));
         let idxShort = headers.findIndex(h => h.includes('short') || h.includes('corta') || (h.includes('desc') && !h.includes('full') && !h.includes('larga')));
-        let idxFull = headers.findIndex(h => h.includes('full') || h.includes('larga'));
+        let idxFull = headers.findIndex(h => h.includes('full') || h.includes('larga') || h.includes('desc'));
         
-        // Fallbacks por si no encuentra el texto exacto
-        if (idxId === -1) idxId = 0;
-        if (idxShort === -1) idxShort = 1;
-        if (idxFull === -1) idxFull = 2;
+        // Validación estricta
+        if (idxId === -1 || (idxShort === -1 && idxFull === -1)) {
+          alert('❌ Error: El archivo CSV no tiene el formato correcto para SKUs.\n\nDebe contener encabezados en la primera fila como "Código" o "SKU" y "Descripción".');
+          return;
+        }
+        
+        // Fallbacks por si solo hay un tipo de descripción
+        if (idxShort === -1) idxShort = idxFull;
+        if (idxFull === -1) idxFull = idxShort;
         
         const skus = [];
         for (let i = 1; i < lines.length; i++) {
@@ -2954,6 +3004,7 @@
       if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') { alert('Falta URL de Sheets'); return; }
 
       const btn = document.getElementById('btn-sync');
+      btn.classList.remove('btn-needs-sync');
       const orig = btn.innerHTML;
       btn.innerHTML = '⏳ Sincronizando...'; btn.disabled = true;
 
@@ -2977,12 +3028,13 @@
           const result = await response.json();
           if (result.status === 'success') {
             const fetched = result.data || {};
-            for (let prom in fetched) {
+            for (let originalProm in fetched) {
+              let prom = originalProm;
               // Parche de seguridad para problemas de codificación de la Ñ desde Google Sheets
               if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) {
                 prom = 'MIÑO RENZO';
               }
-              cloudData[prom] = fetched[prom];
+              cloudData[prom] = fetched[originalProm];
             }
           }
         });
