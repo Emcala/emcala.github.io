@@ -1913,7 +1913,10 @@
 
       document.querySelectorAll('.cell-input').forEach(inp => {
         inp.addEventListener('input', handleInput);
-        inp.addEventListener('focus', function () { this.select(); });
+        inp.addEventListener('focus', function () { 
+          this.dataset.origVal = this.value; // Guardar valor original
+          this.select(); 
+        });
         inp.addEventListener('blur', function () {
           if (this.value && !isNaN(this.value.replace(',', '.'))) {
             this.value = formatNum(this.value.replace(',', '.'));
@@ -1922,6 +1925,16 @@
         });
         inp.addEventListener('keydown', function(e) {
           const key = e.key;
+          
+          if (key === 'Escape') {
+            if (this.dataset.origVal !== undefined) {
+              this.value = this.dataset.origVal;
+              handleInput({ target: this }); // Restaurar y recalcular
+            }
+            this.blur(); // Salir del input
+            return;
+          }
+
           if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(key)) return;
           
           const td = this.closest('td');
@@ -3000,13 +3013,16 @@
     }
 
     document.getElementById('btn-sync').addEventListener('click', async (e) => {
-      const date = document.getElementById('date-input').value;
+      const dateEl = document.getElementById('date-input');
+      const date = dateEl.value;
       if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') { alert('Falta URL de Sheets'); return; }
 
       const btn = document.getElementById('btn-sync');
       btn.classList.remove('btn-needs-sync');
       const orig = btn.innerHTML;
-      btn.innerHTML = '⏳ Sincronizando...'; btn.disabled = true;
+      btn.innerHTML = '⏳ Sincronizando...'; 
+      btn.disabled = true;
+      dateEl.disabled = true;
 
       // Determinamos si fue un click manual o el auto-sync al cargar la página
       const isAutoSync = !e.isTrusted;
@@ -3047,7 +3063,9 @@
         renderTables();
 
         // Indicador visual de éxito
-        btn.innerHTML = '✅ Sincronizado'; btn.disabled = false;
+        btn.innerHTML = '✅ Sincronizado'; 
+        btn.disabled = false;
+        dateEl.disabled = false;
         setTimeout(() => { btn.innerHTML = orig; }, 2000);
         return;
 
@@ -3058,6 +3076,7 @@
         renderTables();
         btn.innerHTML = '⚠️ Sin conexión (datos locales)';
         btn.disabled = false;
+        dateEl.disabled = false;
         btn.style.borderColor = '#ef4444';
         btn.style.color = '#ef4444';
         setTimeout(() => {
