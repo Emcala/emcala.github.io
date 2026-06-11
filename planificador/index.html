@@ -1485,6 +1485,7 @@
         const saved = localStorage.getItem(mainKey);
         if (saved) {
           volData = JSON.parse(saved);
+          window.currentCloudState = saved;
         } else {
           volData = {};
           for (const spv in SPV_DATA) {
@@ -1494,6 +1495,7 @@
               Object.assign(volData, JSON.parse(oldSaved));
             }
           }
+          window.currentCloudState = JSON.stringify(volData);
           saveData();
         }
       } catch (e) {
@@ -1615,7 +1617,7 @@
             let kpiVal = null;
             
             if (tar === 'EFICIENCIA DE VENTAS') {
-              kpiVal = d['cv-eficiencia'] !== undefined ? d['cv-eficiencia'] : 0;
+              kpiVal = d['cv-eficiencia'];
             } else if (met === 'CCC') {
               // Todo el universo (clientes únicos por segmento general)
               if (tar === 'TOTAL CZA' || tar === 'TOTAL CERVEZA') kpiVal = d['ccc-cerveza'];
@@ -1794,7 +1796,13 @@
       calcTotals();
 
       const btnSync = document.getElementById('btn-sync');
-      if (btnSync) btnSync.classList.add('btn-needs-sync');
+      if (btnSync) {
+        if (window.currentCloudState && JSON.stringify(volData) === window.currentCloudState) {
+          btnSync.classList.remove('btn-needs-sync');
+        } else {
+          btnSync.classList.add('btn-needs-sync');
+        }
+      }
     }
 
     function toggleFocoExtra(num) {
@@ -2449,18 +2457,18 @@
         }
 
         // 2) SI ESTÁ EN EL MAESTRO (VALIDADO), ACUMULAR PARA KPIs FOCO III/IV
-        if (skuData) {
+        if (skuData && csvSkuCode) {
           // Acumular en los sets de CV
-          pSales.cvClientsEficiencia.add(clientId);
-          if (isCerveza) pSales.cvClientsCerveza.add(clientId);
-          if (isCore) pSales.cvClientsCore.add(clientId);
-          if (isValue) pSales.cvClientsValue.add(clientId);
-          if (isAboveCore) pSales.cvClientsAboveCore.add(clientId);
-          if (isLatones) pSales.cvClientsLatones.add(clientId);
-          if (isBalanced) pSales.cvClientsBalanced.add(clientId);
-          if (isNabs) pSales.cvClientsNabs.add(clientId);
-          if (isAguas) pSales.cvClientsAguas.add(clientId);
-          if (isUngTop) pSales.cvClientsUngTop.add(clientId);
+          pSales.cvClientsEficiencia.add(csvSkuCode);
+          if (isCerveza) pSales.cvClientsCerveza.add(csvSkuCode);
+          if (isCore) pSales.cvClientsCore.add(csvSkuCode);
+          if (isValue) pSales.cvClientsValue.add(csvSkuCode);
+          if (isAboveCore) pSales.cvClientsAboveCore.add(csvSkuCode);
+          if (isLatones) pSales.cvClientsLatones.add(csvSkuCode);
+          if (isBalanced) pSales.cvClientsBalanced.add(csvSkuCode);
+          if (isNabs) pSales.cvClientsNabs.add(csvSkuCode);
+          if (isAguas) pSales.cvClientsAguas.add(csvSkuCode);
+          if (isUngTop) pSales.cvClientsUngTop.add(csvSkuCode);
           
           const tbdKey = clientId + '_' + csvSkuCode;
           // Acumular VOL/CCC/TBD VALIDADOS (solo maestro) para KPIs
@@ -3059,6 +3067,7 @@
 
         // Reemplazar volData con datos de la nube (no merge, reemplazo completo)
         volData = cloudData;
+        window.currentCloudState = JSON.stringify(volData);
         saveData();
         renderTables();
 
