@@ -1517,7 +1517,7 @@
           });
           saveData();
           renderTables();
-          document.getElementById('btn-save').click(); // Auto-save to server
+          saveToServer(true); // Solo enviar campos de planificación, nunca pisar ventas
         }
       }
     }
@@ -2942,12 +2942,20 @@
         const promotores = SPV_DATA[spv];
         promotores.forEach(prom => {
           if (volData[prom]) {
-            payload.push({
-              date: date,
-              spv: spv,
-              promotor: prom,
-              ...volData[prom]
-            });
+            // Solo enviar campos que tengan valor real, NUNCA enviar campos vacíos
+            // que pisarían datos reales (ventas) en la nube
+            const rowPayload = { date, spv, promotor: prom };
+            let hasData = false;
+            for (const field in volData[prom]) {
+              const v = volData[prom][field];
+              if (v !== undefined && v !== null && v !== '') {
+                rowPayload[field] = v;
+                hasData = true;
+              }
+            }
+            if (hasData) {
+              payload.push(rowPayload);
+            }
           }
         });
       }
