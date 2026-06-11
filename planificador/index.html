@@ -2761,12 +2761,15 @@
                 const promotores = SPV_DATA[spv];
                 promotores.forEach(prom => {
                   if (existingData[prom]) {
-                    payload.push({
-                      date: pDate,
-                      spv: spv,
-                      promotor: prom,
-                      ...existingData[prom]
-                    });
+                    // Filtrar campos vacíos para no pisar datos existentes en la nube
+                    const rowPayload = { date: pDate, spv, promotor: prom };
+                    for (const field in existingData[prom]) {
+                      const v = existingData[prom][field];
+                      if (v !== undefined && v !== null && v !== '') {
+                        rowPayload[field] = v;
+                      }
+                    }
+                    payload.push(rowPayload);
                   }
                 });
               }
