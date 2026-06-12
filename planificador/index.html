@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Planificador Matinal SPV · EMCALA</title>
   <script src="../emcala-auth.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <script>
     if (!EmcalaAuth.requireRole(['auditor', 'supervisor'])) {
       throw new Error("No autorizado");
@@ -593,7 +594,9 @@
 
     /* Columnas expandibles */
     .f1-extra,
-    .f2-extra {
+    .f2-extra,
+    .f1-obj,
+    .f2-obj {
       transition: all 0.2s;
     }
 
@@ -602,6 +605,14 @@
     }
 
     .emcala-table.hide-f2-extra .f2-extra {
+      display: none;
+    }
+
+    .emcala-table.hide-f1-obj .f1-obj {
+      display: none;
+    }
+
+    .emcala-table.hide-f2-obj .f2-obj {
       display: none;
     }
 
@@ -1180,6 +1191,8 @@
       <input type="file" id="csv-file-input" style="display:none;" accept=".csv">
       <button class="btn-action btn-outline" id="btn-import-skus" style="border-color:var(--c-pink); color:var(--c-pink);">📋 Cargar SKUs CSV</button>
       <input type="file" id="csv-skus-input" style="display:none;" accept=".csv">
+      <button class="btn-action btn-outline" id="btn-import-obj" style="border-color:#10b981; color:#10b981;">📊 Cargar Objetivos Excel</button>
+      <input type="file" id="obj-file-input" style="display:none;" accept=".xlsx, .xls">
       <button class="btn-action btn-outline" id="btn-copy-img">📸 Copiar Foto</button>
       <button class="btn-action btn-outline" id="btn-clear">Borrar Planificación</button>
       <button class="btn-action" id="btn-print">🖨️ Imprimir</button>
@@ -1237,13 +1250,13 @@
   <div class="container">
     <div id="capture-area">
       <div class="table-container" tabindex="0">
-        <table id="main-table" class="emcala-table hide-f1-extra hide-f2-extra">
+        <table id="main-table" class="emcala-table hide-f1-extra hide-f2-extra hide-f1-obj hide-f2-obj">
         <thead>
           <tr>
             <th rowspan="2" class="prom-col w-110">SUPERVISOR / PROMOTOR</th>
-            <th colspan="3" class="foco-header" onclick="toggleFocoExtra(1)">FOCO I (TOTAL CVZA)</th>
+            <th colspan="3" id="header-foco-1" class="foco-header" onclick="toggleFocoExtra(1)">FOCO I (TOTAL CVZA)</th>
             <th colspan="4" class="extra-header f1-extra"></th>
-            <th colspan="3" class="foco-header" onclick="toggleFocoExtra(2)">FOCO II (TOTAL NABS)</th>
+            <th colspan="3" id="header-foco-2" class="foco-header" onclick="toggleFocoExtra(2)">FOCO II (TOTAL NABS)</th>
             <th colspan="4" class="extra-header f2-extra"></th>
             <th colspan="4" class="foco-header">FOCO III (KPI 1)</th>
             <th colspan="4" class="foco-header">FOCO IV (KPI 2)</th>
@@ -1251,7 +1264,10 @@
           </tr>
           <tr>
             <!-- I -->
-            <th class="bg-red w-70">PLANIFICADO</th>
+            <th class="bg-red w-70" onclick="toggleObjExtra(1)" style="cursor:pointer" title="Clic para ver Objetivos">PLANIFICADO ▼</th>
+            <th class="bg-red f1-obj w-55" style="background:#b91c1c" title="Objetivo Mensual">OBJ. MENS.</th>
+            <th class="bg-red f1-obj w-55" style="background:#b91c1c">ACUMULADO</th>
+            <th class="bg-red f1-obj w-55" style="background:#b91c1c">MEDIA NEC.</th>
             <th class="bg-red w-55">VENTA</th>
             <th class="bg-red w-55">AVANCE</th>
             <th class="bg-yellow f1-extra w-55">CORE+VALUE</th>
@@ -1259,7 +1275,10 @@
             <th class="f1-extra w-55" style="background:#cbd5e1 !important; color:#000; font-family:'Bricolage Grotesque', sans-serif; font-weight:800; font-size:var(--fs-sm);">BALANCED</th>
             <th class="f1-extra w-55" style="background:#fdba74 !important; color:#000; font-family:'Bricolage Grotesque', sans-serif; font-weight:800; font-size:var(--fs-sm);">LATONES</th>
             <!-- II -->
-            <th class="bg-blue w-70">PLANIFICADO</th>
+            <th class="bg-blue w-70" onclick="toggleObjExtra(2)" style="cursor:pointer" title="Clic para ver Objetivos">PLANIFICADO ▼</th>
+            <th class="bg-blue f2-obj w-55" style="background:#1d4ed8" title="Objetivo Mensual">OBJ. MENS.</th>
+            <th class="bg-blue f2-obj w-55" style="background:#1d4ed8">ACUMULADO</th>
+            <th class="bg-blue f2-obj w-55" style="background:#1d4ed8">MEDIA NEC.</th>
             <th class="bg-blue w-55">VENTA</th>
             <th class="bg-blue w-55">AVANCE</th>
             <th class="bg-pink f2-extra w-55">TOTAL UNG</th>
@@ -1287,6 +1306,9 @@
           <tr id="tfoot-main">
             <td class="text-left">TOTALES</td>
             <td id="grand-f1-p" class="tot-val">0.00</td>
+            <td id="grand-f1-obj" class="tot-val f1-obj">0.00</td>
+            <td id="grand-f1-obj-v" class="tot-val f1-obj">0.00</td>
+            <td id="grand-f1-med" class="tot-val f1-obj" style="color:var(--c-yellow2)">0.00</td>
             <td id="grand-f1-v" class="tot-val">0.00</td>
             <td class="progress-cell"><span id="prog-grand-f1">0%</span>
               <div class="progress-bar-bg">
@@ -1299,6 +1321,9 @@
             <td id="grand-f1-lt" class="tot-val f1-extra">0.00</td>
 
             <td id="grand-f2-p" class="tot-val">0.00</td>
+            <td id="grand-f2-obj" class="tot-val f2-obj">0.00</td>
+            <td id="grand-f2-obj-v" class="tot-val f2-obj">0.00</td>
+            <td id="grand-f2-med" class="tot-val f2-obj" style="color:var(--c-yellow2)">0.00</td>
             <td id="grand-f2-v" class="tot-val">0.00</td>
             <td class="progress-cell"><span id="prog-grand-f2">0%</span>
               <div class="progress-bar-bg">
@@ -1523,8 +1548,33 @@
     }
 
     function val(prom, field) { 
-      if (volData[prom] && volData[prom][field] !== undefined && volData[prom][field] !== '') {
-        const v = volData[prom][field];
+      let v = (volData[prom] && volData[prom][field] !== undefined && volData[prom][field] !== '') ? volData[prom][field] : null;
+      
+      // Fallback a los objetivos mensuales globales si no están en el día seleccionado
+      if ((v === null || parseFloat(v) === 0) && (field === 'obj-f1' || field === 'obj-f2')) {
+        const monthStr = document.getElementById('date-input').value.substring(0, 7);
+        try {
+          const monthObjs = JSON.parse(localStorage.getItem(`emcala_obj_${monthStr}`) || '{}');
+          if (monthObjs[prom] && monthObjs[prom][field]) {
+            v = monthObjs[prom][field];
+            if (!volData[prom]) volData[prom] = {};
+            volData[prom][field] = v; // Auto-guardar en memoria
+          }
+        } catch(e){}
+      }
+      
+      // Fallback para el acumulado: si el día seleccionado (ej. mañana) no tiene acumulado guardado, heredar del día anterior
+      if ((v === null || parseFloat(v) === 0) && (field === 'acum-f1' || field === 'acum-f2')) {
+        const currentDateStr = document.getElementById('date-input').value;
+        const lastAcum = getLastAcumulado(prom, field, currentDateStr);
+        if (lastAcum > 0) {
+          v = lastAcum;
+          if (!volData[prom]) volData[prom] = {};
+          volData[prom][field] = v; // Auto-guardar en memoria para que no se pierda al guardar
+        }
+      }
+
+      if (v !== null) {
         if (!isNaN(v) && v !== '') {
           return (field === 'bol-p' || field === 'bol-v') ? parseInt(v) : parseFloat(v).toFixed(2);
         }
@@ -1677,12 +1727,14 @@
       // Recalcular KPI Real antes de mostrar totales
       computeAllKpiReal();
       
-      let grandTots = { 'f1-p':0,'f1-v':0,'f1-cv':0,'f1-ac':0,'f1-bc':0,'f1-lt':0,'f2-p':0,'f2-v':0,'f2-ung':0,'f2-up':0,'f2-rb':0,'f2-ag':0,'k1-p':0,'k1-v':0,'k2-p':0,'k2-v':0,'bol-p':0,'bol-v':0 };
+      let grandTots = { 'f1-p':0,'obj-f1':0,'acum-f1':0,'f1-v':0,'f1-cv':0,'f1-ac':0,'f1-bc':0,'f1-lt':0,'f2-p':0,'obj-f2':0,'acum-f2':0,'f2-v':0,'f2-ung':0,'f2-up':0,'f2-rb':0,'f2-ag':0,'k1-p':0,'k1-v':0,'k2-p':0,'k2-v':0,'bol-p':0,'bol-v':0 };
       let grandK1Pcts = [];
       let grandK2Pcts = [];
 
+      let diasRestantes = typeof getDiasHabilesRestantes === 'function' ? getDiasHabilesRestantes(document.getElementById('date-input').value) : 1;
+
       for (const spv in SPV_DATA) {
-        let spvTots = { 'f1-p':0,'f1-v':0,'f1-cv':0,'f1-ac':0,'f1-bc':0,'f1-lt':0,'f2-p':0,'f2-v':0,'f2-ung':0,'f2-up':0,'f2-rb':0,'f2-ag':0,'k1-p':0,'k1-v':0,'k2-p':0,'k2-v':0,'bol-p':0,'bol-v':0 };
+        let spvTots = { 'f1-p':0,'obj-f1':0,'acum-f1':0,'f1-v':0,'f1-cv':0,'f1-ac':0,'f1-bc':0,'f1-lt':0,'f2-p':0,'obj-f2':0,'acum-f2':0,'f2-v':0,'f2-ung':0,'f2-up':0,'f2-rb':0,'f2-ag':0,'k1-p':0,'k1-v':0,'k2-p':0,'k2-v':0,'bol-p':0,'bol-v':0 };
         let k1Pcts = [];
         let k2Pcts = [];
         const promotores = SPV_DATA[spv];
@@ -1735,6 +1787,21 @@
             else { el.textContent = formatNum(spvTots[k], k); }
           }
         }
+        
+        // Asignar ACUMULADO en FOCO I y II
+        const elSpvF1ObjV = document.getElementById(`tot-${spvId}-f1-obj-v`);
+        if (elSpvF1ObjV) elSpvF1ObjV.textContent = formatNum(spvTots['acum-f1']);
+        const elSpvF2ObjV = document.getElementById(`tot-${spvId}-f2-obj-v`);
+        if (elSpvF2ObjV) elSpvF2ObjV.textContent = formatNum(spvTots['acum-f2']);
+        
+        // Asignar MEDIA NECESARIA del SPV
+        const medSpvF1 = Math.max(0, (spvTots['obj-f1'] - spvTots['acum-f1']) / diasRestantes);
+        const elSpvF1Med = document.getElementById(`tot-${spvId}-f1-med`);
+        if (elSpvF1Med) elSpvF1Med.textContent = formatNum(medSpvF1);
+        
+        const medSpvF2 = Math.max(0, (spvTots['obj-f2'] - spvTots['acum-f2']) / diasRestantes);
+        const elSpvF2Med = document.getElementById(`tot-${spvId}-f2-med`);
+        if (elSpvF2Med) elSpvF2Med.textContent = formatNum(medSpvF2);
 
         // Calcular promedio de KPI I y II para el supervisor
         let k1Avg = 0;
@@ -1760,6 +1827,19 @@
           else { el.textContent = formatNum(grandTots[k], k); }
         }
       }
+      
+      const elGrandF1ObjV = document.getElementById(`grand-f1-obj-v`);
+      if (elGrandF1ObjV) elGrandF1ObjV.textContent = formatNum(grandTots['acum-f1']);
+      const elGrandF2ObjV = document.getElementById(`grand-f2-obj-v`);
+      if (elGrandF2ObjV) elGrandF2ObjV.textContent = formatNum(grandTots['acum-f2']);
+      
+      const medGrandF1 = Math.max(0, (grandTots['obj-f1'] - grandTots['acum-f1']) / diasRestantes);
+      const elGrandF1Med = document.getElementById(`grand-f1-med`);
+      if (elGrandF1Med) elGrandF1Med.textContent = formatNum(medGrandF1);
+      
+      const medGrandF2 = Math.max(0, (grandTots['obj-f2'] - grandTots['acum-f2']) / diasRestantes);
+      const elGrandF2Med = document.getElementById(`grand-f2-med`);
+      if (elGrandF2Med) elGrandF2Med.textContent = formatNum(medGrandF2);
 
       // Calcular promedio general de KPI I y II para el pie de tabla
       let grandK1Avg = 0;
@@ -1805,12 +1885,96 @@
       }
     }
 
+    function getAcumuladoMensual(promotor, field, currentDateStr) {
+      const currentMonth = currentDateStr.substring(0, 7);
+      const currentDay = parseInt(currentDateStr.substring(8, 10), 10);
+      
+      let sum = 0;
+      for (let d = 1; d <= currentDay; d++) {
+        const dayStr = String(d).padStart(2, '0');
+        const dateKey = `${currentMonth}-${dayStr}`;
+        
+        if (dateKey === currentDateStr) {
+          if (volData[promotor] && volData[promotor][field]) {
+             sum += parseFloat(volData[promotor][field]) || 0;
+          }
+          continue;
+        }
+        
+        const storageKey = `emcala_vol_all_${dateKey}_v3`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          try {
+            const data = JSON.parse(saved);
+            if (data[promotor] && data[promotor][field]) {
+              sum += parseFloat(data[promotor][field]) || 0;
+            }
+          } catch(e) {}
+        }
+      }
+      return sum;
+    }
+
+    function getLastAcumulado(promotor, field, currentDateStr) {
+      const currentMonth = currentDateStr.substring(0, 7);
+      const currentDay = parseInt(currentDateStr.substring(8, 10), 10);
+      
+      for (let d = currentDay - 1; d >= 1; d--) {
+        const dayStr = String(d).padStart(2, '0');
+        const dateKey = `${currentMonth}-${dayStr}`;
+        const storageKey = `emcala_vol_all_${dateKey}_v3`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          try {
+            const data = JSON.parse(saved);
+            if (data[promotor] && data[promotor][field] !== undefined && data[promotor][field] !== '') {
+              return parseFloat(data[promotor][field]) || 0;
+            }
+          } catch(e) {}
+        }
+      }
+      return 0; // Si no hay dias anteriores
+    }
+
     function toggleFocoExtra(num) {
       document.getElementById('main-table').classList.toggle(`hide-f${num}-extra`);
     }
 
+    function toggleObjExtra(num) {
+      const table = document.getElementById('main-table');
+      table.classList.toggle(`hide-f${num}-obj`);
+      
+      const header = document.getElementById(`header-foco-${num}`);
+      if (header) {
+        if (table.classList.contains(`hide-f${num}-obj`)) {
+          header.setAttribute('colspan', '3');
+        } else {
+          header.setAttribute('colspan', '6');
+        }
+      }
+    }
+
+    function getDiasHabilesRestantes(dateStr) {
+      if (!dateStr) return 1;
+      const feriados = ['2026-06-15', '2026-06-20'];
+      const today = new Date(dateStr + 'T00:00:00');
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const lastDay = new Date(year, month + 1, 0);
+      let diasRestantes = 0;
+      for (let d = new Date(today); d <= lastDay; d.setDate(d.getDate() + 1)) {
+        const dateFmt = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        if (d.getDay() === 0) continue; // Domingo
+        if (feriados.includes(dateFmt)) continue; // Feriado
+        if (d.getDay() === 6) diasRestantes += 0.5; // Sábado
+        else diasRestantes += 1; // Lunes a Viernes
+      }
+      return diasRestantes > 0 ? diasRestantes : 1;
+    }
+
     function renderTables() {
       tbody.innerHTML = '';
+      const diasRestantes = getDiasHabilesRestantes(document.getElementById('date-input').value);
 
       for (const spv in SPV_DATA) {
         const promotores = SPV_DATA[spv];
@@ -1824,6 +1988,9 @@
             <span class="toggle-icon" id="icon-${spvId}">▼</span>${spv}
           </td>
           <td id="tot-${spvId}-f1-p" class="tot-val">0.00</td>
+          <td id="tot-${spvId}-obj-f1" class="tot-val f1-obj">0.00</td>
+          <td id="tot-${spvId}-f1-obj-v" class="tot-val f1-obj">0.00</td>
+          <td id="tot-${spvId}-f1-med" class="tot-val f1-obj" style="color:var(--c-yellow2)">0.00</td>
           <td id="tot-${spvId}-f1-v" class="tot-val">0.00</td>
           <td class="progress-cell"><span id="prog-${spvId}-f1">0%</span><div class="progress-bar-bg"><div id="bar-${spvId}-f1" class="progress-bar-fill" style="width:0%"></div></div></td>
           <td id="tot-${spvId}-f1-cv" class="tot-val f1-extra">0.00</td>
@@ -1832,6 +1999,9 @@
           <td id="tot-${spvId}-f1-lt" class="tot-val f1-extra">0.00</td>
           
           <td id="tot-${spvId}-f2-p" class="tot-val">0.00</td>
+          <td id="tot-${spvId}-obj-f2" class="tot-val f2-obj">0.00</td>
+          <td id="tot-${spvId}-f2-obj-v" class="tot-val f2-obj">0.00</td>
+          <td id="tot-${spvId}-f2-med" class="tot-val f2-obj" style="color:var(--c-yellow2)">0.00</td>
           <td id="tot-${spvId}-f2-v" class="tot-val">0.00</td>
           <td class="progress-cell"><span id="prog-${spvId}-f2">0%</span><div class="progress-bar-bg"><div id="bar-${spvId}-f2" class="progress-bar-fill" style="width:0%"></div></div></td>
 	  <td id="tot-${spvId}-f2-ung" class="tot-val f2-extra">0.00</td>
@@ -1857,6 +2027,9 @@
             <td class="text-left prom-name-cell" onclick="deletePromoterData('${p}')" title="Borrar planificación de ${p}" style="${isLemos ? 'background: var(--acc); color: #fff;' : ''}">${p}</td>
             <!-- I -->
             <td style="${tdBg}"><input type="text" class="cell-input plan" ${inpStyle} data-prom="${p}" data-field="f1-p" value="${val(p, 'f1-p')}" ${planReadonly}></td>
+            <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#fee2e2'}" class="f1-obj"><input type="text" class="cell-input real" readonly tabindex="-1" ${inpStyle} value="${formatNum(val(p, 'obj-f1'))}"></td>
+            <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#fee2e2'}" class="f1-obj"><input type="text" class="cell-input real plan" data-prom="${p}" data-field="acum-f1" ${inpStyle} value="${formatNum(val(p, 'acum-f1'))}" onchange="markUnsaved()"></td>
+            <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#fecaca'}" class="f1-obj"><input type="text" class="cell-input real" readonly tabindex="-1" ${inpStyle} value="${formatNum(Math.max(0, (parseFloat(val(p, 'obj-f1') || 0) - parseFloat(val(p, 'acum-f1') || 0)) / diasRestantes))}"></td>
             <td style="${tdBg}"><input type="text" class="cell-input real" readonly tabindex="-1" ${inpStyle} data-prom="${p}" data-field="f1-v" value="${val(p, 'f1-v')}"></td>
             <td class="progress-cell"><span id="prog-${p}-f1">0%</span><div class="progress-bar-bg"><div id="bar-${p}-f1" class="progress-bar-fill" style="width:0%"></div></div></td>
             <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#fef9c3'}" class="f1-extra"><input type="text" class="cell-input real" readonly tabindex="-1" ${inpStyle} data-prom="${p}" data-field="f1-cv" value="${val(p, 'f1-cv')}"></td>
@@ -1865,6 +2038,9 @@
             <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#ffedd5'}" class="f1-extra"><input type="text" class="cell-input real" readonly tabindex="-1" ${inpStyle} data-prom="${p}" data-field="f1-lt" value="${val(p, 'f1-lt')}"></td>
             <!-- II -->
             <td style="${tdBg}"><input type="text" class="cell-input plan" ${inpStyle} data-prom="${p}" data-field="f2-p" value="${val(p, 'f2-p')}" ${planReadonly}></td>
+            <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#dbeafe'}" class="f2-obj"><input type="text" class="cell-input real" readonly tabindex="-1" ${inpStyle} value="${formatNum(val(p, 'obj-f2'))}"></td>
+            <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#dbeafe'}" class="f2-obj"><input type="text" class="cell-input real plan" data-prom="${p}" data-field="acum-f2" ${inpStyle} value="${formatNum(val(p, 'acum-f2'))}" onchange="markUnsaved()"></td>
+            <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#bfdbfe'}" class="f2-obj"><input type="text" class="cell-input real" readonly tabindex="-1" ${inpStyle} value="${formatNum(Math.max(0, (parseFloat(val(p, 'obj-f2') || 0) - parseFloat(val(p, 'acum-f2') || 0)) / diasRestantes))}"></td>
             <td style="${tdBg}"><input type="text" class="cell-input real" readonly tabindex="-1" ${inpStyle} data-prom="${p}" data-field="f2-v" value="${val(p, 'f2-v')}"></td>
             <td class="progress-cell"><span id="prog-${p}-f2">0%</span><div class="progress-bar-bg"><div id="bar-${p}-f2" class="progress-bar-fill" style="width:0%"></div></div></td>
 	    <td style="${isLemos ? 'background: var(--acc) !important;' : 'background:#fce7f3'}" class="f2-extra"><input type="text" class="cell-input real" readonly tabindex="-1" ${inpStyle} data-prom="${p}" data-field="f2-ung" value="${val(p,'f2-ung')}">
@@ -2552,11 +2728,17 @@
       
       // Guardar cada fecha en su respectiva clave de LocalStorage
       const currentPlannerDate = document.getElementById('date-input').value;
-      
-      for (const pDate in allDatesSales) {
+      const sortedDates = Object.keys(allDatesSales).sort();
+      for (const pDate of sortedDates) {
         const storageKey = `emcala_vol_all_${pDate}_v3`;
         let existingData = {};
         
+        const monthStr = pDate.substring(0, 7);
+        if (!monthObjsCache[monthStr]) {
+           try { monthObjsCache[monthStr] = JSON.parse(localStorage.getItem(`emcala_obj_${monthStr}`) || '{}'); } catch(e){ monthObjsCache[monthStr] = {}; }
+        }
+        const mObjs = monthObjsCache[monthStr];
+
         const saved = localStorage.getItem(storageKey);
         if (saved) {
           try {
@@ -2577,6 +2759,17 @@
               }
             }
           }
+        }
+
+        // Inyectar el objetivo mensual si falta o es 0
+        for (const spv in SPV_DATA) {
+          SPV_DATA[spv].forEach(prom => {
+             if (mObjs[prom]) {
+               if (!existingData[prom]) existingData[prom] = {};
+               if (!existingData[prom]['obj-f1'] && mObjs[prom]['obj-f1']) existingData[prom]['obj-f1'] = mObjs[prom]['obj-f1'];
+               if (!existingData[prom]['obj-f2'] && mObjs[prom]['obj-f2']) existingData[prom]['obj-f2'] = mObjs[prom]['obj-f2'];
+             }
+          });
         }
 
         // Borrar las ventas reales ("lo que estaba") para que se pise con lo nuevo
@@ -2723,7 +2916,21 @@
           }
         }
         
-        if (dateMatches > 0) {
+        // --- AUTO-CÁLCULO DEL ACUMULADO MENSUAL PARA TODOS LOS PROMOTORES ---
+        // Se hace fuera del loop de ventas para garantizar que incluso los que vendieron 0 arrastren su acumulado
+        for (const spv in SPV_DATA) {
+          SPV_DATA[spv].forEach(prom => {
+            if (!existingData[prom]) existingData[prom] = {};
+            const lastAcumF1 = getLastAcumulado(prom, 'acum-f1', pDate);
+            const lastAcumF2 = getLastAcumulado(prom, 'acum-f2', pDate);
+            existingData[prom]['acum-f1'] = parseFloat((lastAcumF1 + (parseFloat(existingData[prom]['f1-v']) || 0)).toFixed(2));
+            existingData[prom]['acum-f2'] = parseFloat((lastAcumF2 + (parseFloat(existingData[prom]['f2-v']) || 0)).toFixed(2));
+          });
+        }
+        // --------------------------------------------------------------------
+        
+        // Si procesamos el archivo y pertenece a las fechas relevantes, guardar en memoria
+        if (true) {
           localStorage.setItem(storageKey, JSON.stringify(existingData));
           processedDatesCount++;
         }
@@ -2751,7 +2958,8 @@
         }
 
         const payload = [];
-        for (const pDate in allDatesSales) {
+        const sortedDates2 = Object.keys(allDatesSales).sort();
+        for (const pDate of sortedDates2) {
           const storageKey = `emcala_vol_all_${pDate}_v3`;
           const saved = localStorage.getItem(storageKey);
           if (saved) {
@@ -2993,7 +3201,7 @@
       if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') return false;
 
       const payload = [];
-      const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
+      const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p', 'obj-f1', 'obj-f2', 'acum-f1', 'acum-f2'];
       
       for (const spv in SPV_DATA) {
         SPV_DATA[spv].forEach(prom => {
@@ -3106,6 +3314,114 @@
         }, 4000);
         return;
       }
+    });
+
+    // Lógica para carga de archivo Excel de Objetivos
+    const btnImportObj = document.getElementById('btn-import-obj');
+    const objFileInput = document.getElementById('obj-file-input');
+
+    btnImportObj.addEventListener('click', () => {
+      objFileInput.click();
+    });
+
+    objFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const origText = btnImportObj.innerHTML;
+      btnImportObj.innerHTML = '⏳ Procesando Excel...';
+      btnImportObj.disabled = true;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, {type: 'array'});
+          
+          let promotoresFound = 0;
+          const allPromoters = [];
+          for (let spv in SPV_DATA) {
+            allPromoters.push(...SPV_DATA[spv]);
+          }
+          const resetProms = {};
+
+          workbook.SheetNames.forEach(sheetName => {
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
+            
+            let currentCategory = '';
+
+            for (let i = 0; i < json.length; i++) {
+              const row = json[i];
+              if (!row || row.length === 0) continue;
+              
+              const colA = String(row[0] || '').trim();
+              const colD = String(row[3] || '').trim();
+              const colG = parseFloat(row[6]) || 0; // Columna G es índice 6 (Objetivos)
+
+              if (colA !== '') {
+                currentCategory = colA;
+              }
+
+              // Detectar si la fila contiene el nombre de algún promotor conocido en la Columna D
+              const matchedProm = allPromoters.find(p => colD.includes(p));
+              if (matchedProm && !colD.includes('Total') && !colD.includes('FOCO')) {
+                if (!volData[matchedProm]) volData[matchedProm] = {};
+                
+                // Si es la primera vez que vemos este promotor en este parseo, inicializamos en 0
+                if (!resetProms[matchedProm]) {
+                  volData[matchedProm]['obj-f1'] = 0;
+                  volData[matchedProm]['obj-f2'] = 0;
+                  resetProms[matchedProm] = true;
+                }
+
+                if (currentCategory.includes('CZA Core+Value') || currentCategory.includes('CZA Above Core')) {
+                  volData[matchedProm]['obj-f1'] += Math.round(colG);
+                } else if (currentCategory.includes('Total UNG 2026') || currentCategory.includes('4b - Aguas')) {
+                  volData[matchedProm]['obj-f2'] += Math.round(colG);
+                }
+                promotoresFound++;
+              }
+            }
+          });
+
+          // Guardar globalmente los objetivos del mes
+          const monthStr = document.getElementById('date-input').value.substring(0, 7);
+          const objStorageKey = `emcala_obj_${monthStr}`;
+          let monthObjs = {};
+          try { monthObjs = JSON.parse(localStorage.getItem(objStorageKey) || '{}'); } catch(e){}
+          for (let p in volData) {
+            if (volData[p]['obj-f1'] !== undefined || volData[p]['obj-f2'] !== undefined) {
+              if (!monthObjs[p]) monthObjs[p] = {};
+              if (volData[p]['obj-f1'] !== undefined) monthObjs[p]['obj-f1'] = volData[p]['obj-f1'];
+              if (volData[p]['obj-f2'] !== undefined) monthObjs[p]['obj-f2'] = volData[p]['obj-f2'];
+            }
+          }
+          localStorage.setItem(objStorageKey, JSON.stringify(monthObjs));
+
+          saveData(); 
+          renderTables(); 
+          
+          // Disparar sincronización automáticamente si hay conexión (pero sin pisar a la nube, enviando datos locales)
+          // `saveToServer(true)` envía explícitamente nuestros cambios recientes
+          saveToServer(true).then(success => {
+            if (success) {
+               alert(`✅ Excel de objetivos procesado. Se actualizaron ${promotoresFound} promotores y se guardó en la nube.`);
+            } else {
+               alert(`⚠️ Se cargaron los objetivos localmente, pero hubo un error subiendo a la nube.`);
+            }
+          });
+          
+        } catch (error) {
+          console.error(error);
+          alert('❌ Ocurrió un error al procesar el archivo Excel. Asegúrate de subir el archivo correcto de objetivos.');
+        } finally {
+          btnImportObj.innerHTML = origText;
+          btnImportObj.disabled = false;
+          objFileInput.value = '';
+        }
+      };
+      reader.readAsArrayBuffer(file);
     });
 
     // Render inicial: mostrar tabla vacía con estructura, sin datos viejos
