@@ -204,8 +204,8 @@ const EmcalaAuth = (() => {
           <span style="width:8px;height:8px;border-radius:50%;background:${info.bg};box-shadow:0 0 8px ${info.bg}88;"></span>
           <span style="font-size:13px;font-weight:700;color:#fff;">${session.nombre}</span>
         </div>
-        <button onclick="EmcalaAuth.logout()" title="Cerrar Sesión" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:50%;color:#ef4444;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.25)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+        <button onclick="EmcalaAuth.logout()" title="Cerrar Sesión" style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(239,68,68,0.15);border:2px solid rgba(239,68,68,0.6);border-radius:50%;color:#ef4444;cursor:pointer;transition:all 0.3s ease;" onmouseover="this.style.background='rgba(16,185,129,0.15)';this.style.borderColor='#10b981';this.style.color='#10b981';this.style.boxShadow='0 0 15px rgba(16,185,129,0.8), inset 0 0 8px rgba(16,185,129,0.5)';this.style.transform='scale(1.05)'" onmouseout="this.style.background='rgba(239,68,68,0.15)';this.style.borderColor='rgba(239,68,68,0.6)';this.style.color='#ef4444';this.style.boxShadow='none';this.style.transform='scale(1)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
         </button>
       </div>
     `;
