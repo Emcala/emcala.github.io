@@ -64,11 +64,11 @@
     .hdr {
       background: rgba(255, 255, 255, 0.12);
       border-bottom: 1px solid rgba(255, 255, 255, 0.22);
-      padding: 4px 16px;
+      padding: 4px 8px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 6px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       flex-shrink: 0;
       z-index: 100;
@@ -77,26 +77,26 @@
     .hdr-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 6px;
     }
 
     .hdr h1 {
       font-family: 'Bricolage Grotesque', sans-serif;
       font-weight: 800;
-      font-size: 16px;
+      font-size: 15px;
       color: #fff;
       text-transform: uppercase;
       letter-spacing: -0.02em;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       margin: 0;
     }
 
     .hdr h1 span {
       color: rgba(255, 255, 255, 0.6);
       font-weight: 600;
-      font-size: 12px;
+      font-size: 11px;
       text-transform: none;
       letter-spacing: 0;
     }
@@ -105,7 +105,7 @@
       font-family: 'Bricolage Grotesque', sans-serif;
       font-weight: 600;
       font-size: 11px;
-      padding: 4px 8px;
+      padding: 3px 6px;
       border-radius: 6px;
       border: 1px solid rgba(255, 255, 255, 0.3);
       background: rgba(255, 255, 255, 0.9);
@@ -117,16 +117,16 @@
       background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
       color: var(--acc);
       border: 1px solid rgba(0,0,0,0.05);
-      padding: 4px 10px;
+      padding: 3px 6px;
       border-radius: 8px;
       font-family: 'Bricolage Grotesque', sans-serif;
       font-weight: 800;
-      font-size: 10px;
+      font-size: 9px;
       text-transform: uppercase;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       white-space: nowrap;
@@ -1265,7 +1265,7 @@
           <tr>
             <!-- I -->
             <th class="bg-red w-70" onclick="toggleObjExtra(1)" style="cursor:pointer" title="Clic para ver Objetivos">PLANIFICADO ▼</th>
-            <th class="bg-red f1-obj w-55" style="background:#b91c1c" title="Objetivo Mensual">OBJ. MENS.</th>
+            <th class="bg-red f1-obj w-55" style="background:#b91c1c" title="Objetivo Mensual">OBJETIVO</th>
             <th class="bg-red f1-obj w-55" style="background:#b91c1c">ACUMULADO</th>
             <th class="bg-red f1-obj w-55" style="background:#b91c1c">MEDIA NEC.</th>
             <th class="bg-red w-55">VENTA</th>
@@ -1276,7 +1276,7 @@
             <th class="f1-extra w-55" style="background:#fdba74 !important; color:#000; font-family:'Bricolage Grotesque', sans-serif; font-weight:800; font-size:var(--fs-sm);">LATONES</th>
             <!-- II -->
             <th class="bg-blue w-70" onclick="toggleObjExtra(2)" style="cursor:pointer" title="Clic para ver Objetivos">PLANIFICADO ▼</th>
-            <th class="bg-blue f2-obj w-55" style="background:#1d4ed8" title="Objetivo Mensual">OBJ. MENS.</th>
+            <th class="bg-blue f2-obj w-55" style="background:#1d4ed8" title="Objetivo Mensual">OBJETIVO</th>
             <th class="bg-blue f2-obj w-55" style="background:#1d4ed8">ACUMULADO</th>
             <th class="bg-blue f2-obj w-55" style="background:#1d4ed8">MEDIA NEC.</th>
             <th class="bg-blue w-55">VENTA</th>
@@ -1505,6 +1505,7 @@
 
     function loadData() {
       const date = document.getElementById('date-input').value;
+      const monthStr = date.substring(0, 7);
       const mainKey = getStorageKey();
       try {
         const saved = localStorage.getItem(mainKey);
@@ -1523,6 +1524,19 @@
           window.currentCloudState = JSON.stringify(volData);
           saveData();
         }
+
+        // Siempre inyectar los objetivos mensuales en el volData cargado
+        const objStorageKey = `emcala_obj_${monthStr}`;
+        const monthObjsStr = localStorage.getItem(objStorageKey);
+        if (monthObjsStr) {
+          const monthObjs = JSON.parse(monthObjsStr);
+          for (const p in monthObjs) {
+            if (!volData[p]) volData[p] = {};
+            if (monthObjs[p]['obj-f1'] !== undefined) volData[p]['obj-f1'] = monthObjs[p]['obj-f1'];
+            if (monthObjs[p]['obj-f2'] !== undefined) volData[p]['obj-f2'] = monthObjs[p]['obj-f2'];
+          }
+        }
+
       } catch (e) {
         console.warn('localStorage no disponible para loadData');
         volData = {};
@@ -2726,6 +2740,8 @@
       let processedDatesCount = 0;
       let totalMatchCount = 0;
       
+      const monthObjsCache = {};
+      
       // Guardar cada fecha en su respectiva clave de LocalStorage
       const currentPlannerDate = document.getElementById('date-input').value;
       const sortedDates = Object.keys(allDatesSales).sort();
@@ -2943,11 +2959,6 @@
         document.getElementById('date-input').value = latestDateStr;
       }
       
-      // Forzar la recarga del día actualmente seleccionado en la pantalla
-      loadData();
-      renderTables();
-      calcTotals();
-      
       alert(`¡Ventas Reales importadas localmente para múltiples días!\nSe procesaron ${processedDatesCount} fechas distintas del CSV.\nEl calendario se actualizó automáticamente a la fecha del archivo: ${latestDateStr}\n\nAguarde un momento mientras se suben los datos a la nube...`);
       
       // AUTO-GUARDADO DE TODOS LOS DÍAS PROCESADOS DIRECTO A LA NUBE
@@ -3038,10 +3049,25 @@
       const file = e.target.files[0];
       if (!file) return;
       
+      const origText = btnImportCsv.innerHTML;
+      btnImportCsv.innerHTML = '⏳ Procesando CSV...';
+      btnImportCsv.disabled = true;
+
       const reader = new FileReader();
       reader.onload = (evt) => {
-        parseCSVAndApply(evt.target.result);
-        csvFileInput.value = ''; // Reset
+        // Usar setTimeout para permitir que la UI se renderice antes de bloquear el hilo
+        setTimeout(() => {
+          try {
+            parseCSVAndApply(evt.target.result);
+          } catch (error) {
+            console.error("Error procesando CSV:", error);
+            alert("Hubo un error procesando el archivo CSV: " + error.message);
+          } finally {
+            csvFileInput.value = ''; // Reset
+            btnImportCsv.innerHTML = origText;
+            btnImportCsv.disabled = false;
+          }
+        }, 50);
       };
       reader.readAsText(file);
     });
@@ -3201,7 +3227,7 @@
       if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') return false;
 
       const payload = [];
-      const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p', 'obj-f1', 'obj-f2', 'acum-f1', 'acum-f2'];
+      const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p', 'acum-f1', 'acum-f2'];
       
       for (const spv in SPV_DATA) {
         SPV_DATA[spv].forEach(prom => {
@@ -3236,6 +3262,56 @@
       } catch (e) {
         if (!silent) console.error('Error guardando al servidor:', e);
         return false;
+      }
+    }
+
+    async function syncAllDatesToCloud(sortedDates) {
+      if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') return;
+      
+      const payload = [];
+      const allFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p', 'acum-f1', 'acum-f2', 'f1-v', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt', 'f2-v', 'f2-ung', 'f2-up', 'f2-rb', 'f2-ag', 'k1-v', 'k2-v', 'bol-v'];
+      
+      for (const pDate of sortedDates) {
+        const storageKey = `emcala_vol_all_${pDate}_v3`;
+        const saved = localStorage.getItem(storageKey);
+        if (!saved) continue;
+        
+        let dataDay = {};
+        try { dataDay = JSON.parse(saved); } catch(e){ continue; }
+        
+        for (const spv in SPV_DATA) {
+          SPV_DATA[spv].forEach(prom => {
+            if (dataDay[prom]) {
+              const rowPayload = { date: pDate, spv, promotor: prom };
+              let hasData = false;
+              allFields.forEach(f => {
+                if (dataDay[prom][f] !== undefined) {
+                  rowPayload[f] = dataDay[prom][f];
+                  hasData = true;
+                }
+              });
+              if (hasData) {
+                payload.push(rowPayload);
+              }
+            }
+          });
+        }
+      }
+      
+      if (payload.length === 0) return;
+      
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+          console.log("Ventas masivas sincronizadas correctamente a la nube.");
+        }
+      } catch(e) {
+        console.error("Error sincronizando ventas masivas:", e);
       }
     }
 
@@ -3278,6 +3354,19 @@
                 prom = 'MIÑO RENZO';
               }
               cloudData[prom] = fetched[originalProm];
+            }
+            // Guardar objetivos mensuales si vienen en la respuesta
+            if (result.objectives && Object.keys(result.objectives).length > 0) {
+              const monthStr = date.substring(0, 7);
+              const objStorageKey = `emcala_obj_${monthStr}`;
+              localStorage.setItem(objStorageKey, JSON.stringify(result.objectives));
+              
+              // Inyectar en cloudData para mostrarlos instantáneamente
+              for (const p in result.objectives) {
+                if (!cloudData[p]) cloudData[p] = {};
+                if (result.objectives[p]['obj-f1'] !== undefined) cloudData[p]['obj-f1'] = result.objectives[p]['obj-f1'];
+                if (result.objectives[p]['obj-f2'] !== undefined) cloudData[p]['obj-f2'] = result.objectives[p]['obj-f2'];
+              }
             }
           }
         });
@@ -3402,14 +3491,18 @@
           saveData(); 
           renderTables(); 
           
-          // Disparar sincronización automáticamente si hay conexión (pero sin pisar a la nube, enviando datos locales)
-          // `saveToServer(true)` envía explícitamente nuestros cambios recientes
-          saveToServer(true).then(success => {
-            if (success) {
-               alert(`✅ Excel de objetivos procesado. Se actualizaron ${promotoresFound} promotores y se guardó en la nube.`);
-            } else {
-               alert(`⚠️ Se cargaron los objetivos localmente, pero hubo un error subiendo a la nube.`);
-            }
+          // Subir los objetivos a la nueva pestaña global
+          fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ req: 'upload_objectives', month: monthStr, objectives: monthObjs })
+          }).then(res => res.json()).then(res => {
+             if (res.status === 'success') {
+                alert(`✅ Excel de objetivos procesado. Se actualizaron ${promotoresFound} promotores y se guardaron los objetivos globales en la nube.`);
+             } else {
+                alert(`⚠️ Se cargaron los objetivos localmente, pero hubo un error subiendo a la nube: ` + res.message);
+             }
+          }).catch(e => {
+             alert(`⚠️ Se cargaron los objetivos localmente, pero hubo un error de conexión subiendo a la nube.`);
           });
           
         } catch (error) {
