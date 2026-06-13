@@ -1673,10 +1673,22 @@
           ];
           
           for (const kf of kpiFields) {
-            const met = String(d[kf.metField] || '').toUpperCase();
-            const tar = String(d[kf.tarField] || '').toUpperCase();
+            let met = String(d[kf.metField] || '').toUpperCase();
+            let tar = String(d[kf.tarField] || '').toUpperCase();
             
-            if (!met || !tar) continue;
+            if (!met || !tar) {
+              if (kf.valField === 'k1-v') {
+                const elMet = document.getElementById('spv-kpi1-met');
+                const elTar = document.getElementById('spv-kpi1-tar');
+                met = (elMet && elMet.value) ? elMet.value.toUpperCase() : 'CV';
+                tar = (elTar && elTar.value) ? elTar.value.toUpperCase() : 'ABOVE CORE';
+              } else if (kf.valField === 'k2-v') {
+                const elMet = document.getElementById('spv-kpi2-met');
+                const elTar = document.getElementById('spv-kpi2-tar');
+                met = (elMet && elMet.value) ? elMet.value.toUpperCase() : 'CV';
+                tar = (elTar && elTar.value) ? elTar.value.toUpperCase() : 'NABS';
+              }
+            }
             
             let kpiVal = null;
             
@@ -2436,27 +2448,40 @@
       if (!date) return null;
       
       // Lista de feriados conocidos donde NO hay preventa/reparto (formato YYYY-MM-DD)
-      const holidays = [
-        '2026-06-15' // Feriado Lunes 15 de Junio
+      const HOLIDAYS = [
+        '2026-06-15', // Lunes feriado Güemes
+        '2026-06-20', // Feriado Belgrano
+        '2026-07-09'  // Independencia
       ];
 
-      function formatYMD(dObj) {
-         const y = dObj.getFullYear();
-         const m = String(dObj.getMonth() + 1).padStart(2, '0');
-         const d = String(dObj.getDate()).padStart(2, '0');
-         return `${y}-${m}-${d}`;
-      }
-      
       // Lógica de Preventa: el CSV tiene la fecha de entrega (venta real).
       // La planificación se hizo el día hábil anterior (toma de pedido).
       date.setDate(date.getDate() - 1); // Retroceder 1 día inicial
       
-      // Si el día retrocedido cae en Domingo (0) o es un Feriado, seguimos retrocediendo
-      while (date.getDay() === 0 || holidays.includes(formatYMD(date))) {
-        date.setDate(date.getDate() - 1);
+      // Función auxiliar para saber si es feriado
+      function isHoliday(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const d_day = String(d.getDate()).padStart(2, '0');
+        return HOLIDAYS.includes(`${y}-${m}-${d_day}`);
+      }
+
+      // Si cayó en domingo, retroceder a sábado
+      if (date.getDay() === 0) { // Domingo
+        date.setDate(date.getDate() - 1); 
       }
       
-      return formatYMD(date);
+      // Mientras caiga en un feriado, seguimos retrocediendo
+      while (isHoliday(date)) {
+        date.setDate(date.getDate() - 1);
+        if (date.getDay() === 0) { // Si al retroceder vuelve a caer en domingo, retroceder uno más
+          date.setDate(date.getDate() - 1);
+        }
+      }
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
     }
 
     // Procesar texto CSV para MÚLTIPLES fechas a la vez
@@ -2965,6 +2990,8 @@
       if (csvDates.length > 0) {
         latestDateStr = csvDates[0];
         document.getElementById('date-input').value = latestDateStr;
+        loadData();
+        renderTables();
       }
       
       alert(`¡Ventas Reales importadas localmente para múltiples días!\nSe procesaron ${processedDatesCount} fechas distintas del CSV.\nEl calendario se actualizó automáticamente a la fecha del archivo: ${latestDateStr}\n\nAguarde un momento mientras se suben los datos a la nube...`);
@@ -3030,8 +3057,13 @@
 
     btnImportCsv.addEventListener('click', async () => {
       const origText = btnImportCsv.innerHTML;
-      btnImportCsv.innerHTML = '⏳ Cargando CSV...';
+      btnImportCsv.innerHTML = '⏳ Sincronizando SKUs...';
       btnImportCsv.disabled = true;
+
+      // Siempre sincronizar SKUs antes de procesar el CSV para tener el maestro al día
+      await syncSkus();
+      
+      btnImportCsv.innerHTML = '⏳ Cargando CSV...';
 
       try {
         // Intentar autodetectar y cargar aexcel.csv del servidor/carpeta local
@@ -3053,13 +3085,18 @@
       csvFileInput.click();
     });
 
-    csvFileInput.addEventListener('change', (e) => {
+    csvFileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
       
       const origText = btnImportCsv.innerHTML;
-      btnImportCsv.innerHTML = '⏳ Procesando CSV...';
+      btnImportCsv.innerHTML = '⏳ Sincronizando SKUs...';
       btnImportCsv.disabled = true;
+
+      // Sincronizar SKUs antes de procesar el archivo elegido
+      await syncSkus();
+      
+      btnImportCsv.innerHTML = '⏳ Procesando CSV...';
 
       const reader = new FileReader();
       reader.onload = (evt) => {
