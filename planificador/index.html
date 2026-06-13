@@ -2435,20 +2435,28 @@
       const date = parseCSVDateToObj(csvDateStr);
       if (!date) return null;
       
+      // Lista de feriados conocidos donde NO hay preventa/reparto (formato YYYY-MM-DD)
+      const holidays = [
+        '2026-06-15' // Feriado Lunes 15 de Junio
+      ];
+
+      function formatYMD(dObj) {
+         const y = dObj.getFullYear();
+         const m = String(dObj.getMonth() + 1).padStart(2, '0');
+         const d = String(dObj.getDate()).padStart(2, '0');
+         return `${y}-${m}-${d}`;
+      }
+      
       // Lógica de Preventa: el CSV tiene la fecha de entrega (venta real).
-      // La planificación se hizo el día de toma de pedido (1 día hábil antes).
-      date.setDate(date.getDate() - 1); // Retroceder 1 día
-      if (date.getDay() === 0) {
-        // Si al retroceder cae Domingo, significa que la entrega era el Lunes.
-        // La planificación de un Lunes se hace el Sábado, así que retrocedemos 1 día más.
+      // La planificación se hizo el día hábil anterior (toma de pedido).
+      date.setDate(date.getDate() - 1); // Retroceder 1 día inicial
+      
+      // Si el día retrocedido cae en Domingo (0) o es un Feriado, seguimos retrocediendo
+      while (date.getDay() === 0 || holidays.includes(formatYMD(date))) {
         date.setDate(date.getDate() - 1);
       }
       
-      // Formatear a YYYY-MM-DD
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const d = String(date.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
+      return formatYMD(date);
     }
 
     // Procesar texto CSV para MÚLTIPLES fechas a la vez
