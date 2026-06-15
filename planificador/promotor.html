@@ -245,8 +245,18 @@
         });
         const result = await response.json();
         
-        // El promotor aún no lo eligió necesariamente, así que buscamos en el primer promotor disponible o iteramos la data del spv
+        // Aplicar parche de codificación para MIÑO RENZO
         if (result.status === 'success' && result.data) {
+          let patchedData = {};
+          for (let originalProm in result.data) {
+            let prom = originalProm;
+            if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) {
+              prom = 'MIÑO RENZO';
+            }
+            patchedData[prom] = result.data[originalProm];
+          }
+          result.data = patchedData;
+          
           // Buscamos cualquier registro que tenga configurado k1-met
           let foundKpi = false;
           for (let key in result.data) {
@@ -288,8 +298,8 @@
             <input type="number" id="kpi2-p" step="0.01" placeholder="0.00" style="padding: 12px; font-size: 18px; text-align: center;">
           </div>
         `;
-        document.getElementById('kpi1-p').addEventListener('input', checkForm);
-        document.getElementById('kpi2-p').addEventListener('input', checkForm);
+        document.getElementById('kpi1-p').oninput = checkForm;
+        document.getElementById('kpi2-p').oninput = checkForm;
         checkForm();
       } else {
         const msg = `<div class="kpi-pending-text">${spvSelect.value ? 'El supervisor aún no ha definido los FOCOS KPI para esta fecha.' : 'Elegí tu supervisor para ver el KPI...'}</div>`;

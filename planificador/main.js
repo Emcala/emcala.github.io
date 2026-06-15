@@ -1,0 +1,497 @@
+    if (isAuditor) {
+      document.getElementById('kpi-dropdown-wrapper').style.display = 'inline-block';
+      const toggleBtn = document.getElementById('btn-toggle-kpi');
+      const kpiMenu = document.getElementById('spv-kpi-menu');
+      
+      toggleBtn.addEventListener('click', (e) => {
+        kpiMenu.classList.toggle('active');
+        e.stopPropagation();
+      });
+      
+      document.addEventListener('click', (e) => {
+        if (!kpiMenu.contains(e.target) && !toggleBtn.contains(e.target)) {
+          kpiMenu.classList.remove('active');
+        }
+      });
+
+      const met1 = document.getElementById('spv-kpi1-met');
+      const tar1 = document.getElementById('spv-kpi1-tar');
+      const met2 = document.getElementById('spv-kpi2-met');
+      const tar2 = document.getElementById('spv-kpi2-tar');
+      
+      document.getElementById('btn-apply-kpi').addEventListener('click', () => {
+        // Obtenemos los promotores (asumimos que SPV_DATA tiene las llaves)
+        let promotores = [];
+        for (const spv in SPV_DATA) {
+          promotores = promotores.concat(SPV_DATA[spv]);
+        }
+        
+        promotores.forEach(prom => {
+          if (!volData[prom]) volData[prom] = {};
+          volData[prom]['k1-met'] = met1.value;
+          volData[prom]['k1-tar'] = tar1.value;
+          volData[prom]['k2-met'] = met2.value;
+          volData[prom]['k2-tar'] = tar2.value;
+        });
+        saveData();
+        renderTables();
+        document.getElementById('btn-save').click(); // Auto save to sheet
+        const btnSync = document.getElementById('btn-sync');
+        if (btnSync) btnSync.classList.add('btn-needs-sync');
+        
+        kpiMenu.classList.remove('active'); // Close menu after applying
+      });
+    }
+    const tbody = document.getElementById('tbody-main');
+    let volData = {};
+    // === MAESTRO DE SKUs PARA VALIDACIÓN DE TAREAS ===
+    let skuMaster = [];
+    // Inicializar SKUs locales
+    loadSkuMaster();
+    // Función para mostrar/ocultar los promotores de un SPV
+    window.toggleSpv = function (spvId) {
+      const rows = document.querySelectorAll(`.prom-row-${spvId}`);
+      const icon = document.getElementById(`icon-${spvId}`);
+      if (rows.length > 0) {
+        const isHidden = rows[0].style.display === 'none';
+        rows.forEach(r => { r.style.display = isHidden ? '' : 'none'; });
+        icon.textContent = isHidden ? '▼' : '▶';
+      }
+    };
+    document.getElementById('date-input').addEventListener('change', () => {
+      document.getElementById('btn-sync').click();
+    });
+    document.getElementById('btn-print').addEventListener('click', () => { window.print(); });
+    document.getElementById('btn-floating-copy').addEventListener('click', function() {
+      const mainBtn = document.getElementById('btn-copy-img');
+      const orig = this.innerHTML;
+      this.innerHTML = '⏳ Capturando...';
+      this.disabled = true;
+      const observer = new MutationObserver(() => {
+        if (!mainBtn.disabled) {
+          this.innerHTML = orig;
+          this.disabled = false;
+          observer.disconnect();
+        }
+      });
+      observer.observe(mainBtn, { attributes: true, attributeFilter: ['disabled'] });
+      mainBtn.click();
+    });
+    document.getElementById('btn-copy-img').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-copy-img');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '⏳ Capturando...';
+      btn.disabled = true;
+      try {
+        const captureEl = document.querySelector('#capture-area');
+        // 1. Obtener fecha y hora actuales
+        const dateInputVal = document.getElementById('date-input').value; // AAAA-MM-DD
+        let formattedDate = '';
+        if (dateInputVal) {
+          const parts = dateInputVal.split('-');
+          if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        } else {
+          formattedDate = new Date().toLocaleDateString('es-AR');
+        }
+        const formattedTime = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        const titleText = `AVANCE VENTA · ${formattedDate} · ${formattedTime}`;
+          const tableCont = captureEl.querySelector('.table-container');
+          let origTableMaxHeight = '';
+          let origTableOverflowY = '';
+          if (tableCont) {
+            origTableMaxHeight = tableCont.style.maxHeight;
+            origTableOverflowY = tableCont.style.overflowY;
+            tableCont.style.maxHeight = 'none';
+            tableCont.style.overflowY = 'visible';
+          }
+          // Replace inputs with spans for html2canvas (it can't center text in inputs)
+          const inputBackup = [];
+          captureEl.querySelectorAll('input.cell-input').forEach(inp => {
+            const span = document.createElement('span');
+            span.textContent = inp.value;
+            const compStyle = window.getComputedStyle(inp);
+            span.style.cssText = compStyle.cssText;
+            span.style.display = 'inline-block';
+            span.style.width = '100%';
+            span.style.height = '100%';
+            span.style.textAlign = 'center';
+            span.style.verticalAlign = 'middle';
+            // Usamos el tamaño y line-height calculado real en vez de 10.5px fijo
+            span.style.lineHeight = compStyle.lineHeight !== 'normal' ? compStyle.lineHeight : (inp.parentElement.style.height || '14px');
+            span.style.fontSize = compStyle.fontSize;
+            span.style.fontWeight = inp.classList.contains('real') ? '800' : '600';
+            span.style.fontFamily = "'Aptos Display', 'Aptos', 'Barlow', sans-serif";
+            span.style.padding = '0';
+            span.style.margin = '0';
+            span.style.border = 'none';
+            // Respetamos el color de fondo y de texto para que salga el rojo/verde/ambar
+            span.style.backgroundColor = compStyle.backgroundColor;
+            span.style.color = compStyle.color;
+            span.className = 'capture-span';
+            inputBackup.push({ input: inp, parent: inp.parentElement });
+            inp.parentElement.replaceChild(span, inp);
+          });
+        // Adaptar captura exactamente al tamaño de la grilla
+        const originalWidth = captureEl.style.width;
+        const originalMinWidth = captureEl.style.minWidth;
+        const targetWidth = (tableCont ? tableCont.scrollWidth + 60 : captureEl.scrollWidth) + 'px';
+        captureEl.style.width = targetWidth;
+        captureEl.style.minWidth = targetWidth;
+        // Guardamos las variables para restaurar luego (comportamiento unificado para todas las resoluciones)
+        const origMargin = captureEl.style.margin;
+        const origPosition = captureEl.style.position;
+        const origLeft = captureEl.style.left;
+        // Permitir que captureEl crezca de alto
+        const origCaptureHeight = captureEl.style.height;
+        const origCaptureMaxHeight = captureEl.style.maxHeight;
+        const origCaptureOverflow = captureEl.style.overflow;
+        const origCapturePaddingBottom = captureEl.style.paddingBottom;
+        captureEl.style.height = 'auto';
+        captureEl.style.maxHeight = 'none';
+        captureEl.style.overflow = 'visible';
+        captureEl.style.paddingBottom = '15px'; // Evita que se corte la tabla abajo
+        // Esperar 50ms para asegurar que el navegador calcule el ancho/alto real
+        await new Promise(r => setTimeout(r, 50));
+        const canvas = await html2canvas(captureEl, {
+          backgroundColor: '#0B2559',
+          scale: 2,
+          windowWidth: tableCont ? tableCont.scrollWidth + 60 : captureEl.scrollWidth,
+          windowHeight: captureEl.scrollHeight + 20,
+          logging: false,
+          useCORS: true
+        });
+        // Restaurar ancho original
+        captureEl.style.width = originalWidth;
+        captureEl.style.minWidth = originalMinWidth;
+        captureEl.style.margin = origMargin;
+        captureEl.style.position = origPosition;
+        captureEl.style.left = origLeft;
+        captureEl.style.height = origCaptureHeight;
+        captureEl.style.maxHeight = origCaptureMaxHeight;
+        captureEl.style.overflow = origCaptureOverflow;
+        captureEl.style.paddingBottom = origCapturePaddingBottom;
+        // Restore inputs
+        inputBackup.forEach(({ input, parent }) => {
+          const span = parent.querySelector('.capture-span');
+          if (span) parent.replaceChild(input, span);
+        });
+        if (tableCont) {
+          tableCont.style.maxHeight = origTableMaxHeight;
+          tableCont.style.overflowY = origTableOverflowY;
+        }
+        canvas.toBlob(async (blob) => {
+          try {
+            // Escribir imagen y texto descriptivo en el portapapeles
+            const textBlob = new Blob([titleText], { type: 'text/plain' });
+            const data = [new ClipboardItem({
+              [blob.type]: blob,
+              'text/plain': textBlob
+            })];
+            await navigator.clipboard.write(data);
+            showCopyToast(titleText);
+          } catch (err) {
+            console.warn("Clipboard API no soportada. Descargando imagen...", err);
+            // Fallback: descargar si falla el portapapeles
+            const link = document.createElement('a');
+            link.download = `Planificador_EMCALA_${formattedDate.replace(/\//g, '-')}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            showCopyToast(" Foto descargada a tu PC ⬇️");
+          }
+          btn.innerHTML = orig;
+          btn.disabled = false;
+        }, "image/png");
+      } catch (e) {
+        console.error(e);
+        alert('Hubo un pequeño inconveniente al generar la captura. Por favor, reintenta.');
+        btn.innerHTML = orig;
+        btn.disabled = false;
+      }
+    });
+    // Event listener para botón de Importar CSV
+    const btnImportCsv = document.getElementById('btn-import-csv');
+    const csvFileInput = document.getElementById('csv-file-input');
+    btnImportCsv.addEventListener('click', async () => {
+      const origText = btnImportCsv.innerHTML;
+      btnImportCsv.innerHTML = '⏳ Sincronizando SKUs...';
+      btnImportCsv.disabled = true;
+      // Siempre sincronizar SKUs antes de procesar el CSV para tener el maestro al día
+      await syncSkus();
+      btnImportCsv.innerHTML = '⏳ Cargando CSV...';
+      try {
+        // Intentar autodetectar y cargar aexcel.csv del servidor/carpeta local
+        const response = await fetch('./aexcel.csv');
+        if (response.ok) {
+          const csvText = await response.text();
+          parseCSVAndApply(csvText);
+          btnImportCsv.innerHTML = origText;
+          btnImportCsv.disabled = false;
+          return;
+        }
+      } catch (e) {
+        console.warn('No se pudo cargar aexcel.csv automáticamente (CORS o 404). Se procederá a selector manual.');
+      }
+      // Si falla, usar file picker manual
+      btnImportCsv.innerHTML = origText;
+      btnImportCsv.disabled = false;
+      csvFileInput.click();
+    });
+    csvFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const origText = btnImportCsv.innerHTML;
+      btnImportCsv.innerHTML = '⏳ Sincronizando SKUs...';
+      btnImportCsv.disabled = true;
+      // Sincronizar SKUs antes de procesar el archivo elegido
+      await syncSkus();
+      btnImportCsv.innerHTML = '⏳ Procesando CSV...';
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        // Usar setTimeout para permitir que la UI se renderice antes de bloquear el hilo
+        setTimeout(() => {
+          try {
+            parseCSVAndApply(evt.target.result);
+          } catch (error) {
+            console.error("Error procesando CSV:", error);
+            alert("Hubo un error procesando el archivo CSV: " + error.message);
+          } finally {
+            csvFileInput.value = ''; // Reset
+            btnImportCsv.innerHTML = origText;
+            btnImportCsv.disabled = false;
+          }
+        }, 50);
+      };
+      reader.readAsText(file);
+    });
+    const btnImportSkus = document.getElementById('btn-import-skus');
+    const csvSkusInput = document.getElementById('csv-skus-input');
+    btnImportSkus.addEventListener('click', () => {
+      csvSkusInput.click();
+    });
+    csvSkusInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const text = evt.target.result;
+        csvSkusInput.value = ''; // Reset
+        const lines = text.split('\n');
+        if (lines.length < 2) { alert('CSV vacío o sin datos'); return; }
+        // Detectar separador
+        const firstLine = lines[0];
+        const separator = firstLine.includes(';') ? ';' : ',';
+        // Autodetectar columnas
+        const headers = firstLine.split(separator).map(s => s.trim().toLowerCase());
+        let idxId = headers.findIndex(h => h.includes('sku') || h.includes('código') || h.includes('codigo') || h.includes('id') || h.includes('material'));
+        let idxShort = headers.findIndex(h => h.includes('short') || h.includes('corta') || (h.includes('desc') && !h.includes('full') && !h.includes('larga')));
+        let idxFull = headers.findIndex(h => h.includes('full') || h.includes('larga') || h.includes('desc'));
+        // Validación estricta
+        if (idxId === -1 || (idxShort === -1 && idxFull === -1)) {
+          alert('❌ Error: El archivo CSV no tiene el formato correcto para SKUs.\n\nDebe contener encabezados en la primera fila como "Código" o "SKU" y "Descripción".');
+          return;
+        }
+        // Fallbacks por si solo hay un tipo de descripción
+        if (idxShort === -1) idxShort = idxFull;
+        if (idxFull === -1) idxFull = idxShort;
+        const skus = [];
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const cols = line.split(separator).map(s => s.trim());
+          // Asegurar que la fila tiene suficientes columnas
+          if (cols.length > Math.max(idxId, idxShort, idxFull) && cols[idxId]) {
+            skus.push({ id: cols[idxId], s: cols[idxShort] || '', f: cols[idxFull] || '' });
+          }
+        }
+        if (skus.length === 0) { alert('No se encontraron SKUs en el CSV.'); return; }
+        const origText = btnImportSkus.innerHTML;
+        btnImportSkus.innerHTML = '⏳ Subiendo...';
+        btnImportSkus.disabled = true;
+        try {
+          const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ req: 'upload_skus', skus: skus })
+          });
+          const result = await response.json();
+          if (result.status === 'success') {
+            alert('¡Maestro de SKUs actualizado correctamente en la nube!\nTodos los usuarios verán los nuevos SKUs en su próxima sincronización.');
+            document.getElementById('btn-sync').click(); // Auto sync
+          } else {
+            alert('Hubo un problema: ' + result.message);
+          }
+        } catch(err) {
+          console.error(err);
+          alert('Error de conexión al subir SKUs: ' + err.message + '\n\nRevisa si actualizaste la SCRIPT_URL correctamente en el código HTML.');
+        }
+        btnImportSkus.innerHTML = origText;
+        btnImportSkus.disabled = false;
+      };
+      reader.readAsText(file);
+    });
+    document.getElementById('btn-clear').addEventListener('click', async () => {
+      if (confirm('¿Seguro que deseas borrar TODA la planificación del día actual (sin afectar las ventas reales)?')) {
+        const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
+        for (const prom in volData) {
+          planFields.forEach(f => {
+            delete volData[prom][f];
+          });
+        }
+        saveData();
+        renderTables();
+        // Ejecutar guardado silencioso para asegurar que la nube quede limpia de planificación también
+        await saveToServer(true);
+      }
+    });
+    document.getElementById('btn-save').addEventListener('click', async () => {
+      const date = document.getElementById('date-input').value;
+      if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') { alert('Falta URL de Sheets'); return; }
+      const btn = document.getElementById('btn-save');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '⏳ Subiendo...'; btn.disabled = true;
+      const payload = [];
+      for (const spv in SPV_DATA) {
+        const promotores = SPV_DATA[spv];
+        promotores.forEach(prom => {
+          if (volData[prom]) {
+            // Solo enviar campos que tengan valor real, NUNCA enviar campos vacíos
+            // que pisarían datos reales (ventas) en la nube
+            const rowPayload = { date, spv, promotor: prom };
+            let hasData = false;
+            for (const field in volData[prom]) {
+              const v = volData[prom][field];
+              if (v !== undefined && v !== null && v !== '') {
+                rowPayload[field] = v;
+                hasData = true;
+              }
+            }
+            if (hasData) {
+              payload.push(rowPayload);
+            }
+          }
+        });
+      }
+      if (payload.length === 0) {
+        alert('No hay datos para guardar.');
+        btn.innerHTML = orig; btn.disabled = false;
+        return;
+      }
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+          console.log('¡Ventas guardadas correctamente!');
+        } else {
+          alert('Hubo un problema: ' + result.message);
+        }
+      } catch (e) {
+        alert('Error de conexión al subir ventas.');
+      }
+      btn.innerHTML = orig; btn.disabled = false;
+    });
+    document.getElementById('btn-sync').addEventListener('click', async (e) => {
+      await performSync(false);
+    });
+    // Lógica para carga de archivo Excel de Objetivos
+    const btnImportObj = document.getElementById('btn-import-obj');
+    const objFileInput = document.getElementById('obj-file-input');
+    btnImportObj.addEventListener('click', () => {
+      objFileInput.click();
+    });
+    objFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const origText = btnImportObj.innerHTML;
+      btnImportObj.innerHTML = '⏳ Procesando Excel...';
+      btnImportObj.disabled = true;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, {type: 'array'});
+          let promotoresFound = 0;
+          const allPromoters = [];
+          for (let spv in SPV_DATA) {
+            allPromoters.push(...SPV_DATA[spv]);
+          }
+          const resetProms = {};
+          workbook.SheetNames.forEach(sheetName => {
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
+            let currentCategory = '';
+            for (let i = 0; i < json.length; i++) {
+              const row = json[i];
+              if (!row || row.length === 0) continue;
+              const colA = String(row[0] || '').trim();
+              const colD = String(row[3] || '').trim();
+              const colG = parseFloat(row[6]) || 0; // Columna G es índice 6 (Objetivos)
+              if (colA !== '') {
+                currentCategory = colA;
+              }
+              // Detectar si la fila contiene el nombre de algún promotor conocido en la Columna D
+              const matchedProm = allPromoters.find(p => colD.includes(p));
+              if (matchedProm && !colD.includes('Total') && !colD.includes('FOCO')) {
+                if (!volData[matchedProm]) volData[matchedProm] = {};
+                // Si es la primera vez que vemos este promotor en este parseo, inicializamos en 0
+                if (!resetProms[matchedProm]) {
+                  volData[matchedProm]['obj-f1'] = 0;
+                  volData[matchedProm]['obj-f2'] = 0;
+                  resetProms[matchedProm] = true;
+                }
+                if (currentCategory.includes('CZA Core+Value') || currentCategory.includes('CZA Above Core')) {
+                  volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
+                } else if (currentCategory.includes('Total UNG 2026') || currentCategory.includes('4b - Aguas')) {
+                  volData[matchedProm]['obj-f2'] = parseFloat((volData[matchedProm]['obj-f2'] + colG).toFixed(2));
+                }
+                promotoresFound++;
+              }
+            }
+          });
+          // Guardar globalmente los objetivos del mes
+          const monthStr = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
+          const objStorageKey = `emcala_obj_${monthStr}`;
+          let monthObjs = {};
+          try { monthObjs = JSON.parse(localStorage.getItem(objStorageKey) || '{}'); } catch(e){}
+          for (let p in volData) {
+            if (volData[p]['obj-f1'] !== undefined || volData[p]['obj-f2'] !== undefined) {
+              if (!monthObjs[p]) monthObjs[p] = {};
+              if (volData[p]['obj-f1'] !== undefined) monthObjs[p]['obj-f1'] = volData[p]['obj-f1'];
+              if (volData[p]['obj-f2'] !== undefined) monthObjs[p]['obj-f2'] = volData[p]['obj-f2'];
+            }
+          }
+          localStorage.setItem(objStorageKey, JSON.stringify(monthObjs));
+          saveData(); 
+          renderTables(); 
+          // Subir los objetivos a la nueva pestaña global
+          fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ req: 'upload_objectives', month: monthStr, objectives: monthObjs })
+          }).then(res => res.json()).then(res => {
+             if (res.status === 'success') {
+                alert(`✅ Excel de objetivos procesado. Se actualizaron ${promotoresFound} promotores y se guardaron los objetivos globales en la nube.`);
+             } else {
+                alert(`⚠️ Se cargaron los objetivos localmente, pero hubo un error subiendo a la nube: ` + res.message);
+             }
+          }).catch(e => {
+             alert(`⚠️ Se cargaron los objetivos localmente, pero hubo un error de conexión subiendo a la nube.`);
+          });
+        } catch (error) {
+          console.error(error);
+          alert('❌ Ocurrió un error al procesar el archivo Excel. Asegúrate de subir el archivo correcto de objetivos.');
+        } finally {
+          btnImportObj.innerHTML = origText;
+          btnImportObj.disabled = false;
+          objFileInput.value = '';
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+    // Render inicial: mostrar tabla vacía con estructura, sin datos viejos
+    renderTables();
+    // AUTO-SINCRONIZACIÓN AL CARGAR LA PÁGINA — siempre desde la nube
+    setTimeout(() => {
+      performSync(true);
+    }, 300);
