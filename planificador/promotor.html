@@ -63,6 +63,34 @@
     .btn-submit:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
 
     #loading { text-align: center; font-weight: 600; color: #e2e8f0; margin-top: 12px; display: none; font-size: 15px; }
+    
+    .global-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 2000;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 5px solid rgba(255,255,255,0.2);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .overlay-text { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+
     .success-msg { 
       display: none; 
       position: fixed;
@@ -94,6 +122,11 @@
   </style>
 </head>
 <body>
+
+  <div id="global-overlay" class="global-overlay">
+    <div class="spinner" id="overlay-spinner"></div>
+    <div class="overlay-text" id="overlay-text">Procesando...</div>
+  </div>
 
   <div class="hdr">
     <div>
@@ -198,6 +231,14 @@
     const btnSubmit = document.getElementById('btn-submit');
     const loading = document.getElementById('loading');
 
+    function showOverlay(msg) {
+      document.getElementById('overlay-text').textContent = msg;
+      document.getElementById('global-overlay').style.display = 'flex';
+    }
+    function hideOverlay() {
+      document.getElementById('global-overlay').style.display = 'none';
+    }
+
     // Poblar supervisores
     for (const spv in SPV_DATA) {
       const opt = document.createElement('option');
@@ -251,8 +292,7 @@
 
       currentKpiData = null;
       btnSubmit.disabled = true;
-      loading.textContent = 'Buscando FOCOS KPI del supervisor...';
-      loading.style.display = 'block';
+      showOverlay('Buscando FOCOS KPI del supervisor...');
 
       document.getElementById('kpi1-container').innerHTML = `<div class="kpi-pending-text">Sincronizando...</div>`;
       document.getElementById('kpi2-container').innerHTML = `<div class="kpi-pending-text">Sincronizando...</div>`;
@@ -297,7 +337,7 @@
         document.getElementById('kpi1-container').innerHTML = msg;
         document.getElementById('kpi2-container').innerHTML = msg;
       } finally {
-        loading.style.display = 'none';
+        hideOverlay();
       }
     }
 
@@ -400,8 +440,7 @@
 
       const success = document.getElementById('success-msg');
       btnSubmit.disabled = true; 
-      loading.textContent = 'Enviando planificación, por favor esperá...';
-      loading.style.display = 'block'; 
+      showOverlay('Enviando planificación, por favor esperá...');
       success.style.display = 'none';
 
       try {
@@ -416,6 +455,7 @@
         });
         const result = await response.json();
         if (result.status === 'success') {
+          hideOverlay();
           success.style.display = 'block';
           document.getElementById('f1-total').value = '';
           document.getElementById('f2-total').value = '';
@@ -428,9 +468,10 @@
           setTimeout(() => { success.style.display = 'none'; }, 5000);
         } else { alert('Error del servidor: ' + (result.message || 'Desconocido')); }
       } catch (e) {
+        hideOverlay();
         alert('Hubo un error de conexión.');
       } finally {
-        loading.style.display = 'none';
+        hideOverlay();
         checkForm(); // Re-evaluar btn estado
       }
     });
