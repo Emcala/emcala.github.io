@@ -120,6 +120,18 @@
       .focos-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
+
+  <!-- Sistema anti-caché para futuras actualizaciones -->
+  <script>
+    const APP_VERSION = '2.1'; // <- Cuando hagas un cambio futuro, cambias esto a 2.2, 2.3, etc.
+    const currentVer = localStorage.getItem('emcala_prom_ver');
+    if (currentVer !== APP_VERSION) {
+      localStorage.setItem('emcala_prom_ver', APP_VERSION);
+      if (window.location.href.indexOf('?v=') === -1) {
+        window.location.replace(window.location.href.split('?')[0] + '?v=' + APP_VERSION);
+      }
+    }
+  </script>
 </head>
 <body>
 
