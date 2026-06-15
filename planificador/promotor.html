@@ -63,7 +63,26 @@
     .btn-submit:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
 
     #loading { text-align: center; font-weight: 600; color: #e2e8f0; margin-top: 12px; display: none; font-size: 15px; }
-    .success-msg { display: none; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 16px; border-radius: 16px; text-align: center; font-weight: 800; margin-top: 16px; font-size: 16px; box-shadow: 0 10px 24px rgba(16, 185, 129, 0.3); }
+    .success-msg { 
+      display: none; 
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 400px;
+      z-index: 1000;
+      background: linear-gradient(135deg, #10b981, #059669); 
+      color: white; 
+      padding: 16px; 
+      border-radius: 16px; 
+      text-align: center; 
+      font-weight: 800; 
+      font-size: 16px; 
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); 
+      animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 
     .kpi-fixed-text { font-size: 15px; font-weight: 800; color: #065f46; padding: 12px; background: linear-gradient(to right, #ecfdf5, #d1fae5); border-radius: 12px; border: 1px solid #a7f3d0; text-align: center; }
     .kpi-pending-text { font-size: 14px; font-weight: 600; color: #991b1b; padding: 14px; background: linear-gradient(to right, #fef2f2, #fee2e2); border-radius: 12px; border: 1px solid #fecaca; text-align: center; }
