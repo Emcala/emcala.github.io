@@ -541,6 +541,9 @@
             });
           }
         }
+        if (payload.length === 0) {
+          alert('ATENCION: El archivo CSV fue ignorado porque las fechas no coinciden con la semana que estas viendo. Cambia la semana en el portal primero!');
+        }
         if (payload.length > 0) {
           try {
             const response = await fetch(SCRIPT_URL, {

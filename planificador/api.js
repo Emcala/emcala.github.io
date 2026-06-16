@@ -42,7 +42,7 @@
       try {
         const saved = localStorage.getItem(mainKey);
         // Solo cargamos del localStorage los campos de planificación, nunca ventas
-        const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p', 'acum-f1', 'acum-f2'];
+        const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
         volData = {};
         if (saved) {
           const parsed = JSON.parse(saved);
