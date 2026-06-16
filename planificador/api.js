@@ -209,7 +209,8 @@
               if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) {
                 prom = 'MIÑO RENZO';
               }
-              cloudData[prom] = fetched[originalProm];
+              if (!cloudData[prom]) cloudData[prom] = {};
+              Object.assign(cloudData[prom], fetched[originalProm]);
             }
             // Guardar objetivos mensuales si vienen en la respuesta
             if (result.objectives && Object.keys(result.objectives).length > 0) {
