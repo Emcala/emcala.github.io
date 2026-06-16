@@ -41,22 +41,20 @@
       const mainKey = `emcala_vol_all_${date}_v3`;
       try {
         const saved = localStorage.getItem(mainKey);
+        // Solo cargamos del localStorage los campos de planificación, nunca ventas
+        const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
+        volData = {};
         if (saved) {
-          volData = JSON.parse(saved);
-          window.currentCloudState = saved;
-        } else {
-          volData = {};
-          for (const spv in SPV_DATA) {
-            const oldKey = `emcala_vol_${spv}_${date}_v2`;
-            const oldSaved = localStorage.getItem(oldKey);
-            if (oldSaved) {
-              Object.assign(volData, JSON.parse(oldSaved));
-            }
+          const parsed = JSON.parse(saved);
+          for (const prom in parsed) {
+            volData[prom] = {};
+            planFields.forEach(f => {
+              if (parsed[prom][f] !== undefined) volData[prom][f] = parsed[prom][f];
+            });
           }
-          window.currentCloudState = JSON.stringify(volData);
-          saveData();
         }
-        // Siempre inyectar los objetivos mensuales en el volData cargado
+        window.currentCloudState = JSON.stringify(volData);
+        // Inyectar objetivos mensuales
         const objStorageKey = `emcala_obj_${monthStr}`;
         const monthObjsStr = localStorage.getItem(objStorageKey);
         if (monthObjsStr) {
@@ -97,11 +95,12 @@
       const date = window.currentLoadedDate || document.getElementById('date-input').value;
       if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') return false;
       const payload = [];
-      const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p', 'acum-f1', 'acum-f2'];
+      const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
       for (const spv in SPV_DATA) {
         SPV_DATA[spv].forEach(prom => {
           if (volData[prom]) {
-            const rowPayload = { date, spv, promotor: prom };
+            const cMonth = window.getCommercialMonthAndStart(date).month;
+            const rowPayload = { date, spv, promotor: prom, cMonth };
             // Solo incluimos campos de planificación, NUNCA ventas.
             // Esto asegura que si el usuario dejó la página abierta por horas,
             // no sobrescriba las ventas reales de la nube con su caché local vieja.
@@ -146,7 +145,8 @@
         for (const spv in SPV_DATA) {
           SPV_DATA[spv].forEach(prom => {
             if (dataDay[prom]) {
-              const rowPayload = { date: pDate, spv, promotor: prom };
+              const cMonth = window.getCommercialMonthAndStart(pDate).month;
+              const rowPayload = { date: pDate, spv, promotor: prom, cMonth };
               let hasData = false;
               allFields.forEach(f => {
                 if (dataDay[prom][f] !== undefined) {
@@ -197,8 +197,9 @@
         await syncSkus();
         // 3. Traer datos actualizados del servidor — SIEMPRE reemplaza volData completo
         const cloudData = {};
+        const cMonth = window.getCommercialMonthAndStart(date).month;
         const promises = Object.keys(SPV_DATA).map(async (spv) => {
-          const response = await fetch(`${SCRIPT_URL}?date=${date}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`);
+          const response = await fetch(`${SCRIPT_URL}?date=${date}&cMonth=${cMonth}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`);
           const result = await response.json();
           if (result.status === 'success') {
             const fetched = result.data || {};

@@ -472,23 +472,12 @@
             totalMatchCount++;
           }
         }
-        // --- AUTO-CÁLCULO DEL ACUMULADO MENSUAL PARA TODOS LOS PROMOTORES ---
-        // Se hace fuera del loop de ventas para garantizar que incluso los que vendieron 0 arrastren su acumulado
-        for (const spv in SPV_DATA) {
-          SPV_DATA[spv].forEach(prom => {
-            if (!existingData[prom]) existingData[prom] = {};
-            const lastAcumF1 = getLastAcumulado(prom, 'acum-f1', pDate);
-            const lastAcumF2 = getLastAcumulado(prom, 'acum-f2', pDate);
-            existingData[prom]['acum-f1'] = parseFloat((lastAcumF1 + (parseFloat(existingData[prom]['f1-v']) || 0)).toFixed(2));
-            existingData[prom]['acum-f2'] = parseFloat((lastAcumF2 + (parseFloat(existingData[prom]['f2-v']) || 0)).toFixed(2));
-          });
-        }
+        // --- EL AUTO-CÁLCULO DEL ACUMULADO MENSUAL HA SIDO MOVIDO AL BACKEND ---
+        // Ya no se calcula en memoria local para evitar desfases.
+        // El servidor Sheets hará la suma perfecta y la devolverá en la próxima sincronización.
         // --------------------------------------------------------------------
         // Si procesamos el archivo y pertenece a las fechas relevantes, guardar en memoria
-        if (true) {
-          localStorage.setItem(storageKey, JSON.stringify(existingData));
-          processedDatesCount++;
-        }
+        processedDatesCount++;
       }
       let latestDateStr = document.getElementById('date-input').value;
       const csvDates = Object.keys(allDatesSales).sort().reverse();
@@ -498,7 +487,7 @@
         loadData();
         renderTables();
       }
-      alert(`¡Ventas Reales importadas localmente para múltiples días!\nSe procesaron ${processedDatesCount} fechas distintas del CSV.\nEl calendario se actualizó automáticamente a la fecha del archivo: ${latestDateStr}\n\nAguarde un momento mientras se suben los datos a la nube...`);
+      alert(`Subiendo ${processedDatesCount} fechas a la nube, por favor esperá...`);
       // AUTO-GUARDADO DE TODOS LOS DÍAS PROCESADOS DIRECTO A LA NUBE
       setTimeout(async () => {
         if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') {
@@ -508,28 +497,48 @@
         const payload = [];
         const sortedDates2 = Object.keys(allDatesSales).sort();
         for (const pDate of sortedDates2) {
-          const storageKey = `emcala_vol_all_${pDate}_v3`;
-          const saved = localStorage.getItem(storageKey);
-          if (saved) {
-            try {
-              const existingData = JSON.parse(saved);
-              for (const spv in SPV_DATA) {
-                const promotores = SPV_DATA[spv];
-                promotores.forEach(prom => {
-                  if (existingData[prom]) {
-                    // Filtrar campos vacíos para no pisar datos existentes en la nube
-                    const rowPayload = { date: pDate, spv, promotor: prom };
-                    for (const field in existingData[prom]) {
-                      const v = existingData[prom][field];
-                      if (v !== undefined && v !== null && v !== '') {
-                        rowPayload[field] = v;
-                      }
-                    }
-                    payload.push(rowPayload);
-                  }
-                });
-              }
-            } catch(e) {}
+          const cMonth = window.getCommercialMonthAndStart(pDate).month;
+          const daySalesForPayload = allDatesSales[pDate];
+          for (const promoter in daySalesForPayload) {
+            let trackedPromoter = null;
+            const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
+            const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
+            const csvParts = normalizeParts(promoter);
+            const csvFlat = normalizeFlat(promoter);
+            for (const spv in SPV_DATA) {
+              const match = SPV_DATA[spv].find(p => {
+                const pParts = normalizeParts(p);
+                const pFlat = normalizeFlat(p);
+                const pInCsv = pParts.every(part => csvParts.includes(part));
+                const csvInP = csvParts.every(part => pParts.includes(part));
+                const isFlatMatch = pFlat === csvFlat || pFlat.includes(csvFlat) || csvFlat.includes(pFlat);
+                return pInCsv || csvInP || isFlatMatch;
+              });
+              if (match) { trackedPromoter = match; break; }
+            }
+            if (!trackedPromoter) continue;
+            const pSales = daySalesForPayload[promoter];
+            const rCore = pSales.core > 0 ? parseFloat(pSales.core.toFixed(2)) : '';
+            const rValue = pSales.value > 0 ? parseFloat(pSales.value.toFixed(2)) : '';
+            const rAc = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : '';
+            const rUng = pSales.totalUng > 0 ? parseFloat(pSales.totalUng.toFixed(2)) : '';
+            const rAg = pSales.aguas > 0 ? parseFloat(pSales.aguas.toFixed(2)) : '';
+            const coreValueSum = (parseFloat(rCore)||0) + (parseFloat(rValue)||0);
+            const f1TotalSum = parseFloat((coreValueSum + (parseFloat(rAc)||0)).toFixed(2));
+            const f2TotalSum = parseFloat(((parseFloat(rUng)||0) + (parseFloat(rAg)||0)).toFixed(2));
+            const spvName = Object.keys(SPV_DATA).find(s => SPV_DATA[s].includes(trackedPromoter));
+            payload.push({
+              date: pDate, spv: spvName, promotor: trackedPromoter, cMonth,
+              'f1-v': f1TotalSum || '', 'f1-cv': parseFloat(coreValueSum.toFixed(2)) || '', 'f1-ac': rAc, 'f1-bc': pSales.balanced > 0 ? parseFloat(pSales.balanced.toFixed(2)) : '', 'f1-lt': pSales.latones > 0 ? parseFloat(pSales.latones.toFixed(2)) : '',
+              'f2-v': f2TotalSum || '', 'f2-ung': rUng, 'f2-up': pSales.ungTop > 0 ? parseFloat(pSales.ungTop.toFixed(2)) : '', 'f2-rb': pSales.redbull > 0 ? parseFloat(pSales.redbull.toFixed(2)) : '', 'f2-ag': rAg,
+              'bol-v': pSales.clientsAll.size || '',
+              'ccc-cerveza': pSales.clientsTotalCerveza.size, 'ccc-core': pSales.clientsCore.size, 'ccc-value': pSales.clientsValue.size, 'ccc-abovecore': pSales.clientsAboveCore.size, 'ccc-latones': pSales.clientsLatones.size, 'ccc-balanced': pSales.clientsBalanced.size, 'ccc-nabs': pSales.clientsNabs.size,
+              'tbd-cerveza': pSales.txTotalCerveza.size, 'tbd-core': pSales.txCore.size, 'tbd-value': pSales.txValue.size, 'tbd-abovecore': pSales.txAboveCore.size, 'tbd-latones': pSales.txLatones.size, 'tbd-balanced': pSales.txBalanced.size, 'tbd-nabs': pSales.txNabs.size,
+              'cv-cerveza': pSales.cvClientsCerveza.size, 'cv-core': pSales.cvClientsCore.size, 'cv-value': pSales.cvClientsValue.size, 'cv-abovecore': pSales.cvClientsAboveCore.size, 'cv-latones': pSales.cvClientsLatones.size, 'cv-balanced': pSales.cvClientsBalanced.size, 'cv-nabs': pSales.cvClientsNabs.size, 'cv-aguas': pSales.cvClientsAguas.size, 'cv-ungtop': pSales.cvClientsUngTop.size, 'cv-eficiencia': pSales.cvClientsEficiencia.size,
+              'vvol-cerveza': pSales.vCerveza > 0 ? parseFloat(pSales.vCerveza.toFixed(2)) : 0, 'vvol-core': pSales.vCore > 0 ? parseFloat(pSales.vCore.toFixed(2)) : 0, 'vvol-value': pSales.vValue > 0 ? parseFloat(pSales.vValue.toFixed(2)) : 0, 'vvol-abovecore': pSales.vAboveCore > 0 ? parseFloat(pSales.vAboveCore.toFixed(2)) : 0, 'vvol-balanced': pSales.vBalanced > 0 ? parseFloat(pSales.vBalanced.toFixed(2)) : 0, 'vvol-latones': pSales.vLatones > 0 ? parseFloat(pSales.vLatones.toFixed(2)) : 0, 'vvol-nabs': pSales.vNabs > 0 ? parseFloat(pSales.vNabs.toFixed(2)) : 0, 'vvol-aguas': pSales.vAguas > 0 ? parseFloat(pSales.vAguas.toFixed(2)) : 0, 'vvol-ungtop': pSales.vUngTop > 0 ? parseFloat(pSales.vUngTop.toFixed(2)) : 0, 'vvol-totalung': pSales.vTotalUng > 0 ? parseFloat(pSales.vTotalUng.toFixed(2)) : 0,
+              'vccc-cerveza': pSales.vCccCerveza.size, 'vccc-core': pSales.vCccCore.size, 'vccc-value': pSales.vCccValue.size, 'vccc-abovecore': pSales.vCccAboveCore.size, 'vccc-latones': pSales.vCccLatones.size, 'vccc-balanced': pSales.vCccBalanced.size, 'vccc-nabs': pSales.vCccNabs.size,
+              'vtbd-cerveza': pSales.vTxCerveza.size, 'vtbd-core': pSales.vTxCore.size, 'vtbd-value': pSales.vTxValue.size, 'vtbd-abovecore': pSales.vTxAboveCore.size, 'vtbd-latones': pSales.vTxLatones.size, 'vtbd-balanced': pSales.vTxBalanced.size, 'vtbd-nabs': pSales.vTxNabs.size
+            });
           }
         }
         if (payload.length > 0) {
@@ -541,9 +550,15 @@
             });
             const result = await response.json();
             if (result.status === 'success') {
-              alert('✅ ¡Éxito! Todas las fechas procesadas del CSV ya se sincronizaron en la nube.');
+              console.log('Ventas subidas exitosamente');
+              // Sincronizar automáticamente para traer los acumulados frescos del servidor
+              if (window.performSync) {
+                 await window.performSync();
+              } else {
+                 location.reload();
+              }
             } else {
-              alert('⚠️ Hubo un error en la nube: ' + result.message);
+              alert('Error al subir ventas a la nube: ' + result.message);
             }
           } catch (e) {
             alert('❌ Error de conexión al intentar subir los múltiples días a la nube.');
