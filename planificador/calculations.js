@@ -78,13 +78,24 @@
         } catch(e){}
       }
       
-      // Para el acumulado: calcular SIEMPRE sumando las ventas diarias (f1-v, f2-v)
+      // Para el acumulado: la nube es la fuente de verdad.
+      // v ya fue seteado arriba desde volData; si es null, aún no llegó de la nube.
+      // Solo recalculamos localmente como fallback offline.
       if (field === 'acum-f1' || field === 'acum-f2') {
-        const currentDateStr = document.getElementById('date-input').value;
-        const dailyField = field === 'acum-f1' ? 'f1-v' : 'f2-v';
-        v = getAcumuladoMensual(prom, dailyField, currentDateStr);
-        if (!volData[prom]) volData[prom] = {};
-        volData[prom][field] = v; // Auto-guardar en memoria
+        // Leer directo de volData (sin pasar por v, que puede ser null si el campo era '' vacío)
+        const raw = volData[prom] && volData[prom][field] !== undefined ? volData[prom][field] : null;
+        const cloudVal = (raw !== null && raw !== '') ? parseFloat(raw) : null;
+        if (cloudVal !== null && !isNaN(cloudVal)) {
+          // La nube ya tiene el valor (puede ser 0 legítimamente)
+          v = cloudVal;
+        } else {
+          // Fallback local: sumar desde localStorage (offline o primer día del mes sin sync)
+          const currentDateStr = document.getElementById('date-input').value;
+          const dailyField = field === 'acum-f1' ? 'f1-v' : 'f2-v';
+          v = getAcumuladoMensual(prom, dailyField, currentDateStr);
+          if (!volData[prom]) volData[prom] = {};
+          volData[prom][field] = v; // Guardar en memoria para que calcTotals lo sume correctamente
+        }
       }
 
       if (v !== null) {
