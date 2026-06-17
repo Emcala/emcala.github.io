@@ -62,27 +62,23 @@
       document.getElementById('btn-sync').click();
     });
     document.getElementById('btn-print').addEventListener('click', () => { window.print(); });
-    document.getElementById('btn-floating-copy').addEventListener('click', function() {
-      const mainBtn = document.getElementById('btn-copy-img');
-      const orig = this.innerHTML;
-      this.innerHTML = '⏳ Capturando...';
-      this.disabled = true;
-      const observer = new MutationObserver(() => {
-        if (!mainBtn.disabled) {
-          this.innerHTML = orig;
-          this.disabled = false;
-          observer.disconnect();
-        }
-      });
-      observer.observe(mainBtn, { attributes: true, attributeFilter: ['disabled'] });
-      mainBtn.click();
-    });
+
     document.getElementById('btn-copy-img').addEventListener('click', async () => {
       const btn = document.getElementById('btn-copy-img');
       const orig = btn.innerHTML;
       btn.innerHTML = '⏳ Capturando...';
       btn.disabled = true;
       try {
+        // ── NUEVO: ocultar barra de botones antes de capturar ──
+        const toolbar = document.getElementById('main-hdr');
+        let toolbarWasVisible = false;
+        if (toolbar) {
+          toolbarWasVisible = toolbar.style.display !== 'none';
+          toolbar.style.display = 'none';
+        }
+        await new Promise(r => setTimeout(r, 80)); // esperar que el DOM se repinte
+        // ──────────────────────────────────────────────────────
+
         const captureEl = document.querySelector('#capture-area');
         // 1. Obtener fecha y hora actuales
         const dateInputVal = document.getElementById('date-input').value; // AAAA-MM-DD
@@ -179,6 +175,13 @@
           tableCont.style.maxHeight = origTableMaxHeight;
           tableCont.style.overflowY = origTableOverflowY;
         }
+
+        // ── NUEVO: restaurar barra ──
+        if (toolbar && toolbarWasVisible) {
+          toolbar.style.display = '';
+        }
+        // ───────────────────────────
+
         canvas.toBlob(async (blob) => {
           try {
             // Escribir imagen y texto descriptivo en el portapapeles

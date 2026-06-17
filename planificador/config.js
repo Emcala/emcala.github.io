@@ -19,25 +19,7 @@
     const isSupervisor = session && session.rol.toLowerCase() === 'supervisor';
     const isAuditor = session && session.rol.toLowerCase() === 'auditor';
     const MY_SPV = session ? session.nombre.toUpperCase() : '';
-    if (isAuditor) {
-      const toggleBtn = document.getElementById('btn-toggle-hdr');
-      const mainHdr = document.getElementById('main-hdr');
-      if (toggleBtn && mainHdr) {
-        toggleBtn.style.display = 'flex';
-        toggleBtn.addEventListener('click', () => {
-          const floatingCopyBtn = document.getElementById('btn-floating-copy');
-          if (mainHdr.style.display === 'none') {
-            mainHdr.style.display = 'flex';
-            toggleBtn.textContent = '👁️';
-            if (floatingCopyBtn) floatingCopyBtn.style.display = 'none';
-          } else {
-            mainHdr.style.display = 'none';
-            toggleBtn.textContent = '🙈';
-            if (floatingCopyBtn) floatingCopyBtn.style.display = 'flex';
-          }
-        });
-      }
-    }
+
     if (isSupervisor) {
       const btnClear = document.getElementById('btn-clear');
       if (btnClear) btnClear.style.display = 'none';
