@@ -56,14 +56,10 @@
       gap: 6px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       flex-shrink: 0;
-      z-index: 100;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-
-    .hdr::-webkit-scrollbar {
-      display: none;
+      z-index: 1000;
+      position: relative;
+      overflow: visible;
+      flex-wrap: wrap;
     }
 
     .hdr-left {
@@ -71,6 +67,7 @@
       align-items: center;
       gap: 6px;
       flex-shrink: 0;
+      flex-wrap: wrap;
     }
     
     .hdr-left > * {
