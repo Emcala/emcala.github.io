@@ -99,8 +99,11 @@ function doLoginHub() {
       // Redirigir al portal unificado
       window.location.href = './portal/index.html';
     } else {
-      document.getElementById('loginErr').textContent = 'Credenciales incorrectas';
+      let errMsg = 'Credenciales incorrectas';
+      if (data.debug) errMsg += '\n\nDIAGNÓSTICO:\nHoja: ' + data.debug.hojaEncontrada + '\nFilas: ' + data.debug.totalFilas + '\nBuscando: ' + data.debug.usuarioBuscado + '\nUsuarios en hoja: ' + data.debug.usuariosEnHoja;
+      document.getElementById('loginErr').textContent = errMsg;
       document.getElementById('loginErr').style.display = 'block';
+      document.getElementById('loginErr').style.whiteSpace = 'pre-wrap';
       btn.textContent = 'Ingresar'; btn.disabled = false;
     }
   })
