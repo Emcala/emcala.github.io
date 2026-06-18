@@ -78,16 +78,6 @@
 
   <div class="container">
     <div class="card">
-      <div class="admin-auth-box">
-        <span style="font-size: 20px;">🔐</span>
-        <div>
-          <div style="font-size: 13px; font-weight: 700; margin-bottom: 4px;">Autorización Requerida</div>
-          <div style="font-size: 11px; color: var(--muted);">Para hacer modificaciones, ingresa tu contraseña actual de administrador.</div>
-        </div>
-        <input type="password" id="admin-pass" placeholder="Tu contraseña..." style="flex: 1;">
-        <button class="btn" onclick="loadUsers()" style="height: 36px;">Entrar</button>
-      </div>
-
       <div class="flex-between">
         <h2 style="font-size: 18px;">Usuarios del Sistema</h2>
         <button class="btn" onclick="openModal()">+ Nueva Cuenta</button>
@@ -98,7 +88,7 @@
         <thead>
           <tr>
             <th>Usuario</th>
-            <th>Nombre Visible</th>
+            <th>Promotores</th>
             <th>Rol</th>
             <th style="text-align: right;">Acciones</th>
           </tr>
@@ -117,7 +107,7 @@
       
       <div class="form-group">
         <label>Usuario (Login)</label>
-        <input type="text" id="m-user" placeholder="Ej: ANALISTA">
+        <input type="text" id="m-user" placeholder="Ej: MATIAS">
       </div>
       <div class="form-group">
         <label>Contraseña</label>
@@ -130,11 +120,12 @@
           <option value="supervisor">Supervisor</option>
           <option value="trade">Trade Marketing</option>
           <option value="tecnico">Técnico</option>
+          <option value="promotor">Promotor</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Nombre Visible (Label)</label>
-        <input type="text" id="m-nombre" placeholder="Ej: Juan Perez">
+        <label>Promotores a Cargo (Opcional)</label>
+        <input type="text" id="m-promotores" placeholder="Ej: JUAN PEREZ, GOMEZ LUIS (Solo supervisores)">
       </div>
 
       <div class="modal-footer">
@@ -145,29 +136,23 @@
   </div>
 
   <script src="../emcala-auth.js"></script>
-  <!-- 
-  IMPORTANTE: Hasta que no actualicemos la URL del SCRIPT_URL global en el index.html
-  pondremos la URL en una constante local para las peticiones de este panel.
-  -->
   <script>
     if (!EmcalaAuth.requireRole(['auditor'])) {
       throw new Error("No autorizado");
     }
     EmcalaAuth.renderUserBadge('userBadgeContainer');
     
-    const session = EmcalaAuth.getSession();
-    
-    // ⚠️ REEMPLAZAR POR LA NUEVA URL DEL GOOGLE APPS SCRIPT CUANDO ESTÉ LISTO
+    // Conectado al script central de AUTH (Gestor de Cuentas)
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec';
 
     async function fetchAPI(payload) {
-      const apass = document.getElementById('admin-pass').value;
-      if (!apass && payload.action !== 'login') {
-        alert('Debes ingresar tu contraseña de admin arriba.');
-        return null;
-      }
-      payload.admin_user = session.usuario;
-      payload.admin_pass = apass;
+      const s = EmcalaAuth.getSession();
+      const raw = JSON.parse(localStorage.getItem('user_session') || '{}');
+      
+      payload.usuario = s.usuario;
+      payload.userHash = s.userHash;
+      payload.sessionToken = raw._h;
+      payload.rol = s.rol;
 
       try {
         const res = await fetch(SCRIPT_URL, {
@@ -177,7 +162,7 @@
         });
         const data = await res.json();
         if (!data.ok) {
-          alert('Error: ' + data.error);
+          alert('Error: ' + (data.error || 'Desconocido'));
           return null;
         }
         return data;
@@ -188,28 +173,17 @@
     }
 
     async function loadUsers() {
-      // Como el GET requiere admin_user y admin_pass en este backend_auth.gs, 
-      // pediremos la contraseña para cargar si el script lo exige, 
-      // o modificamos backend_auth para que `get_users` solo pida el sessionToken si lo tuviéramos.
-      // Dado que backend_auth pide siempre user y pass, usaremos un truco o exigimos la pass al cargar.
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('loading').innerHTML = 'Cargando usuarios...';
+      document.getElementById('users-table').style.display = 'none';
       
-      const apass = document.getElementById('admin-pass').value;
-      if (!apass) {
-        document.getElementById('loading').innerHTML = 'Ingresa tu contraseña arriba para ver los usuarios.';
-        document.getElementById('users-table').style.display = 'none';
-        return;
-      }
-
-      document.getElementById('loading').innerHTML = 'Cargando...';
-      const data = await fetchAPI({ action: 'get_users' });
-      if (data) {
-        renderTable(data.users);
+      const data = await fetchAPI({ action: 'get_usuarios' });
+      if (data && data.usuarios) {
+        renderTable(data.usuarios.filter(u => u.activo === 'SI'));
       } else {
-        document.getElementById('loading').innerHTML = 'Error al cargar (¿Contraseña incorrecta o error de red?)';
+        document.getElementById('loading').innerHTML = 'Error al cargar los usuarios.';
       }
     }
-
-    // Eliminamos el listener "change" automático para que se use el botón "Entrar"
 
     function renderTable(users) {
       const tbody = document.getElementById('tbody-users');
@@ -218,11 +192,11 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${u.usuario}</td>
-          <td>${u.nombre}</td>
+          <td>${u.promotores || '-'}</td>
           <td><span class="badge">${u.rol}</span></td>
           <td style="text-align:right; gap:8px; display:flex; justify-content:flex-end;">
-            <button class="btn outline" style="padding:4px 8px;" onclick="editUser('${u.usuario}', '${u.nombre}', '${u.rol}')">Editar</button>
-            <button class="btn danger" style="padding:4px 8px;" onclick="deleteUser('${u.usuario}')">Borrar</button>
+            <button class="btn outline" style="padding:4px 8px;" onclick="editUser('${u.usuario}', '${u.rol}', '${u.promotores || ''}')">Editar</button>
+            <button class="btn danger" style="padding:4px 8px;" onclick="deleteUser('${u.usuario}', '${u.rol}', '${u.promotores || ''}')">Borrar</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -237,20 +211,20 @@
       document.getElementById('m-user').value = '';
       document.getElementById('m-user').disabled = false;
       document.getElementById('m-pass').value = '';
-      document.getElementById('m-nombre').value = '';
+      document.getElementById('m-promotores').value = '';
       document.getElementById('modal').style.display = 'flex';
     }
 
-    function editUser(user, nombre, rol) {
+    function editUser(user, rol, promotores) {
       document.getElementById('is-edit').value = 'true';
       document.getElementById('target-user').value = user;
       document.getElementById('modal-title').textContent = 'Editar Cuenta: ' + user;
       
       document.getElementById('m-user').value = user;
-      document.getElementById('m-user').disabled = true; // No se cambia el ID
+      document.getElementById('m-user').disabled = true;
       document.getElementById('m-pass').value = '';
       document.getElementById('m-rol').value = rol.toLowerCase();
-      document.getElementById('m-nombre').value = nombre;
+      document.getElementById('m-promotores').value = promotores;
       
       document.getElementById('modal').style.display = 'flex';
     }
@@ -261,12 +235,12 @@
 
     async function saveUser() {
       const isEdit = document.getElementById('is-edit').value === 'true';
-      const u = document.getElementById('m-user').value.trim();
+      const u = document.getElementById('m-user').value.trim().toUpperCase();
       const p = document.getElementById('m-pass').value.trim();
       const r = document.getElementById('m-rol').value;
-      const n = document.getElementById('m-nombre').value.trim();
+      const promotores = document.getElementById('m-promotores').value.trim();
 
-      if (!u || (!p && !isEdit) || !r || !n) {
+      if (!u || (!p && !isEdit) || !r) {
         alert('Completá los campos obligatorios'); return;
       }
 
@@ -274,13 +248,16 @@
       btn.disabled = true;
       btn.textContent = 'Guardando...';
 
-      let payload = {};
-      if (isEdit) {
-        const target = document.getElementById('target-user').value;
-        payload = { action: 'update_user', target_user: target, new_password: p, new_rol: r, new_nombre: n };
-      } else {
-        payload = { action: 'create_user', new_user: u, new_password: p, new_rol: r, new_nombre: n };
-      }
+      let targetUser = isEdit ? document.getElementById('target-user').value : u;
+      
+      const payload = {
+         action: 'save_usuario',
+         targetUser: targetUser,
+         targetPass: p,
+         targetRol: r,
+         targetActivo: 'SI',
+         targetPromotores: promotores
+      };
 
       const res = await fetchAPI(payload);
       if (res) {
@@ -292,13 +269,23 @@
       btn.textContent = 'Guardar Cuenta';
     }
 
-    async function deleteUser(user) {
-      if (!confirm('¿Seguro que deseas eliminar la cuenta ' + user + '?')) return;
-      const res = await fetchAPI({ action: 'delete_user', target_user: user });
+    async function deleteUser(user, rol, promotores) {
+      if (!confirm('¿Seguro que deseas desactivar la cuenta ' + user + '?')) return;
+      const payload = {
+         action: 'save_usuario',
+         targetUser: user,
+         targetRol: rol,
+         targetActivo: 'NO',
+         targetPromotores: promotores
+      };
+      const res = await fetchAPI(payload);
       if (res) {
         loadUsers();
       }
     }
+
+    // Cargar automáticamente al iniciar
+    loadUsers();
   </script>
 </body>
 </html>
