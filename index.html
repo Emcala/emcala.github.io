@@ -100,7 +100,7 @@ function doLoginHub() {
       window.location.href = './portal/index.html';
     } else {
       let errMsg = 'Credenciales incorrectas';
-      if (data.debug) errMsg += '\n\nDIAGNÓSTICO:\nHoja: ' + data.debug.hojaEncontrada + '\nFilas: ' + data.debug.totalFilas + '\nBuscando: ' + data.debug.usuarioBuscado + '\nUsuarios en hoja: ' + data.debug.usuariosEnHoja;
+      if (data.debug) errMsg += '\n\nDIAGNÓSTICO:\nHoja: ' + data.debug.hojaEncontrada + '\nFilas: ' + data.debug.totalFilas + '\nBuscando: ' + data.debug.usuarioBuscado + '\n' + (data.debug.detalleUsuario || data.debug.usuariosEnHoja || '');
       document.getElementById('loginErr').textContent = errMsg;
       document.getElementById('loginErr').style.display = 'block';
       document.getElementById('loginErr').style.whiteSpace = 'pre-wrap';
