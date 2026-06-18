@@ -506,7 +506,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
 /* =========================================================================
    Puente con el Portal
 ========================================================================= */
-let currentUser=null,currentRole=null,currentUserHash=null,promotoresPropios=[];
+let currentUser=null,currentRole=null,currentUserHash=null,promotoresPropios=[],currentSessionToken=null;
 
 (function(){
   if (!EmcalaAuth.requireLogin()) return;
@@ -515,6 +515,13 @@ let currentUser=null,currentRole=null,currentUserHash=null,promotoresPropios=[];
   currentUser = _s.usuario;
   currentUserHash = _s.userHash;
   currentRole = _s.rol;
+  
+  const rawSession = localStorage.getItem('user_session');
+  if(rawSession) {
+     const p = JSON.parse(rawSession);
+     currentSessionToken = p._h;
+  }
+  
   if (_s.promotores) promotoresPropios = _s.promotores.split(',').map(p => p.trim().toUpperCase());
 })();
 
@@ -727,7 +734,7 @@ function updateMap(data){
   async function loadData(){
     document.getElementById('registrosList').innerHTML='<div class="loading-state"><div class="spin"></div><p>Cargando registros...</p></div>';
     try{
-      const response=await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'datos',usuario:currentUser,userHash:currentUserHash,dias:diasCargados})});
+      const response=await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'datos',usuario:currentUser,userHash:currentUserHash,sessionToken:currentSessionToken,rol:currentRole,dias:diasCargados})});
       const data=await response.json();
       if(!data.ok){document.getElementById('registrosList').innerHTML=`<div class="empty-state"><div class="ico">🚫</div><p style="color:#DC2626;font-weight:bold;">Error de autorización.</p></div>`;return;}
       allData=parseRegistros(data.registros);
@@ -992,7 +999,7 @@ async function enviarChatRol(ot,canal){
   const inputId='chatInput-'+canal,boxId='chatBox-'+canal,input=document.getElementById(inputId);
   if(!input)return;const msg=(input.value||'').trim();if(!msg)return;
   input.value='';input.disabled=true;
-  const payload={tipo:'chat',timestamp:new Date().toISOString(),ot,autor:currentUser,rol:currentRole,chat_tipo:canal,mensaje:msg,usuario:currentUser,userHash:currentUserHash};
+  const payload={tipo:'chat',timestamp:new Date().toISOString(),ot,autor:currentUser,rol:currentRole,chat_tipo:canal,mensaje:msg,usuario:currentUser,userHash:currentUserHash,sessionToken:currentSessionToken,rolToken:currentRole};
   await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
   if(!chatData[ot])chatData[ot]=[];
   const d=new Date(),fecha=formatFechaAR(d);
@@ -1130,7 +1137,7 @@ async function guardarSeguimiento(cliente,promotor,ot,tipoRol){
     estado:prev.estado||'',comentario:prev.comentario||'',tecnico:prev.tecnico||'',
     prioridad_sugerida:prev.prioridad_sugerida||'',prioridad_aprobada:prev.prioridad_aprobada||'',
     aprobado_por:prev.aprobado_por||'',marca:otData.marca||'',edf:otData.edf||'',falla:otData.falla||'',
-    usuario:currentUser,userHash:currentUserHash};
+    usuario:currentUser,userHash:currentUserHash,sessionToken:currentSessionToken,rolToken:currentRole};
 
   if(tipoRol==='tecnico'){
     const comentario=modal.querySelector('[data-mid="segComentario"]').value.trim();
