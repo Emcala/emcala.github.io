@@ -1,4 +1,7 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
+    // URL del servidor centralizado de Auth (para traer Mesas dinámicamente)
+    const AUTH_URL = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec';
+
     // Usar fecha LOCAL (no UTC) para evitar desfase de zona horaria
     function setTodayDate() {
       const _now = new Date();
@@ -6,43 +9,80 @@
     }
     const dateInputEl = document.getElementById('date-input');
     dateInputEl.value = setTodayDate();
-    const RAW_SPV_DATA = {
-      'ARES PEDRO': ['GALLO JONATHAN', 'DIAZ VALERIA', 'FERREYRA LEONARDO', 'MIÑO RENZO', 'LOPEZ PABLO', 'SANCHEZ ROCIO'],
-      'AVILA EZEQUIEL': ['FERNANDEZ LUIS', 'THEILLET NICOLAS', 'JAIMES EZEQUIEL', 'MOURELLE ALFREDO', 'PEREYRA BRAIAN', 'SAN JUAN CARLOS', 'SANTILLAN SERGIO', 'TESEI ALEJANDRA', 'TORRES KARINA'],
-      'ECEIZA KEVIN': ['DOMINGUEZ GONZALO', 'GEREZ JONATHAN', 'GONZALEZ ROBERTO', 'JOFRE LUCAS', 'GUARAZ JUAN', 'MENDOZA SERGIO', 'MUÑOZ PAULA', 'REGNER LEANDRO', 'SCORNAVACHE WALTER'],
-      'RIERA SALA DANIELA': ['ASCONA MATIAS', 'BENITEZ NAHUEL', 'CESPEDES ENZO', 'FERREYRA TOBIAS', 'FREDES CLAUDIA', 'GARCIA MAIRA', 'LEITES RODRIGO', 'LOPEZ ALEJANDRA', 'MORENO AGUSTINA'],
-      'BDR': ['ANDUAGA SANTIAGO', 'GOMEZ GUSTAVO', 'VEDIA ELIZABETH'],
-      'LEMOS PATRICIA': ['LEMOS PATRICIA']
-    };
+
+    // SPV_DATA se carga dinámicamente desde el servidor
     let SPV_DATA = {};
+    let _mesasLoaded = false;
+
+    // Cargar mesas desde localStorage como fallback inmediato
+    try {
+      const cachedMesas = localStorage.getItem('emcala_mesas_spv');
+      if (cachedMesas) {
+        SPV_DATA = JSON.parse(cachedMesas);
+        _mesasLoaded = Object.keys(SPV_DATA).length > 0;
+      }
+    } catch(e) {}
+
+    // Función para traer mesas del servidor y actualizar SPV_DATA
+    async function fetchMesasFromServer() {
+      try {
+        const response = await fetch(AUTH_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'getMesas' })
+        });
+        const result = await response.json();
+        if (result.ok && result.mesas && Object.keys(result.mesas).length > 0) {
+          SPV_DATA = result.mesas;
+          localStorage.setItem('emcala_mesas_spv', JSON.stringify(SPV_DATA));
+          _mesasLoaded = true;
+          console.log('Mesas cargadas del servidor:', Object.keys(SPV_DATA).length, 'supervisores');
+          return true;
+        }
+      } catch(e) {
+        console.warn('No se pudieron cargar las mesas del servidor, usando caché local:', e);
+      }
+      return false;
+    }
+
+    // Aplicar filtro de supervisor si el usuario es supervisor
     const session = typeof EmcalaAuth !== 'undefined' ? EmcalaAuth.getSession() : null;
     const isSupervisor = session && session.rol.toLowerCase() === 'supervisor';
     const isAuditor = session && session.rol.toLowerCase() === 'auditor';
     const MY_SPV = session ? session.nombre.toUpperCase() : '';
 
-    if (isSupervisor) {
+    function applyRoleFilter() {
+      if (!isSupervisor) return;
       const btnClear = document.getElementById('btn-clear');
       if (btnClear) btnClear.style.display = 'none';
-      let spvMatched = false;
+      
       const normalizeStr = (s) => String(s || '')
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^A-Z0-9]/ig, "")
         .toUpperCase();
       const normMySpv = normalizeStr(MY_SPV);
-      for (const key in RAW_SPV_DATA) {
+      
+      let filtered = {};
+      let spvMatched = false;
+      for (const key in SPV_DATA) {
         const normKey = normalizeStr(key);
         if (normMySpv.includes(normKey) || normKey.includes(normMySpv)) {
-          SPV_DATA[key] = RAW_SPV_DATA[key];
+          filtered[key] = SPV_DATA[key];
           spvMatched = true;
           break;
         }
       }
-      if (!spvMatched) {
-        // Fallback
-        const firstKey = Object.keys(RAW_SPV_DATA)[0];
-        SPV_DATA[firstKey] = RAW_SPV_DATA[firstKey];
+      if (spvMatched) {
+        SPV_DATA = filtered;
+      } else if (Object.keys(SPV_DATA).length > 0) {
+        // Fallback: mostrar la primera mesa
+        const firstKey = Object.keys(SPV_DATA)[0];
+        SPV_DATA = { [firstKey]: SPV_DATA[firstKey] };
       }
-    } else {
-      Object.assign(SPV_DATA, RAW_SPV_DATA);
-    }
+    }
+
+    // Aplicar filtro inicial si ya tenemos mesas del caché
+    if (_mesasLoaded && isSupervisor) {
+      applyRoleFilter();
+    }

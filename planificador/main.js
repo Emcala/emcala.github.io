@@ -492,9 +492,14 @@
       };
       reader.readAsArrayBuffer(file);
     });
-    // Render inicial: mostrar tabla vacía con estructura, sin datos viejos
+    // Render inicial: mostrar tabla con lo que tengamos (caché o vacío)
     renderTables();
-    // AUTO-SINCRONIZACIÓN AL CARGAR LA PÁGINA — siempre desde la nube
-    setTimeout(() => {
-      performSync(true);
+    // AUTO-SINCRONIZACIÓN AL CARGAR LA PÁGINA — traer mesas frescas y luego datos
+    setTimeout(async () => {
+      const mesasUpdated = await fetchMesasFromServer();
+      if (mesasUpdated) {
+        applyRoleFilter();
+        renderTables();
+      }
+      await performSync(true);
     }, 300);
