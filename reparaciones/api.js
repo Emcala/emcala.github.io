@@ -90,7 +90,7 @@ async function guardarSeguimiento(cliente,promotor,ot,tipoRol){
     payload.estado=modal.querySelector('[data-mid="segEstado"]').value;payload.comentario=comentario;payload.tecnico=currentUser;payload.tec_lat=tecLat;payload.tec_lng=tecLng;payload.tec_timestamp=new Date().toISOString();
   }else if(tipoRol==='supervisor'){
     const priVal=modal.querySelector('[data-mid="segPriSug"]').value;payload.prioridad_sugerida=priVal;
-    if(priVal==='1'||priVal==='2'){payload.prioridad_aprobada=priVal;payload.aprobado_por=currentUser+' (auto)';}
+    if(priVal){payload.prioridad_aprobada=priVal;payload.aprobado_por=currentUser+' (auto)';}
   }else if(tipoRol==='trade'){
     payload.prioridad_aprobada=modal.querySelector('[data-mid="segPriApr"]').value;payload.aprobado_por=currentUser;
   }else if(tipoRol==='trade-cerrar'){

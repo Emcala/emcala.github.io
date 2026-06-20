@@ -205,6 +205,10 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
         <div class="field">
           <label>Código de Cliente <span class="req">*</span></label>
           <input type="text" id="codigoCliente" placeholder="Código de cliente" required onblur="verificarCliente(this.value)">
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;">
+            <input type="checkbox" id="sinConexionCliente" style="width:auto;height:auto;cursor:pointer;margin:0;" onchange="toggleSinConexionCliente(this)">
+            <label for="sinConexionCliente" style="margin:0;font-size:12px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;color:var(--muted);">Sin conexión (carga manual)</label>
+          </div>
           <div id="clienteFeedback" style="font-size:11px;margin-top:4px;text-align:center;font-weight:600;min-height:15px;color:var(--muted);"></div>
         </div>
         <div class="field">
@@ -214,16 +218,8 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
             <option>Quilmes</option>
             <option>Brahma</option>
             <option>Pepsi</option>
-            <option>Stella Artois</option>
-            <option>7UP</option>
+            <option>7 UP</option>
             <option>Red Bull</option>
-            <option>Andes</option>
-            <option>Corona</option>
-            <option>Budweiser</option>
-            <option>Patagonia</option>
-            <option>Gatorade</option>
-            <option>Paso de los Toros</option>
-            <option>H2Oh!</option>
             <option>Otro</option>
           </select>
         </div>
@@ -355,7 +351,25 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
     btn.style.color = 'var(--navy)';
   }
 
+  function toggleSinConexionCliente(checkbox) {
+    const feedback = document.getElementById('clienteFeedback');
+    if (checkbox.checked) {
+      clienteValido = true;
+      feedback.textContent = '⚠️ Validación omitida (Sin conexión)';
+      feedback.style.color = '#D97706';
+      document.getElementById('codigoCliente').style.borderColor = '';
+    } else {
+      clienteValido = false;
+      feedback.textContent = '';
+      const codigo = document.getElementById('codigoCliente').value;
+      if (codigo) verificarCliente(codigo);
+    }
+  }
+
   async function verificarCliente(codigo) {
+    const checkbox = document.getElementById('sinConexionCliente');
+    if (checkbox && checkbox.checked) return;
+
     const feedback = document.getElementById('clienteFeedback');
     codigo = (codigo || '').trim();
     if (!codigo) {
@@ -672,6 +686,9 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
     edfInput.style.opacity = '1';
     const sinEdfCheckbox = document.getElementById('sinEdf');
     if (sinEdfCheckbox) sinEdfCheckbox.checked = false;
+
+    const sinConexionCheckbox = document.getElementById('sinConexionCliente');
+    if (sinConexionCheckbox) sinConexionCheckbox.checked = false;
 
     document.getElementById('successOverlay').classList.remove('show');
     document.getElementById('formContent').style.display = 'block';

@@ -1,4 +1,4 @@
-﻿let solicitudesRetiro=[];
+let solicitudesRetiro=[];
 function renderTablaRetiro(){
   const tbody=document.getElementById('tablaRetiroBody');if(!tbody)return;
   if(!solicitudesRetiro.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px;font-size:13px;">Sin solicitudes aún</td></tr>';return;}
@@ -140,7 +140,7 @@ function updateNotificaciones(){
       const eKey=getEstadoKey(r.ot,r.cliente);
       if(eKey==='resuelto'||eKey==='retiro')return false;
       const pri=getPrioridadAprobada(r.ot,r.cliente)||getPrioridadSugerida(r.ot,r.cliente);
-      return pri==='1'||pri==='2';
+      return !!pri;
     }).length;
   }
   const boxAlta=document.getElementById('notifPrioridadAlta');if(boxAlta)boxAlta.textContent=countVerde;
@@ -286,7 +286,9 @@ function buildRegItem(r,onclickAttr){
   const priA=getPrioridadAprobada(r.ot,r.cliente),priS=getPrioridadSugerida(r.ot,r.cliente),priShow=priA||priS;
   const isAlta=priA&&(priA==='1'||priA==='2');
   const priBadge=priShow?`<span style="margin-left:4px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:${priA?'#0F2A4A':'#E2E8F0'};color:${priA?'white':'#64748B'}">${isAlta?'⚠️ ':''} P${priShow}${!priA?' (sugerida)':''}</span>`:'';
-  return `<div class="reg-item" onclick='${onclickAttr}'><div class="reg-avatar" style="background:${avatarColor};font-size:${initials.length>2?'10px':'12px'}">${initials}</div><div class="reg-info"><div class="reg-nombre">OT ${r.ot||'—'} ${isAlta?'<span style="color:#DC2626">❗</span>':''}</div><div class="reg-sub">${r.cliente||'Sin cliente'} · 👤 ${r.nombre}</div><div style="margin-top:2px"><span class="estado-pill ${em.cls}">${em.icon} ${em.label}</span>${priBadge}${reinBadge}</div></div><div class="reg-meta"><div class="reg-fecha">${r.fecha}</div><div class="reg-hora">${r.hora||''}</div><div class="${hasGeo?'reg-gps':'reg-nogps'}">${hasGeo?'📍 GPS':'Sin GPS'}</div></div></div>`;
+  const msgCount=(window.chatData&&window.chatData[r.ot])?window.chatData[r.ot].length:0;
+  const chatBadge=msgCount>0?`<span style="margin-left:4px;font-size:12px;cursor:help;padding:2px 5px;border-radius:6px;background:#E0E7FF;color:#4338CA;" title="Tiene mensajes">✉️</span>`:'';
+  return `<div class="reg-item" onclick='${onclickAttr}'><div class="reg-avatar" style="background:${avatarColor};font-size:${initials.length>2?'10px':'12px'}">${initials}</div><div class="reg-info"><div class="reg-nombre">OT ${r.ot||'—'} ${isAlta?'<span style="color:#DC2626">❗</span>':''}</div><div class="reg-sub">${r.cliente||'Sin cliente'} · 👤 ${r.nombre}</div><div style="margin-top:2px"><span class="estado-pill ${em.cls}">${em.icon} ${em.label}</span>${priBadge}${reinBadge}${chatBadge}</div></div><div class="reg-meta"><div class="reg-fecha">${r.fecha}</div><div class="reg-hora">${r.hora||''}</div><div class="${hasGeo?'reg-gps':'reg-nogps'}">${hasGeo?'📍 GPS':'Sin GPS'}</div></div></div>`;
 }
 
 function renderList(data){
