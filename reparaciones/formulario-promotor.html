@@ -207,7 +207,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
           <input type="text" id="codigoCliente" placeholder="Código de cliente" required onblur="verificarCliente(this.value)">
           <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;">
             <input type="checkbox" id="sinConexionCliente" style="width:auto;height:auto;cursor:pointer;margin:0;" onchange="toggleSinConexionCliente(this)">
-            <label for="sinConexionCliente" style="margin:0;font-size:12px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;color:var(--muted);">Sin conexión (carga manual)</label>
+            <label for="sinConexionCliente" style="margin:0;font-size:12px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer;color:var(--muted);">Sin verificación</label>
           </div>
           <div id="clienteFeedback" style="font-size:11px;margin-top:4px;text-align:center;font-weight:600;min-height:15px;color:var(--muted);"></div>
         </div>
@@ -239,22 +239,6 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
         <textarea id="fallaSugerida" placeholder="Describir brevemente la falla..." required></textarea>
       </div>
 
-      <div class="field">
-        <label>Foto del equipo <span class="req" style="color:var(--muted);font-weight:normal;">(Opcional)</span></label>
-        <button type="button" class="geo-btn" id="fotoBtn" onclick="document.getElementById('fotoInput').click()" style="background:var(--bg);color:var(--navy);border-color:var(--border);">
-          <svg class="geo-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-            <circle cx="12" cy="13" r="4"/>
-          </svg>
-          Seleccionar Foto
-        </button>
-        <input type="file" id="fotoInput" accept="image/*" style="display:none;" onchange="previewFoto(this)">
-        <div id="fotoPreviewContainer" style="display:none;margin-top:10px;position:relative;width:100%;max-width:140px;">
-          <img id="fotoPreview" src="" alt="Vista previa" style="width:100%;border-radius:10px;border:2px solid var(--border);box-shadow:0 4px 10px rgba(0,0,0,0.05);display:block;">
-          <button type="button" onclick="clearFoto()" style="position:absolute;top:-8px;right:-8px;background:#EF4444;color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-weight:bold;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,0.2);">×</button>
-        </div>
-      </div>
-
       <div class="divider"></div>
 
       <div class="field">
@@ -272,7 +256,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
         <input type="hidden" id="longitud">
       </div>
 
-      <button type="submit" class="submit-btn">Enviar Registro →</button>
+      <button type="submit" class="submit-btn" disabled>Enviar Registro →</button>
 
     </form>
   </div>
@@ -294,68 +278,15 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
   let lastSubmitTime = 0;
   let clienteValido = false;
 
-  let base64Foto = '';
-  let mimeTypeFoto = '';
-  let extFoto = '';
+
 
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwreokQunVau5zi-QN-NzPz14IOfk11p4As3PYRqvSh1zqgbPosHJ9nX2RAfotacKxN/exec';
-
-  function previewFoto(input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('❌ La imagen es demasiado grande. El tamaño máximo es 5MB.');
-      input.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      base64Foto = e.target.result.split(',')[1];
-      mimeTypeFoto = file.type;
-      extFoto = file.name.split('.').pop();
-
-      document.getElementById('fotoPreview').src = e.target.result;
-      document.getElementById('fotoPreviewContainer').style.display = 'block';
-      const btn = document.getElementById('fotoBtn');
-      btn.innerHTML = `
-        <svg class="geo-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--success);">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-        Foto Seleccionada
-      `;
-      btn.style.borderColor = 'var(--success)';
-      btn.style.color = 'var(--success)';
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function clearFoto() {
-    document.getElementById('fotoInput').value = '';
-    document.getElementById('fotoPreview').src = '';
-    document.getElementById('fotoPreviewContainer').style.display = 'none';
-    base64Foto = '';
-    mimeTypeFoto = '';
-    extFoto = '';
-    const btn = document.getElementById('fotoBtn');
-    btn.innerHTML = `
-      <svg class="geo-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-        <circle cx="12" cy="13" r="4"/>
-      </svg>
-      Seleccionar Foto
-    `;
-    btn.style.borderColor = 'var(--border)';
-    btn.style.color = 'var(--navy)';
-  }
 
   function toggleSinConexionCliente(checkbox) {
     const feedback = document.getElementById('clienteFeedback');
     if (checkbox.checked) {
       clienteValido = true;
-      feedback.textContent = '⚠️ Validación omitida (Sin conexión)';
+      feedback.textContent = '⚠️ Validación omitida (Sin verificación)';
       feedback.style.color = '#D97706';
       document.getElementById('codigoCliente').style.borderColor = '';
     } else {
@@ -404,30 +335,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
     }
   }
 
-  async function cargarPromotores() {
-    const select = document.getElementById('promotor');
-    try {
-      const response = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getPromotores' })
-      });
-      const data = await response.json();
-      if (data.promotores && data.promotores.length > 0) {
-        const currentSelected = select.value;
-        select.innerHTML = '<option value="" disabled selected>Seleccionar promotor...</option>';
-        data.promotores.forEach(p => {
-          const opt = document.createElement('option');
-          opt.textContent = p;
-          opt.value = p;
-          select.appendChild(opt);
-        });
-        if (currentSelected) select.value = currentSelected;
-      }
-    } catch (e) {
-      console.error('Error al cargar promotores:', e);
-    }
-  }
+
 
   function toggleSinEdf(checkbox) {
     const edfInput = document.getElementById('edf');
@@ -440,6 +348,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       edfInput.disabled = false;
       edfInput.style.opacity = '1';
     }
+    if (typeof checkFormValidity === 'function') checkFormValidity();
   }
 
   function geolocate() {
@@ -479,6 +388,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       document.getElementById('longitud').value = lng;
 
       btn.classList.remove('loading');
+      if (typeof checkFormValidity === 'function') checkFormValidity();
 
       const accColor = acc <= 20 ? 'var(--success)' : acc <= 50 ? '#D97706' : 'var(--error)';
       const accLabel = acc <= 20 ? 'Muy preciso' : acc <= 50 ? 'Aceptable' : 'Baja precisión';
@@ -532,6 +442,21 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       if (bestPos) { done(bestPos); }
       else { fail({ code: 3 }); }
     }, 20000);
+  }
+
+  function checkFormValidity() {
+    const submitBtn = document.querySelector('.submit-btn');
+    if (!submitBtn) return;
+    if (submitBtn.textContent.includes('Enviando') || submitBtn.textContent.includes('Verificando')) return;
+    
+    const promotor = document.getElementById('promotor').value;
+    const codigoCliente = document.getElementById('codigoCliente').value.trim();
+    const marca = document.getElementById('tipoLogo').value;
+    const edf = document.getElementById('edf').value.trim();
+    const falla = document.getElementById('fallaSugerida').value.trim();
+    
+    const isValid = promotor && codigoCliente && marca && edf && falla && geoData;
+    submitBtn.disabled = !isValid;
   }
 
   document.getElementById('mainForm').addEventListener('submit', async function(e) {
@@ -617,10 +542,6 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       falla: document.getElementById('fallaSugerida').value,
       lat: geoData ? geoData.lat : '',
       lng: geoData ? geoData.lng : '',
-      foto: '',
-      fotoBase64: base64Foto,
-      fotoMimeType: mimeTypeFoto,
-      fotoExtension: extFoto,
       notas: ''
     };
 
@@ -677,7 +598,6 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
 
   function resetForm() {
     document.getElementById('mainForm').reset();
-    clearFoto();
     clienteValido = false;
     document.getElementById('clienteFeedback').textContent = '';
 
@@ -694,11 +614,18 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
     document.getElementById('formContent').style.display = 'block';
     document.getElementById('geoResult').className = 'geo-result';
     geoData = null;
+    checkFormValidity();
     setTimeout(() => geolocate(), 500);
   }
 
   window.addEventListener('load', () => {
-    cargarPromotores();
+    ['promotor', 'codigoCliente', 'tipoLogo', 'edf', 'fallaSugerida'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', checkFormValidity);
+        el.addEventListener('change', checkFormValidity);
+      }
+    });
     setTimeout(() => geolocate(), 600);
   });
 </script>
