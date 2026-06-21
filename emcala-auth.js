@@ -94,14 +94,7 @@ const EmcalaAuth = (() => {
   // ── PROTECCIÓN ─────────────────────────────────────────────
 
   function requireLogin() {
-    // --- TEMPORAL PARA DESARROLLO LOCAL ---
-    if (window.location.protocol === 'file:') {
-      if (!isSessionValid(getRawSession())) {
-        createSession({ usuario: 'LOCALDEV', rol: 'jdv', nombre: 'Matias (Local)', promotores: '', userHash: 'local_hash' });
-      }
-      return true;
-    }
-    // --------------------------------------
+
 
     const session = getRawSession();
     if (!isSessionValid(session)) {
@@ -199,13 +192,16 @@ const EmcalaAuth = (() => {
     const info = rolColors[session.rol.toLowerCase()] || { bg: '#6B7280', label: session.rol.toUpperCase() };
 
     container.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque',Inter,system-ui,sans-serif;">
-        <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);padding:6px 14px;border-radius:100px;">
+      <div style="display:flex;align-items:center;gap:8px;font-family:'Bricolage Grotesque',Inter,system-ui,sans-serif;">
+        <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);padding:6px 12px;border-radius:100px;white-space:nowrap;">
           <span style="width:8px;height:8px;border-radius:50%;background:${info.bg};box-shadow:0 0 8px ${info.bg}88;"></span>
-          <span style="font-size:13px;font-weight:700;color:#fff;">${session.nombre}</span>
+          <span style="font-size:12px;font-weight:700;color:#fff;">${session.nombre}</span>
         </div>
-        <button onclick="EmcalaAuth.logout()" title="Cerrar Sesión" style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(239,68,68,0.15);border:2px solid rgba(239,68,68,0.6);border-radius:50%;color:#ef4444;cursor:pointer;transition:all 0.3s ease;" onmouseover="this.style.background='rgba(16,185,129,0.15)';this.style.borderColor='#10b981';this.style.color='#10b981';this.style.boxShadow='0 0 15px rgba(16,185,129,0.8), inset 0 0 8px rgba(16,185,129,0.5)';this.style.transform='scale(1.05)'" onmouseout="this.style.background='rgba(239,68,68,0.15)';this.style.borderColor='rgba(239,68,68,0.6)';this.style.color='#ef4444';this.style.boxShadow='none';this.style.transform='scale(1)'">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+        <button onclick="window.location.href='${PORTAL_URL}'" title="Volver al menú principal" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:transparent;border:1.5px solid rgba(255,255,255,0.4);border-radius:50%;color:white;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.borderColor='white';" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,0.4)';">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 576 512"><path d="M575.8 255.5c0 18-15 32.1-32 32.1h-32l.7 160.2c0 2.7-.2 5.4-.5 8.1V472c0 22.1-17.9 40-40 40H456c-11 0-20-9-20-20v-56c0-13.3-10.7-24-24-24H164c-13.3 0-24 10.7-24 24v56c0 11-9 20-20 20H104c-22.1 0-40-17.9-40-40v-16.2c-.3-2.7-.5-5.4-.5-8.1L64.7 287.6h-32c-17 0-32-14.1-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 11 15 11 24z"/></svg>
+        </button>
+        <button onclick="EmcalaAuth.logout()" title="Cerrar Sesión" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:transparent;border:1.5px solid #EF4444;border-radius:50%;color:#EF4444;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#EF4444';this.style.color='white';" onmouseout="this.style.background='transparent';this.style.color='#EF4444';">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
         </button>
       </div>
     `;
