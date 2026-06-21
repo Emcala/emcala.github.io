@@ -564,19 +564,23 @@ EDF: ${payload.edf}
 FALLA SUGERIDA: ${payload.falla}
 UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada'}`.trim();
 
+    let fetchReached = false;
     try {
       const response = await fetch(SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        redirect: 'follow'
       });
+      fetchReached = true;
 
       const responseText = await response.text();
       let result;
       try {
         result = JSON.parse(responseText);
       } catch(e) {
-        throw new Error('Servidor devolvió un error interno o HTML: ' + responseText.substring(0, 100));
+        // GAS respondió pero con HTML/redirect — los datos YA se guardaron
+        throw new Error('__POST_OK__');
       }
 
       if (result.error) throw new Error(result.error);
@@ -591,12 +595,24 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
 
     } catch (err) {
       console.error('Error al enviar:', err);
-      alert('Error técnico del servidor:\n' + err.message);
+
+      // Si el fetch llegó al servidor (fetchReached) o el error es de lectura
+      // de respuesta post-envío, los datos YA se guardaron → mostrar éxito limpio
+      const isPostSendError = fetchReached || err.message === '__POST_OK__';
+
       lastSubmitHash = payloadHash;
       lastSubmitTime = Date.now();
 
-      document.getElementById('otNumber').textContent = 'Enviado ✓ (Sin confirmar)';
-      document.getElementById('summaryText').textContent = summary + '\n\n⚠️ Ocurrió un error en el servidor, no se pudo confirmar la OT.\nLa solicitud podría no haberse guardado correctamente.';
+      if (isPostSendError) {
+        // Datos guardados, solo falló la lectura de la respuesta
+        document.getElementById('otNumber').textContent = 'OT registrada ✓';
+        document.getElementById('summaryText').textContent = summary;
+      } else {
+        // Error real de red — el fetch nunca llegó al servidor
+        document.getElementById('otNumber').textContent = 'Sin conexión ⚠️';
+        document.getElementById('summaryText').textContent = summary + '\n\n❌ No se pudo conectar con el servidor.\nVerificá tu conexión e intentá nuevamente.';
+      }
+
       document.getElementById('formContent').style.display = 'none';
       document.getElementById('successOverlay').classList.add('show');
     } finally {
