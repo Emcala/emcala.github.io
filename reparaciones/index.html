@@ -249,20 +249,22 @@
 </div>
 
 <div id="vistaHistorial" style="display:none;padding:16px 24px;overflow:auto;">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-    <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Historial de Órdenes de Trabajo</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <input type="text" id="hFiltCliente" placeholder="🔍 Cliente / PDV..." oninput="renderHistorial()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
-      <input type="text" id="hFiltPromotor" placeholder="👤 Promotor..." oninput="renderHistorial()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
-      <input type="date" id="hFiltDesde" onchange="renderHistorial()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
-      <input type="date" id="hFiltHasta" onchange="renderHistorial()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
+  <div class="card" style="max-width:1400px;margin:0 auto;width:100%;">
+    <div class="card-header" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin:0;">Historial de Órdenes de Trabajo</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="hFiltCliente" placeholder="🔍 Cliente / PDV..." oninput="renderHistorial()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
+        <input type="text" id="hFiltPromotor" placeholder="👤 Promotor..." oninput="renderHistorial()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
+        <input type="date" id="hFiltDesde" onchange="renderHistorial()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
+        <input type="date" id="hFiltHasta" onchange="renderHistorial()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
+      </div>
     </div>
-  </div>
-  <div style="overflow-x:auto;">
-    <table class="excel-table" id="tablaHistorial">
-      <thead><tr><th>OT</th><th>Fecha</th><th>PDV / Cliente</th><th>Promotor</th><th>Supervisor</th><th>Marca</th><th>EDF</th><th>Falla</th><th>Estado</th><th>Prioridad</th><th>Técnico</th><th>Devolución</th><th>Ubicación</th></tr></thead>
-      <tbody id="tablaHistorialBody"><tr><td colspan="13" style="text-align:center;color:var(--muted);padding:32px;font-size:13px;">Sin registros resueltos aún</td></tr></tbody>
-    </table>
+    <div style="overflow-x:auto;">
+      <table class="excel-table" id="tablaHistorial">
+        <thead><tr><th>OT</th><th>Fecha</th><th>PDV / Cliente</th><th>Promotor</th><th>Supervisor</th><th>Marca</th><th>EDF</th><th>Falla</th><th>Estado</th><th>Prioridad</th><th>Técnico</th><th>Devolución</th><th>Ubicación</th></tr></thead>
+        <tbody id="tablaHistorialBody"><tr><td colspan="13" style="text-align:center;color:var(--muted);padding:32px;font-size:13px;">Sin registros resueltos aún</td></tr></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -345,7 +347,7 @@
 </div>
 
 <script src="api.js"></script>
-<script src="ui.js"></script>
+<script src="ui.js?v=2"></script>
 <script src="map.js"></script>
 <script src="main.js"></script>
 </body>

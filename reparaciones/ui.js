@@ -14,7 +14,7 @@ function renderSolicitudes(){
   
   tbody.innerHTML = dataRaw.map(r => {
     const tLat = fixCoord(r.lat), tLng = fixCoord(r.lng);
-    const geoLink = tLat && tLng ? `<a href="https://www.google.com/maps/search/?api=1&query=${tLat},${tLng}" target="_blank" style="color:var(--blue);font-size:11px;">📍 Ver</a>` : 'Sin GPS';
+    const geoLink = tLat && tLng ? `<a href="https://www.google.com/maps/search/?api=1&query=${tLat},${tLng}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:white;border:1.5px solid var(--blue);color:var(--blue);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='var(--blue)';this.style.color='white'" onmouseout="this.style.background='white';this.style.color='var(--blue)'" title="Ver en Google Maps"><i class="fa-solid fa-location-dot" style="font-size:12px;"></i></a>` : '<span style="color:var(--muted);font-size:11px;">Sin GPS</span>';
     return `<tr>
       <td><strong style="font-family:'DM Mono',monospace;color:var(--navy)">${r.ot||'—'}</strong></td>
       <td>${r.fecha||'—'} ${r.hora||''}</td>
