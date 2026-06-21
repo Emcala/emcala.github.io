@@ -125,12 +125,23 @@
       gap: 3px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      white-space: normal;
-      text-align: center;
-      line-height: 1.1;
-      max-width: 95px;
+      white-space: nowrap;
       justify-content: center;
       flex-shrink: 0;
+    }
+
+    @media (min-width: 1367px) {
+      .btn-action {
+        white-space: normal;
+        text-align: center;
+        max-width: 110px;
+        line-height: 1.1;
+        padding: 6px 12px;
+        font-size: 10.5px;
+        border-radius: 10px;
+        min-height: 38px;
+        gap: 6px;
+      }
     }
 
     .btn-action:hover {
