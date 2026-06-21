@@ -37,9 +37,9 @@ window.addEventListener('load',()=>{
   if(periodoLabel) periodoLabel.style.display = 'none';
 }
     
-    if(currentRole==='trade'||currentRole==='supervisor'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabHistorial').style.display='';document.getElementById('tabRetiro').style.display='';document.getElementById('tabLogs').style.display='';}
+    if(currentRole==='trade'||currentRole==='supervisor'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabSolicitudes').style.display='';document.getElementById('tabHistorial').style.display='';document.getElementById('tabRetiro').style.display='';document.getElementById('tabLogs').style.display='';}
     if(currentRole==='tecnico'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabHistorial').style.display='';}
-    if(currentRole==='auditor'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabDashboard').style.display='';document.getElementById('tabLogs').style.display='';document.getElementById('tabHistorial').style.display='';document.getElementById('tabRetiro').style.display='';switchTab('mapa');}
+    if(currentRole==='auditor'){document.getElementById('tabBar').style.display='flex';document.getElementById('tabSolicitudes').style.display='';document.getElementById('tabDashboard').style.display='';document.getElementById('tabLogs').style.display='';document.getElementById('tabHistorial').style.display='';document.getElementById('tabRetiro').style.display='';switchTab('mapa');}
 
     if(typeof initMap==='function') initMap();
     if(typeof loadData==='function') loadData();

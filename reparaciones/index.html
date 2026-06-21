@@ -36,7 +36,10 @@
         <i class="fa-solid fa-chart-line"></i> Dashboard
       </button>
       <button class="btn-nav active" id="tabMapa" onclick="switchTab('mapa')">
-        <i class="fa-solid fa-map-location-dot"></i> Solicitudes
+        <i class="fa-solid fa-map-location-dot"></i> Órdenes
+      </button>
+      <button class="btn-nav" id="tabSolicitudes" onclick="switchTab('solicitudes')" style="display:none;">
+        <i class="fa-solid fa-file-lines"></i> Solicitudes
       </button>
       <button class="btn-nav" id="tabHistorial" onclick="switchTab('historial')" style="display:none;">
         <i class="fa-solid fa-clock-rotate-left"></i> Historial
@@ -227,6 +230,18 @@
     <table class="excel-table" id="tablaRetiro">
       <thead><tr><th>#</th><th>Fecha</th><th>Cod. Cliente</th><th>Tipo de activo</th><th>Equipo / Modelo</th><th>Unidad de Negocio</th><th>Fecha solicitada</th><th>Estado</th></tr></thead>
       <tbody id="tablaRetiroBody"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px;font-size:13px;">Sin solicitudes aún</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="vistaSolicitudes" style="display:none;padding:16px 24px;overflow:auto;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Solicitudes cargadas por Promotores</div>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="excel-table" id="tablaSolicitudes">
+      <thead><tr><th>OT</th><th>Fecha</th><th>Promotor</th><th>Cliente</th><th>Marca</th><th>EDF</th><th>Falla Sugerida</th><th>Ubicación</th></tr></thead>
+      <tbody id="tablaSolicitudesBody"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px;font-size:13px;">Cargando...</td></tr></tbody>
     </table>
   </div>
 </div>

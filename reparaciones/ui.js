@@ -1,4 +1,33 @@
 let solicitudesRetiro=[];
+function renderSolicitudes(){
+  const tbody = document.getElementById('tablaSolicitudesBody');
+  if(!tbody) return;
+  // allData ya contiene los datos del sheet Form (incluyendo historial y nuevos)
+  // Filtramos o mostramos todo. Por ahora mostramos todo (ordenado descendente).
+  let dataRaw = [...allData];
+  dataRaw.sort((a,b)=> new Date(b.ts||0) - new Date(a.ts||0));
+  
+  if(!dataRaw.length){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px;font-size:13px;">Sin solicitudes aún</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = dataRaw.map(r => {
+    const tLat = fixCoord(r.lat), tLng = fixCoord(r.lng);
+    const geoLink = tLat && tLng ? `<a href="https://www.google.com/maps/search/?api=1&query=${tLat},${tLng}" target="_blank" style="color:var(--blue);font-size:11px;">📍 Ver</a>` : 'Sin GPS';
+    return `<tr>
+      <td><strong style="font-family:'DM Mono',monospace;color:var(--navy)">${r.ot||'—'}</strong></td>
+      <td>${r.fecha||'—'} ${r.hora||''}</td>
+      <td>${r.nombre||r.promotor||'—'}</td>
+      <td>${r.cliente||'—'}</td>
+      <td>${r.marca||'—'}</td>
+      <td>${r.edf||'—'}</td>
+      <td>${r.falla||'—'}</td>
+      <td>${geoLink}</td>
+    </tr>`;
+  }).join('');
+}
+
 function renderTablaRetiro(){
   const tbody=document.getElementById('tablaRetiroBody');if(!tbody)return;
   if(!solicitudesRetiro.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px;font-size:13px;">Sin solicitudes aún</td></tr>';return;}
@@ -64,6 +93,7 @@ function switchTab(tab){
   document.getElementById('tabMapa').classList.toggle('active',tab==='mapa');
   document.getElementById('tabHistorial').classList.toggle('active',tab==='historial');
   document.getElementById('tabRetiro').classList.toggle('active',tab==='retiro');
+  if(document.getElementById('tabSolicitudes')) document.getElementById('tabSolicitudes').classList.toggle('active',tab==='solicitudes');
   if(document.getElementById('tabLogs')) document.getElementById('tabLogs').classList.toggle('active',tab==='logs');
   if(document.getElementById('tabDashboard')) document.getElementById('tabDashboard').classList.toggle('active',tab==='dashboard');
   
@@ -72,12 +102,14 @@ function switchTab(tab){
   document.getElementById('vistaTabla').style.display='none';
   document.getElementById('vistaHistorial').style.display=tab==='historial'?'block':'none';
   document.getElementById('vistaRetiro').style.display=tab==='retiro'?'block':'none';
+  if(document.getElementById('vistaSolicitudes')) document.getElementById('vistaSolicitudes').style.display=tab==='solicitudes'?'block':'none';
   if(document.getElementById('vistaLogs')) document.getElementById('vistaLogs').style.display=tab==='logs'?'block':'none';
   if(document.getElementById('vistaDashboard')) document.getElementById('vistaDashboard').style.display=tab==='dashboard'?'block':'none';
   if(document.getElementById('vistaUsuarios')) document.getElementById('vistaUsuarios').style.display=tab==='usuarios'?'block':'none';
   
   if(tab==='historial')renderHistorial();
   if(tab==='retiro')renderTablaRetiro();
+  if(tab==='solicitudes')renderSolicitudes();
   if(tab==='logs')renderLogs();
   if(tab==='dashboard')renderDashboard();
   if(leafMap)setTimeout(()=>leafMap.invalidateSize(),50);
