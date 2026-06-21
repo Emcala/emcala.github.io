@@ -282,7 +282,7 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
   .notif-item .notif-count{font-size:14px}
   .notif-item .notif-label{font-size:10px}
 }
-#vistaTabla,#vistaRetiro,#vistaHistorial,#vistaLogs,#vistaDashboard,#vistaUsuarios{position:absolute !important;top:60px !important;left:0;right:0;bottom:0;background:var(--bg);z-index:50;overflow-y:auto}
+#vistaTabla,#vistaRetiro,#vistaHistorial,#vistaSolicitudes,#vistaLogs,#vistaDashboard,#vistaUsuarios{position:absolute !important;top:60px !important;left:0;right:0;bottom:0;background:var(--bg);z-index:50;overflow-y:auto}
 /* Timeline styles for Logs */
 .timeline{position:relative;max-width:800px;margin:0 auto;padding:20px 0;}
 .timeline::before{content:'';position:absolute;top:0;bottom:0;left:24px;width:2px;background:var(--border);}
