@@ -604,9 +604,18 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
       lastSubmitTime = Date.now();
 
       if (isPostSendError) {
-        // Datos guardados, solo falló la lectura de la respuesta
-        document.getElementById('otNumber').textContent = 'OT registrada ✓';
+        // Con internet: dato guardado, buscar OT real con GET
+        document.getElementById('otNumber').textContent = 'Buscando OT...';
         document.getElementById('summaryText').textContent = summary;
+        document.getElementById('formContent').style.display = 'none';
+        document.getElementById('successOverlay').classList.add('show');
+        try {
+          const otResp = await fetch(`${SCRIPT_URL}?req=last_ot&promotor=${encodeURIComponent(payload.promotor)}&_t=${Date.now()}`);
+          const otData = await otResp.json();
+          document.getElementById('otNumber').textContent = otData.ot ? 'OT ' + otData.ot : 'OT registrada ✓';
+        } catch(e2) {
+          document.getElementById('otNumber').textContent = 'OT registrada ✓';
+        }
       } else {
         // Error real de red — el fetch nunca llegó al servidor
         document.getElementById('otNumber').textContent = 'Sin conexión ⚠️';
