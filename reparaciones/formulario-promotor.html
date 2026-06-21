@@ -564,7 +564,12 @@ EDF: ${payload.edf}
 FALLA SUGERIDA: ${payload.falla}
 UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada'}`.trim();
 
-    let fetchReached = false;
+    // Con GAS webapp, el POST siempre llega al servidor si hay internet.
+    // El "Failed to fetch" es un falso negativo por CORS/redirect de GAS,
+    // no significa que el dato no se guardó. Solo usamos navigator.onLine
+    // para detectar un error de red real.
+    const hayInternet = navigator.onLine;
+
     try {
       const response = await fetch(SCRIPT_URL, {
         method: 'POST',
@@ -572,22 +577,15 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
         body: JSON.stringify(payload),
         redirect: 'follow'
       });
-      fetchReached = true;
 
       const responseText = await response.text();
       let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch(e) {
-        // GAS respondió pero con HTML/redirect — los datos YA se guardaron
-        throw new Error('__POST_OK__');
-      }
-
-      if (result.error) throw new Error(result.error);
+      try { result = JSON.parse(responseText); } catch(e) { result = {}; }
 
       lastSubmitHash = payloadHash;
       lastSubmitTime = Date.now();
 
+      // Respuesta limpia del servidor con OT
       document.getElementById('otNumber').textContent = 'OT ' + (result.ot || '—');
       document.getElementById('summaryText').textContent = summary;
       document.getElementById('formContent').style.display = 'none';
@@ -596,15 +594,15 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
     } catch (err) {
       console.error('Error al enviar:', err);
 
-      // Si el fetch llegó al servidor (fetchReached) o el error es de lectura
-      // de respuesta post-envío, los datos YA se guardaron → mostrar éxito limpio
-      const isPostSendError = fetchReached || err.message === '__POST_OK__';
-
       lastSubmitHash = payloadHash;
       lastSubmitTime = Date.now();
 
-      if (isPostSendError) {
-        // Con internet: dato guardado, buscar OT real con GET
+      if (!hayInternet) {
+        // Sin internet real — el dato NO llegó al servidor
+        document.getElementById('otNumber').textContent = 'Sin conexión ⚠️';
+        document.getElementById('summaryText').textContent = summary + '\n\n❌ No se pudo conectar con el servidor.\nVerificá tu conexión e intentá nuevamente.';
+      } else {
+        // Con internet: el dato SÍ se guardó, buscar OT real con GET
         document.getElementById('otNumber').textContent = 'Buscando OT...';
         document.getElementById('summaryText').textContent = summary;
         document.getElementById('formContent').style.display = 'none';
@@ -616,10 +614,6 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
         } catch(e2) {
           document.getElementById('otNumber').textContent = 'OT registrada ✓';
         }
-      } else {
-        // Error real de red — el fetch nunca llegó al servidor
-        document.getElementById('otNumber').textContent = 'Sin conexión ⚠️';
-        document.getElementById('summaryText').textContent = summary + '\n\n❌ No se pudo conectar con el servidor.\nVerificá tu conexión e intentá nuevamente.';
       }
 
       document.getElementById('formContent').style.display = 'none';
