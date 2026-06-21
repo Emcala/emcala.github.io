@@ -4,7 +4,10 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
 #dashboard{display:none}
 
 .main-header {
-  background: linear-gradient(90deg, #1f4068 0%, #2b5b84 100%);
+  background: rgba(22, 49, 84, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: white;
   padding: 8px 20px;
   display: flex;
@@ -13,7 +16,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
   gap: 16px;
   overflow-x: auto;
 }
@@ -61,6 +64,26 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
 .role-badge.tecnico::before { background: #16A34A; }
 .role-badge.trade::before { background: #F59E0B; }
 .role-badge.auditor::before { background: #A855F7; }
+
+.btn-home {
+  background: transparent;
+  color: white;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  margin-right: 4px;
+}
+.btn-home:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: white;
+}
 
 .btn-logout {
   background: transparent;
