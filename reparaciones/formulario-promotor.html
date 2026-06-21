@@ -571,7 +571,15 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
         body: JSON.stringify(payload)
       });
 
-      const result = await response.json();
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch(e) {
+        throw new Error('Servidor devolvió un error interno o HTML: ' + responseText.substring(0, 100));
+      }
+
+      if (result.error) throw new Error(result.error);
 
       lastSubmitHash = payloadHash;
       lastSubmitTime = Date.now();
@@ -583,11 +591,12 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
 
     } catch (err) {
       console.error('Error al enviar:', err);
+      alert('Error técnico del servidor:\n' + err.message);
       lastSubmitHash = payloadHash;
       lastSubmitTime = Date.now();
 
-      document.getElementById('otNumber').textContent = 'Enviado ✓';
-      document.getElementById('summaryText').textContent = summary + '\n\n⚠️ No se pudo confirmar el número de OT.\nLa solicitud fue enviada igualmente.';
+      document.getElementById('otNumber').textContent = 'Enviado ✓ (Sin confirmar)';
+      document.getElementById('summaryText').textContent = summary + '\n\n⚠️ Ocurrió un error en el servidor, no se pudo confirmar la OT.\nLa solicitud podría no haberse guardado correctamente.';
       document.getElementById('formContent').style.display = 'none';
       document.getElementById('successOverlay').classList.add('show');
     } finally {
