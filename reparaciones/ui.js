@@ -291,8 +291,13 @@ function clearFilters(){
 function getFrecColor(frec){const f=(frec||'').toUpperCase();if(f.includes('LU')||f.includes('JU'))return'#1B5FA8';if(f.includes('MA')||f.includes('VI'))return'#16A34A';if(f.includes('MI')||f.includes('SA'))return'#D97706';return'#64748B';}
 
 function buildRegItem(r,onclickAttr){
-  const avatarColor=r.frecuencia?getFrecColor(r.frecuencia):ageColor(r.ts);
-  const initials=r.frecuencia||(r.cliente||'?').replace(/[^A-Z0-9]/gi,'').slice(0,3).toUpperCase();
+  let avatarColor=r.frecuencia?getFrecColor(r.frecuencia):ageColor(r.ts);
+  let initials=r.frecuencia||(r.cliente||'?').replace(/[^A-Z0-9]/gi,'').slice(0,3).toUpperCase();
+  if(!r.frecuencia) {
+    const daysOld = (Date.now() - new Date(r.ts).getTime()) / 86400000;
+    if(daysOld <= 7) { initials = 'NUEVO'; avatarColor = '#3B82F6'; }
+    else { initials = 'BAJA'; avatarColor = '#64748B'; }
+  }
   const hasGeo=r.lat&&r.lng&&parseFloat(r.lat)!==0;
   const eKey=getEstadoKey(r.ot,r.cliente),em=ESTADO_META[eKey]||ESTADO_META[''];
   
@@ -320,19 +325,9 @@ function buildRegItem(r,onclickAttr){
   const faltaPrioridad=!priA && !priS;
   const priBadge=priShow?`<span style="margin-left:4px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:${priA?'#0F2A4A':'#E2E8F0'};color:${priA?'white':'#64748B'}">${isAlta?'⚠️ ':''} P${priShow}${!priA?' (sugerida)':''}</span>`:'';
   
-  let missingFrecBadge = '';
-  if (!r.frecuencia) {
-    const daysOld = (Date.now() - new Date(r.ts).getTime()) / 86400000;
-    if (daysOld <= 7) {
-      missingFrecBadge = `<span style="margin-left:4px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:#3B82F6;color:white;">✨ NUEVO</span>`;
-    } else {
-      missingFrecBadge = `<span style="margin-left:4px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:#64748B;color:white;">⚠️ BAJA</span>`;
-    }
-  }
-
   const msgCount=(chatData&&chatData[r.ot])?chatData[r.ot].length:0;
   const chatBadge=msgCount>0?`<span style="margin-left:4px;font-size:12px;cursor:help;padding:2px 5px;border-radius:6px;background:#E0E7FF;color:#4338CA;" title="Tiene mensajes">✉️</span>`:'';
-  return `<div class="reg-item" onclick='${onclickAttr}'><div class="reg-avatar" style="background:${avatarColor};font-size:${initials.length>2?'10px':'12px'}">${initials}</div><div class="reg-info"><div class="reg-nombre">OT ${r.ot||'—'} ${faltaPrioridad?'<span style="color:#DC2626" title="Falta asignar prioridad">❗</span>':''}</div><div class="reg-sub">${r.cliente||'Sin cliente'} · 👤 ${r.nombre}</div><div style="margin-top:2px"><span class="estado-pill ${em.cls}">${em.icon} ${em.label}</span>${priBadge}${reinBadge}${missingFrecBadge}${chatBadge}</div></div><div class="reg-meta"><div class="reg-fecha">${r.fecha}</div><div class="reg-hora">${r.hora||''}</div><div class="${hasGeo?'reg-gps':'reg-nogps'}">${hasGeo?'<i class="fa-solid fa-location-dot"></i> GPS':'Sin GPS'}</div></div></div>`;
+  return `<div class="reg-item" onclick='${onclickAttr}'><div class="reg-avatar" style="background:${avatarColor};font-size:${initials.length>4?'9px':initials.length>2?'10px':'12px'}">${initials}</div><div class="reg-info"><div class="reg-nombre">OT ${r.ot||'—'} ${faltaPrioridad?'<span style="color:#DC2626" title="Falta asignar prioridad">❗</span>':''}</div><div class="reg-sub">${r.cliente||'Sin cliente'} · 👤 ${r.nombre}</div><div style="margin-top:2px"><span class="estado-pill ${em.cls}">${em.icon} ${em.label}</span>${priBadge}${reinBadge}${chatBadge}</div></div><div class="reg-meta"><div class="reg-fecha">${r.fecha}</div><div class="reg-hora">${r.hora||''}</div><div class="${hasGeo?'reg-gps':'reg-nogps'}">${hasGeo?'<i class="fa-solid fa-location-dot"></i> GPS':'Sin GPS'}</div></div></div>`;
 }
 
 function renderList(data){
