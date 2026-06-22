@@ -7,27 +7,66 @@
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { font-family:'Inter', sans-serif; background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 20px; color:#fff; }
-    .header { text-align:center; margin-bottom:40px; animation:fadeInDown 0.8s ease; }
+    body { font-family:'Inter', sans-serif; background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:30px 20px; color:#fff; overflow-x:hidden; }
+    .header { text-align:center; margin-bottom:40px; animation:fadeInDown 0.8s ease; margin-top:20px; }
     
-    #menuPrincipal { width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
-    .portal-container { width:100%; display:flex; flex-direction:column; gap:16px; animation:fadeInUp 0.6s ease 0.2s both; }
+    #menuPrincipal { width: 100%; max-width: 1200px; display: flex; flex-direction: column; align-items: center; }
     
-    .user-info { width: 100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:16px; padding:16px; text-align:center; margin-bottom:20px; display:flex; flex-direction:column; gap:4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .user-info { width: 100%; max-width: 400px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:16px; padding:16px; text-align:center; margin-bottom:30px; display:flex; flex-direction:column; gap:4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     #labelRol { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.15em; color:rgba(255,255,255,0.6); }
     #labelNombre { font-family:'Bricolage Grotesque', sans-serif; font-size:18px; font-weight:700; color:#fff; }
     
-    #menuLinks { width: 100%; display:flex; flex-direction:column; gap:16px; }
+    .columns-container {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      animation: fadeInUp 0.6s ease 0.2s both;
+    }
     
-    .link-btn { display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:14px; padding:18px; color:#fff; text-decoration:none; font-family:'Bricolage Grotesque', sans-serif; font-size:16px; font-weight:600; letter-spacing:0.02em; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter:blur(10px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .column-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 10px;
+      color: rgba(255,255,255,0.9);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      padding-bottom: 10px;
+    }
+    
+    .link-btn { display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:14px; padding:18px 14px; color:#fff; text-decoration:none; font-family:'Bricolage Grotesque', sans-serif; font-size:15px; font-weight:600; letter-spacing:0.02em; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter:blur(10px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; line-height: 1.2; }
     .link-btn:hover { background:rgba(255,255,255,0.18); border-color:rgba(255,255,255,0.3); transform:translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
     .link-btn:active { transform:scale(0.97) translateY(0); background:rgba(255,255,255,0.12); box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-color:rgba(255,255,255,0.4); }
     
-    .btn-logout-small { margin-top:30px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Inter', sans-serif; font-size:13px; text-decoration:underline; cursor:pointer; padding:10px; transition:color 0.2s; align-self: center; }
+    .btn-logout-small { margin-top:40px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Inter', sans-serif; font-size:13px; text-decoration:underline; cursor:pointer; padding:10px; transition:color 0.2s; align-self: center; }
     .btn-logout-small:hover { color:rgba(255,255,255,0.8); }
     .btn-logout-small:active { color:#fff; }
+    
     @keyframes fadeInDown { from {opacity:0; transform:translateY(-20px);} to {opacity:1; transform:translateY(0);} }
     @keyframes fadeInUp { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
+
+    @media (max-width: 900px) {
+      .columns-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      .column {
+        padding: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -43,32 +82,74 @@
       <strong id="labelNombre"></strong>
     </div>
 
-    <div class="portal-container">
-      <div id="menuLinks"></div>
+    <div class="columns-container">
+      <div class="column" id="col-capex" style="display: none;">
+        <div class="column-title">CAPEX</div>
+        <div id="links-capex" style="display: flex; flex-direction: column; gap: 16px;"></div>
+      </div>
       
-      <button class="btn-logout-small" onclick="EmcalaAuth.logout()">Cerrar Sesión</button>
+      <div class="column" id="col-comercial" style="display: none;">
+        <div class="column-title">COMERCIAL</div>
+        <div id="links-comercial" style="display: flex; flex-direction: column; gap: 16px;"></div>
+      </div>
+      
+      <div class="column" id="col-formularios" style="display: none;">
+        <div class="column-title">FORMULARIOS</div>
+        <div id="links-formularios" style="display: flex; flex-direction: column; gap: 16px;"></div>
+      </div>
     </div>
+    
+    <div id="links-otros" style="display: flex; flex-direction: column; gap: 16px; margin-top: 20px; width: 100%; max-width: 400px;"></div>
+
+    <button class="btn-logout-small" onclick="EmcalaAuth.logout()">Cerrar Sesión</button>
   </div>
 
   <script src="../emcala-auth.js"></script>
   <script>
   const HERRAMIENTAS = {
-    planificador_promotor: { href: '../planificador/promotor.html', label: '📝 MI PLANIFICACIÓN' },
-    planificador_spv: { href: '../planificador/index.html', label: '📋 PLANIFICADOR' },
-    planificador_gen: { href: '../planificador/index.html', label: '📊 PLANIFICADOR GENERAL' },
-    reparaciones: { href: 'https://emcala.github.io/reparaciones/', label: '🛠️ REPARACIONES' },
-    dashboard_ventas: { href: 'https://emcala.github.io/dashboard_comercial/dashboard.html', label: '📊 ANÁLISIS DE VENTAS' },
-    ejecucion: { href: 'https://emcala.github.io/suralnor-ejecucion/dashboard/index.html', label: '📊 AS EJECUCIÓN' },
-    zonas_merch: { href: '../plan_merchs/', label: '👷 ZONAS MERCH' },
-    coaching_pr: { href: 'https://docs.google.com/spreadsheets/d/1GeDkrCChqo1iKkmIm-JweyCdL9xiEBMa/edit?usp=sharing&ouid=116226945168612561575&rtpof=true&sd=true', label: '🎯 DASHBOARD COACHING PR' },
-    cuentas: { href: '../portal/cuentas.html', label: '👥 GESTIÓN DE CUENTAS' }
+    // COMERCIAL
+    planificador: { href: '../planificador/index.html', label: '📋 PLANIFICADOR', col: 'comercial' },
+    coaching_pr: { href: 'https://docs.google.com/spreadsheets/d/1bGxwhO2ITFuhtPr3xaOQvYlJ0wapXiIbh4rKi4Abt5E/edit?gid=817276593#gid=817276593', label: '🎯 DASHBOARD COACHING PR', col: 'comercial' },
+    ejecucion: { href: 'https://estandar-ejecucion-cmq.replit.app/login', label: '📊 ESTÁNDAR DE EJECUCIÓN', col: 'comercial' },
+    potenciales_sdv: { href: 'https://suralnorpotenciaes.netlify.app/supervisor.html', label: '📈 DASHBOARD POTENCIALES SDV', col: 'comercial' },
+    ventas: { href: 'https://emcala.github.io/dashboard_comercial/dashboard.html', label: '💰 ANÁLISIS DE VENTAS', col: 'comercial' },
+    zonas_merch: { href: '../plan_merchs/', label: '👷 ZONAS MERCH', col: 'comercial' },
+
+    // CAPEX
+    reparaciones: { href: 'https://emcala.github.io/reparaciones/', label: '🛠️ DASHBOARD REPARACIONES', col: 'capex' },
+    consulta_pi: { href: 'https://clientesenpisurcala.netlify.app/', label: '🔍 CONSULTA CLIENTE - PI', col: 'capex' },
+    retiro_edf: { href: 'https://docs.google.com/forms/d/e/1FAIpQLSfauNpQYINjCIjBiWIRx0JEu7pxlfXyIaikNn7ZP6czRarKhw/viewform', label: '❄️ INSTALACIÓN / RETIRO EDF', col: 'capex' },
+
+    // FORMULARIOS
+    form_planificacion: { href: 'https://emcala.github.io/planificador/promotor.html', label: '📝 PLANIFICACIÓN PR', col: 'formularios' },
+    form_coaching: { href: 'https://forms.gle/ESfupnbcn3yyre7i6', label: '🎯 COACHING AL PR', col: 'formularios' },
+    form_abm: { href: 'https://docs.google.com/forms/d/e/1FAIpQLScctDP-lVhV-FCfuxZr-l37lYZgEPkzTt_g4GKqTLTMeOVFZw/viewform', label: '📋 ABM 2026', col: 'formularios' },
+    form_reparacion: { href: 'https://emcala.github.io/reparaciones/formulario-promotor.html', label: '🔧 SOLICITUD REPARACIÓN EDF', col: 'formularios' },
+
+    // OTROS
+    cuentas: { href: '../portal/cuentas.html', label: '👥 GESTIÓN DE CUENTAS', col: 'otros' }
   };
   
   const MENU_POR_ROL = {
-    auditor: ['planificador_gen', 'reparaciones', 'dashboard_ventas', 'ejecucion', 'zonas_merch', 'coaching_pr', 'cuentas'],
-    supervisor: ['planificador_spv', 'reparaciones', 'coaching_pr', 'dashboard_ventas'],
-    trade: ['reparaciones', 'dashboard_ventas'],
-    tecnico: ['reparaciones']
+    auditor: [
+      'planificador', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'ventas', 'zonas_merch', 
+      'reparaciones', 'consulta_pi', 'retiro_edf', 
+      'form_planificacion', 'form_coaching', 'form_abm', 'form_reparacion', 
+      'cuentas'
+    ],
+    supervisor: [
+      'planificador', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'ventas', 'zonas_merch', 
+      'reparaciones', 'consulta_pi', 'retiro_edf', 
+      'form_planificacion', 'form_coaching', 'form_abm', 'form_reparacion'
+    ],
+    trade: [
+      'ejecucion', 'ventas', 
+      'reparaciones', 'consulta_pi', 'retiro_edf', 
+      'form_reparacion'
+    ],
+    tecnico: [
+      'reparaciones'
+    ]
   };
 
   function renderPortal() {
@@ -81,7 +162,7 @@
     document.getElementById('labelNombre').textContent = session.nombre;
     document.getElementById('labelRol').textContent = session.rol;
   
-    let toolKeys = MENU_POR_ROL[rol] || MENU_POR_ROL['supervisor'];
+    let toolKeys = MENU_POR_ROL[rol] || [];
     
     if (usuario === 'SDVAS') {
       toolKeys = [...toolKeys];
@@ -89,18 +170,38 @@
       if (!toolKeys.includes('zonas_merch')) toolKeys.push('zonas_merch');
     }
   
-    const menuEl = document.getElementById('menuLinks');
-  
-    let html = '';
+    let hasCapex = false;
+    let hasComercial = false;
+    let hasFormularios = false;
+
     toolKeys.forEach(key => {
       const tool = HERRAMIENTAS[key];
       if (tool) {
-        html += `<a href="${tool.href}" class="link-btn">${tool.label}</a>`;
+        const btnHtml = `<a href="${tool.href}" class="link-btn">${tool.label}</a>`;
+        
+        if (tool.col === 'capex') {
+          document.getElementById('links-capex').innerHTML += btnHtml;
+          hasCapex = true;
+        } else if (tool.col === 'comercial') {
+          document.getElementById('links-comercial').innerHTML += btnHtml;
+          hasComercial = true;
+        } else if (tool.col === 'formularios') {
+          document.getElementById('links-formularios').innerHTML += btnHtml;
+          hasFormularios = true;
+        } else {
+          document.getElementById('links-otros').innerHTML += btnHtml;
+        }
       }
     });
+    
+    if (hasCapex) document.getElementById('col-capex').style.display = 'flex';
+    if (hasComercial) document.getElementById('col-comercial').style.display = 'flex';
+    if (hasFormularios) document.getElementById('col-formularios').style.display = 'flex';
   
-    menuEl.innerHTML = html;
-  
+    if (!hasCapex && !hasComercial && !hasFormularios) {
+      document.querySelector('.columns-container').style.display = 'none';
+    }
+
     document.getElementById('menuPrincipal').style.display = 'flex';
   }
   
