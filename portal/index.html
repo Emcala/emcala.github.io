@@ -177,7 +177,7 @@
     toolKeys.forEach(key => {
       const tool = HERRAMIENTAS[key];
       if (tool) {
-        const btnHtml = `<a href="${tool.href}" class="link-btn">${tool.label}</a>`;
+        const btnHtml = `<a href="${tool.href}" target="_blank" rel="noopener noreferrer" class="link-btn">${tool.label}</a>`;
         
         if (tool.col === 'capex') {
           document.getElementById('links-capex').innerHTML += btnHtml;
