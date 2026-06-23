@@ -218,9 +218,7 @@
         } else if (category === 'UNG' || category === 'NABS') {
           isNabs = true;
           isUngTop = calcUngTop;
-          isGaseosa = true;
         } else if (category === 'AGUAS ECO' || category === 'AGUAS') {
-          isNabs = true;
           isAguas = true;
         }
         // 2) SI ESTÁ EN EL MAESTRO (VALIDADO), ACUMULAR PARA KPIs FOCO III/IV
@@ -413,9 +411,10 @@
             existingData[trackedPromoter]['f2-up'] = pSales.ungTop > 0 ? parseFloat(pSales.ungTop.toFixed(2)) : '';
             existingData[trackedPromoter]['f2-rb'] = pSales.redbull > 0 ? parseFloat(pSales.redbull.toFixed(2)) : '';
             existingData[trackedPromoter]['f2-ag'] = rAg > 0 ? rAg : '';
-            // Foco 2 Total (NABS) = suma exacta de redondeos de UNG + Aguas
-            const f2TotalSum = parseFloat((rUng + rAg).toFixed(2));
-            existingData[trackedPromoter]['f2-v'] = f2TotalSum > 0 ? f2TotalSum : (pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : '');
+            // Foco 2 Total (NABS) = suma exacta de redondeos de NABS (categoría UNG o NABS)
+            const rNabs = pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : 0;
+            const f2TotalSum = rNabs;
+            existingData[trackedPromoter]['f2-v'] = f2TotalSum > 0 ? f2TotalSum : '';
             existingData[trackedPromoter]['bol-v'] = pSales.clientsAll.size > 0 ? pSales.clientsAll.size : '';
             // Guardar datos de segmento para CCC y TBD (persistidos para auto-cálculo)
             existingData[trackedPromoter]['ccc-cerveza'] = pSales.clientsTotalCerveza.size;
@@ -523,9 +522,10 @@
             const rAc = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : '';
             const rUng = pSales.totalUng > 0 ? parseFloat(pSales.totalUng.toFixed(2)) : '';
             const rAg = pSales.aguas > 0 ? parseFloat(pSales.aguas.toFixed(2)) : '';
+            const rNabs = pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : '';
             const coreValueSum = (parseFloat(rCore)||0) + (parseFloat(rValue)||0);
             const f1TotalSum = parseFloat((coreValueSum + (parseFloat(rAc)||0)).toFixed(2));
-            const f2TotalSum = parseFloat(((parseFloat(rUng)||0) + (parseFloat(rAg)||0)).toFixed(2));
+            const f2TotalSum = parseFloat((parseFloat(rNabs)||0).toFixed(2));
             const spvName = Object.keys(SPV_DATA).find(s => SPV_DATA[s].includes(trackedPromoter));
             payload.push({
               date: pDate, spv: spvName, promotor: trackedPromoter, cMonth,
