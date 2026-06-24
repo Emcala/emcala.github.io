@@ -76,15 +76,8 @@ function makePromoFilter(pg) {
   SEGS.forEach(seg => {
     const activeP = seg.promos.filter(p => ap.has(seg.key+'|'+p));
     if (!activeP.length) return;
-    const allActive = activeP.length === seg.promos.length;
-    if (allActive) {
-      if (seg.sdv2Only)  filters.push(r => r.sdv === seg.sdv && r.sdv2 === seg.sdv2Only);
-      else if (seg.sdv2Excl) filters.push(r => r.sdv === seg.sdv && r.sdv2 !== seg.sdv2Excl);
-      else               filters.push(r => r.sdv === seg.sdv);
-    } else {
-      const pSet = new Set(activeP);
-      filters.push(r => r.sdv === seg.sdv && pSet.has(r.sdv2));
-    }
+    const pSet = new Set(activeP);
+    filters.push(r => pSet.has(r.sdv2));
   });
   if (!filters.length) return null;
   return r => filters.some(fn => fn(r));

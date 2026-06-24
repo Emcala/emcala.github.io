@@ -1,23 +1,3 @@
-function fetchSheetJSONP(sheetId, gid) {
-  return new Promise((resolve, reject) => {
-    const cb = 'gviz_cb_' + Math.random().toString(36).substring(2);
-    window[cb] = function(data) {
-      delete window[cb];
-      document.head.removeChild(script);
-      if (data && data.status === 'error') {
-        const msg = (data.errors && data.errors[0] && data.errors[0].message) ? data.errors[0].message : 'Acceso denegado o archivo no encontrado';
-        reject(new Error('Google Sheets: ' + msg));
-      } else {
-        resolve(data);
-      }
-    };
-    const script = document.createElement('script');
-    script.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=responseHandler:${cb}&gid=${gid}&headers=1`;
-    script.onerror = () => reject(new Error('Failed to load JSONP'));
-    document.head.appendChild(script);
-  });
-}
-
 async function fetchConfigData() {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;font-size:24px;font-family:"Barlow Condensed";font-weight:700;color:#1a56db;flex-direction:column;gap:10px;';
@@ -25,24 +5,32 @@ async function fetchConfigData() {
   document.body.appendChild(overlay);
 
   try {
-    const [dataMesas, dataMaestro] = await Promise.all([
-      fetchSheetJSONP('1SYNVATCfdV1-OatJ5VOHktDLRoYRO26CEM8_taNhd9c', '0'),
-      fetchSheetJSONP('1XckEGDuSZ5r6vREiJUeWQftzxqby8N71YcjlYP37iVs', '0')
-    ]);
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycby25P-2-HSw7tQcbhpwaWs5hj97kq4UWO_LYuzml7BAYvoIMNM_icn1RQ3Q8H01uHA/exec';
+    
+    // Evitamos caché para forzar la lectura real
+    const response = await fetch(`${GAS_URL}?t=${Date.now()}`);
+    if (!response.ok) throw new Error('Error HTTP: ' + response.status);
+    
+    const data = await response.json();
+    if (data.status !== 'success') throw new Error(data.message || 'Error en Google Apps Script');
+
+    const dataMesas = data.mesas;
+    const dataMaestro = data.maestro;
 
     // Procesar Mesas
-    const iPromo = dataMesas.table.cols.findIndex(c => c && c.label === 'PROMOTOR');
-    const iSup = dataMesas.table.cols.findIndex(c => c && c.label === 'SUPERVISOR');
+    const headersMesas = dataMesas[0] || [];
+    const iPromo = headersMesas.findIndex(c => String(c).trim().toUpperCase() === 'PROMOTOR');
+    const iSup = headersMesas.findIndex(c => String(c).trim().toUpperCase() === 'SUPERVISOR');
     
     let supMap = {};
-    dataMesas.table.rows.forEach(r => {
-      if (!r.c) return;
-      const promo = r.c[iPromo] && r.c[iPromo].v ? String(r.c[iPromo].v).trim().toUpperCase() : '';
-      const sup = r.c[iSup] && r.c[iSup].v ? String(r.c[iSup].v).trim().toUpperCase() : '';
-      if (!promo || !sup) return;
+    for (let i = 1; i < dataMesas.length; i++) {
+      const r = dataMesas[i];
+      const promo = r[iPromo] ? String(r[iPromo]).trim().toUpperCase() : '';
+      const sup = r[iSup] ? String(r[iSup]).trim().toUpperCase() : '';
+      if (!promo || !sup) continue;
       if (!supMap[sup]) supMap[sup] = [];
       if (!supMap[sup].includes(promo)) supMap[sup].push(promo);
-    });
+    }
     
     SEGS = Object.keys(supMap).map(sup => ({
       key: sup.toLowerCase().replace(/[^a-z0-9]/g, '_'),
@@ -52,29 +40,29 @@ async function fetchConfigData() {
     }));
 
     // Procesar Maestro
+    const headersMaestro = dataMaestro[0] || [];
     const matchCol = (cols, keywords) => cols.findIndex(c => {
-      if (!c || !c.label) return false;
-      const lbl = String(c.label).trim().toUpperCase();
+      const lbl = String(c || '').trim().toUpperCase();
       return keywords.some(k => lbl.includes(k));
     });
     
-    let iMPromo = matchCol(dataMaestro.table.cols, ['PERSONAL COMERCIAL', 'PROMOTOR', 'FUERZA DE VENTA']);
-    if (iMPromo === -1) iMPromo = matchCol(dataMaestro.table.cols, ['VENDEDOR']);
-    const iAnulado = matchCol(dataMaestro.table.cols, ['ANULADO']);
-    const iFvAnulado = matchCol(dataMaestro.table.cols, ['FV1 ANULADO', 'FUERZA DE VENTA 1 ANULADO']);
+    let iMPromo = matchCol(headersMaestro, ['PERSONAL COMERCIAL', 'PROMOTOR', 'FUERZA DE VENTA']);
+    if (iMPromo === -1) iMPromo = matchCol(headersMaestro, ['VENDEDOR']);
+    const iAnulado = matchCol(headersMaestro, ['ANULADO']);
+    const iFvAnulado = matchCol(headersMaestro, ['FV1 ANULADO', 'FUERZA DE VENTA 1 ANULADO']);
 
     let promoCounts = {};
-    dataMaestro.table.rows.forEach(r => {
-      if (!r.c) return;
-      const anu = iAnulado >= 0 && r.c[iAnulado] && r.c[iAnulado].v ? String(r.c[iAnulado].v).trim().toUpperCase() : '';
-      const fvAnu = iFvAnulado >= 0 && r.c[iFvAnulado] && r.c[iFvAnulado].v ? String(r.c[iFvAnulado].v).trim().toUpperCase() : '';
+    for (let i = 1; i < dataMaestro.length; i++) {
+      const r = dataMaestro[i];
+      const anu = iAnulado >= 0 && r[iAnulado] ? String(r[iAnulado]).trim().toUpperCase() : '';
+      const fvAnu = iFvAnulado >= 0 && r[iFvAnulado] ? String(r[iFvAnulado]).trim().toUpperCase() : '';
       if (anu !== 'SI' && fvAnu !== 'SI') {
-        const p = iMPromo >= 0 && r.c[iMPromo] && r.c[iMPromo].v ? String(r.c[iMPromo].v).trim().toUpperCase() : '';
+        const p = iMPromo >= 0 && r[iMPromo] ? String(r[iMPromo]).trim().toUpperCase() : '';
         if (p) {
           promoCounts[p] = (promoCounts[p] || 0) + 1;
         }
       }
-    });
+    }
     CART_PROMO = promoCounts;
 
     // Actualizar activePromos en todos los ST
