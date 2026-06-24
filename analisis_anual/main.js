@@ -9,22 +9,14 @@
   if (autoCount > 0) {
     if (el) {
       const years = [...new Set(DATA.map(r => r.yr))].sort().join(' · ');
-      el.textContent = '✓ Auto CSV · ' + years + ' · ' + DATA.length.toLocaleString() + ' filas';
+      el.textContent = '✓ Origen CSV · ' + years + ' · ' + DATA.length.toLocaleString() + ' filas';
       el.className = 'fst ok';
     }
     renderAll();
-    saveDataCache();
-    return;
+  } else {
+    if (el) {
+      el.textContent = '❌ Error: No se encontraron archivos CSV';
+      el.className = 'fst err';
+    }
   }
-
-  const snap = await loadDataCache();
-  if (!snap || !Array.isArray(snap.rows) || !snap.rows.length) return;
-  DATA = snap.rows;
-  if (el) {
-    const years = (snap.years && snap.years.length) ? snap.years.join(' · ') : [...new Set(DATA.map(r=>r.yr))].sort().join(' · ');
-    const when = snap.savedAt ? new Date(snap.savedAt).toLocaleDateString('es-AR') : '';
-    el.textContent = '✓ Cache local · ' + years + ' · ' + DATA.length.toLocaleString() + ' filas' + (when ? ' · ' + when : '');
-    el.className = 'fst ok';
-  }
-  renderAll();
 })();

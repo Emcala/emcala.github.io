@@ -1,7 +1,22 @@
 async function fetchConfigData() {
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;font-size:24px;font-family:"Barlow Condensed";font-weight:700;color:#1a56db;flex-direction:column;gap:10px;';
-  overlay.innerHTML = '<div>🔄 Cargando configuración de mesas y cartera...</div><div style="font-size:14px;color:#6b6b7a;font-weight:500;">Conectando con Google Sheets</div>';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;font-size:26px;font-family:"Barlow Condensed",sans-serif;font-weight:700;color:#1e3a8a;flex-direction:column;gap:14px;transition:opacity 0.3s;';
+  overlay.innerHTML = `
+    <style>
+      @keyframes spin-loader { 100% { transform: rotate(360deg); } }
+      .svg-loader { animation: spin-loader 1s linear infinite; width: 38px; height: 38px; }
+      .svg-loader circle.bg { stroke: #e2e8f0; }
+      .svg-loader circle.fg { stroke: #2563eb; stroke-dasharray: 90; stroke-dashoffset: 40; stroke-linecap: round; }
+    </style>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <svg class="svg-loader" viewBox="0 0 50 50">
+        <circle class="bg" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+        <circle class="fg" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+      </svg>
+      <div>Cargando mesas y cartera...</div>
+    </div>
+    <div style="font-size:15px;color:#64748b;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Conectando con Google Sheets</div>
+  `;
   document.body.appendChild(overlay);
 
   try {
@@ -39,27 +54,31 @@ async function fetchConfigData() {
       promos: supMap[sup]
     }));
 
-    // Procesar Maestro
-    const headersMaestro = dataMaestro[0] || [];
-    const matchCol = (cols, keywords) => cols.findIndex(c => {
-      const lbl = String(c || '').trim().toUpperCase();
-      return keywords.some(k => lbl.includes(k));
-    });
-    
-    let iMPromo = matchCol(headersMaestro, ['PERSONAL COMERCIAL', 'PROMOTOR', 'FUERZA DE VENTA']);
-    if (iMPromo === -1) iMPromo = matchCol(headersMaestro, ['VENDEDOR']);
-    const iAnulado = matchCol(headersMaestro, ['ANULADO']);
-    const iFvAnulado = matchCol(headersMaestro, ['FV1 ANULADO', 'FUERZA DE VENTA 1 ANULADO']);
-
+    // Procesar Maestro (Si el GAS ya envió los counts optimizados, los usamos directo)
     let promoCounts = {};
-    for (let i = 1; i < dataMaestro.length; i++) {
-      const r = dataMaestro[i];
-      const anu = iAnulado >= 0 && r[iAnulado] ? String(r[iAnulado]).trim().toUpperCase() : '';
-      const fvAnu = iFvAnulado >= 0 && r[iFvAnulado] ? String(r[iFvAnulado]).trim().toUpperCase() : '';
-      if (anu !== 'SI' && fvAnu !== 'SI') {
-        const p = iMPromo >= 0 && r[iMPromo] ? String(r[iMPromo]).trim().toUpperCase() : '';
-        if (p) {
-          promoCounts[p] = (promoCounts[p] || 0) + 1;
+    if (data.maestro_counts) {
+      promoCounts = data.maestro_counts;
+    } else if (dataMaestro && dataMaestro.length > 0) {
+      const headersMaestro = dataMaestro[0] || [];
+      const matchCol = (cols, keywords) => cols.findIndex(c => {
+        const lbl = String(c || '').trim().toUpperCase();
+        return keywords.some(k => lbl.includes(k));
+      });
+      
+      let iMPromo = matchCol(headersMaestro, ['PERSONAL COMERCIAL', 'PROMOTOR', 'FUERZA DE VENTA']);
+      if (iMPromo === -1) iMPromo = matchCol(headersMaestro, ['VENDEDOR']);
+      const iAnulado = matchCol(headersMaestro, ['ANULADO']);
+      const iFvAnulado = matchCol(headersMaestro, ['FV1 ANULADO', 'FUERZA DE VENTA 1 ANULADO']);
+
+      for (let i = 1; i < dataMaestro.length; i++) {
+        const r = dataMaestro[i];
+        const anu = iAnulado >= 0 && r[iAnulado] ? String(r[iAnulado]).trim().toUpperCase() : '';
+        const fvAnu = iFvAnulado >= 0 && r[iFvAnulado] ? String(r[iFvAnulado]).trim().toUpperCase() : '';
+        if (anu !== 'SI' && fvAnu !== 'SI') {
+          const p = iMPromo >= 0 && r[iMPromo] ? String(r[iMPromo]).trim().toUpperCase() : '';
+          if (p) {
+            promoCounts[p] = (promoCounts[p] || 0) + 1;
+          }
         }
       }
     }
@@ -78,59 +97,5 @@ async function fetchConfigData() {
   overlay.remove();
 }
 
-function openCacheDB() {
-  return new Promise((resolve, reject) => {
-    if (!window.indexedDB) return resolve(null);
-    const req = indexedDB.open(CACHE_DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(CACHE_STORE)) {
-        db.createObjectStore(CACHE_STORE, { keyPath: 'id' });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
 
-async function saveDataCache() {
-  try {
-    const db = await openCacheDB();
-    if (!db) return;
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(CACHE_STORE, 'readwrite');
-      const st = tx.objectStore(CACHE_STORE);
-      st.put({
-        id: CACHE_KEY,
-        rows: DATA,
-        savedAt: Date.now(),
-        years: [...new Set(DATA.map(r => r.yr))].sort(),
-      });
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-    db.close();
-  } catch (err) {
-    console.warn('No se pudo guardar cache local:', err);
-  }
-}
-
-async function loadDataCache() {
-  try {
-    const db = await openCacheDB();
-    if (!db) return null;
-    const snap = await new Promise((resolve, reject) => {
-      const tx = db.transaction(CACHE_STORE, 'readonly');
-      const st = tx.objectStore(CACHE_STORE);
-      const rq = st.get(CACHE_KEY);
-      rq.onsuccess = () => resolve(rq.result || null);
-      rq.onerror = () => reject(rq.error);
-    });
-    db.close();
-    return snap;
-  } catch (err) {
-    console.warn('No se pudo leer cache local:', err);
-    return null;
-  }
-}
 
