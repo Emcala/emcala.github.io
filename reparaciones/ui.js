@@ -216,7 +216,6 @@ function applyFilters(ordenInteligente){
   const estadosSeleccionados=getMultiFilterValues('mfEstado');
   const prioridadesSeleccionadas=getMultiFilterValues('mfPrioridad');
   const frecuenciasSeleccionadas=getMultiFilterValues('mfFrecuencia');
-  const _segValsCache = Object.values(seguimientos);
   filtered=allData.filter(r=>{
     if(currentRole==='supervisor'&&promotoresPropios.length>0&&!promotoresPropios.includes((r.nombre||'').toUpperCase().trim()))return false;
     if(busqueda){const hayMatch=(r.ot||'').toLowerCase().includes(busqueda)||(r.cliente||'').toLowerCase().includes(busqueda)||(r.nombre||'').toLowerCase().includes(busqueda)||(r.localidad||'').toLowerCase().includes(busqueda)||(r.edf||'').toLowerCase().includes(busqueda);if(!hayMatch)return false;}
@@ -242,18 +241,6 @@ function applyFilters(ordenInteligente){
     if(estadosSeleccionados.length>0){if(!estadosSeleccionados.includes(eKey))return false;}
     else{if(eKey==='resuelto'||eKey==='retiro')return false;}
 
-    // Anti-duplicados: Ocultar OTs obsoletas (creadas ANTES de que el técnico resolviera otra OT del mismo cliente)
-    if(eKey !== 'resuelto' && eKey !== 'retiro' && r.cliente) {
-      const cliKey = r.cliente.toString().trim();
-      const currOt = (r.ot||'').toString().trim();
-      const currTs = r.timestamp ? new Date(r.timestamp) : new Date(0);
-      for(let i=0; i<_segValsCache.length; i++){
-        if(_segValsCache[i].cli === cliKey && _segValsCache[i].ot !== currOt && (_segValsCache[i].estado||'').toLowerCase() === 'resuelto') {
-          const resTs = _segValsCache[i].ts ? new Date(_segValsCache[i].ts) : new Date(0);
-          if(resTs > currTs) return false; // Es obsoleta, ya fue cubierta por una visita posterior
-        }
-      }
-    }
 
     if(prioridadesSeleccionadas.length>0){const priA=getPrioridadAprobada(r.ot,r.cliente),priS=getPrioridadSugerida(r.ot,r.cliente),priActual=priA||priS||'sin-prioridad';if(!prioridadesSeleccionadas.includes(priActual))return false;}
     if(currentRole==='tecnico'&&!getPrioridadAprobada(r.ot,r.cliente))return false;
