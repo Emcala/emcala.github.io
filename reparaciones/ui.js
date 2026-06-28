@@ -216,6 +216,7 @@ function applyFilters(ordenInteligente){
   const estadosSeleccionados=getMultiFilterValues('mfEstado');
   const prioridadesSeleccionadas=getMultiFilterValues('mfPrioridad');
   const frecuenciasSeleccionadas=getMultiFilterValues('mfFrecuencia');
+  const _segValsCache = Object.values(seguimientos);
   filtered=allData.filter(r=>{
     if(currentRole==='supervisor'&&promotoresPropios.length>0&&!promotoresPropios.includes((r.nombre||'').toUpperCase().trim()))return false;
     if(busqueda){const hayMatch=(r.ot||'').toLowerCase().includes(busqueda)||(r.cliente||'').toLowerCase().includes(busqueda)||(r.nombre||'').toLowerCase().includes(busqueda)||(r.localidad||'').toLowerCase().includes(busqueda)||(r.edf||'').toLowerCase().includes(busqueda);if(!hayMatch)return false;}
@@ -224,12 +225,15 @@ function applyFilters(ordenInteligente){
     if(frecuenciasSeleccionadas.length>0){
       const fStr=(r.frecuencia||'').toUpperCase().replace(/É/g,'E').replace(/Á/g,'A').replace(/Í/g,'I');
       const match=frecuenciasSeleccionadas.some(sel=>{
-        if(sel==='LU'||sel==='LUJU') return fStr.includes('LU')||fStr.includes('LUN');
-        if(sel==='MA'||sel==='MAVI') return fStr.includes('MA')||fStr.includes('MAR');
-        if(sel==='MI'||sel==='MISA') return fStr.includes('MI')||fStr.includes('MIE');
-        if(sel==='JU'||sel==='LUJU') return fStr.includes('JU')||fStr.includes('JUE');
-        if(sel==='VI'||sel==='MAVI') return fStr.includes('VI')||fStr.includes('VIE');
-        if(sel==='SA'||sel==='MISA') return fStr.includes('SA')||fStr.includes('SAB');
+        if(sel==='LUJU') return fStr.includes('LU')||fStr.includes('LUN')||fStr.includes('JU')||fStr.includes('JUE');
+        if(sel==='MAVI') return fStr.includes('MA')||fStr.includes('MAR')||fStr.includes('VI')||fStr.includes('VIE');
+        if(sel==='MISA') return fStr.includes('MI')||fStr.includes('MIE')||fStr.includes('SA')||fStr.includes('SAB');
+        if(sel==='LU') return fStr.includes('LU')||fStr.includes('LUN');
+        if(sel==='MA') return fStr.includes('MA')||fStr.includes('MAR');
+        if(sel==='MI') return fStr.includes('MI')||fStr.includes('MIE');
+        if(sel==='JU') return fStr.includes('JU')||fStr.includes('JUE');
+        if(sel==='VI') return fStr.includes('VI')||fStr.includes('VIE');
+        if(sel==='SA') return fStr.includes('SA')||fStr.includes('SAB');
         return fStr.includes(sel);
       });
       if(!match) return false;
@@ -241,11 +245,11 @@ function applyFilters(ordenInteligente){
     // Anti-duplicados: Ocultar OTs obsoletas (creadas ANTES de que el técnico resolviera otra OT del mismo cliente)
     if(eKey !== 'resuelto' && eKey !== 'retiro' && r.cliente) {
       const cliKey = r.cliente.toString().trim();
+      const currOt = (r.ot||'').toString().trim();
       const currTs = r.timestamp ? new Date(r.timestamp) : new Date(0);
-      const segVals = Object.values(seguimientos);
-      for(let i=0; i<segVals.length; i++){
-        if(segVals[i].cli === cliKey && (segVals[i].estado||'').toLowerCase() === 'resuelto') {
-          const resTs = segVals[i].ts ? new Date(segVals[i].ts) : new Date(0);
+      for(let i=0; i<_segValsCache.length; i++){
+        if(_segValsCache[i].cli === cliKey && _segValsCache[i].ot !== currOt && (_segValsCache[i].estado||'').toLowerCase() === 'resuelto') {
+          const resTs = _segValsCache[i].ts ? new Date(_segValsCache[i].ts) : new Date(0);
           if(resTs > currTs) return false; // Es obsoleta, ya fue cubierta por una visita posterior
         }
       }
@@ -257,19 +261,7 @@ function applyFilters(ordenInteligente){
     return true;
   });
 
-  // Novedad: Anti-Duplicados Inteligente
-  // Ordenamos de más reciente a más antigua
-  filtered.sort((a,b)=> new Date(b.timestamp||0) - new Date(a.timestamp||0));
-  const unicos = [];
-  const clientVisto = new Set();
-  filtered.forEach(r => {
-    const cliKey = r.cliente ? r.cliente.toString().trim() : '';
-    if (!cliKey || !clientVisto.has(cliKey)) {
-      if (cliKey) clientVisto.add(cliKey);
-      unicos.push(r);
-    }
-  });
-  filtered = unicos;
+
 
   document.getElementById('listCount').textContent=filtered.length;
   updateMultiFilterLabel('mfPromotor','Todos');updateMultiFilterLabel('mfLocalidad','Todas');
@@ -540,7 +532,6 @@ function renderDashboard() {
   });
 
   const unicos = [];
-  const clientVistoActivo = new Set();
   
   allData.forEach(r => {
     const cliKey = r.cliente ? r.cliente.toString().trim().toUpperCase() : '';
@@ -553,11 +544,9 @@ function renderDashboard() {
     if (isResolved) {
       unicos.push(r);
     } else {
+      // Solo ocultar OTs obsoletas (creadas antes de que se resolviera otra OT del mismo cliente)
       if (cliKey && hidraMap.has(cliKey) && myTs < hidraMap.get(cliKey)) return;
-      if (!cliKey || !clientVistoActivo.has(cliKey)) {
-        if (cliKey) clientVistoActivo.add(cliKey);
-        unicos.push(r);
-      }
+      unicos.push(r);
     }
   });
 
