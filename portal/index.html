@@ -55,6 +55,9 @@
     .btn-logout-small:hover { color:rgba(255,255,255,0.8); }
     .btn-logout-small:active { color:#fff; }
     
+    .split-btn-container { display: flex; gap: 10px; width: 100%; }
+    .split-btn-container .link-btn { flex: 1; padding: 18px 8px; font-size: 14px; }
+    
     @keyframes fadeInDown { from {opacity:0; transform:translateY(-20px);} to {opacity:1; transform:translateY(0);} }
     @keyframes fadeInUp { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
 
@@ -109,6 +112,14 @@
   const HERRAMIENTAS = {
     // COMERCIAL
     planificador: { href: '../planificador/index.html', label: '📋 PLANIFICADOR', col: 'comercial' },
+    cobertura_efectividad: { 
+      isSplit: true, 
+      col: 'comercial', 
+      tools: [
+        { href: '../Cobertura CVZA/index.html', label: '🍺 COBERTURA' },
+        { href: '#', label: '🎯 EFECTIVIDAD' }
+      ] 
+    },
     coaching_pr: { href: 'https://docs.google.com/spreadsheets/d/1bGxwhO2ITFuhtPr3xaOQvYlJ0wapXiIbh4rKi4Abt5E/edit?gid=817276593#gid=817276593', label: '🎯 DASHBOARD COACHING PR', col: 'comercial' },
     ejecucion: { href: 'https://estandar-ejecucion-cmq.replit.app/login', label: '📊 ESTÁNDAR DE EJECUCIÓN', col: 'comercial' },
     potenciales_sdv: { href: 'https://suralnorpotenciaes.netlify.app/supervisor.html', label: '📈 DASHBOARD POTENCIALES SDV', col: 'comercial' },
@@ -132,13 +143,13 @@
   
   const MENU_POR_ROL = {
     auditor: [
-      'planificador', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'ventas', 'zonas_merch', 
+      'planificador', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'ventas', 'zonas_merch', 
       'reparaciones', 'consulta_pi', 'retiro_edf', 
       'form_planificacion', 'form_coaching', 'form_abm', 'form_reparacion', 
       'cuentas'
     ],
     supervisor: [
-      'planificador', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'ventas', 'zonas_merch', 
+      'planificador', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'ventas', 'zonas_merch', 
       'reparaciones', 'consulta_pi', 'retiro_edf', 
       'form_planificacion', 'form_coaching', 'form_abm', 'form_reparacion'
     ],
@@ -177,7 +188,16 @@
     toolKeys.forEach(key => {
       const tool = HERRAMIENTAS[key];
       if (tool) {
-        const btnHtml = `<a href="${tool.href}" target="_blank" rel="noopener noreferrer" class="link-btn">${tool.label}</a>`;
+        let btnHtml = '';
+        if (tool.isSplit) {
+          btnHtml = '<div class="split-btn-container">';
+          tool.tools.forEach(sub => {
+            btnHtml += `<a href="${sub.href}" target="_blank" rel="noopener noreferrer" class="link-btn" title="${sub.label}">${sub.label}</a>`;
+          });
+          btnHtml += '</div>';
+        } else {
+          btnHtml = `<a href="${tool.href}" target="_blank" rel="noopener noreferrer" class="link-btn">${tool.label}</a>`;
+        }
         
         if (tool.col === 'capex') {
           document.getElementById('links-capex').innerHTML += btnHtml;
