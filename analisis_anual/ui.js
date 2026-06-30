@@ -182,28 +182,26 @@ function mkSDV(pg) {
     container.appendChild(wrap);
   });
 
-  // TODOS / LIMPIAR button
-  totBtn.addEventListener('click', () => {
-    const allOn = SEGS.every(seg => seg.promos.every(p => ST[pg].activePromos.has(seg.key+'|'+p)));
-    SEGS.forEach(seg => {
-      seg.promos.forEach(p => {
-        if (allOn) ST[pg].activePromos.delete(seg.key+'|'+p);
-        else       ST[pg].activePromos.add(seg.key+'|'+p);
+    // TODOS / LIMPIAR button
+    totBtn.addEventListener('click', () => {
+      const allOn = SEGS.every(seg => seg.promos.every(p => ST[pg].activePromos.has(seg.key+'|'+p)));
+      SEGS.forEach(seg => {
+        seg.promos.forEach(p => {
+          if (allOn) ST[pg].activePromos.delete(seg.key+'|'+p);
+          else       ST[pg].activePromos.add(seg.key+'|'+p);
+        });
       });
+      // sync all checkboxes
+      container.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = !allOn);
+      container.querySelectorAll('.sdv-btn').forEach(b => {
+        b.classList.toggle('all', !allOn);
+        b.classList.toggle('partial', false);
+        b.classList.toggle('none', allOn);
+      });
+      updateTotBtn();
+      renderPage(pg);
     });
-    // sync all checkboxes
-    container.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = !allOn);
-    container.querySelectorAll('input[data-promo]').forEach(cb => cb.checked = !allOn);
-    container.querySelectorAll('.sdv-btn').forEach(b => {
-      b.classList.toggle('all', !allOn);
-      b.classList.toggle('partial', false);
-      b.classList.toggle('none', allOn);
-    });
-    totBtn.textContent = allOn ? 'SELECCIONAR' : 'TODOS';
-    totBtn.classList.toggle('all', !allOn);
-    renderPage(pg);
-  });
-}
+  }
 [1,2,3].forEach(pg => mkSDV(pg));
 
 // ═══════════════════════════════════════════════════════════════
@@ -1488,12 +1486,12 @@ function render6() {
 }
 
 // Actualizar listas de marca/calibre cuando cambia la UN
-const _origUN6handler = null;
 document.getElementById('un-dd6')?.addEventListener('click', () => {
   setTimeout(() => {
     const isCerv = ST[6].un === 'CERVEZAS CMQ';
     initMarca6UI(isCerv ? MARCA6_CERV_LIST : MARCA6_UNG_LIST);
     initCal6UI(isCerv ? CAL6_CERV_LIST : CAL6_UNG_LIST);
+    render6();
   }, 50);
 });
 
@@ -1601,10 +1599,19 @@ function renderCRM() {
 
   if (!rows26.length && !rows25.length) return;
 
-  // Último mes con datos
+  // Último mes con datos (global)
+  let globalLast = MESES[0];
+  for (let i = MESES.length - 1; i >= 0; i--) {
+    if (DATA.some(r => r.yr == 2026 && r.mes === MESES[i] && r.hl > 0)) {
+      globalLast = MESES[i];
+      break;
+    }
+  }
+  const globalPrev = MESES[MESES.indexOf(globalLast)-1] || null;
+
   const meses26 = MESES.filter(m => rows26.some(r => r.mes === m && r.hl > 0));
-  const last = meses26[meses26.length-1] || MESES[0];
-  const prev = MESES[MESES.indexOf(last)-1] || null;
+  const last = globalLast;
+  const prev = globalPrev;
 
   // Resumir por mes
   const vol26 = initMonthMap(), vol25 = initMonthMap();

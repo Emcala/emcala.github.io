@@ -43,5 +43,4 @@ const CACHE_STORE = 'snapshots';
 const CACHE_KEY = 'latest-data-v3';
 // Si querés autocarga total para tus jefes, poné aquí los 2 CSV "fijos".
 // Ejemplo: ['data/2025.csv', 'data/2026.csv']
-const AUTO_CSV_SOURCES = ['bases/2025.csv', 'bases/2026.csv'];
-
+const AUTO_CSV_SOURCES = [];
