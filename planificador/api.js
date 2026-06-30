@@ -193,40 +193,50 @@
         if (!isAutoSync) {
           await saveToServer(true);
         }
-        // 2. Sincronizar maestro de SKUs
-        await syncSkus();
+        // 2. Sincronizar maestro de SKUs (si es auto-sync, lo hacemos en background)
+        if (!isAutoSync) {
+          await syncSkus();
+        } else {
+          syncSkus(); // Non-blocking
+        }
         // 3. Traer datos actualizados del servidor — SIEMPRE reemplaza volData completo
         const cloudData = {};
         const cMonth = window.getCommercialMonthAndStart(date).month;
-        const promises = Object.keys(SPV_DATA).map(async (spv) => {
-          const response = await fetch(`${SCRIPT_URL}?date=${date}&cMonth=${cMonth}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`);
-          const result = await response.json();
-          if (result.status === 'success') {
-            const fetched = result.data || {};
-            for (let originalProm in fetched) {
-              let prom = originalProm;
-              // Parche de seguridad para problemas de codificación de la Ñ desde Google Sheets
-              if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) {
-                prom = 'MIÑO RENZO';
+        // Ejecutar peticiones en lotes (batches) de 5 para evitar sobrecarga y time-outs
+        const spvs = Object.keys(SPV_DATA);
+        const batchSize = 5;
+        for (let i = 0; i < spvs.length; i += batchSize) {
+          const batch = spvs.slice(i, i + batchSize);
+          const promises = batch.map(async (spv) => {
+            const response = await fetch(`${SCRIPT_URL}?date=${date}&cMonth=${cMonth}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`);
+            const result = await response.json();
+            if (result.status === 'success') {
+              const fetched = result.data || {};
+              for (let originalProm in fetched) {
+                let prom = originalProm;
+                // Parche de seguridad para problemas de codificación de la Ñ desde Google Sheets
+                if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) {
+                  prom = 'MIÑO RENZO';
+                }
+                if (!cloudData[prom]) cloudData[prom] = {};
+                Object.assign(cloudData[prom], fetched[originalProm]);
               }
-              if (!cloudData[prom]) cloudData[prom] = {};
-              Object.assign(cloudData[prom], fetched[originalProm]);
-            }
-            // Guardar objetivos mensuales si vienen en la respuesta
-            if (result.objectives && Object.keys(result.objectives).length > 0) {
-              const monthStr = window.getCommercialMonthAndStart(date).month;
-              const objStorageKey = `emcala_obj_${monthStr}`;
-              localStorage.setItem(objStorageKey, JSON.stringify(result.objectives));
-              // Inyectar en cloudData para mostrarlos instantáneamente
-              for (const p in result.objectives) {
-                if (!cloudData[p]) cloudData[p] = {};
-                if (result.objectives[p]['obj-f1'] !== undefined) cloudData[p]['obj-f1'] = result.objectives[p]['obj-f1'];
-                if (result.objectives[p]['obj-f2'] !== undefined) cloudData[p]['obj-f2'] = result.objectives[p]['obj-f2'];
+              // Guardar objetivos mensuales si vienen en la respuesta
+              if (result.objectives && Object.keys(result.objectives).length > 0) {
+                const monthStr = window.getCommercialMonthAndStart(date).month;
+                const objStorageKey = `emcala_obj_${monthStr}`;
+                localStorage.setItem(objStorageKey, JSON.stringify(result.objectives));
+                // Inyectar en cloudData para mostrarlos instantáneamente
+                for (const p in result.objectives) {
+                  if (!cloudData[p]) cloudData[p] = {};
+                  if (result.objectives[p]['obj-f1'] !== undefined) cloudData[p]['obj-f1'] = result.objectives[p]['obj-f1'];
+                  if (result.objectives[p]['obj-f2'] !== undefined) cloudData[p]['obj-f2'] = result.objectives[p]['obj-f2'];
+                }
               }
             }
-          }
-        });
-        await Promise.all(promises);
+          });
+          await Promise.all(promises);
+        }
         // Reemplazar volData con datos de la nube (no merge, reemplazo completo)
         volData = cloudData;
         window.currentLoadedDate = date;

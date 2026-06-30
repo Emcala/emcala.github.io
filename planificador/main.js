@@ -214,29 +214,7 @@
     // Event listener para botón de Importar CSV
     const btnImportCsv = document.getElementById('btn-import-csv');
     const csvFileInput = document.getElementById('csv-file-input');
-    btnImportCsv.addEventListener('click', async () => {
-      const origText = btnImportCsv.innerHTML;
-      btnImportCsv.innerHTML = '⏳ Sincronizando SKUs...';
-      btnImportCsv.disabled = true;
-      // Siempre sincronizar SKUs antes de procesar el CSV para tener el maestro al día
-      await syncSkus();
-      btnImportCsv.innerHTML = '⏳ Cargando CSV...';
-      try {
-        // Intentar autodetectar y cargar aexcel.csv del servidor/carpeta local
-        const response = await fetch('./aexcel.csv');
-        if (response.ok) {
-          const csvText = await response.text();
-          parseCSVAndApply(csvText);
-          btnImportCsv.innerHTML = origText;
-          btnImportCsv.disabled = false;
-          return;
-        }
-      } catch (e) {
-        console.warn('No se pudo cargar aexcel.csv automáticamente (CORS o 404). Se procederá a selector manual.');
-      }
-      // Si falla, usar file picker manual
-      btnImportCsv.innerHTML = origText;
-      btnImportCsv.disabled = false;
+    btnImportCsv.addEventListener('click', () => {
       csvFileInput.click();
     });
     csvFileInput.addEventListener('change', async (e) => {
