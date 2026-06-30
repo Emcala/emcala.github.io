@@ -8,7 +8,7 @@ let ventasData   = null;  // { promotorName: Set<clientId> }  cerveza only
 let mesasData    = null;  // [ { promotor, supervisor, canal, codigo } ]
 let historicosData = null; // { promotorName: { cccMA, cccMMAA } }
 
-const MAESTRO_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-ZRpdQA0cWXIk5SufucFup685x4xftc8M3VxbHUhOzQBYx4vKnxfV-6IQme8XTsAk3A/exec'; // Script para leer Cartera
+const MAESTRO_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwWNSg301DKRbdF44UNrPhTU3jD3bSDLUjrI3CJlx_somu-KJu0cPewUcU1tET2i6_ffg/exec';
 const MESAS_AUTH_URL = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec';
 const PLANIFICADOR_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
 // Feriados argentinos 2026  (agregar o quitar según sea necesario)
