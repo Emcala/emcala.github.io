@@ -22,7 +22,6 @@ document.getElementById('folder-input').addEventListener('change', e => {
         el.textContent = '✓ ' + years + ' · ' + totalRows.toLocaleString() + ' filas';
         el.className = 'fst ok';
         renderAll();
-        saveDataCache();
       }
     };
     rd.readAsText(file, 'utf-16');
@@ -47,9 +46,12 @@ document.querySelectorAll('.ptab').forEach(btn => {
 // UN DROPDOWNS
 // ═══════════════════════════════════════════════════════════════
 function mkUN(pg) {
+  let btn = document.getElementById('un-btn'+pg);
+  if (!btn || btn.dataset.init) return;
+  btn.dataset.init = '1';
   const dd = document.getElementById('un-dd'+pg);
-  const btn = document.getElementById('un-btn'+pg);
   const lbl = document.getElementById('un-lbl'+pg);
+  dd.innerHTML = '';
   UN_LIST.forEach(un => {
     const o = document.createElement('div');
     o.className = 'un-opt' + (un.key === ST[pg].un ? ' sel' : '');
@@ -87,8 +89,14 @@ document.addEventListener('click', () => {
 // ═══════════════════════════════════════════════════════════════
 function mkSDV(pg) {
   const container = document.getElementById('sdv'+pg);
+  if (!container) return;
   container.innerHTML = '';
-  const totBtn    = document.getElementById('tot'+pg);
+  let totBtn = document.getElementById('tot'+pg);
+  if (totBtn) {
+    const newTotBtn = totBtn.cloneNode(true);
+    totBtn.parentNode.replaceChild(newTotBtn, totBtn);
+    totBtn = newTotBtn;
+  }
 
   function getState(seg) {
     const active = seg.promos.filter(p => ST[pg].activePromos.has(seg.key+'|'+p));
