@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>EMCALA · Cobertura CVZA</title>
+  <meta name="description" content="Seguimiento de cobertura de cerveza por promotor - EMCALA">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <a href="../portal/index.html" class="back-link" id="backLink">← Portal</a>
+
+  <header class="header">
+    <div class="header-brand">COBERTURA CVZA</div>
+    <div class="header-subtitle">Clientes con Compra de Cerveza</div>
+  </header>
+
+  <!-- Status Bar -->
+  <div class="status-bar" id="statusBar">
+    <div class="status-item">
+      <span class="status-dot pending" id="statusMaestro"></span>
+      <span id="statusMaestroText">Maestro Clientes</span>
+    </div>
+    <div class="status-item">
+      <span class="status-dot pending" id="statusMesas"></span>
+      <span id="statusMesasText">Mesas</span>
+    </div>
+    <div class="status-item">
+      <span class="status-dot pending" id="statusVentas"></span>
+      <span id="statusVentasText">Avance (Planificador)</span>
+    </div>
+    <div class="status-item">
+      <span class="status-dot pending" id="statusHistoricos"></span>
+      <span id="statusHistoricosText">Históricos</span>
+    </div>
+  </div>
+
+  <!-- Upload Section Removed (100% Automated) -->
+
+  <div class="dias-info" id="diasInfo" style="display:none"></div>
+
+  <!-- Main Table -->
+  <div class="table-container" id="tableContainer">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-state-icon">🍺</div>
+      <div class="empty-state-text">Sincronizando datos...</div>
+      <div class="empty-state-hint">Las Mesas, la Cartera y el Avance (CCC) se cargan automáticamente desde la nube</div>
+    </div>
+    <div class="table-scroll" id="tableScroll" style="display:none">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th>SDV</th>
+            <th>PROMOTOR</th>
+            <th>Cartera de<br>Clientes</th>
+            <th>CCC</th>
+            <th>CNC</th>
+            <th>AVANCE</th>
+            <th>CCC<br>MA</th>
+            <th>CCC<br>MM AA</th>
+            <th>Media<br>Necesaria</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div style="text-align:center">
+      <div class="loading-spinner"></div>
+      <div style="margin-top:14px;font-weight:600;font-size:13px" id="loadingText">Procesando...</div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="../emcala-auth.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
