@@ -1,34 +1,8 @@
 async function fetchConfigData() {
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;font-size:26px;font-family:"Barlow Condensed",sans-serif;font-weight:700;color:#1e3a8a;flex-direction:column;gap:14px;transition:opacity 0.3s;';
-  overlay.innerHTML = `
-    <style>
-      @keyframes spin-loader { 100% { transform: rotate(360deg); } }
-      .svg-loader { animation: spin-loader 1s linear infinite; width: 38px; height: 38px; }
-      .svg-loader circle.bg { stroke: #e2e8f0; }
-      .svg-loader circle.fg { stroke: #2563eb; stroke-dasharray: 90; stroke-dashoffset: 40; stroke-linecap: round; }
-    </style>
-    <div style="display:flex;align-items:center;gap:14px;">
-      <svg class="svg-loader" viewBox="0 0 50 50">
-        <circle class="bg" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
-        <circle class="fg" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
-      </svg>
-      <div>Cargando mesas y cartera...</div>
-    </div>
-    <div style="font-size:15px;color:#64748b;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Conectando con Google Sheets</div>
-  `;
-  document.body.appendChild(overlay);
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycby25P-2-HSw7tQcbhpwaWs5hj97kq4UWO_LYuzml7BAYvoIMNM_icn1RQ3Q8H01uHA/exec';
+  const CACHE_KEY = 'emcala_config_cache_v1';
 
-  try {
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycby25P-2-HSw7tQcbhpwaWs5hj97kq4UWO_LYuzml7BAYvoIMNM_icn1RQ3Q8H01uHA/exec';
-    
-    // Evitamos caché para forzar la lectura real
-    const response = await fetch(`${GAS_URL}?t=${Date.now()}`);
-    if (!response.ok) throw new Error('Error HTTP: ' + response.status);
-    
-    const data = await response.json();
-    if (data.status !== 'success') throw new Error(data.message || 'Error en Google Apps Script');
-
+  function applyData(data) {
     const dataMesas = data.mesas;
     const dataMaestro = data.maestro;
 
@@ -88,13 +62,74 @@ async function fetchConfigData() {
     [1,2,3,4,5,6].forEach(pg => {
       if (ST[pg]) ST[pg].activePromos = initActivePromos();
     });
+  }
 
+  let hasCache = false;
+  const cachedRaw = localStorage.getItem(CACHE_KEY);
+  if (cachedRaw) {
+    try {
+      const cachedData = JSON.parse(cachedRaw);
+      applyData(cachedData);
+      hasCache = true;
+    } catch (e) {
+      console.warn("Error parseando caché de config", e);
+    }
+  }
+
+  let overlay;
+  if (!hasCache) {
+    overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;font-size:26px;font-family:"Barlow Condensed",sans-serif;font-weight:700;color:#1e3a8a;flex-direction:column;gap:14px;transition:opacity 0.3s;';
+    overlay.innerHTML = `
+      <style>
+        @keyframes spin-loader { 100% { transform: rotate(360deg); } }
+        .svg-loader { animation: spin-loader 1s linear infinite; width: 38px; height: 38px; }
+        .svg-loader circle.bg { stroke: #e2e8f0; }
+        .svg-loader circle.fg { stroke: #2563eb; stroke-dasharray: 90; stroke-dashoffset: 40; stroke-linecap: round; }
+      </style>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <svg class="svg-loader" viewBox="0 0 50 50">
+          <circle class="bg" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+          <circle class="fg" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+        </svg>
+        <div>Cargando mesas y cartera...</div>
+      </div>
+      <div style="font-size:15px;color:#64748b;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Conectando con Google Sheets</div>
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  try {
+    const fetchPromise = fetch(`${GAS_URL}?t=${Date.now()}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Error HTTP: ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        if (data.status !== 'success') throw new Error(data.message || 'Error en Google Apps Script');
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        
+        if (hasCache) {
+          applyData(data);
+          [1,2,3,6].forEach(pg => { if (typeof mkUN === 'function') mkUN(pg); });
+          [1,2,3,4,5,6].forEach(pg => { if (typeof mkSDV === 'function') mkSDV(pg); });
+          if (typeof renderAll === 'function') renderAll();
+        } else {
+          applyData(data);
+          if (overlay) overlay.remove();
+        }
+      });
+
+    if (!hasCache) {
+      await fetchPromise;
+    }
   } catch (err) {
     console.error('Error cargando config:', err);
-    alert('Error al descargar configuración de Google Sheets.\nMotivo: ' + err.message);
+    if (!hasCache) {
+      alert('Error al descargar configuración de Google Sheets.\nMotivo: ' + err.message);
+      if (overlay) overlay.remove();
+    }
   }
-  
-  overlay.remove();
 }
 
 
