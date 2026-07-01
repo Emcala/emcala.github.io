@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SURCALA TV — Panel</title>
+<style>
+  :root {
+    --bg:     #0f1117; --bg2: #181c27; --bg3: #1e2333;
+    --border: #2a2f45; --accent: #3b82f6; --accent2: #6366f1;
+    --green:  #22c55e; --red: #ef4444; --amber: #f59e0b;
+    --text:   #e2e8f0; --muted: #64748b; --r: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  header {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 0 20px; height: 52px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 2px; padding: 3px 8px; border-radius: 5px; }
+  .hname { font-size: 15px; font-weight: 600; margin-left: 12px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+  .status-dot.ok { background: var(--green); }
+  .status-label { font-size: 12px; color: var(--muted); margin-left: 6px; }
+
+  main { padding: 20px; max-width: 900px; margin: 0 auto; display: grid; gap: 16px; }
+
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; }
+  .card-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+  .now { display: flex; align-items: center; gap: 12px; background: var(--bg3); border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+  .now-icon { font-size: 28px; }
+  .now-name { font-weight: 600; font-size: 15px; }
+  .now-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; margin-left: auto; }
+  .badge.play  { background: #162e1a; color: var(--green); }
+  .badge.pause { background: #2a2010; color: var(--amber); }
+  .badge.stop  { background: var(--bg3); color: var(--muted); }
+
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { padding: 9px 18px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .8; }
+  .btn-play  { background: var(--green); color: #000; }
+  .btn-pause { background: var(--amber); color: #000; }
+  .btn-stop  { background: var(--red);   color: #fff; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); cursor: pointer; }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #fff; border: none; padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:600px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .video-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
+  .vi { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg3); border-radius: 8px; border: 1px solid transparent; cursor: pointer; }
+  .vi:hover { border-color: var(--accent); }
+  .vi.active { border-color: var(--accent); background: #1a2540; }
+  .vi-name { font-size: 13px; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vi-play { font-size: 11px; color: var(--accent); font-weight: 600; opacity: 0; }
+  .vi:hover .vi-play { opacity: 1; }
+
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 8px 10px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 13px; outline: none;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field textarea { min-height: 60px; resize: vertical; font-family: monospace; font-size: 12px; }
+
+  .toggle { position: relative; width: 38px; height: 20px; display: inline-block; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: var(--border); border-radius: 10px; cursor: pointer; transition: .2s; }
+  .slider::before { content:''; position:absolute; width:14px; height:14px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
+  .toggle input:checked + .slider { background: var(--accent); }
+  .toggle input:checked + .slider::before { transform: translateX(18px); }
+  .toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .toggle-label { font-size: 13px; font-weight: 500; }
+
+  .days { display: flex; gap: 6px; margin-bottom: 10px; }
+  .day { width: 34px; height: 34px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg3); color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; }
+  .day.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .sched-box { font-size: 12px; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .sched-box.in  { background: #162e1a; color: var(--green); }
+  .sched-box.out { background: #2a1818; color: var(--red); }
+
+  #toast { position: fixed; bottom: 20px; right: 20px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; font-size: 13px; transform: translateY(60px); opacity: 0; transition: all .3s; z-index: 999; }
+  #toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center">
+    <span class="logo">TV</span>
+    <span class="hname">SURCALA TV — Panel</span>
+  </div>
+  <div style="display:flex;align-items:center">
+    <div class="status-dot" id="dot"></div>
+    <span class="status-label" id="status-label">Conectando...</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Reproducción -->
+  <div class="card">
+    <div class="card-title">Reproducción actual</div>
+    <div class="now">
+      <div class="now-icon">🎬</div>
+      <div>
+        <div class="now-name" id="now-name">Sin video</div>
+        <div class="now-sub" id="now-sub">—</div>
+      </div>
+      <div class="badge stop" id="now-badge">DETENIDO</div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-play"  onclick="cmdPlay()">▶ Play</button>
+      <button class="btn btn-pause" onclick="cmdPause()">⏸ Pause</button>
+      <button class="btn btn-stop"  onclick="cmdStop()">⏹ Stop</button>
+    </div>
+  </div>
+
+  <div class="grid2">
+
+    <!-- Videos / Playlist -->
+    <div class="card">
+      <div class="card-title">Playlist</div>
+      <div class="video-list" id="video-list">
+        <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Cargando...</div>
+      </div>
+
+      <!-- Agregar video -->
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+        <div class="card-title">Agregar video</div>
+        <div class="field">
+          <label>Nombre del video</label>
+          <input type="text" id="new-name" placeholder="Ej: Instructivo Enero">
+        </div>
+        <div class="field">
+          <label>Link directo de Google Drive</label>
+          <input type="text" id="new-url" placeholder="https://drive.google.com/uc?export=download&id=...">
+        </div>
+        <button class="btn-sm" style="width:100%" onclick="addVideo()">+ Agregar a playlist</button>
+        <button class="btn-sm" style="width:100%;margin-top:6px;color:var(--red)" onclick="clearPlaylist()">🗑 Limpiar playlist</button>
+      </div>
+    </div>
+
+    <!-- Scheduler -->
+    <div class="card">
+      <div class="card-title">Programación automática</div>
+
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="sched-on" onchange="schedChanged()">
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label" id="sched-label">Desactivado</span>
+      </div>
+
+      <div class="field">
+        <label>Hora inicio</label>
+        <input type="time" id="sched-start" value="07:00">
+      </div>
+      <div class="field">
+        <label>Hora fin</label>
+        <input type="time" id="sched-end" value="16:00">
+      </div>
+
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:500">DÍAS ACTIVOS</div>
+      <div class="days">
+        <button class="day on" data-d="0">L</button>
+        <button class="day on" data-d="1">M</button>
+        <button class="day on" data-d="2">X</button>
+        <button class="day on" data-d="3">J</button>
+        <button class="day on" data-d="4">V</button>
+        <button class="day"    data-d="5">S</button>
+        <button class="day"    data-d="6">D</button>
+      </div>
+
+      <div class="sched-box out" id="sched-status">● Fuera de horario</div>
+
+      <button class="btn-primary" onclick="saveSchedule()">Guardar programación</button>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const GAS = 'https://script.google.com/macros/s/AKfycbxPMqp9zShQhVk9G117Fl_fWBBiOrRSpZWHKO1F2B139mwQJg47l197JWx9SZ7U9-Zs/exec';
+
+let currentVideo = null;
+let currentCmd   = 'stop';
+let pollTimer    = null;
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+async function api(params) {
+  const url = GAS + '?' + new URLSearchParams(params);
+  const r   = await fetch(url);
+  return r.json();
+}
+
+// ─── POLLING ──────────────────────────────────────────────────────────────────
+async function poll() {
+  try {
+    const s = await api({ action: 'status' });
+    updateUI(s);
+    setOnline(true);
+  } catch(e) {
+    setOnline(false);
+  }
+}
+
+function startPolling() {
+  poll();
+  pollTimer = setInterval(poll, 3000);
+}
+
+function setOnline(ok) {
+  document.getElementById('dot').className = 'status-dot' + (ok ? ' ok' : '');
+  document.getElementById('status-label').textContent = ok ? 'Conectado' : 'Sin conexión';
+}
+
+// ─── UI ───────────────────────────────────────────────────────────────────────
+function updateUI(s) {
+  currentCmd   = s.cmd   || 'stop';
+  currentVideo = s.video || null;
+
+  document.getElementById('now-name').textContent = s.video || 'Sin video';
+  document.getElementById('now-sub').textContent  = s.cmd === 'play' ? 'Reproduciendo' : s.cmd === 'pause' ? 'Pausado' : '—';
+
+  const badge = document.getElementById('now-badge');
+  badge.className = 'badge ' + (s.cmd === 'play' ? 'play' : s.cmd === 'pause' ? 'pause' : 'stop');
+  badge.textContent = s.cmd === 'play' ? 'EN VIVO' : s.cmd === 'pause' ? 'PAUSADO' : 'DETENIDO';
+
+  // Playlist
+  if (s.playlist) {
+    try {
+      const pl = JSON.parse(s.playlist);
+      renderPlaylist(pl, s.video);
+    } catch(e) { renderPlaylist([], s.video); }
+  } else {
+    renderPlaylist([], s.video);
+  }
+
+  // Scheduler
+  document.getElementById('sched-on').checked = s.schedule_enabled === 'true';
+  document.getElementById('sched-label').textContent = s.schedule_enabled === 'true' ? 'Activo' : 'Desactivado';
+  document.getElementById('sched-start').value = s.schedule_start || '07:00';
+  document.getElementById('sched-end').value   = s.schedule_end   || '16:00';
+  const days = (s.schedule_days || '0,1,2,3,4').split(',').map(Number);
+  document.querySelectorAll('.day').forEach(btn => {
+    btn.classList.toggle('on', days.includes(parseInt(btn.dataset.d)));
+  });
+  updateSchedStatus(s);
+}
+
+function renderPlaylist(pl, current) {
+  const el = document.getElementById('video-list');
+  if (!pl.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Sin videos en playlist</div>';
+    return;
+  }
+  el.innerHTML = pl.map((v, i) => `
+    <div class="vi ${current === v.name ? 'active' : ''}" onclick="playVideo('${v.name}','${v.url}')">
+      <span>🎬</span>
+      <span class="vi-name">${v.name}</span>
+      <span class="vi-play">▶ Play</span>
+    </div>
+  `).join('');
+}
+
+function updateSchedStatus(s) {
+  const box = document.getElementById('sched-status');
+  if (s.schedule_enabled !== 'true') {
+    box.className = 'sched-box out';
+    box.textContent = '● Scheduler desactivado';
+    return;
+  }
+  const now   = new Date();
+  const start = s.schedule_start || '07:00';
+  const end   = s.schedule_end   || '16:00';
+  const days  = (s.schedule_days || '0,1,2,3,4').split(',').map(Number);
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  const nowMin  = now.getHours() * 60 + now.getMinutes();
+  const startMin = sh * 60 + sm;
+  const endMin   = eh * 60 + em;
+  const inTime   = nowMin >= startMin && nowMin <= endMin;
+  const inDay    = days.includes(now.getDay() === 0 ? 6 : now.getDay() - 1);
+  if (inTime && inDay) {
+    box.className = 'sched-box in';
+    box.textContent = '● Dentro del horario';
+  } else {
+    box.className = 'sched-box out';
+    box.textContent = '● Fuera del horario';
+  }
+}
+
+// ─── COMANDOS ─────────────────────────────────────────────────────────────────
+async function playVideo(name, url) {
+  toast('▶ Reproduciendo: ' + name);
+  await api({ action: 'play', video: name, url, position: 0 });
+  poll();
+}
+
+async function cmdPlay() {
+  if (!currentVideo) { toast('⚠️ Seleccioná un video de la playlist'); return; }
+  await api({ action: 'play', video: currentVideo, url: '', position: 0 });
+  toast('▶ Play');
+  poll();
+}
+
+async function cmdPause() {
+  await api({ action: 'pause', position: 0 });
+  toast('⏸ Pausado');
+  poll();
+}
+
+async function cmdStop() {
+  await api({ action: 'stop' });
+  toast('⏹ Detenido');
+  poll();
+}
+
+// ─── PLAYLIST ─────────────────────────────────────────────────────────────────
+async function addVideo() {
+  const name = document.getElementById('new-name').value.trim();
+  const url  = document.getElementById('new-url').value.trim();
+  if (!name || !url) { toast('⚠️ Completá nombre y URL'); return; }
+  await api({ action: 'addVideo', name, url });
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-url').value  = '';
+  toast('✅ Video agregado');
+  poll();
+}
+
+async function clearPlaylist() {
+  if (!confirm('¿Limpiar toda la playlist?')) return;
+  await api({ action: 'clearPlaylist' });
+  toast('🗑 Playlist limpiada');
+  poll();
+}
+
+// ─── SCHEDULER ────────────────────────────────────────────────────────────────
+function schedChanged() {
+  const on = document.getElementById('sched-on').checked;
+  document.getElementById('sched-label').textContent = on ? 'Activo' : 'Desactivado';
+}
+
+function toggleDay(btn) { btn.classList.toggle('on'); }
+
+async function saveSchedule() {
+  const days = Array.from(document.querySelectorAll('.day.on')).map(b => b.dataset.d).join(',');
+  await api({
+    action:  'schedule',
+    enabled: document.getElementById('sched-on').checked,
+    start:   document.getElementById('sched-start').value,
+    end:     document.getElementById('sched-end').value,
+    days,
+  });
+  toast('📅 Programación guardada');
+  poll();
+}
+
+document.querySelectorAll('.day').forEach(btn => btn.addEventListener('click', () => toggleDay(btn)));
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+startPolling();
+</script>
+</body>
+</html>
