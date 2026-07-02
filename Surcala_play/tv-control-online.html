@@ -228,6 +228,19 @@ let currentVideo = null;
 let currentCmd   = 'stop';
 let pollTimer    = null;
 
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+// Sanitizar valores de hora que Sheets puede devolver como Date ISO
+function parseTime(val) {
+  if (!val) return '07:00';
+  const s = String(val);
+  // Ya es HH:mm → OK
+  if (/^\d{2}:\d{2}$/.test(s)) return s;
+  // ISO Date de Google Sheets: "1899-12-30T07:00:00.000Z"
+  const m = s.match(/T(\d{2}):(\d{2})/);
+  if (m) return m[1] + ':' + m[2];
+  return '07:00';
+}
+
 // ─── API ──────────────────────────────────────────────────────────────────────
 async function api(params) {
   const url = GAS + '?' + new URLSearchParams(params);
@@ -281,8 +294,8 @@ function updateUI(s) {
   // Scheduler
   document.getElementById('sched-on').checked = s.schedule_enabled === 'true';
   document.getElementById('sched-label').textContent = s.schedule_enabled === 'true' ? 'Activo' : 'Desactivado';
-  document.getElementById('sched-start').value = s.schedule_start || '07:00';
-  document.getElementById('sched-end').value   = s.schedule_end   || '16:00';
+  document.getElementById('sched-start').value = parseTime(s.schedule_start);
+  document.getElementById('sched-end').value   = parseTime(s.schedule_end);
   const days = (s.schedule_days || '0,1,2,3,4').split(',').map(Number);
   document.querySelectorAll('.day').forEach(btn => {
     btn.classList.toggle('on', days.includes(parseInt(btn.dataset.d)));
@@ -313,8 +326,8 @@ function updateSchedStatus(s) {
     return;
   }
   const now   = new Date();
-  const start = s.schedule_start || '07:00';
-  const end   = s.schedule_end   || '16:00';
+  const start = parseTime(s.schedule_start);
+  const end   = parseTime(s.schedule_end);
   const days  = (s.schedule_days || '0,1,2,3,4').split(',').map(Number);
   const [sh, sm] = start.split(':').map(Number);
   const [eh, em] = end.split(':').map(Number);
