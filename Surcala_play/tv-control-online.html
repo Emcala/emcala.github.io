@@ -16,8 +16,8 @@
     --green: #4ade80; --red: #f87171; --amber: #fbbf24;
     --text: #ffffff; --muted: rgba(255,255,255,0.6); --r: 24px;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: linear-gradient(145deg, #0B2559 0%, #1B5FA8 60%, #0D3880 100%); color: var(--text); font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; min-height: 100vh; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: linear-gradient(145deg, #0B2559 0%, #1B5FA8 60%, #0D3880 100%); color: var(--text); font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; min-height: 100vh; overflow-x: hidden; }
 
   header {
     background: rgba(0,0,0,0.15); border-bottom: 1px solid var(--border);
@@ -46,61 +46,79 @@
   .badge.stop  { background: rgba(255,255,255,0.1); color: var(--text); border: 1px solid rgba(255,255,255,0.2); }
 
   .controls { display: flex; gap: 10px; flex-wrap: wrap; }
-  .btn { padding: 12px 20px; border-radius: 12px; border: none; font-size: 14px; font-weight: 800; cursor: pointer; transition: all .2s; font-family: inherit; }
+  .btn { flex: 1; min-width: 80px; padding: 12px 20px; border-radius: 12px; border: none; font-size: 14px; font-weight: 800; cursor: pointer; transition: all .2s; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; }
   .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .btn:active { transform: translateY(0); }
   .btn-play  { background: var(--green); color: #000; }
   .btn-pause { background: var(--amber); color: #000; }
   .btn-stop  { background: var(--red);   color: #fff; }
   
-  .btn-sm { padding: 10px 16px; font-size: 13px; font-weight: 600; border-radius: 12px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); cursor: pointer; transition: all 0.2s; font-family: inherit; }
+  .btn-sm { padding: 12px 16px; font-size: 14px; font-weight: 600; border-radius: 12px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); cursor: pointer; transition: all 0.2s; font-family: inherit; text-align: center; }
   .btn-sm:hover { background: rgba(255,255,255,0.25); }
-  .btn-primary { background: var(--accent); color: var(--accent-text); border: none; padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 14px; transition: all 0.2s; font-family: inherit; }
+  .btn-primary { background: var(--accent); color: var(--accent-text); border: none; padding: 16px 20px; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 14px; transition: all 0.2s; font-family: inherit; }
   .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255,255,255,0.2); }
 
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media(max-width:700px) { .grid2 { grid-template-columns: 1fr; } }
 
   .video-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; padding-right: 4px; }
   .video-list::-webkit-scrollbar { width: 6px; }
   .video-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
   
-  .vi { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(0,0,0,0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: all 0.2s; }
+  .vi { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(0,0,0,0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: all 0.2s; }
   .vi:hover { background: rgba(255,255,255,0.1); }
   .vi.active { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.15); }
-  .vi-name { font-size: 14px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vi-name { font-size: 15px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .vi-play { font-size: 12px; color: var(--accent); font-weight: 800; opacity: 0; text-transform: uppercase; letter-spacing: 0.05em; }
   .vi:hover .vi-play, .vi.active .vi-play { opacity: 1; }
 
-  .field { margin-bottom: 14px; }
-  .field label { display: block; font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
   .field input, .field select, .field textarea {
-    width: 100%; padding: 12px 14px;
+    width: 100%; padding: 14px 14px;
     background: rgba(0,0,0,0.15); border: 1px solid var(--border);
-    border-radius: 12px; color: var(--text); font-size: 14px; outline: none; transition: all 0.2s; font-family: inherit;
+    border-radius: 12px; color: var(--text); font-size: 15px; outline: none; transition: all 0.2s; font-family: inherit;
   }
   .field input:focus, .field select:focus { border-color: rgba(255,255,255,0.5); background: rgba(0,0,0,0.25); }
-  .field textarea { min-height: 60px; resize: vertical; font-family: monospace; font-size: 13px; }
+  .field textarea { min-height: 80px; resize: vertical; font-family: monospace; font-size: 14px; }
 
-  .toggle { position: relative; width: 44px; height: 24px; display: inline-block; }
+  .toggle { position: relative; width: 48px; height: 26px; display: inline-block; flex-shrink: 0; }
   .toggle input { opacity: 0; width: 0; height: 0; }
   .slider { position: absolute; inset: 0; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 20px; cursor: pointer; transition: .2s; }
-  .slider::before { content:''; position:absolute; width:16px; height:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
+  .slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
   .toggle input:checked + .slider { background: var(--green); border-color: var(--green); }
-  .toggle input:checked + .slider::before { transform: translateX(20px); }
-  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-  .toggle-label { font-size: 14px; font-weight: 600; }
+  .toggle input:checked + .slider::before { transform: translateX(22px); }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: rgba(0,0,0,0.1); padding: 12px 16px; border-radius: 12px; }
+  .toggle-label { font-size: 15px; font-weight: 600; }
 
-  .days { display: flex; gap: 8px; margin-bottom: 14px; }
-  .day { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border); background: rgba(0,0,0,0.15); color: var(--muted); font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.2s; }
+  .days { display: flex; gap: 6px; margin-bottom: 16px; }
+  .day { flex: 1; height: 42px; border-radius: 10px; border: 1px solid var(--border); background: rgba(0,0,0,0.15); color: var(--muted); font-size: 14px; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
   .day.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
-  .day:hover:not(.on) { background: rgba(255,255,255,0.1); }
+  .day:active { transform: scale(0.95); }
 
-  .sched-box { font-size: 13px; font-weight: 600; padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .sched-box { font-size: 14px; font-weight: 600; padding: 12px 16px; border-radius: 12px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
   .sched-box.in  { background: rgba(74, 222, 128, 0.15); color: var(--green); border: 1px solid rgba(74, 222, 128, 0.3); }
   .sched-box.out { background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid rgba(255,255,255,0.1); }
 
-  #toast { position: fixed; bottom: 24px; right: 24px; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 12px 20px; font-size: 14px; font-weight: 600; transform: translateY(80px); opacity: 0; transition: all .3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 999; backdrop-filter: blur(8px); }
+  #toast { position: fixed; bottom: 24px; right: 24px; background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 14px 20px; font-size: 15px; font-weight: 600; transform: translateY(100px); opacity: 0; transition: all .3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 999; backdrop-filter: blur(8px); }
   #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* MÓVILES (iPhone, Samsung A05, etc) */
+  @media(max-width: 700px) {
+    .grid2 { grid-template-columns: 1fr; gap: 16px; }
+    main { padding: 16px 12px; gap: 16px; }
+    header { padding: 0 16px; height: 65px; }
+    .card { padding: 20px 16px; border-radius: 20px; }
+    .now { flex-direction: column; text-align: center; padding: 20px 16px; gap: 10px; }
+    .now-icon { font-size: 40px; }
+    .badge { margin-left: 0; margin-top: 4px; padding: 6px 12px; font-size: 12px; }
+    .controls { flex-direction: column; width: 100%; gap: 12px; }
+    .btn { width: 100%; padding: 16px; font-size: 16px; }
+    .btn-sm { width: 100%; padding: 16px; font-size: 15px; }
+    .video-list { max-height: 40vh; }
+    .vi { padding: 16px; }
+    .vi-play { opacity: 1; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px; }
+    #toast { right: 16px; left: 16px; bottom: 16px; text-align: center; }
+  }
 </style>
 </head>
 <body>
