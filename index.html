@@ -56,7 +56,7 @@ function checkLocalDevBypass() {
   return false;
 }
 
-function doLoginHub() {
+async function doLoginHub() {
   const u = document.getElementById('user').value.trim().toUpperCase();
   const p = document.getElementById('pass').value.trim();
   const btn = document.querySelector('.btn-login');
@@ -79,36 +79,51 @@ function doLoginHub() {
   btn.disabled = true;
   document.getElementById('loginErr').style.display = 'none';
 
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'login', usuario: u, password: p })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.ok) {
-      // Usar EmcalaAuth para crear la sesión de forma segura
-      EmcalaAuth.createSession({
-        usuario: u,
-        userHash: data.userHash, // El GAS envía este hash (SHA-256 de contraseña)
-        sessionToken: data.sessionToken, // El GAS envía el token HMAC
-        rol: data.rol,
-        nombre: data.label,
-        promotores: data.promotores
+  let retries = 3;
+  let success = false;
+  
+  while (retries > 0) {
+    try {
+      const response = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'login', usuario: u, password: p })
       });
-      // Redirigir al portal unificado
-      window.location.href = './portal/index.html';
-    } else {
-      document.getElementById('loginErr').textContent = 'Credenciales incorrectas';
-      document.getElementById('loginErr').style.display = 'block';
-      btn.textContent = 'Ingresar'; btn.disabled = false;
+      const data = await response.json();
+      
+      if (data.ok) {
+        EmcalaAuth.createSession({
+          usuario: u,
+          userHash: data.userHash, 
+          sessionToken: data.sessionToken, 
+          rol: data.rol,
+          nombre: data.label,
+          promotores: data.promotores
+        });
+        window.location.href = './portal/index.html';
+        success = true;
+        break;
+      } else {
+        document.getElementById('loginErr').textContent = 'Credenciales incorrectas';
+        document.getElementById('loginErr').style.display = 'block';
+        btn.textContent = 'Ingresar'; btn.disabled = false;
+        success = true; // no es error de red, así que no reintentar
+        break;
+      }
+    } catch (error) {
+      retries--;
+      if (retries > 0) {
+        btn.textContent = 'Reintentando...';
+        await new Promise(r => setTimeout(r, 1500));
+      }
     }
-  })
-  .catch(error => {
+  }
+  
+  if (!success && retries === 0) {
     document.getElementById('loginErr').textContent = 'Error de conexión';
     document.getElementById('loginErr').style.display = 'block';
     btn.textContent = 'Ingresar'; btn.disabled = false;
-  });
+  }
 }
 
 // Si entra a esta página pero ya está logueado de antes, lo mandamos directo al portal
