@@ -95,6 +95,7 @@
 
     function renderTables() {
       tbody.innerHTML = '';
+      const fragment = document.createDocumentFragment();
       const diasRestantes = getDiasHabilesRestantes(document.getElementById('date-input').value);
       for (const spv in SPV_DATA) {
         const promotores = SPV_DATA[spv];
@@ -203,12 +204,13 @@
             <td class="progress-cell"><span id="prog-${p}-bol">0%</span><div class="progress-bar-bg"><div id="bar-${p}-bol" class="progress-bar-fill" style="width:0%"></div></div></td>
             `}
           `;
-          tbody.appendChild(tr);
+          fragment.appendChild(tr);
         });
         if (spv !== 'LEMOS PATRICIA') {
-          tbody.appendChild(trSpv);
+          fragment.appendChild(trSpv);
         }
       }
+      tbody.appendChild(fragment);
       document.querySelectorAll('.cell-input').forEach(inp => {
         inp.addEventListener('input', handleInput);
         inp.addEventListener('focus', function () { 

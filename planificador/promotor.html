@@ -459,11 +459,8 @@
         // En Apps Script no podemos enviar cabeceras personalizadas adicionales al Content-Type
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          cache: 'no-store',
-          body: JSON.stringify(payload),
-          headers: { 
-            'Content-Type': 'text/plain;charset=utf-8'
-          }
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
         });
         const result = await response.json();
         if (result.status === 'success') {

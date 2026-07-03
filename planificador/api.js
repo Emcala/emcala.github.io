@@ -85,6 +85,10 @@
       btn.innerHTML = '⏳ Sincronizando...'; 
       btn.disabled = true;
       dateEl.disabled = true;
+
+      // Permitir que el navegador dibuje el texto '⏳ Sincronizando...' antes de bloquear el hilo
+      await new Promise(r => setTimeout(r, 10));
+
       try {
         // Solo guardar planificación pendiente si fue clic manual del usuario
         if (!isAutoSync) {
@@ -96,9 +100,13 @@
         } else {
           syncSkus(); // Non-blocking en auto-sync
         }
+
         // UN SOLO FETCH: traer TODOS los datos del día (sin filtrar por SPV)
         const cMonth = window.getCommercialMonthAndStart(date).month;
-        const response = await fetch(`${SCRIPT_URL}?date=${date}&cMonth=${cMonth}&spv=ALL&_t=${Date.now()}`);
+        const fetchUrl = `${SCRIPT_URL}?date=${date}&cMonth=${cMonth}&spv=ALL&_t=${Date.now()}`;
+        
+        btn.innerHTML = '⏳ Descargando datos...';
+        const response = await fetch(fetchUrl);
         const result = await response.json();
         
         if (result.status !== 'success') {
@@ -151,6 +159,7 @@
           btn.innerHTML = orig;
           btn.style.borderColor = '';
           btn.style.color = '';
+          btn.classList.add('btn-needs-sync');
         }, 4000);
         return;
       }

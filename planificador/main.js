@@ -34,7 +34,7 @@
           volData[prom]['k2-tar'] = tar2.value;
         });
         renderTables();
-        document.getElementById('btn-save').click(); // Auto save to sheet
+        saveToServer(true); // Auto save solo datos de planificación a la nube
         const btnSync = document.getElementById('btn-sync');
         if (btnSync) btnSync.classList.add('btn-needs-sync');
         
@@ -321,56 +321,7 @@
         await saveToServer(true);
       }
     });
-    document.getElementById('btn-save').addEventListener('click', async () => {
-      const date = document.getElementById('date-input').value;
-      if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') { alert('Falta URL de Sheets'); return; }
-      const btn = document.getElementById('btn-save');
-      const orig = btn.innerHTML;
-      btn.innerHTML = '⏳ Subiendo...'; btn.disabled = true;
-      const payload = [];
-      for (const spv in SPV_DATA) {
-        const promotores = SPV_DATA[spv];
-        promotores.forEach(prom => {
-          if (volData[prom]) {
-            // Solo enviar campos que tengan valor real, NUNCA enviar campos vacíos
-            // que pisarían datos reales (ventas) en la nube
-            const rowPayload = { date, spv, promotor: prom };
-            let hasData = false;
-            for (const field in volData[prom]) {
-              const v = volData[prom][field];
-              if (v !== undefined && v !== null && v !== '') {
-                rowPayload[field] = v;
-                hasData = true;
-              }
-            }
-            if (hasData) {
-              payload.push(rowPayload);
-            }
-          }
-        });
-      }
-      if (payload.length === 0) {
-        alert('No hay datos para guardar.');
-        btn.innerHTML = orig; btn.disabled = false;
-        return;
-      }
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-          console.log('¡Ventas guardadas correctamente!');
-        } else {
-          alert('Hubo un problema: ' + result.message);
-        }
-      } catch (e) {
-        alert('Error de conexión al subir ventas.');
-      }
-      btn.innerHTML = orig; btn.disabled = false;
-    });
+    // btn-save ha sido eliminado por redundante. El guardado se maneja mediante api.js saveToServer().
     document.getElementById('btn-sync').addEventListener('click', async (e) => {
       await performSync(false);
     });
