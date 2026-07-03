@@ -16,21 +16,27 @@
 
     // Función para traer mesas del servidor y actualizar SPV_DATA
     async function fetchMesasFromServer() {
-      try {
-        const response = await fetch(AUTH_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'getMesas' })
-        });
-        const result = await response.json();
-        if (result.ok && result.mesas && Object.keys(result.mesas).length > 0) {
-          SPV_DATA = result.mesas;
-          _mesasLoaded = true;
-          console.log('Mesas cargadas del servidor:', Object.keys(SPV_DATA).length, 'supervisores');
-          return true;
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const response = await fetch(AUTH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'getMesas' })
+          });
+          const result = await response.json();
+          if (result.ok && result.mesas && Object.keys(result.mesas).length > 0) {
+            SPV_DATA = result.mesas;
+            _mesasLoaded = true;
+            console.log('Mesas cargadas del servidor:', Object.keys(SPV_DATA).length, 'supervisores');
+            return true;
+          }
+          break; // Si respondió pero sin mesas, salir del bucle
+        } catch(e) {
+          console.warn(`Intento fallido al cargar mesas del servidor. Intentos restantes: ${retries - 1}`, e);
+          retries--;
+          if (retries > 0) await new Promise(r => setTimeout(r, 1500)); // Esperar 1.5s antes de reintentar
         }
-      } catch(e) {
-        console.warn('No se pudieron cargar las mesas del servidor:', e);
       }
       return false;
     }
