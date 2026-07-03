@@ -304,67 +304,16 @@
       }
       let processedDatesCount = 0;
       let totalMatchCount = 0;
-      const monthObjsCache = {};
-      // Guardar cada fecha en su respectiva clave de LocalStorage
+      // ENVÍO DIRECTO A LA NUBE (sin localStorage)
       const currentPlannerDate = document.getElementById('date-input').value;
       const sortedDates = Object.keys(allDatesSales).sort();
+      const payload = [];
+      
       for (const pDate of sortedDates) {
-        const storageKey = `emcala_vol_all_${pDate}_v3`;
-        let existingData = {};
-        const monthStr = window.getCommercialMonthAndStart(pDate).month;
-        if (!monthObjsCache[monthStr]) {
-           try { monthObjsCache[monthStr] = JSON.parse(localStorage.getItem(`emcala_obj_${monthStr}`) || '{}'); } catch(e){ monthObjsCache[monthStr] = {}; }
-        }
-        const mObjs = monthObjsCache[monthStr];
-        const saved = localStorage.getItem(storageKey);
-        if (saved) {
-          try {
-            existingData = JSON.parse(saved);
-          } catch(e) {
-            existingData = {};
-          }
-        }
-        // Para la fecha actual, mergear volData (datos en memoria del sync) al existingData
-        // Esto asegura que k1-met, k1-tar, etc. estén disponibles para el cálculo de KPI
-        if (pDate === currentPlannerDate && Object.keys(volData).length > 0) {
-          for (const prom in volData) {
-            if (!existingData[prom]) existingData[prom] = {};
-            for (const field in volData[prom]) {
-              if (volData[prom][field] !== undefined && volData[prom][field] !== '') {
-                existingData[prom][field] = volData[prom][field];
-              }
-            }
-          }
-        }
-        // Inyectar el objetivo mensual si falta o es 0
-        for (const spv in SPV_DATA) {
-          SPV_DATA[spv].forEach(prom => {
-             if (mObjs[prom]) {
-               if (!existingData[prom]) existingData[prom] = {};
-               if (!existingData[prom]['obj-f1'] && mObjs[prom]['obj-f1']) existingData[prom]['obj-f1'] = mObjs[prom]['obj-f1'];
-               if (!existingData[prom]['obj-f2'] && mObjs[prom]['obj-f2']) existingData[prom]['obj-f2'] = mObjs[prom]['obj-f2'];
-             }
-          });
-        }
-        // Borrar las ventas reales ("lo que estaba") para que se pise con lo nuevo
-        const realFields = [
-          'f1-v', 'f1-core', 'f1-value', 'f1-cv', 'f1-ac', 'f1-bc', 'f1-lt',
-          'f2-v', 'f2-ung', 'f2-up', 'f2-rb', 'f2-ag',
-          'k1-v', 'k2-v', 'bol-v',
-          'ccc-cerveza', 'ccc-core', 'ccc-value', 'ccc-abovecore', 'ccc-latones', 'ccc-balanced', 'ccc-nabs',
-          'tbd-cerveza', 'tbd-core', 'tbd-value', 'tbd-abovecore', 'tbd-latones', 'tbd-balanced', 'tbd-nabs',
-          'cv-cerveza', 'cv-core', 'cv-value', 'cv-abovecore', 'cv-latones', 'cv-balanced', 'cv-nabs', 'cv-aguas', 'cv-ungtop', 'cv-eficiencia',
-          'vvol-cerveza', 'vvol-core', 'vvol-value', 'vvol-abovecore', 'vvol-balanced', 'vvol-latones', 'vvol-nabs', 'vvol-aguas', 'vvol-ungtop', 'vvol-totalung',
-          'vccc-cerveza', 'vccc-core', 'vccc-value', 'vccc-abovecore', 'vccc-latones', 'vccc-balanced', 'vccc-nabs',
-          'vtbd-cerveza', 'vtbd-core', 'vtbd-value', 'vtbd-abovecore', 'vtbd-latones', 'vtbd-balanced', 'vtbd-nabs'
-        ];
-        for (const prom in existingData) {
-          for (const rf of realFields) {
-            existingData[prom][rf] = '';
-          }
-        }
-        let dateMatches = 0;
+        const cMonth = window.getCommercialMonthAndStart(pDate).month;
         const daySales = allDatesSales[pDate];
+        let dateMatches = 0;
+        
         for (const promoter in daySales) {
           let trackedPromoter = null;
           const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
@@ -380,192 +329,73 @@
               const isFlatMatch = pFlat === csvFlat || pFlat.includes(csvFlat) || csvFlat.includes(pFlat);
               return pInCsv || csvInP || isFlatMatch;
             });
-            if (match) {
-              trackedPromoter = match;
-              break;
-            }
+            if (match) { trackedPromoter = match; break; }
           }
-          if (trackedPromoter) {
-            if (!existingData[trackedPromoter]) {
-              existingData[trackedPromoter] = {};
-            }
-            const pSales = daySales[promoter];
-            // Guardar volúmenes (Focos I y II)
-            const rCore = pSales.core > 0 ? parseFloat(pSales.core.toFixed(2)) : 0;
-            const rValue = pSales.value > 0 ? parseFloat(pSales.value.toFixed(2)) : 0;
-            const rAc = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : 0;
-            const rUng = pSales.totalUng > 0 ? parseFloat(pSales.totalUng.toFixed(2)) : 0;
-            const rAg = pSales.aguas > 0 ? parseFloat(pSales.aguas.toFixed(2)) : 0;
-            existingData[trackedPromoter]['f1-core'] = rCore > 0 ? rCore : '';
-            existingData[trackedPromoter]['f1-value'] = rValue > 0 ? rValue : '';
-            // Core+Value = suma exacta de redondeos
-            const coreValueSum = parseFloat((rCore + rValue).toFixed(2));
-            existingData[trackedPromoter]['f1-cv'] = coreValueSum > 0 ? coreValueSum : '';
-            existingData[trackedPromoter]['f1-ac'] = rAc > 0 ? rAc : '';
-            // Foco 1 Total (Cerveza) = suma exacta de (Core+Value) + Above Core
-            const f1TotalSum = parseFloat((coreValueSum + rAc).toFixed(2));
-            existingData[trackedPromoter]['f1-v'] = f1TotalSum > 0 ? f1TotalSum : (pSales.cerveza > 0 ? parseFloat(pSales.cerveza.toFixed(2)) : '');
-            existingData[trackedPromoter]['f1-bc'] = pSales.balanced > 0 ? parseFloat(pSales.balanced.toFixed(2)) : '';
-            existingData[trackedPromoter]['f1-lt'] = pSales.latones > 0 ? parseFloat(pSales.latones.toFixed(2)) : '';
-            existingData[trackedPromoter]['f2-ung'] = rUng > 0 ? rUng : '';
-            existingData[trackedPromoter]['f2-up'] = pSales.ungTop > 0 ? parseFloat(pSales.ungTop.toFixed(2)) : '';
-            existingData[trackedPromoter]['f2-rb'] = pSales.redbull > 0 ? parseFloat(pSales.redbull.toFixed(2)) : '';
-            existingData[trackedPromoter]['f2-ag'] = rAg > 0 ? rAg : '';
-            // Foco 2 Total (NABS) = suma exacta de redondeos de NABS (categoría UNG o NABS)
-            const rNabs = pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : 0;
-            const f2TotalSum = rNabs;
-            existingData[trackedPromoter]['f2-v'] = f2TotalSum > 0 ? f2TotalSum : '';
-            existingData[trackedPromoter]['bol-v'] = pSales.clientsAll.size > 0 ? pSales.clientsAll.size : '';
-            // Guardar datos de segmento para CCC y TBD (persistidos para auto-cálculo)
-            existingData[trackedPromoter]['ccc-cerveza'] = pSales.clientsTotalCerveza.size;
-            existingData[trackedPromoter]['ccc-core'] = pSales.clientsCore.size;
-            existingData[trackedPromoter]['ccc-value'] = pSales.clientsValue.size;
-            existingData[trackedPromoter]['ccc-abovecore'] = pSales.clientsAboveCore.size;
-            existingData[trackedPromoter]['ccc-latones'] = pSales.clientsLatones.size;
-            existingData[trackedPromoter]['ccc-balanced'] = pSales.clientsBalanced.size;
-            existingData[trackedPromoter]['ccc-nabs'] = pSales.clientsNabs.size;
-            existingData[trackedPromoter]['tbd-cerveza'] = pSales.txTotalCerveza.size;
-            existingData[trackedPromoter]['tbd-core'] = pSales.txCore.size;
-            existingData[trackedPromoter]['tbd-value'] = pSales.txValue.size;
-            existingData[trackedPromoter]['tbd-abovecore'] = pSales.txAboveCore.size;
-            existingData[trackedPromoter]['tbd-latones'] = pSales.txLatones.size;
-            existingData[trackedPromoter]['tbd-balanced'] = pSales.txBalanced.size;
-            existingData[trackedPromoter]['tbd-nabs'] = pSales.txNabs.size;
-            // Guardar datos para métrica CV
-            existingData[trackedPromoter]['cv-cerveza'] = pSales.cvClientsCerveza.size;
-            existingData[trackedPromoter]['cv-core'] = pSales.cvClientsCore.size;
-            existingData[trackedPromoter]['cv-value'] = pSales.cvClientsValue.size;
-            existingData[trackedPromoter]['cv-abovecore'] = pSales.cvClientsAboveCore.size;
-            existingData[trackedPromoter]['cv-latones'] = pSales.cvClientsLatones.size;
-            existingData[trackedPromoter]['cv-balanced'] = pSales.cvClientsBalanced.size;
-            existingData[trackedPromoter]['cv-nabs'] = pSales.cvClientsNabs.size;
-            existingData[trackedPromoter]['cv-aguas'] = pSales.cvClientsAguas.size;
-            existingData[trackedPromoter]['cv-ungtop'] = pSales.cvClientsUngTop.size;
-            existingData[trackedPromoter]['cv-eficiencia'] = pSales.cvClientsEficiencia.size;
-            // Guardar datos VALIDADOS (solo SKUs del maestro) para KPIs (Foco III y IV)
-            existingData[trackedPromoter]['vvol-cerveza'] = pSales.vCerveza > 0 ? parseFloat(pSales.vCerveza.toFixed(2)) : 0;
-            existingData[trackedPromoter]['vvol-core'] = pSales.vCore > 0 ? parseFloat(pSales.vCore.toFixed(2)) : 0;
-            existingData[trackedPromoter]['vvol-value'] = pSales.vValue > 0 ? parseFloat(pSales.vValue.toFixed(2)) : 0;
-            existingData[trackedPromoter]['vvol-abovecore'] = pSales.vAboveCore > 0 ? parseFloat(pSales.vAboveCore.toFixed(2)) : 0;
-            existingData[trackedPromoter]['vvol-balanced'] = pSales.vBalanced > 0 ? parseFloat(pSales.vBalanced.toFixed(2)) : 0;
-            existingData[trackedPromoter]['vvol-latones'] = pSales.vLatones > 0 ? parseFloat(pSales.vLatones.toFixed(2)) : 0;
-            existingData[trackedPromoter]['vvol-nabs'] = pSales.vNabs > 0 ? parseFloat(pSales.vNabs.toFixed(2)) : 0;
-            existingData[trackedPromoter]['vvol-aguas'] = pSales.vAguas > 0 ? parseFloat(pSales.vAguas.toFixed(2)) : 0;
-            existingData[trackedPromoter]['vvol-ungtop'] = pSales.vUngTop > 0 ? parseFloat(pSales.vUngTop.toFixed(2)) : 0;
-            existingData[trackedPromoter]['vvol-totalung'] = pSales.vTotalUng > 0 ? parseFloat(pSales.vTotalUng.toFixed(2)) : 0;
-            existingData[trackedPromoter]['vccc-cerveza'] = pSales.vCccCerveza.size;
-            existingData[trackedPromoter]['vccc-core'] = pSales.vCccCore.size;
-            existingData[trackedPromoter]['vccc-value'] = pSales.vCccValue.size;
-            existingData[trackedPromoter]['vccc-abovecore'] = pSales.vCccAboveCore.size;
-            existingData[trackedPromoter]['vccc-latones'] = pSales.vCccLatones.size;
-            existingData[trackedPromoter]['vccc-balanced'] = pSales.vCccBalanced.size;
-            existingData[trackedPromoter]['vccc-nabs'] = pSales.vCccNabs.size;
-            existingData[trackedPromoter]['vtbd-cerveza'] = pSales.vTxCerveza.size;
-            existingData[trackedPromoter]['vtbd-core'] = pSales.vTxCore.size;
-            existingData[trackedPromoter]['vtbd-value'] = pSales.vTxValue.size;
-            existingData[trackedPromoter]['vtbd-abovecore'] = pSales.vTxAboveCore.size;
-            existingData[trackedPromoter]['vtbd-latones'] = pSales.vTxLatones.size;
-            existingData[trackedPromoter]['vtbd-balanced'] = pSales.vTxBalanced.size;
-            existingData[trackedPromoter]['vtbd-nabs'] = pSales.vTxNabs.size;
-            dateMatches++;
-            totalMatchCount++;
-          }
+          if (!trackedPromoter) continue;
+          const pSales = daySales[promoter];
+          const rCore = pSales.core > 0 ? parseFloat(pSales.core.toFixed(2)) : '';
+          const rValue = pSales.value > 0 ? parseFloat(pSales.value.toFixed(2)) : '';
+          const rAc = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : '';
+          const rUng = pSales.totalUng > 0 ? parseFloat(pSales.totalUng.toFixed(2)) : '';
+          const rAg = pSales.aguas > 0 ? parseFloat(pSales.aguas.toFixed(2)) : '';
+          const rNabs = pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : '';
+          const coreValueSum = (parseFloat(rCore)||0) + (parseFloat(rValue)||0);
+          const f1TotalSum = parseFloat((coreValueSum + (parseFloat(rAc)||0)).toFixed(2));
+          const f2TotalSum = parseFloat((parseFloat(rNabs)||0).toFixed(2));
+          const spvName = Object.keys(SPV_DATA).find(s => SPV_DATA[s].includes(trackedPromoter));
+          payload.push({
+            date: pDate, spv: spvName, promotor: trackedPromoter, cMonth,
+            'f1-v': f1TotalSum || '', 'f1-cv': parseFloat(coreValueSum.toFixed(2)) || '', 'f1-ac': rAc, 'f1-bc': pSales.balanced > 0 ? parseFloat(pSales.balanced.toFixed(2)) : '', 'f1-lt': pSales.latones > 0 ? parseFloat(pSales.latones.toFixed(2)) : '',
+            'f2-v': f2TotalSum || '', 'f2-ung': rUng, 'f2-up': pSales.ungTop > 0 ? parseFloat(pSales.ungTop.toFixed(2)) : '', 'f2-rb': pSales.redbull > 0 ? parseFloat(pSales.redbull.toFixed(2)) : '', 'f2-ag': rAg,
+            'bol-v': pSales.clientsAll.size || '',
+            'ccc-ids-cerveza': Array.from(pSales.clientsTotalCerveza).join(','), 'ccc-cerveza': pSales.clientsTotalCerveza.size, 'ccc-core': pSales.clientsCore.size, 'ccc-value': pSales.clientsValue.size, 'ccc-abovecore': pSales.clientsAboveCore.size, 'ccc-latones': pSales.clientsLatones.size, 'ccc-balanced': pSales.clientsBalanced.size, 'ccc-nabs': pSales.clientsNabs.size,
+            'tbd-cerveza': pSales.txTotalCerveza.size, 'tbd-core': pSales.txCore.size, 'tbd-value': pSales.txValue.size, 'tbd-abovecore': pSales.txAboveCore.size, 'tbd-latones': pSales.txLatones.size, 'tbd-balanced': pSales.txBalanced.size, 'tbd-nabs': pSales.txNabs.size,
+            'cv-cerveza': pSales.cvClientsCerveza.size, 'cv-core': pSales.cvClientsCore.size, 'cv-value': pSales.cvClientsValue.size, 'cv-abovecore': pSales.cvClientsAboveCore.size, 'cv-latones': pSales.cvClientsLatones.size, 'cv-balanced': pSales.cvClientsBalanced.size, 'cv-nabs': pSales.cvClientsNabs.size, 'cv-aguas': pSales.cvClientsAguas.size, 'cv-ungtop': pSales.cvClientsUngTop.size, 'cv-eficiencia': pSales.cvClientsEficiencia.size,
+            'vvol-cerveza': pSales.vCerveza > 0 ? parseFloat(pSales.vCerveza.toFixed(2)) : 0, 'vvol-core': pSales.vCore > 0 ? parseFloat(pSales.vCore.toFixed(2)) : 0, 'vvol-value': pSales.vValue > 0 ? parseFloat(pSales.vValue.toFixed(2)) : 0, 'vvol-abovecore': pSales.vAboveCore > 0 ? parseFloat(pSales.vAboveCore.toFixed(2)) : 0, 'vvol-balanced': pSales.vBalanced > 0 ? parseFloat(pSales.vBalanced.toFixed(2)) : 0, 'vvol-latones': pSales.vLatones > 0 ? parseFloat(pSales.vLatones.toFixed(2)) : 0, 'vvol-nabs': pSales.vNabs > 0 ? parseFloat(pSales.vNabs.toFixed(2)) : 0, 'vvol-aguas': pSales.vAguas > 0 ? parseFloat(pSales.vAguas.toFixed(2)) : 0, 'vvol-ungtop': pSales.vUngTop > 0 ? parseFloat(pSales.vUngTop.toFixed(2)) : 0, 'vvol-totalung': pSales.vTotalUng > 0 ? parseFloat(pSales.vTotalUng.toFixed(2)) : 0,
+            'vccc-cerveza': pSales.vCccCerveza.size, 'vccc-core': pSales.vCccCore.size, 'vccc-value': pSales.vCccValue.size, 'vccc-abovecore': pSales.vCccAboveCore.size, 'vccc-latones': pSales.vCccLatones.size, 'vccc-balanced': pSales.vCccBalanced.size, 'vccc-nabs': pSales.vCccNabs.size,
+            'vtbd-cerveza': pSales.vTxCerveza.size, 'vtbd-core': pSales.vTxCore.size, 'vtbd-value': pSales.vTxValue.size, 'vtbd-abovecore': pSales.vTxAboveCore.size, 'vtbd-latones': pSales.vTxLatones.size, 'vtbd-balanced': pSales.vTxBalanced.size, 'vtbd-nabs': pSales.vTxNabs.size
+          });
+          dateMatches++;
+          totalMatchCount++;
         }
-        // --- EL AUTO-CÁLCULO DEL ACUMULADO MENSUAL HA SIDO MOVIDO AL BACKEND ---
-        // Ya no se calcula en memoria local para evitar desfases.
-        // El servidor Sheets hará la suma perfecta y la devolverá en la próxima sincronización.
-        // --------------------------------------------------------------------
-        // Si procesamos el archivo y pertenece a las fechas relevantes, guardar en memoria
-        processedDatesCount++;
+        if (dateMatches > 0) processedDatesCount++;
       }
-      let latestDateStr = document.getElementById('date-input').value;
+      
+      if (payload.length === 0) {
+        alert('ATENCION: El archivo CSV fue ignorado porque no se encontraron promotores coincidentes.');
+        return;
+      }
+      
+      // Actualizar la fecha del planificador a la más reciente del CSV
       const csvDates = Object.keys(allDatesSales).sort().reverse();
       if (csvDates.length > 0) {
-        latestDateStr = csvDates[0];
-        document.getElementById('date-input').value = latestDateStr;
-        loadData();
-        renderTables();
+        document.getElementById('date-input').value = csvDates[0];
       }
-      alert(`Subiendo ${processedDatesCount} fechas a la nube, por favor esperá...`);
-      // AUTO-GUARDADO DE TODOS LOS DÍAS PROCESADOS DIRECTO A LA NUBE
+      
+      alert(`Subiendo ${processedDatesCount} fechas (${payload.length} registros) a la nube, por favor esperá...`);
+      
+      // ENVIAR DIRECTO A LA NUBE (sin localStorage intermediario)
       setTimeout(async () => {
         if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') {
           alert('No se pueden subir a la nube porque falta SCRIPT_URL');
           return;
         }
-        const payload = [];
-        const sortedDates2 = Object.keys(allDatesSales).sort();
-        for (const pDate of sortedDates2) {
-          const cMonth = window.getCommercialMonthAndStart(pDate).month;
-          const daySalesForPayload = allDatesSales[pDate];
-          for (const promoter in daySalesForPayload) {
-            let trackedPromoter = null;
-            const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
-            const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
-            const csvParts = normalizeParts(promoter);
-            const csvFlat = normalizeFlat(promoter);
-            for (const spv in SPV_DATA) {
-              const match = SPV_DATA[spv].find(p => {
-                const pParts = normalizeParts(p);
-                const pFlat = normalizeFlat(p);
-                const pInCsv = pParts.every(part => csvParts.includes(part));
-                const csvInP = csvParts.every(part => pParts.includes(part));
-                const isFlatMatch = pFlat === csvFlat || pFlat.includes(csvFlat) || csvFlat.includes(pFlat);
-                return pInCsv || csvInP || isFlatMatch;
-              });
-              if (match) { trackedPromoter = match; break; }
-            }
-            if (!trackedPromoter) continue;
-            const pSales = daySalesForPayload[promoter];
-            const rCore = pSales.core > 0 ? parseFloat(pSales.core.toFixed(2)) : '';
-            const rValue = pSales.value > 0 ? parseFloat(pSales.value.toFixed(2)) : '';
-            const rAc = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : '';
-            const rUng = pSales.totalUng > 0 ? parseFloat(pSales.totalUng.toFixed(2)) : '';
-            const rAg = pSales.aguas > 0 ? parseFloat(pSales.aguas.toFixed(2)) : '';
-            const rNabs = pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : '';
-            const coreValueSum = (parseFloat(rCore)||0) + (parseFloat(rValue)||0);
-            const f1TotalSum = parseFloat((coreValueSum + (parseFloat(rAc)||0)).toFixed(2));
-            const f2TotalSum = parseFloat((parseFloat(rNabs)||0).toFixed(2));
-            const spvName = Object.keys(SPV_DATA).find(s => SPV_DATA[s].includes(trackedPromoter));
-            payload.push({
-              date: pDate, spv: spvName, promotor: trackedPromoter, cMonth,
-              'f1-v': f1TotalSum || '', 'f1-cv': parseFloat(coreValueSum.toFixed(2)) || '', 'f1-ac': rAc, 'f1-bc': pSales.balanced > 0 ? parseFloat(pSales.balanced.toFixed(2)) : '', 'f1-lt': pSales.latones > 0 ? parseFloat(pSales.latones.toFixed(2)) : '',
-              'f2-v': f2TotalSum || '', 'f2-ung': rUng, 'f2-up': pSales.ungTop > 0 ? parseFloat(pSales.ungTop.toFixed(2)) : '', 'f2-rb': pSales.redbull > 0 ? parseFloat(pSales.redbull.toFixed(2)) : '', 'f2-ag': rAg,
-              'bol-v': pSales.clientsAll.size || '',
-              'ccc-cerveza': pSales.clientsTotalCerveza.size, 'ccc-core': pSales.clientsCore.size, 'ccc-value': pSales.clientsValue.size, 'ccc-abovecore': pSales.clientsAboveCore.size, 'ccc-latones': pSales.clientsLatones.size, 'ccc-balanced': pSales.clientsBalanced.size, 'ccc-nabs': pSales.clientsNabs.size,
-              'tbd-cerveza': pSales.txTotalCerveza.size, 'tbd-core': pSales.txCore.size, 'tbd-value': pSales.txValue.size, 'tbd-abovecore': pSales.txAboveCore.size, 'tbd-latones': pSales.txLatones.size, 'tbd-balanced': pSales.txBalanced.size, 'tbd-nabs': pSales.txNabs.size,
-              'cv-cerveza': pSales.cvClientsCerveza.size, 'cv-core': pSales.cvClientsCore.size, 'cv-value': pSales.cvClientsValue.size, 'cv-abovecore': pSales.cvClientsAboveCore.size, 'cv-latones': pSales.cvClientsLatones.size, 'cv-balanced': pSales.cvClientsBalanced.size, 'cv-nabs': pSales.cvClientsNabs.size, 'cv-aguas': pSales.cvClientsAguas.size, 'cv-ungtop': pSales.cvClientsUngTop.size, 'cv-eficiencia': pSales.cvClientsEficiencia.size,
-              'vvol-cerveza': pSales.vCerveza > 0 ? parseFloat(pSales.vCerveza.toFixed(2)) : 0, 'vvol-core': pSales.vCore > 0 ? parseFloat(pSales.vCore.toFixed(2)) : 0, 'vvol-value': pSales.vValue > 0 ? parseFloat(pSales.vValue.toFixed(2)) : 0, 'vvol-abovecore': pSales.vAboveCore > 0 ? parseFloat(pSales.vAboveCore.toFixed(2)) : 0, 'vvol-balanced': pSales.vBalanced > 0 ? parseFloat(pSales.vBalanced.toFixed(2)) : 0, 'vvol-latones': pSales.vLatones > 0 ? parseFloat(pSales.vLatones.toFixed(2)) : 0, 'vvol-nabs': pSales.vNabs > 0 ? parseFloat(pSales.vNabs.toFixed(2)) : 0, 'vvol-aguas': pSales.vAguas > 0 ? parseFloat(pSales.vAguas.toFixed(2)) : 0, 'vvol-ungtop': pSales.vUngTop > 0 ? parseFloat(pSales.vUngTop.toFixed(2)) : 0, 'vvol-totalung': pSales.vTotalUng > 0 ? parseFloat(pSales.vTotalUng.toFixed(2)) : 0,
-              'vccc-cerveza': pSales.vCccCerveza.size, 'vccc-core': pSales.vCccCore.size, 'vccc-value': pSales.vCccValue.size, 'vccc-abovecore': pSales.vCccAboveCore.size, 'vccc-latones': pSales.vCccLatones.size, 'vccc-balanced': pSales.vCccBalanced.size, 'vccc-nabs': pSales.vCccNabs.size,
-              'vtbd-cerveza': pSales.vTxCerveza.size, 'vtbd-core': pSales.vTxCore.size, 'vtbd-value': pSales.vTxValue.size, 'vtbd-abovecore': pSales.vTxAboveCore.size, 'vtbd-latones': pSales.vTxLatones.size, 'vtbd-balanced': pSales.vTxBalanced.size, 'vtbd-nabs': pSales.vTxNabs.size
-            });
+        try {
+          const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+          const result = await response.json();
+          if (result.status === 'success') {
+            console.log('Ventas subidas exitosamente');
+            // Sincronizar para traer los datos frescos de la nube
+            await performSync();
+          } else {
+            alert('Error al subir ventas a la nube: ' + result.message);
           }
-        }
-        if (payload.length === 0) {
-          alert('ATENCION: El archivo CSV fue ignorado porque las fechas no coinciden con la semana que estas viendo. Cambia la semana en el portal primero!');
-        }
-        if (payload.length > 0) {
-          try {
-            const response = await fetch(SCRIPT_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify(payload)
-            });
-            const result = await response.json();
-            if (result.status === 'success') {
-              console.log('Ventas subidas exitosamente');
-              // Sincronizar automáticamente para traer los acumulados frescos del servidor
-              if (window.performSync) {
-                 await window.performSync();
-              } else {
-                 location.reload();
-              }
-            } else {
-              alert('Error al subir ventas a la nube: ' + result.message);
-            }
-          } catch (e) {
-            alert('❌ Error de conexión al intentar subir los múltiples días a la nube.');
-          }
+        } catch (e) {
+          alert('❌ Error de conexión al intentar subir los datos a la nube.');
         }
       }, 500);
     }

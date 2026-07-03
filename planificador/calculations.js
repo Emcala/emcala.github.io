@@ -64,37 +64,14 @@
     function val(prom, field) { 
       let v = (volData[prom] && volData[prom][field] !== undefined && volData[prom][field] !== '') ? volData[prom][field] : null;
       
-      // Fallback a los objetivos mensuales globales usando el MES COMERCIAL
-      if ((v === null || parseFloat(v) === 0) && (field === 'obj-f1' || field === 'obj-f2')) {
-        const pDateStr = document.getElementById('date-input').value;
-        const monthStr = window.getCommercialMonthAndStart(pDateStr).month;
-        try {
-          const monthObjs = JSON.parse(localStorage.getItem(`emcala_obj_${monthStr}`) || '{}');
-          if (monthObjs[prom] && monthObjs[prom][field]) {
-            v = monthObjs[prom][field];
-            if (!volData[prom]) volData[prom] = {};
-            volData[prom][field] = v; // Auto-guardar en memoria
-          }
-        } catch(e){}
-      }
-      
       // Para el acumulado: la nube es la fuente de verdad.
-      // v ya fue seteado arriba desde volData; si es null, aún no llegó de la nube.
-      // Solo recalculamos localmente como fallback offline.
       if (field === 'acum-f1' || field === 'acum-f2') {
-        // Leer directo de volData (sin pasar por v, que puede ser null si el campo era '' vacío)
         const raw = volData[prom] && volData[prom][field] !== undefined ? volData[prom][field] : null;
         const cloudVal = (raw !== null && raw !== '') ? parseFloat(raw) : null;
         if (cloudVal !== null && !isNaN(cloudVal)) {
-          // La nube ya tiene el valor (puede ser 0 legítimamente)
           v = cloudVal;
         } else {
-          // Fallback local: sumar desde localStorage (offline o primer día del mes sin sync)
-          const currentDateStr = document.getElementById('date-input').value;
-          const dailyField = field === 'acum-f1' ? 'f1-v' : 'f2-v';
-          v = getAcumuladoMensual(prom, dailyField, currentDateStr);
-          if (!volData[prom]) volData[prom] = {};
-          volData[prom][field] = v; // Guardar en memoria para que calcTotals lo sume correctamente
+          v = 0; // Sin datos de la nube, mostrar 0
         }
       }
 
@@ -198,7 +175,7 @@
           }
         });
       }
-      saveData();
+      // Datos quedan en memoria hasta que el usuario guarde a la nube
     }
 
     function calcTotals() {
@@ -336,65 +313,7 @@
       updateProg(`grand-bol`, grandTots['bol-p'], grandTots['bol-v']);
     }
 
-    function getAcumuladoMensual(promotor, field, currentDateStr) {
-      const commInfo = window.getCommercialMonthAndStart(currentDateStr);
-      const startPlannerStr = commInfo.start;
-      
-      let sum = 0;
-      let d = new Date(startPlannerStr + 'T00:00:00');
-      let endD = new Date(currentDateStr + 'T00:00:00');
-      
-      const formatD = (dt) => {
-        return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
-      };
-      
-      while (d <= endD) {
-        const dateKey = formatD(d);
-        
-        if (d.getDay() !== 0 && !feriados.includes(dateKey)) {
-          if (dateKey === currentDateStr) {
-            if (volData[promotor] && volData[promotor][field]) {
-               sum += parseFloat(volData[promotor][field]) || 0;
-            }
-          } else {
-            const storageKey = `emcala_vol_all_${dateKey}_v3`;
-            const saved = localStorage.getItem(storageKey);
-            if (saved) {
-              try {
-                const data = JSON.parse(saved);
-                if (data[promotor] && data[promotor][field]) {
-                  sum += parseFloat(data[promotor][field]) || 0;
-                }
-              } catch(e) {}
-            }
-          }
-        }
-        d.setDate(d.getDate() + 1);
-      }
-      return sum;
-    }
 
-    function getLastAcumulado(promotor, field, currentDateStr) {
-      const currentMonth = currentDateStr.substring(0, 7);
-      const currentDay = parseInt(currentDateStr.substring(8, 10), 10);
-      
-      for (let d = currentDay - 1; d >= 1; d--) {
-        const dayStr = String(d).padStart(2, '0');
-        const dateKey = `${currentMonth}-${dayStr}`;
-        const storageKey = `emcala_vol_all_${dateKey}_v3`;
-        const saved = localStorage.getItem(storageKey);
-        if (saved) {
-          try {
-            const data = JSON.parse(saved);
-            if (data[promotor] && data[promotor][field] !== undefined && data[promotor][field] !== '') {
-              const val = parseFloat(data[promotor][field]) || 0;
-              if (val > 0) return val;
-            }
-          } catch(e) {}
-        }
-      }
-      return 0; // Si no hay dias anteriores
-    }
 
     function getDiasHabilesRestantes(dateStr) {
       if (!dateStr) return 1;

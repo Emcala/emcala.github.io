@@ -65,7 +65,6 @@
       }
       if (!volData[prom]) volData[prom] = {};
       volData[prom][field] = val;
-      saveData();
       calcTotals();
       const btnSync = document.getElementById('btn-sync');
       if (btnSync) {
@@ -249,7 +248,6 @@
                   }
                 }
                 
-                saveData();
                 calcTotals();
                 // Re-evaluar estado del botón sync correctamente
                 const btnSync = document.getElementById('btn-sync');

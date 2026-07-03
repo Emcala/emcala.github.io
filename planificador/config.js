@@ -14,15 +14,6 @@
     let SPV_DATA = {};
     let _mesasLoaded = false;
 
-    // Cargar mesas desde localStorage como fallback inmediato
-    try {
-      const cachedMesas = localStorage.getItem('emcala_mesas_spv');
-      if (cachedMesas) {
-        SPV_DATA = JSON.parse(cachedMesas);
-        _mesasLoaded = Object.keys(SPV_DATA).length > 0;
-      }
-    } catch(e) {}
-
     // Función para traer mesas del servidor y actualizar SPV_DATA
     async function fetchMesasFromServer() {
       try {
@@ -34,13 +25,12 @@
         const result = await response.json();
         if (result.ok && result.mesas && Object.keys(result.mesas).length > 0) {
           SPV_DATA = result.mesas;
-          localStorage.setItem('emcala_mesas_spv', JSON.stringify(SPV_DATA));
           _mesasLoaded = true;
           console.log('Mesas cargadas del servidor:', Object.keys(SPV_DATA).length, 'supervisores');
           return true;
         }
       } catch(e) {
-        console.warn('No se pudieron cargar las mesas del servidor, usando caché local:', e);
+        console.warn('No se pudieron cargar las mesas del servidor:', e);
       }
       return false;
     }

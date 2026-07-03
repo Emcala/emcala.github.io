@@ -33,7 +33,6 @@
           volData[prom]['k2-met'] = met2.value;
           volData[prom]['k2-tar'] = tar2.value;
         });
-        saveData();
         renderTables();
         document.getElementById('btn-save').click(); // Auto save to sheet
         const btnSync = document.getElementById('btn-sync');
@@ -317,7 +316,6 @@
             delete volData[prom][f];
           });
         }
-        saveData();
         renderTables();
         // Ejecutar guardado silencioso para asegurar que la nube quede limpia de planificación también
         await saveToServer(true);
@@ -431,21 +429,20 @@
               }
             }
           });
-          // Guardar globalmente los objetivos del mes
+          // Guardar globalmente los objetivos del mes en la nube (sin localStorage)
           const monthStr = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
-          const objStorageKey = `emcala_obj_${monthStr}`;
           let monthObjs = {};
-          try { monthObjs = JSON.parse(localStorage.getItem(objStorageKey) || '{}'); } catch(e){}
           for (let p in volData) {
             if (volData[p]['obj-f1'] !== undefined || volData[p]['obj-f2'] !== undefined) {
-              if (!monthObjs[p]) monthObjs[p] = {};
+              monthObjs[p] = {};
               if (volData[p]['obj-f1'] !== undefined) monthObjs[p]['obj-f1'] = volData[p]['obj-f1'];
               if (volData[p]['obj-f2'] !== undefined) monthObjs[p]['obj-f2'] = volData[p]['obj-f2'];
             }
           }
-          localStorage.setItem(objStorageKey, JSON.stringify(monthObjs));
-          saveData(); 
+          
+          // Render para reflejar cambios en memoria
           renderTables(); 
+          
           // Subir los objetivos a la nueva pestaña global
           fetch(SCRIPT_URL, {
             method: 'POST',
@@ -470,14 +467,16 @@
       };
       reader.readAsArrayBuffer(file);
     });
-    // Render inicial: mostrar tabla con lo que tengamos (caché o vacío)
-    renderTables();
-    // AUTO-SINCRONIZACIÓN AL CARGAR LA PÁGINA — traer mesas frescas y luego datos
+
+    // Flujo Inicial Nube-First
+    const plannerContainer = document.getElementById('planner-container');
+    if (plannerContainer) {
+      plannerContainer.innerHTML = '<div style="text-align:center; padding:50px; font-size:1.2rem; color:#64748b;">⏳ Conectando con la nube...</div>';
+    }
+    
+    // AUTO-SINCRONIZACIÓN AL CARGAR LA PÁGINA
     setTimeout(async () => {
-      const mesasUpdated = await fetchMesasFromServer();
-      if (mesasUpdated) {
-        applyRoleFilter();
-        renderTables();
-      }
+      await fetchMesasFromServer();
+      applyRoleFilter(); 
       await performSync(true);
     }, 300);
