@@ -179,9 +179,10 @@ async function loadAvance() {
             if (!ventasData[promFlat]) {
                ventasData[promFlat] = { size: 0 }; // Simulamos el comportamiento de Set.size para tryRender
             }
-            const ccc = parseInt(result.data[prom]['ccc-cerveza']) || 0;
-            ventasData[promFlat].size += ccc;
-            totalCcc += ccc;
+            const ccc = parseInt(result.data[prom]['acum-ccc']) || 0;
+            if (ccc > 0) {
+              ventasData[promFlat].size = ccc;
+            }
           }
         }
       } catch (e) {
@@ -190,6 +191,8 @@ async function loadAvance() {
     });
     
     await Promise.all(promises);
+    
+    totalCcc = Object.values(ventasData).reduce((sum, prom) => sum + (prom.size || 0), 0);
     
     updateStatus('ventas', 'loaded', totalCcc + ' CCC');
     showToast('✅ Avance CCC descargado');
