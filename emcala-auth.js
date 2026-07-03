@@ -83,10 +83,17 @@ const EmcalaAuth = (() => {
     };
   }
 
+  let _lastActivityUpdate = 0;
   function updateActivity() {
+    const now = Date.now();
+    // Throttling: Solo actualizar localStorage cada 5 segundos como máximo
+    // Evita congelar el navegador al mover el mouse o scrollear
+    if (now - _lastActivityUpdate < 5000) return;
+    _lastActivityUpdate = now;
+
     const session = getRawSession();
     if (!session) return;
-    session.lastActivity = Date.now();
+    session.lastActivity = now;
     // El token _h ya viene del servidor y no debe reescribirse
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   }
