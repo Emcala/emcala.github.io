@@ -30,12 +30,6 @@
     function getPlannerDateFromCSVDate(csvDateStr) {
       const date = parseCSVDateToObj(csvDateStr);
       if (!date) return null;
-      // Lista de feriados conocidos donde NO hay preventa/reparto (formato YYYY-MM-DD)
-      const HOLIDAYS = [
-        '2026-06-15', // Lunes feriado Güemes
-        '2026-06-20', // Feriado Belgrano
-        '2026-07-09'  // Independencia
-      ];
       // Lógica de Preventa: el CSV tiene la fecha de entrega (venta real).
       // La planificación se hizo el día hábil anterior (toma de pedido).
       date.setDate(date.getDate() - 1); // Retroceder 1 día inicial

@@ -1,4 +1,4 @@
-    const feriados = ['2026-06-15', '2026-06-20'];
+    const feriados = HOLIDAYS; // Referencia a la lista global en config.js
 
     window.getCommercialMonthAndStart = function(plannerDateStr) {
       if (!plannerDateStr) return { month: '', start: '', last: '' };

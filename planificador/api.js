@@ -94,10 +94,8 @@
         if (!isAutoSync) {
           await saveToServer(true);
         }
-        // Sincronizar maestro de SKUs
-        if (!isAutoSync) {
-          await syncSkus();
-        } else {
+        // Sincronizar maestro de SKUs SOLO en carga inicial
+        if (isAutoSync) {
           syncSkus(); // Non-blocking en auto-sync
         }
 

@@ -2,6 +2,13 @@
     // URL del servidor centralizado de Auth (para traer Mesas dinámicamente)
     const AUTH_URL = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec';
 
+    // Lista global de feriados donde NO hay preventa ni reparto (formato YYYY-MM-DD)
+    const HOLIDAYS = [
+      '2026-06-15', // Lunes feriado Güemes
+      '2026-06-20', // Feriado Belgrano
+      '2026-07-09'  // Independencia
+    ];
+
     // Usar fecha LOCAL (no UTC) para evitar desfase de zona horaria
     function setTodayDate() {
       const _now = new Date();
