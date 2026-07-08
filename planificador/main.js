@@ -295,6 +295,7 @@
           const result = await response.json();
           if (result.status === 'success') {
             alert('¡Maestro de SKUs actualizado correctamente en la nube!\nTodos los usuarios verán los nuevos SKUs en su próxima sincronización.');
+            await syncSkus(); // Sincronizar en memoria tras la subida exitosa
             document.getElementById('btn-sync').click(); // Auto sync
           } else {
             alert('Hubo un problema: ' + result.message);
