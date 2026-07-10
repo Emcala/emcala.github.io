@@ -16,6 +16,7 @@
   <button class="ptab" data-page="5">NABS</button>
   <button class="ptab" data-page="6">Ranking</button>
   <button class="ptab" data-page="7">CRM</button>
+  <button class="ptab" data-page="8">Marcas</button>
 </div>
 
 <!-- ═══ PAGE 1: MENSUAL ═══════════════════════════════════════ -->
@@ -147,14 +148,14 @@
     <div class="sdv-wrap" id="cal-wrap">
       <button class="sdv-btn all" id="cal-drop-btn">Calibres <span class="chv">▼</span></button>
       <div class="promo-panel" id="cal-panel">
-        <div class="promo-hdr" id="cal-hdr-all" style="cursor:pointer"></div>
+        <div class="promo-hdr" id="cal-hdr-all" style="cursor:poRoboto"></div>
       </div>
     </div>
     <div class="sep"></div>
     <div class="sdv-wrap" id="marca-wrap">
       <button class="sdv-btn all" id="marca-drop-btn">Marcas <span class="chv">▼</span></button>
       <div class="promo-panel" id="marca-panel">
-        <div class="promo-hdr" id="marca-hdr-all" style="cursor:pointer"></div>
+        <div class="promo-hdr" id="marca-hdr-all" style="cursor:poRoboto"></div>
       </div>
     </div>
   </div>
@@ -214,14 +215,14 @@
     <div class="sdv-wrap" id="marca6-wrap">
       <button class="sdv-btn all" id="marca6-drop-btn">Marcas <span class="chv">▼</span></button>
       <div class="promo-panel" id="marca6-panel">
-        <div class="promo-hdr" id="marca6-hdr-all" style="cursor:pointer"></div>
+        <div class="promo-hdr" id="marca6-hdr-all" style="cursor:poRoboto"></div>
       </div>
     </div>
     <div class="sep"></div>
     <div class="sdv-wrap" id="cal6-wrap">
       <button class="sdv-btn all" id="cal6-drop-btn">Calibres <span class="chv">▼</span></button>
       <div class="promo-panel" id="cal6-panel">
-        <div class="promo-hdr" id="cal6-hdr-all" style="cursor:pointer"></div>
+        <div class="promo-hdr" id="cal6-hdr-all" style="cursor:poRoboto"></div>
       </div>
     </div>
     <div class="sep"></div>
@@ -248,7 +249,7 @@
         <div class="cc" style="flex:1;overflow:hidden;">
           <div class="cc-t">Ranking Top 50 · Clientes</div>
           <div style="overflow-y:auto;flex:1;min-height:0;">
-            <table id="t6-tabla" style="width:100%;border-collapse:collapse;font-family:'Barlow Condensed',sans-serif;font-size:clamp(9px,0.65vw,12px);">
+            <table id="t6-tabla" style="width:100%;border-collapse:collapse;font-family:'Roboto',sans-serif;font-size:clamp(9px,0.65vw,12px);">
               <thead>
                 <tr style="background:var(--surf2);position:sticky;top:0;z-index:1;">
                   <th style="padding:4px 6px;text-align:center;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);width:28px;">#</th>
@@ -278,14 +279,14 @@
     <div class="sdv-wrap" id="cal5-wrap">
       <button class="sdv-btn all" id="cal5-drop-btn">Calibres <span class="chv">▼</span></button>
       <div class="promo-panel" id="cal5-panel">
-        <div class="promo-hdr" id="cal5-hdr-all" style="cursor:pointer"></div>
+        <div class="promo-hdr" id="cal5-hdr-all" style="cursor:poRoboto"></div>
       </div>
     </div>
     <div class="sep"></div>
     <div class="sdv-wrap" id="marca5-wrap">
       <button class="sdv-btn all" id="marca5-drop-btn">Marcas <span class="chv">▼</span></button>
       <div class="promo-panel" id="marca5-panel">
-        <div class="promo-hdr" id="marca5-hdr-all" style="cursor:pointer"></div>
+        <div class="promo-hdr" id="marca5-hdr-all" style="cursor:poRoboto"></div>
       </div>
     </div>
   </div>
@@ -329,6 +330,11 @@
       <input type="text" id="crm-input" placeholder="Buscar cliente por nombre o código…" autocomplete="off">
       <div class="crm-dd" id="crm-dd"></div>
     </div>
+    <div class="sep" id="crm-un-sep" style="display:none;"></div>
+    <div class="un-wrap" id="crm-un-wrap" style="display:none;">
+      <div class="un-btn" id="crm-un-btn"><span id="crm-un-lbl">Todas las UN</span><span class="arr">▼</span></div>
+      <div class="un-dd" id="crm-un-dd"></div>
+    </div>
     <div class="sep"></div>
     <div class="crm-ficha" id="crm-ficha" style="display:none">
       <span class="crm-tag" id="crm-tag-canal"><span>Canal: </span><span id="crm-canal">—</span></span>
@@ -361,7 +367,7 @@
         <div class="cc" style="flex:1;overflow:hidden;">
           <div class="cc-t">Productos · último mes</div>
           <div style="overflow-y:auto;flex:1;min-height:0;">
-            <table id="t7-prods" style="width:100%;border-collapse:collapse;font-family:'Barlow Condensed',sans-serif;font-size:clamp(9px,0.65vw,12px);">
+            <table id="t7-prods" style="width:100%;border-collapse:collapse;font-family:'Roboto',sans-serif;font-size:clamp(9px,0.65vw,12px);">
               <thead>
                 <tr style="background:var(--surf2);position:sticky;top:0;z-index:1;">
                   <th style="padding:4px 6px;text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">Producto</th>
@@ -379,12 +385,55 @@
   </div>
 </div>
 
+<!-- ═══ PAGE 8: MARCAS ═════════════════════════════════════════ -->
+<div class="page" id="pg8">
+  <div class="hdr">
+    <div style="display:flex;gap:4px;flex-wrap:wrap" id="marcas-tabs">
+      <button class="ftab active" data-marcas="CERV">Cervezas</button>
+      <button class="ftab" data-marcas="UNG">UNG</button>
+    </div>
+    <div class="sep"></div>
+    <div class="un-wrap" id="un-wrap-8" style="display:none;"><div class="un-btn" id="un-btn8"><span id="un-lbl8">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd8"></div></div>
+  </div>
+  <div class="dmain">
+    <div class="up-state" id="up8"><div class="ico">🏷️</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
+    <div class="dbody" id="body8" style="display:none; flex-direction:column; overflow-y:auto; align-items:center; justify-content:center; padding: 10px 0;">
+      <div class="marcas-carousel">
+        <button class="carousel-btn carousel-prev" id="marcas-prev">❮</button>
+        <button class="carousel-btn carousel-next" id="marcas-next">❯</button>
+
+        <!-- SLIDE 1: Tarjetas -->
+        <div class="carousel-slide active" id="slide-marcas-0">
+          <div id="marcas-grid" class="brand-grid"></div>
+        </div>
+
+        <!-- SLIDE 2: Gráfico de Volumen -->
+        <div class="carousel-slide" id="slide-marcas-1">
+          <div style="background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; width: 100%; max-width: 1450px; margin: 0 auto;">
+              <h3 style="text-align: center; font-family: 'Barlow Condensed', sans-serif; font-size: 28px; margin-bottom: 20px; font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">VOLUMEN MARCAS</h3>
+              <div id="marcas-chart-vol" style="width: 100%; height: 500px;"></div>
+          </div>
+        </div>
+
+        <!-- SLIDE 3: Gráfico de CCC -->
+        <div class="carousel-slide" id="slide-marcas-2">
+          <div style="background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; width: 100%; max-width: 1450px; margin: 0 auto;">
+              <h3 style="text-align: center; font-family: 'Barlow Condensed', sans-serif; font-size: 28px; margin-bottom: 20px; font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">CCC MARCAS</h3>
+              <div id="marcas-chart-ccc" style="width: 100%; height: 500px;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
   <script src="config.js"></script>
   <script src="api.js"></script>
   <script src="data.js"></script>
   <script src="charts.js"></script>
-  <script src="ui.js"></script>
+  <script src="ui.js?v=3"></script>
   <script src="main.js"></script>
 
 </body>

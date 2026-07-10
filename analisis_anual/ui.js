@@ -170,14 +170,10 @@ function mkSDV(pg) {
 
     wrap.appendChild(panel);
 
-    // Toggle panel on btn click
+    // Toggle all items on btn click
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const opening = !panel.classList.contains('open');
-      // close all panels first
-      container.querySelectorAll('.promo-panel').forEach(p2 => p2.classList.remove('open'));
-      container.querySelectorAll('.sdv-btn').forEach(b2 => b2.classList.remove('open'));
-      if (opening) { panel.classList.add('open'); btn.classList.add('open'); }
+      hdrCb.click();
     });
 
     function updateBtnState() {
@@ -361,15 +357,21 @@ function makeFreqExtra() {
 
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const opening = !panel.classList.contains('open');
-      document.querySelectorAll('.promo-panel').forEach(p => p.classList.remove('open'));
-      document.querySelectorAll('.sdv-btn').forEach(b => b.classList.remove('open'));
-      document.querySelectorAll('.un-dd').forEach(d => d.classList.remove('open'));
-      document.querySelectorAll('.un-btn').forEach(b => b.classList.remove('open'));
-      if (opening) {
-        panel.classList.add('open');
-        btn.classList.add('open');
+      // Si todos en este grupo están seleccionados, los deseleccionamos. Si no, los seleccionamos todos.
+      if (!ST[2].freqSel) ST[2].freqSel = new Set(['TODOS']);
+      const fs = ST[2].freqSel;
+      if (fs.has('TODOS')) {
+        fs.delete('TODOS');
+        getAllFreqKeysNorm().forEach(k => fs.add(k));
       }
+      const actCount = g.keys.filter(k => fs.has(normDias(k))).length;
+      const turnOn = actCount < g.keys.length;
+      g.keys.forEach(k => {
+        const nk = normDias(k);
+        if (turnOn) fs.add(nk); else fs.delete(nk);
+      });
+      syncFreqUI();
+      renderPage(2);
     });
 
     wrap.appendChild(btn);
@@ -584,10 +586,10 @@ function render3() {
 }
 
 function renderPage(pg) {
-  const fns = [render1,render2,render3,render4,render5,render6,() => renderCRM()];
+  const fns = [render1,render2,render3,render4,render5,render6,() => renderCRM(), () => render8()];
   if (pg <= fns.length && fns[pg-1]) fns[pg-1]();
 }
-function renderAll() { render1(); render2(); render3(); if(ST[4]) render4(); if(ST[5]) render5(); if(ST[6]) render6(); buildCRMIndex(); if(CRM_CLI) renderCRM(); }
+function renderAll() { render1(); render2(); render3(); if(ST[4]) render4(); if(ST[5]) render5(); if(ST[6]) render6(); buildCRMIndex(); if(CRM_CLI) renderCRM(); if(ST[8]) render8(); }
 
 // ═══════════════════════════════════════════════════════════════
 // PAGE 4: CERVEZAS
@@ -670,10 +672,8 @@ const CAL_LIST = [
 
   btn.addEventListener('click', e => {
     e.stopPropagation();
-    const opening = !panel.classList.contains('open');
-    document.querySelectorAll('.promo-panel').forEach(p => p.classList.remove('open'));
-    document.querySelectorAll('.sdv-btn').forEach(b => b.classList.remove('open'));
-    if (opening) { panel.classList.add('open'); btn.classList.add('open'); }
+    const cbAll = panel.querySelector('input[type=checkbox]');
+    if (cbAll) cbAll.click();
   });
 
   syncHdr(); updateBtn();
@@ -752,10 +752,8 @@ const MARCA_LIST = [
 
   btn.addEventListener('click', e => {
     e.stopPropagation();
-    const opening = !panel.classList.contains('open');
-    document.querySelectorAll('.promo-panel').forEach(p => p.classList.remove('open'));
-    document.querySelectorAll('.sdv-btn').forEach(b => b.classList.remove('open'));
-    if (opening) { panel.classList.add('open'); btn.classList.add('open'); }
+    const cbAll = panel.querySelector('input[type=checkbox]');
+    if (cbAll) cbAll.click();
   });
 
   syncHdr(); updateBtn();
@@ -881,13 +879,13 @@ function makeDonut(id, segFilter, yr, mes=null, isBCDonut=false) {
       value: Math.round(value),
       itemStyle: {
           color: (isBCDonut ? BC_COLORS[name] : BRAND_COLORS[name]) || '#999',
-          borderColor: '#fff', borderWidth: 2
+          borderColor: 'transparent', borderWidth: 2
         }
     }));
 
   chart.setOption({
     animation: false,
-    legend: { orient:'vertical', right:0, top:'middle', textStyle:{fontSize:10, fontFamily:'Barlow Condensed', fontWeight:'bold'} },
+    legend: { orient:'vertical', right:0, top:'middle', textStyle:{color:'#475569',fontSize:10, fontFamily:'Barlow Condensed', fontWeight:'bold'} },
     series:[{
       type:'pie', radius:['32%','72%'],
       center:['38%','50%'],
@@ -895,14 +893,14 @@ function makeDonut(id, segFilter, yr, mes=null, isBCDonut=false) {
       label:{
         show: true, position:'inside',
         formatter: p => p.percent >= 5 ? p.percent.toFixed(0)+'%' : '',
-        fontSize:10, fontWeight:'bold', color:'#111', fontFamily:'Barlow Condensed'
+        fontSize:10, fontWeight:'bold', color:'#fff', fontFamily:'Barlow Condensed'
       },
       labelLine:{show:false},
       emphasis:{scale:false}
     }],
     tooltip:{
       trigger:'item',
-      backgroundColor:'#fff', borderColor:'#dcdce4', borderWidth:1,
+      backgroundColor:'#0B2559', borderColor:'rgba(255,255,255,0.2)', borderWidth:1, textStyle: { color: '#fff' },
       formatter: p => `<b>${p.name}</b><br/>${fmtN(p.value)} HL (${p.percent.toFixed(1)}%)`
     }
   });
@@ -1056,10 +1054,8 @@ function makeDropdown5(listArr, stKey, btnId, panelId, hdrId, label, renderFn) {
   });
   btn.addEventListener('click', e => {
     e.stopPropagation();
-    const opening = !panel.classList.contains('open');
-    document.querySelectorAll('.promo-panel').forEach(p => p.classList.remove('open'));
-    document.querySelectorAll('.sdv-btn').forEach(b => b.classList.remove('open'));
-    if (opening) { panel.classList.add('open'); btn.classList.add('open'); }
+    const cbAll = panel.querySelector('input[type=checkbox]');
+    if (cbAll) cbAll.click();
   });
   syncHdr(); updateBtn();
 }
@@ -1211,10 +1207,8 @@ function initMarca6UI(list) {
   if (!btn._m6init) {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const opening = !panel.classList.contains('open');
-      document.querySelectorAll('.promo-panel').forEach(p => p.classList.remove('open'));
-      document.querySelectorAll('.sdv-btn').forEach(b => b.classList.remove('open'));
-      if (opening) { panel.classList.add('open'); btn.classList.add('open'); }
+      const cbAll = panel.querySelector('input[type=checkbox]');
+      if (cbAll) cbAll.click();
     });
     btn._m6init = true;
   }
@@ -1275,10 +1269,8 @@ function initCal6UI(list) {
   if (!btn._c6init) {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const opening = !panel.classList.contains('open');
-      document.querySelectorAll('.promo-panel').forEach(p => p.classList.remove('open'));
-      document.querySelectorAll('.sdv-btn').forEach(b => b.classList.remove('open'));
-      if (opening) { panel.classList.add('open'); btn.classList.add('open'); }
+      const cbAll = panel.querySelector('input[type=checkbox]');
+      if (cbAll) cbAll.click();
     });
     btn._c6init = true;
   }
@@ -1369,12 +1361,22 @@ function makeMix6(top50Clis, last, lastYr) {
   const totalHL = DATA.filter(r => r.yr == lastYr && r.un === ST[6].un && r.mes === last && r.hl > 0 && pf(r))
     .reduce((a,r) => a + r.hl, 0);
 
-  // HL de top50 en el último mes
-  const top50Set = new Set(top50Clis);
-  const top50HL = DATA.filter(r => r.yr == lastYr && r.un === ST[6].un && r.mes === last && r.hl > 0 && pf(r) && top50Set.has(r.cli))
-    .reduce((a,r) => a + r.hl, 0);
+  // Calcular HL de top50 (o cliente seleccionado) en el último mes
+  const cliSel = ST[6].cliSel;
+  let focusHL = 0;
+  let focusName = 'Top 50';
 
-  const otros = Math.max(totalHL - top50HL, 0);
+  if (cliSel) {
+    focusHL = DATA.filter(r => r.yr == lastYr && r.un === ST[6].un && r.mes === last && r.hl > 0 && pf(r) && r.cli === cliSel)
+      .reduce((a,r) => a + r.hl, 0);
+    focusName = cliSel;
+  } else {
+    const top50Set = new Set(top50Clis);
+    focusHL = DATA.filter(r => r.yr == lastYr && r.un === ST[6].un && r.mes === last && r.hl > 0 && pf(r) && top50Set.has(r.cli))
+      .reduce((a,r) => a + r.hl, 0);
+  }
+
+  const otros = Math.max(totalHL - focusHL, 0);
   const col = unColor(6);
 
   chart.setOption({
@@ -1382,14 +1384,14 @@ function makeMix6(top50Clis, last, lastYr) {
     series: [{
       type: 'pie', radius: ['35%','70%'], center: ['38%','50%'],
       data: [
-        { name: 'Top 50', value: Math.round(top50HL), itemStyle: { color: col } },
-        { name: 'Resto', value: Math.round(otros), itemStyle: { color: '#dcdce4' } }
+        { name: focusName, value: Math.round(focusHL), itemStyle: { color: col } },
+        { name: 'Resto', value: Math.round(otros), itemStyle: { color: 'rgba(0,0,0,0.1)' } }
       ],
-      label: { show: true, position: 'inside', formatter: p => p.percent >= 5 ? p.percent.toFixed(0)+'%' : '', fontSize: 10, fontWeight: 'bold', color: '#111', fontFamily: 'Barlow Condensed' },
+      label: { show: true, position: 'inside', formatter: p => p.percent >= 5 ? p.percent.toFixed(0)+'%' : '', fontSize: 10, fontWeight: 'bold', color: '#fff', fontFamily: 'Barlow Condensed' },
       labelLine: { show: false }, emphasis: { scale: false }
     }],
-    legend: { orient: 'vertical', right: 0, top: 'middle', textStyle: { fontSize: 10, fontFamily: 'Barlow Condensed', fontWeight: 'bold' } },
-    tooltip: { trigger: 'item', backgroundColor: '#fff', borderColor: '#dcdce4', borderWidth: 1,
+    legend: { orient: 'vertical', right: 0, top: 'middle', textStyle: { fontSize: 10, fontFamily: 'Barlow Condensed', fontWeight: 'bold', color: 'rgba(255,255,255,0.7)' } },
+    tooltip: { trigger: 'item', backgroundColor: '#0B2559', borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1, textStyle: { color: '#fff' },
       formatter: p => `<b>${p.name}</b><br/>${fmtN(p.value)} HL (${p.percent.toFixed(1)}%)` }
   });
 }
@@ -1416,20 +1418,19 @@ function render6() {
   const ld6a = document.getElementById('ld6a'); if (ld6a) ld6a.style.background = col;
   const ld6b = document.getElementById('ld6b'); if (ld6b) ld6b.style.background = col;
 
-  // Determinar últimos 3 meses de 2026
+  // Determinar último mes de 2026
   const rows26all = DATA.filter(r => r.yr == 2026 && r.un === ST[6].un && r.hl > 0);
   const mesesConDatos = MESES.filter(m => rows26all.some(r => r.mes === m));
   const last = mesesConDatos[mesesConDatos.length - 1] || MESES[0];
   const lastIdx = MESES.indexOf(last);
-  const lastMes3 = MESES.slice(Math.max(0, lastIdx - 2), lastIdx + 1);
   const prev = MESES[lastIdx - 1] || null;
 
-  // Top 50 clientes por HL acumulado en últimos 3 meses
-  const top50Clis = getTop50(lastMes3);
+  // Top 50 clientes por HL en el último mes
+  const top50Clis = getTop50([last]);
   const top50Set = new Set(top50Clis);
 
-  // Filtrar filas solo de top50
-  const extraTop50 = r => top50Set.has(r.cli);
+  // Filtrar filas solo de top50 (y del cliente seleccionado, si hay)
+  const extraTop50 = r => top50Set.has(r.cli) && (!ST[6].cliSel || r.cli === ST[6].cliSel);
   const s25 = summarizeRows(getRows6(2025, extraTop50), r => r.hl);
   const s26 = summarizeRows(getRows6(2026, extraTop50), r => r.hl);
   const d25v = s25.vol, d26v = s26.vol;
@@ -1439,8 +1440,8 @@ function render6() {
   const sku26 = d26c[last] ? d26b[last]/d26c[last] : 0;
   const sku25 = d25c[last] ? d25b[last]/d25c[last] : 0;
 
-  // Período de 3 meses en el label
-  const per3lbl = lastMes3.map(m => m.slice(0,3).toUpperCase()).join('-');
+  // Período en el label
+  const per3lbl = last.slice(0,3).toUpperCase();
   const t6 = document.getElementById('t6-hl');
   if (t6) t6.textContent = `Volumen HL · Top 50 · ${per3lbl}`;
 
@@ -1465,10 +1466,10 @@ function render6() {
   const tbody = document.getElementById('t6-tbody');
   if (tbody) {
     tbody.innerHTML = '';
-    // Recopilar info de cada cliente top50: HL últimos 3 meses, nombre, UN, promotor, supervisor
+    // Recopilar info de cada cliente top50: HL del último mes, nombre, UN, promotor, supervisor
     const rows26 = getRows6(2026);
     const cliInfo = {};
-    rows26.filter(r => lastMes3.includes(r.mes) && r.hl > 0 && top50Set.has(r.cli)).forEach(r => {
+    rows26.filter(r => r.mes === last && r.hl > 0 && top50Set.has(r.cli)).forEach(r => {
       if (!cliInfo[r.cli]) cliInfo[r.cli] = { name: r.cliN || r.cli, hl: 0, un: r.un, prom: r.sdv2, sup: r.sdv };
       cliInfo[r.cli].hl += r.hl;
     });
@@ -1488,6 +1489,12 @@ function render6() {
         `<td>${info.un}</td>` +
         `<td title="${info.prom}">${info.prom ? info.prom.split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ') : ''}</td>` +
         `<td title="${info.sup}">${info.sup ? info.sup.split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ') : ''}</td>`;
+      tr.style.cursor = 'pointer';
+      if (ST[6].cliSel === cli) tr.style.background = 'rgba(0,0,0,0.05)';
+      tr.addEventListener('click', () => {
+        ST[6].cliSel = (ST[6].cliSel === cli) ? null : cli;
+        render6();
+      });
       tbody.appendChild(tr);
     });
   }
@@ -1512,7 +1519,9 @@ document.getElementById('un-dd6')?.addEventListener('click', () => {
 let CRM_CLI = null; // cliente seleccionado actualmente
 
 // Índice de clientes — se construye cuando se cargan los datos
-let CRM_INDEX = {}; // { cli_code: { name, canal, sup, prom, dias, un } }
+ST[7] = { un: 'TODAS' };
+
+let CRM_INDEX = {}; // { cli_code: { name, canal, sup, prom, dias, un, uns, lastFecha } }
 
 function buildCRMIndex() {
   CRM_INDEX = {};
@@ -1526,10 +1535,14 @@ function buildCRMIndex() {
         prom: r.sdv2 || '—',
         dias: r.dias || '—',
         un: r.un || '—',
+        uns: new Set([r.un || '—']),
         lastFecha: r.fecha || ''
       };
-    } else if (r.fecha && r.fecha > CRM_INDEX[r.cli].lastFecha) {
-      CRM_INDEX[r.cli].lastFecha = r.fecha;
+    } else {
+      if (r.un) CRM_INDEX[r.cli].uns.add(r.un);
+      if (r.fecha && r.fecha > CRM_INDEX[r.cli].lastFecha) {
+        CRM_INDEX[r.cli].lastFecha = r.fecha;
+      }
     }
   });
 }
@@ -1578,6 +1591,50 @@ function buildCRMIndex() {
 
 function selectCRMClient(code) {
   CRM_CLI = code;
+  ST[7].un = 'TODAS';
+  document.getElementById('crm-un-lbl').textContent = 'Todas las UN';
+  
+  const info = CRM_INDEX[CRM_CLI];
+  const wrap = document.getElementById('crm-un-wrap');
+  const sep = document.getElementById('crm-un-sep');
+  const dd = document.getElementById('crm-un-dd');
+  
+  if (info && info.uns && info.uns.size > 0 && dd) {
+    wrap.style.display = 'block';
+    if (sep) sep.style.display = 'block';
+    dd.innerHTML = '';
+    
+    const allOpt = document.createElement('div');
+    allOpt.className = 'un-opt sel';
+    allOpt.dataset.un = 'TODAS';
+    allOpt.innerHTML = `Todas las UN`;
+    allOpt.addEventListener('click', () => setCRMUN('TODAS', allOpt));
+    dd.appendChild(allOpt);
+    
+    [...info.uns].filter(u => u !== '—').sort().forEach(u => {
+      const o = document.createElement('div');
+      o.className = 'un-opt';
+      o.dataset.un = u;
+      o.innerHTML = u;
+      o.addEventListener('click', () => setCRMUN(u, o));
+      dd.appendChild(o);
+    });
+  } else if (wrap) {
+    wrap.style.display = 'none';
+    if (sep) sep.style.display = 'none';
+  }
+  
+  renderCRM();
+}
+
+function setCRMUN(un, optEl) {
+  ST[7].un = un;
+  document.getElementById('crm-un-lbl').textContent = un === 'TODAS' ? 'Todas las UN' : un;
+  const dd = document.getElementById('crm-un-dd');
+  if (dd) {
+    dd.querySelectorAll('.un-opt').forEach(el => el.classList.remove('sel'));
+    if (optEl) optEl.classList.add('sel');
+  }
   renderCRM();
 }
 
@@ -1595,15 +1652,23 @@ function renderCRM() {
   if (el('crm-sup'))   el('crm-sup').textContent   = fmt(info.sup);
   if (el('crm-prom'))  el('crm-prom').textContent  = fmt(info.prom);
   if (el('crm-dias'))  el('crm-dias').textContent  = info.dias || '—';
-  if (el('crm-un'))    el('crm-un').textContent    = info.un || '—';
-  if (el('crm-fecha')) {
-    const f = info.lastFecha;
-    el('crm-fecha').textContent = f ? f.split('-').reverse().join('/') : '—';
-  }
+  if (el('crm-un'))    el('crm-un').textContent    = ST[7].un === 'TODAS' ? (info.un || '—') : ST[7].un;
 
-  // Filtrar datos del cliente
-  const rows26 = DATA.filter(r => r.yr == 2026 && r.cli === CRM_CLI);
-  const rows25 = DATA.filter(r => r.yr == 2025 && r.cli === CRM_CLI);
+  const unFilter = ST[7].un;
+  const rows26 = DATA.filter(r => r.yr == 2026 && r.cli === CRM_CLI && (unFilter === 'TODAS' || r.un === unFilter));
+  const rows25 = DATA.filter(r => r.yr == 2025 && r.cli === CRM_CLI && (unFilter === 'TODAS' || r.un === unFilter));
+  
+  let dynamicLastFecha = '';
+  if (unFilter !== 'TODAS') {
+    const dates = rows26.concat(rows25).map(r => r.fecha).filter(Boolean).sort();
+    if (dates.length) dynamicLastFecha = dates[dates.length - 1];
+  } else {
+    dynamicLastFecha = info.lastFecha;
+  }
+  
+  if (el('crm-fecha')) {
+    el('crm-fecha').textContent = dynamicLastFecha ? dynamicLastFecha.split('-').reverse().join('/') : '—';
+  }
 
   if (!rows26.length && !rows25.length) return;
 
@@ -1677,8 +1742,7 @@ function renderCRM() {
   // Fecha última compra en panel derecho
   const elLastFecha = document.getElementById('crm-last-fecha');
   if (elLastFecha) {
-    const f = info.lastFecha;
-    elLastFecha.textContent = f ? f.split('-').reverse().join('/') : '—';
+    elLastFecha.textContent = dynamicLastFecha ? dynamicLastFecha.split('-').reverse().join('/') : '—';
   }
 
   // Tabla de productos del último mes
@@ -1706,4 +1770,390 @@ function renderCRM() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// PAGE 8: MARCAS
+// ═══════════════════════════════════════════════════════════════
 
+ST[8] = { un: 'CERVEZAS CMQ', tab: 'CERV' };
+
+// UN dropdown for page 8
+mkUN(8);
+
+document.querySelectorAll('#marcas-tabs .ftab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#marcas-tabs .ftab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ST[8].tab = btn.dataset.marcas;
+    render8();
+  });
+});
+
+const LOGOS = {
+  // Cervezas
+  'CORONA': 'img/corona-beer-logo.png',
+  'PATAGONIA': 'img/NicePng_patagonia-logo-png_2218575.png',
+  'STELLA': 'img/stella-artois-seeklogo.png',
+  'ANDES': 'img/andes-origen-seeklogo.png',
+  'MICHELOB': 'img/michelob-ultra-seeklogo.png',
+  'BRAHMA': 'img/brahma-beer-logo.png',
+  'BUDWEISER': 'img/budweiser-beer-logo.png',
+  'QUILMES': 'img/Quilmes_Logo.svg',
+  '1890': 'img/1890_logo.png',
+
+  // UNG
+  'PEPSI': 'img/pepsi-logo.png',
+  '7UP': 'img/7up_logo.svg',
+  'MIRINDA': 'img/Mirinda_brand_logo.png',
+  'PASO DE LOS TOROS': 'img/paso_de_los_toros_logo.jpg',
+  'GATORADE': 'img/Gatorade_logo_before_2009.png',
+  'RED BULL': 'img/red-bull-vertical-logo.png',
+  'ROCKSTAR': 'img/rockstar_logo.jpg',
+  'H2OH!': 'img/h2oh_logo.png'
+};
+
+function render8() {
+  const hasData = DATA.length > 0;
+  const up = document.getElementById('up8');
+  const body = document.getElementById('body8');
+  
+  const isCerv = ST[8].tab === 'CERV';
+  
+  if (up) up.style.display = hasData ? 'none' : 'flex';
+  if (body) body.style.display = hasData ? 'flex' : 'none';
+  if (!hasData) return;
+
+  const wrapUN = document.getElementById('un-wrap-8');
+  const sepUN = wrapUN.previousElementSibling;
+  
+  if (isCerv) {
+    wrapUN.style.display = 'block';
+    if(sepUN) sepUN.style.display = 'block';
+  } else {
+    wrapUN.style.display = 'none';
+    if(sepUN) sepUN.style.display = 'none';
+  }
+
+  const yr26 = 2026;
+  const yr25 = 2025;
+  
+  let rows26, rows25;
+  if (isCerv) {
+    rows26 = DATA.filter(r => r.yr == yr26 && r.un === ST[8].un && getMarca(r.prod2));
+    rows25 = DATA.filter(r => r.yr == yr25 && r.un === ST[8].un && getMarca(r.prod2));
+  } else {
+    rows26 = DATA.filter(r => r.yr == yr26 && r.un !== 'CERVEZAS CMQ' && r.marca);
+    rows25 = DATA.filter(r => r.yr == yr25 && r.un !== 'CERVEZAS CMQ' && r.marca);
+  }
+
+  const mesesConDatos = MESES.filter(m => rows26.some(r => r.mes === m && r.hl > 0));
+  const last = mesesConDatos[mesesConDatos.length - 1] || MESES[0];
+  const lastIdx = MESES.indexOf(last);
+  const monthsYTD = MESES.slice(0, lastIdx + 1);
+  const lastMesName = last.slice(0,3).toUpperCase();
+  
+  const vol26ByMarca = {};
+  const vol25ByMarca = {};
+  
+  rows26.forEach(r => {
+    if (monthsYTD.includes(r.mes) && r.hl > 0) {
+      const m = isCerv ? getMarca(r.prod2) : r.marca;
+      const nm = m.trim().toUpperCase();
+      if (!vol26ByMarca[nm]) vol26ByMarca[nm] = 0;
+      vol26ByMarca[nm] += r.hl;
+    }
+  });
+  
+  rows25.forEach(r => {
+    if (monthsYTD.includes(r.mes) && r.hl > 0) {
+      const m = isCerv ? getMarca(r.prod2) : r.marca;
+      const nm = m.trim().toUpperCase();
+      if (!vol25ByMarca[nm]) vol25ByMarca[nm] = 0;
+      vol25ByMarca[nm] += r.hl;
+    }
+  });
+
+  const grid = document.getElementById('marcas-grid');
+  grid.innerHTML = '';
+  
+  let marcasList = isCerv 
+    ? ['CORONA', 'PATAGONIA', 'STELLA', 'ANDES', 'MICHELOB', 'BRAHMA', 'BUDWEISER', 'QUILMES', '1890']
+    : ['PEPSI', '7UP', 'MIRINDA', 'PASO DE LOS TOROS', 'GATORADE', 'RED BULL', 'ROCKSTAR', 'H2OH!'];
+    
+  // Collect all cards first, then split into rows
+  const cards = [];
+  const rendered = new Set();
+    
+  marcasList.forEach(mRaw => {
+    const bucket = mRaw.trim().toUpperCase();
+    if(rendered.has(bucket)) return;
+    
+    let v26 = 0;
+    let v25 = 0;
+    
+    const allKeys = new Set([...Object.keys(vol26ByMarca), ...Object.keys(vol25ByMarca)]);
+    
+    allKeys.forEach(k => {
+       let matches = false;
+       if (bucket === '7UP' && (k === '7UP' || k === '7 UP')) matches = true;
+       else if (bucket === 'H2OH!' && k.startsWith('H2')) matches = true;
+       else if (k === bucket) matches = true;
+       
+       if (matches) {
+           v26 += vol26ByMarca[k] || 0;
+           v25 += vol25ByMarca[k] || 0;
+       }
+    });
+    
+    rendered.add(bucket);
+    if (v26 === 0 && v25 === 0) return;
+    
+    const diff = v26 - v25;
+    const isUp = diff >= 0;
+    const diffCls = isUp ? 'up' : 'dn';
+    const diffSign = isUp ? '+' : '';
+    const logoUrl = LOGOS[bucket] || '';
+    
+    const card = document.createElement('div');
+    card.className = 'brand-card';
+    card.innerHTML = `
+      <div class="brand-logo">
+        ${logoUrl ? `<img src="${logoUrl}" alt="${bucket}" onerror="this.outerHTML='<span>${bucket}</span>'">` : `<span>${bucket}</span>`}
+      </div>
+      <div class="brand-vr">VR <span class="val">${Math.round(v26)}</span> HL YTD</div>
+      <div class="brand-dif ${diffCls}">${diffSign}${Math.round(diff)} HL vs ${lastMesName} 25</div>
+    `;
+    cards.push(card);
+  });
+  
+  // Split into two rows: CERV=5+4, UNG=4+4
+  const row1Count = isCerv ? 5 : 4;
+  const row1 = document.createElement('div');
+  row1.className = 'brand-row';
+  const row2 = document.createElement('div');
+  row2.className = 'brand-row';
+  
+  cards.forEach((c, i) => {
+    if (i < row1Count) row1.appendChild(c);
+    else row2.appendChild(c);
+  });
+  
+  grid.appendChild(row1);
+  if (row2.children.length > 0) {
+    grid.appendChild(row2);
+    // Match row2 card height to row1 card height
+    requestAnimationFrame(() => {
+      const firstCard = row1.querySelector('.brand-card');
+      if (firstCard) {
+        const h = firstCard.offsetHeight;
+        Array.from(row2.children).forEach(c => {
+          c.style.height = h + 'px';
+        });
+      }
+    });
+  }
+  
+  // --- CHARTS LOGIC ---
+  const prev = MESES[MESES.indexOf(last) - 1] || null;
+  const moNames = { last26: `${last.slice(0,3)} 26`, prev26: prev ? `${prev.slice(0,3)} 26` : '', last25: `${last.slice(0,3)} 25` };
+  
+  const chartBrands = [];
+  const volLast26 = [], volPrev26 = [], volLast25 = [];
+  const cccLast26 = [], cccPrev26 = [], cccLast25 = [];
+  const richConfig = {};
+  
+  const metrics = {};
+  marcasList.forEach(mRaw => {
+    const bucket = mRaw.trim().toUpperCase();
+    metrics[bucket] = { vol26: 0, volPrev: 0, vol25: 0, ccc26: new Set(), cccPrev: new Set(), ccc25: new Set() };
+  });
+  
+  const processRow = (r, isYr26) => {
+    let rawMarca = isCerv ? getMarca(r.prod2) : r.marca;
+    if (!rawMarca) return;
+    rawMarca = rawMarca.trim().toUpperCase();
+    
+    let bucket = rawMarca;
+    if (bucket === '7UP' || bucket === '7 UP') bucket = '7UP';
+    else if (bucket.startsWith('H2')) bucket = 'H2OH!';
+    
+    if (!metrics[bucket]) return;
+    
+    if (isYr26) {
+      if (r.mes === last && r.hl > 0) {
+        metrics[bucket].vol26 += r.hl;
+        metrics[bucket].ccc26.add(r.cli);
+      }
+      if (prev && r.mes === prev && r.hl > 0) {
+        metrics[bucket].volPrev += r.hl;
+        metrics[bucket].cccPrev.add(r.cli);
+      }
+    } else {
+      if (r.mes === last && r.hl > 0) {
+        metrics[bucket].vol25 += r.hl;
+        metrics[bucket].ccc25.add(r.cli);
+      }
+    }
+  };
+  
+  DATA.filter(r => r.yr == 2026 && (isCerv ? r.un === ST[8].un : r.un !== 'CERVEZAS CMQ')).forEach(r => processRow(r, true));
+  DATA.filter(r => r.yr == 2025 && (isCerv ? r.un === ST[8].un : r.un !== 'CERVEZAS CMQ')).forEach(r => processRow(r, false));
+  
+  marcasList.forEach(mRaw => {
+    const bucket = mRaw.trim().toUpperCase();
+    if (!metrics[bucket] || (metrics[bucket].vol26 === 0 && metrics[bucket].volPrev === 0 && metrics[bucket].vol25 === 0)) return;
+    
+    chartBrands.push(bucket);
+    volLast26.push(Math.round(metrics[bucket].vol26));
+    volPrev26.push(Math.round(metrics[bucket].volPrev));
+    volLast25.push(Math.round(metrics[bucket].vol25));
+    
+    cccLast26.push(metrics[bucket].ccc26.size);
+    cccPrev26.push(metrics[bucket].cccPrev.size);
+    cccLast25.push(metrics[bucket].ccc25.size);
+    
+    const logo = LOGOS[bucket];
+    const rk = 'rk_' + bucket.replace(/[^a-zA-Z0-9_]/g, '');
+    if (logo) {
+      let logoHeight = 45;
+      if (bucket === 'STELLA' || bucket === 'ANDES' || bucket === 'MICHELOB') {
+        logoHeight = 65; // Un poco más grandes pero no tanto para que no pisen el gráfico
+      }
+      richConfig[rk] = { height: logoHeight, width: 65, align: 'center', verticalAlign: 'middle', backgroundColor: { image: logo } };
+    } else {
+      richConfig[rk] = { color: '#1e293b', fontSize: 20, fontWeight: 'bold', fontFamily: 'Barlow Condensed' };
+    }
+  });
+
+  if (window._chartVol8) window._chartVol8.dispose();
+  if (window._chartCcc8) window._chartCcc8.dispose();
+  
+  window._chartVol8 = echarts.init(document.getElementById('marcas-chart-vol'));
+  window._chartCcc8 = echarts.init(document.getElementById('marcas-chart-ccc'));
+  
+  const commonOptions = {
+    animation: false,
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { data: [moNames.last26, moNames.prev26, moNames.last25].filter(Boolean), top: 0, textStyle: { fontFamily: 'Barlow Condensed', fontWeight: 'bold', fontSize: 14 } },
+    grid: { left: '3%', right: '3%', bottom: '15%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: chartBrands,
+      axisLabel: {
+        formatter: function(value) { 
+          const rk = 'rk_' + value.replace(/[^a-zA-Z0-9_]/g, '');
+          return LOGOS[value] ? '{' + rk + '| }' : '{' + rk + '|' + value + '}'; 
+        },
+        rich: richConfig,
+        margin: 20
+      },
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: '#e2e8f0' } }
+    },
+    yAxis: { type: 'value', show: false }
+  };
+  
+  const richConf = {
+    green: { color: '#4ade80', fontSize: 13, fontWeight: 'bold', fontFamily: 'Barlow Condensed', align: 'center', lineHeight: 16 },
+    red: { color: '#f87171', fontSize: 13, fontWeight: 'bold', fontFamily: 'Barlow Condensed', align: 'center', lineHeight: 16 },
+    val: { color: '#1e293b', fontSize: 16, fontWeight: 'bold', fontFamily: 'Barlow Condensed', align: 'center', lineHeight: 18 },
+    line: { backgroundColor: '#1e293b', height: 4, width: 24, align: 'center', borderRadius: 2 }
+  };
+
+  const getSeries = (dLast26, dPrev26, dLast25) => {
+    const s = [
+      { name: moNames.last26, type: 'bar', data: dLast26, itemStyle: { color: '#65a30d', borderRadius: [4, 4, 0, 0] }, label: { show: true, position: 'top', align: 'center', formatter: '{line| }\n{val|{c}}', rich: richConf } }
+    ];
+    if (prev) {
+      s.push({ 
+        name: moNames.prev26, 
+        type: 'bar', 
+        data: dPrev26, 
+        itemStyle: { color: '#0284c7', borderRadius: [4, 4, 0, 0] }, 
+        label: { 
+          show: true, 
+          position: 'top', 
+          align: 'center',
+          formatter: (params) => {
+            const vB = params.value;
+            const vA = dLast26[params.dataIndex];
+            if (!vB || !vA) return '{val|' + (vB||0) + '}';
+            const p = (vA - vB) / vB * 100;
+            const sign = p > 0 ? '▲\n+' : '▼\n';
+            const color = p >= 0 ? '{green|' : '{red|';
+            return color + sign + p.toFixed(1) + '%}\n{val|' + vB + '}';
+          },
+          rich: richConf
+        } 
+      });
+    }
+    s.push({ 
+      name: moNames.last25, 
+      type: 'bar', 
+      data: dLast25, 
+      itemStyle: { color: '#f97316', borderRadius: [4, 4, 0, 0] }, 
+      label: { 
+        show: true, 
+        position: 'top', 
+        align: 'center',
+        formatter: (params) => {
+            const vC = params.value;
+            const vA = dLast26[params.dataIndex];
+            if (!vC || !vA) return '{val|' + (vC||0) + '}';
+            const p = (vA - vC) / vC * 100;
+            const sign = p > 0 ? '▲\n+' : '▼\n';
+            const color = p >= 0 ? '{green|' : '{red|';
+            return color + sign + p.toFixed(1) + '%}\n{val|' + vC + '}';
+        },
+        rich: richConf
+      } 
+    });
+    return s;
+  };
+  
+  window._chartVol8.setOption({ ...commonOptions, series: getSeries(volLast26, volPrev26, volLast25) });
+  window._chartCcc8.setOption({ ...commonOptions, series: getSeries(cccLast26, cccPrev26, cccLast25) });
+}
+
+/* MARCAS CAROUSEL LOGIC */
+let currentMarcasSlide = 0;
+const totalMarcasSlides = 3;
+
+function updateMarcasCarousel() {
+  for (let i = 0; i < totalMarcasSlides; i++) {
+    const slide = document.getElementById('slide-marcas-' + i);
+    if (slide) {
+      if (i === currentMarcasSlide) {
+        slide.classList.add('active');
+        // If it's a chart slide, resize it immediately so ECharts draws correctly
+        if (i === 1 && window._chartVol8) window._chartVol8.resize();
+        if (i === 2 && window._chartCcc8) window._chartCcc8.resize();
+      } else {
+        slide.classList.remove('active');
+      }
+    }
+  }
+}
+
+// Bind carousel events
+(function initCarousel() {
+  const btnPrev = document.getElementById('marcas-prev');
+  const btnNext = document.getElementById('marcas-next');
+  
+  if (btnPrev && btnNext) {
+    btnPrev.addEventListener('click', () => {
+      currentMarcasSlide = (currentMarcasSlide - 1 + totalMarcasSlides) % totalMarcasSlides;
+      updateMarcasCarousel();
+    });
+    
+    btnNext.addEventListener('click', () => {
+      currentMarcasSlide = (currentMarcasSlide + 1) % totalMarcasSlides;
+      updateMarcasCarousel();
+    });
+  }
+  
+  // Also force resize when window resizes
+  window.addEventListener('resize', () => {
+    if (currentMarcasSlide === 1 && window._chartVol8) window._chartVol8.resize();
+    if (currentMarcasSlide === 2 && window._chartCcc8) window._chartCcc8.resize();
+  });
+})();

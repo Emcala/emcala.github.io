@@ -31,8 +31,30 @@ function parseCSV(txt) {
         iC=ix('Código Cliente'),        iP=ix('Código Producto'),
         iD=ix('Días Visita'),           iCA=ix('Canal Ajustado'),
         iCAL=ix('Calibre'),              iPROD=ix('Producto'),
-        iMAR=ix('Marca'),             iCLI_N=ix('Cliente'),
-        iFECHA=ix('Fecha');
+        iMAR=ix('Marca'),             iCLI_N=ix('Cliente');
+  let iFECHA=H.findIndex(h => h.toLowerCase() === 'fecha');
+  if (iFECHA === -1) iFECHA = ix('Fecha'); // fallback if strict matching fails
+
+  function parseDateStr(d) {
+    if (!d) return '';
+    d = String(d).trim();
+    if (/^\d{5}$/.test(d)) {
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      excelEpoch.setDate(excelEpoch.getDate() + parseInt(d, 10));
+      return excelEpoch.toISOString().split('T')[0];
+    }
+    if (/^\d{8}$/.test(d)) return d.slice(0,4) + '-' + d.slice(4,6) + '-' + d.slice(6,8);
+    if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(d)) {
+      const parts = d.split(/[\/\-]/);
+      return parts[2] + '-' + parts[1].padStart(2,'0') + '-' + parts[0].padStart(2,'0');
+    }
+    if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(d)) {
+      const parts = d.split(/[\/\-]/);
+      return parts[0] + '-' + parts[1].padStart(2,'0') + '-' + parts[2].padStart(2,'0');
+    }
+    return d;
+  }
+
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
     const p = lines[i].split(';');
@@ -53,7 +75,7 @@ function parseCSV(txt) {
       prod2:(p[iPROD]||'').trim(),
       marca:(p[iMAR]||'').trim(),
       cliN:(p[iCLI_N]||'').trim(),
-      fecha:(p[iFECHA]||'').trim(),
+      fecha: iFECHA !== -1 ? parseDateStr(p[iFECHA]) : '',
     });
   }
   return rows;

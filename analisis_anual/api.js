@@ -21,12 +21,16 @@ async function fetchConfigData() {
       if (!supMap[sup].includes(promo)) supMap[sup].push(promo);
     }
     
-    SEGS = Object.keys(supMap).map(sup => ({
-      key: sup.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-      label: sup.length > 15 ? sup.split(' ')[0] : sup,
-      sdv: sup,
-      promos: supMap[sup]
-    }));
+    SEGS = Object.keys(supMap).map(sup => {
+      let lbl = sup.length > 15 ? sup.split(' ')[0] : sup;
+      if (lbl === 'RIERA' || sup.includes('RIERA')) lbl = 'RIERA SALA';
+      return {
+        key: sup.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        label: lbl,
+        sdv: sup,
+        promos: supMap[sup]
+      };
+    });
 
     // Procesar Maestro (Si el GAS ya envió los counts optimizados, los usamos directo)
     let promoCounts = {};
@@ -49,13 +53,33 @@ async function fetchConfigData() {
         const anu = iAnulado >= 0 && r[iAnulado] ? String(r[iAnulado]).trim().toUpperCase() : '';
         const fvAnu = iFvAnulado >= 0 && r[iFvAnulado] ? String(r[iFvAnulado]).trim().toUpperCase() : '';
         if (anu !== 'SI' && fvAnu !== 'SI') {
-          const p = iMPromo >= 0 && r[iMPromo] ? String(r[iMPromo]).trim().toUpperCase() : '';
-          if (p) {
+          const rawP = iMPromo >= 0 && r[iMPromo] ? String(r[iMPromo]).trim().toUpperCase() : '';
+          if (rawP) {
+            let p = rawP;
+            // Clean up typical "1234 - NAME" format or match with known promoters
+            const cleanP = rawP.replace(/^\d+\s*-\s*/, '').trim();
+            const allKnownPromos = Object.values(supMap).flat();
+            const known = allKnownPromos.find(kp => cleanP.includes(kp) || kp.includes(cleanP));
+            p = known || cleanP;
             promoCounts[p] = (promoCounts[p] || 0) + 1;
           }
         }
       }
     }
+    
+    // Si viene por data.maestro_counts, también normalizamos
+    if (data.maestro_counts) {
+      const normCounts = {};
+      const allKnownPromos = Object.values(supMap).flat();
+      Object.entries(data.maestro_counts).forEach(([k, v]) => {
+        const cleanK = String(k).trim().toUpperCase().replace(/^\d+\s*-\s*/, '').trim();
+        const known = allKnownPromos.find(kp => cleanK.includes(kp) || kp.includes(cleanK));
+        const p = known || cleanK;
+        normCounts[p] = (normCounts[p] || 0) + v;
+      });
+      promoCounts = normCounts;
+    }
+    
     CART_PROMO = promoCounts;
 
     // Actualizar activePromos en todos los ST
@@ -79,7 +103,7 @@ async function fetchConfigData() {
   let overlay;
   if (!hasCache) {
     overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;font-size:26px;font-family:"Barlow Condensed",sans-serif;font-weight:700;color:#1e3a8a;flex-direction:column;gap:14px;transition:opacity 0.3s;';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(11,37,89,0.95);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;font-size:26px;font-family:"Barlow Condensed",sans-serif;font-weight:700;color:#fff;flex-direction:column;gap:14px;transition:opacity 0.3s;';
     overlay.innerHTML = `
       <style>
         @keyframes spin-loader { 100% { transform: rotate(360deg); } }
