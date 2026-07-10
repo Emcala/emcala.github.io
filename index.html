@@ -2,139 +2,439 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EMCALA · Acceso</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.container{width:100%;max-width:400px;text-align:center;animation:fadeIn 0.6s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.login-card{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);padding:36px 28px;border-radius:24px;margin-bottom:20px}
-.field{margin-bottom:16px;text-align:left}
-.field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;color:rgba(255,255,255,0.55)}
-.field input{width:100%;padding:14px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:12px;font-family:inherit;font-size:15px;outline:none;transition:all 0.2s;text-align:center;color:#fff}
-.field input::placeholder{color:rgba(255,255,255,0.35)}
-.field input:focus{border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.18)}
-.btn-login{width:100%;background:#fff;color:#0B2559;border:none;padding:16px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;transition:opacity 0.2s;font-family:inherit}
-.btn-login:hover{opacity:0.9}
-.error{color:#FFD580;font-size:13px;margin-top:12px;display:none;font-weight:600}
-</style>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dashboard · Emcala</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="container">
-  <div style="margin-bottom:28px">
-    <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:52px;font-weight:800;color:#fff;letter-spacing:-0.04em;line-height:1">EMCALA</div>
-    <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-top:6px">Portal de Acceso</div>
-  </div>
+<div id="page-tabs">
+  <button class="ptab active" data-page="1">Mensual</button>
+  <button class="ptab" data-page="2">Días de Visita</button>
+  <button class="ptab" data-page="3">Canal</button>
+  <button class="ptab" data-page="4">Cervezas</button>
+  <button class="ptab" data-page="5">NABS</button>
+  <button class="ptab" data-page="6">Ranking</button>
+  <button class="ptab" data-page="7">CRM</button>
+  <button class="ptab" data-page="8">Marcas</button>
+</div>
 
-  <div id="sectionLogin" class="login-card">
-    <div class="field"><label>Usuario</label><input type="text" id="user" placeholder="USUARIO"></div>
-    <div class="field"><label>Contraseña</label><input type="password" id="pass" placeholder="••••••••"></div>
-    <button class="btn-login" onclick="doLoginHub()">Ingresar</button>
-    <div id="loginErr" class="error">Credenciales incorrectas</div>
+<!-- ═══ PAGE 1: MENSUAL ═══════════════════════════════════════ -->
+<div class="page active" id="pg1">
+  <div class="hdr">
+    <h1>EMCALA</h1>
+    <div style="display:flex;align-items:center;gap:5px">
+      <label class="fbtn">📂 Cargar carpeta<input type="file" id="folder-input" webkitdirectory accept=".csv" multiple></label>
+      <span class="fst pend" id="s25">Sin archivos</span>
+    </div>
+    <div class="sep"></div>
+    <div class="un-wrap"><div class="un-btn" id="un-btn1"><span id="un-lbl1">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd1"></div></div>
+    <div class="sep"></div>
+    <div class="sdv-group" id="sdv1"></div>
+    <button class="tot-btn all" id="tot1">TODOS</button>
+  </div>
+  <div class="dmain">
+    <div class="up-state" id="up1"><div class="ico">📊</div><p>Cargá los archivos CSV para comenzar</p><small style="font-size:11px;opacity:.7">Separador ; · UTF-16</small></div>
+    <div class="kpi-row" id="kpi1">
+      <div class="kpi" id="k1-0"></div><div class="kpi" id="k1-1"></div>
+      <div class="kpi" id="k1-2"></div><div class="kpi" id="k1-3"></div>
+    </div>
+    <div class="dbody" id="body1">
+      <div class="lpanel">
+        <div class="cc"><div class="cc-t"><span id="t1-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld1a"></div>2026</div></div></div><div class="cdiv" id="c1-hl"></div></div>
+        <div class="cc"><div class="cc-t"><span>CCC · Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld1b"></div>2026</div></div></div><div class="cdiv" id="c1-ccc"></div></div>
+        <div class="cc"><div class="cc-t"><span>Total Brand Distribution <span style="font-weight:400;font-size:9px;color:var(--muted)">CCC×SKUs/PDV</span></span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld1c"></div>2026</div></div></div><div class="cdiv" id="c1-bd"></div></div>
+      </div>
+      <div class="rpanel">
+        <div class="rrow">
+          <div class="cc"><div class="cc-t" id="t1-ytd-hl">HL · YTD vs LYTD</div><div class="cdiv" id="c1-ytd-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t1-comp-hl">HL · Comparativa</div><div class="cdiv" id="c1-comp-hl"></div></div>
+        </div>
+        <div class="rrow">
+          <div class="cc"><div class="cc-t">CCC · CCC vs CNC</div><div class="cdiv" id="c1-cnc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · Comparativa</div><div class="cdiv" id="c1-comp-ccc"></div></div>
+        </div>
+        <div class="rrow">
+          <div class="cc"><div class="cc-t">TBD · YTD vs LYTD</div><div class="cdiv" id="c1-ytd-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · Comparativa</div><div class="cdiv" id="c1-comp-bd"></div></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Auth Module -->
-<script src="emcala-auth.js"></script>
+<!-- ═══ PAGE 2: DÍAS DE VISITA ════════════════════════════════ -->
+<div class="page" id="pg2">
+  <div class="hdr">
+    <div class="un-wrap"><div class="un-btn" id="un-btn2"><span id="un-lbl2">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd2"></div></div>
+    <div class="sep"></div>
+    <div class="sdv-group" id="sdv2"></div>
+    <button class="tot-btn all" id="tot2">TODOS</button>
+    <div class="sep"></div>
+    <div class="freq-tools">
+      <div id="freq-anchors"></div>
+      <button type="button" class="tot-btn all" id="freq-todos-btn" title="1ª vez: selecciona todas las frecuencias · 2ª vez: limpia la selección">TODOS</button>
+    </div>
+  </div>
+  <div class="dmain">
+    <div class="up-state" id="up2"><div class="ico">📆</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
+    <div class="kpi-row" id="kpi2">
+      <div class="kpi" id="k2-0"></div><div class="kpi" id="k2-1"></div>
+      <div class="kpi" id="k2-2"></div><div class="kpi" id="k2-3"></div>
+      <div class="kpi" id="k2-4"></div>
+    </div>
+    <div class="fcol" id="body2">
+      <div class="cc"><div class="cc-t"><span id="t2-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld2a"></div>2026</div></div></div><div class="cdiv" id="c2-hl"></div></div>
+      <div class="cc"><div class="cc-t"><span id="t2-ccc">CCC · Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld2b"></div>2026</div></div></div><div class="cdiv" id="c2-ccc"></div></div>
+      <div class="cc"><div class="cc-t"><span>Total Brand Distribution</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld2c"></div>2026</div></div></div><div class="cdiv" id="c2-bd"></div></div>
+    </div>
+  </div>
+</div>
 
-<script>
-// GS URL for Auth
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec'; 
+<!-- ═══ PAGE 3: CANAL ═════════════════════════════════════════ -->
+<div class="page" id="pg3">
+  <div class="hdr">
+    <div class="un-wrap"><div class="un-btn" id="un-btn3"><span id="un-lbl3">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd3"></div></div>
+    <div class="sep"></div>
+    <div class="sdv-group" id="sdv3"></div>
+    <button class="tot-btn all" id="tot3">TODOS</button>
+    <div class="sep"></div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap" id="canal-tabs">
+      <button class="ftab active" data-canal="TODOS">Todos</button>
+      <button class="ftab" data-canal="KT">K+T</button>
+      <button class="ftab" data-canal="AS">AS</button>
+      <button class="ftab" data-canal="KTAS">K+T/AS</button>
+      <button class="ftab" data-canal="REF">REF</button>
+      <button class="ftab" data-canal="KTREF">K+T/REF</button>
+      <button class="ftab" data-canal="MAYO_C">MAYO</button>
+    </div>
+  </div>
+  <div class="dmain">
+    <div class="up-state" id="up3"><div class="ico">📊</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
+    <div class="kpi-row" id="kpi3">
+      <div class="kpi" id="k3-0"></div><div class="kpi" id="k3-1"></div>
+      <div class="kpi" id="k3-2"></div><div class="kpi" id="k3-3"></div>
+    </div>
+    <div class="dbody" id="body3">
+      <div class="lpanel">
+        <div class="cc"><div class="cc-t"><span id="t3-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld3a"></div>2026</div></div></div><div class="cdiv" id="c3-hl"></div></div>
+        <div class="cc"><div class="cc-t"><span>CCC · Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld3b"></div>2026</div></div></div><div class="cdiv" id="c3-ccc"></div></div>
+        <div class="cc"><div class="cc-t"><span>Total Brand Distribution</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld3c"></div>2026</div></div></div><div class="cdiv" id="c3-bd"></div></div>
+      </div>
+      <div class="rpanel">
+        <div class="rrow">
+          <div class="cc"><div class="cc-t" id="t3-ytd-hl">HL · YTD vs LYTD</div><div class="cdiv" id="c3-ytd-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t3-comp-hl">HL · Comparativa</div><div class="cdiv" id="c3-comp-hl"></div></div>
+        </div>
+        <div class="rrow">
+          <div class="cc"><div class="cc-t">CCC · CCC vs CNC</div><div class="cdiv" id="c3-cnc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · Comparativa</div><div class="cdiv" id="c3-comp-ccc"></div></div>
+        </div>
+        <div class="rrow">
+          <div class="cc"><div class="cc-t">TBD · YTD vs LYTD</div><div class="cdiv" id="c3-ytd-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · Comparativa</div><div class="cdiv" id="c3-comp-bd"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-// Local dev bypass check
-function checkLocalDevBypass() {
-  if (window.location.protocol === 'file:') {
-    const s = localStorage.getItem('user_session');
-    if (s) {
-      window.location.href = './portal/index.html';
-      return true;
-    }
-  }
-  return false;
-}
+<!-- ═══ PAGE 4: CERVEZAS ═══════════════════════════════════ -->
+<div class="page" id="pg4">
+  <div class="hdr">
+    <div class="sdv-group" id="sdv4"></div>
+    <button class="tot-btn all" id="tot4">TODOS</button>
+    <div class="sep"></div>
+    <div class="sdv-wrap" id="cal-wrap">
+      <button class="sdv-btn all" id="cal-drop-btn">Calibres <span class="chv">▼</span></button>
+      <div class="promo-panel" id="cal-panel">
+        <div class="promo-hdr" id="cal-hdr-all" style="cursor:poRoboto"></div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="sdv-wrap" id="marca-wrap">
+      <button class="sdv-btn all" id="marca-drop-btn">Marcas <span class="chv">▼</span></button>
+      <div class="promo-panel" id="marca-panel">
+        <div class="promo-hdr" id="marca-hdr-all" style="cursor:poRoboto"></div>
+      </div>
+    </div>
+  </div>
+  <div class="dmain">
+    <div class="up-state" id="up4"><div class="ico">🍺</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
+    <div class="kpi-row" id="kpi4">
+      <div class="kpi" id="k4-0"></div><div class="kpi" id="k4-1"></div>
+      <div class="kpi" id="k4-2"></div><div class="kpi" id="k4-3"></div>
+    </div>
+    <div id="donuts-row" style="display:none;gap:6px;flex-shrink:0;height:clamp(150px,19vh,260px);">
+      <div class="cc" style="flex:1"><div class="cc-t">CORE+VALUE</div><div class="cdiv" id="d-cv"></div></div>
+      <div class="cc" style="flex:1"><div class="cc-t">ABOVE CORE</div><div class="cdiv" id="d-ac"></div></div>
+      <div class="cc" style="flex:1"><div class="cc-t">BALANCED CHOICES</div><div class="cdiv" id="d-bc"></div></div>
+    </div>
+    <div class="dbody" id="body4" style="flex:0 0 70%;">
+      <div class="lpanel">
+        <div class="cc"><div class="cc-t"><span id="t4-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#f97316"></div>2026</div></div></div><div class="cdiv" id="c4-hl"></div></div>
+        <div class="cc"><div class="cc-t"><span>CCC · Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#f97316"></div>2026</div></div></div><div class="cdiv" id="c4-ccc"></div></div>
+        <div class="cc"><div class="cc-t"><span>Total Brand Distribution</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#f97316"></div>2026</div></div></div><div class="cdiv" id="c4-bd"></div></div>
+      </div>
+      <div class="rpanel">
+        <div class="rrow">
+          <div class="cc"><div class="cc-t" id="t4-ytd-hl">HL · YTD vs LYTD</div><div class="cdiv" id="c4-ytd-hl"></div></div>
+          <div class="cc"><div class="cc-t" id="t4-comp-hl">HL · Comparativa</div><div class="cdiv" id="c4-comp-hl"></div></div>
+        </div>
+        <div class="rrow">
+          <div class="cc"><div class="cc-t">CCC · CCC vs CNC</div><div class="cdiv" id="c4-cnc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · Comparativa</div><div class="cdiv" id="c4-comp-ccc"></div></div>
+        </div>
+        <div class="rrow">
+          <div class="cc"><div class="cc-t">TBD · YTD vs LYTD</div><div class="cdiv" id="c4-ytd-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · Comparativa</div><div class="cdiv" id="c4-comp-bd"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-async function doLoginHub() {
-  const u = document.getElementById('user').value.trim().toUpperCase();
-  const p = document.getElementById('pass').value.trim();
-  const btn = document.querySelector('.btn-login');
-  
-  if (!u || !p) {
-    document.getElementById('loginErr').textContent = 'Ingresa usuario y contraseña';
-    document.getElementById('loginErr').style.display = 'block';
-    return;
-  }
+<!-- ═══ PAGE 6: RANKING ═══════════════════════════════════════ -->
+<div class="page" id="pg6">
+  <div class="hdr">
+    <div class="un-wrap"><div class="un-btn" id="un-btn6"><span id="un-lbl6">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd6"></div></div>
+    <div class="sep"></div>
+    <div class="sdv-group" id="sdv6"></div>
+    <button class="tot-btn all" id="tot6">TODOS</button>
+    <div class="sep"></div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap" id="canal6-tabs">
+      <button class="ftab active" data-canal6="TODOS">Todos</button>
+      <button class="ftab" data-canal6="KT">K+T</button>
+      <button class="ftab" data-canal6="AS">AS</button>
+      <button class="ftab" data-canal6="KTAS">K+T/AS</button>
+      <button class="ftab" data-canal6="REF">REF</button>
+      <button class="ftab" data-canal6="KTREF">K+T/REF</button>
+      <button class="ftab" data-canal6="MAYO_C">MAYO</button>
+    </div>
+    <div class="sep"></div>
+    <div class="sdv-wrap" id="marca6-wrap">
+      <button class="sdv-btn all" id="marca6-drop-btn">Marcas <span class="chv">▼</span></button>
+      <div class="promo-panel" id="marca6-panel">
+        <div class="promo-hdr" id="marca6-hdr-all" style="cursor:poRoboto"></div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="sdv-wrap" id="cal6-wrap">
+      <button class="sdv-btn all" id="cal6-drop-btn">Calibres <span class="chv">▼</span></button>
+      <div class="promo-panel" id="cal6-panel">
+        <div class="promo-hdr" id="cal6-hdr-all" style="cursor:poRoboto"></div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap" id="seg6-tabs">
+      <button class="ftab active" data-seg6="TODOS">Todos</button>
+      <button class="ftab" data-seg6="CV">Core+Value</button>
+      <button class="ftab" data-seg6="AC">Above Core</button>
+      <button class="ftab" data-seg6="BC">Bal.Choices</button>
+    </div>
+  </div>
+  <div class="dmain">
+    <div class="up-state" id="up6"><div class="ico">🏆</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
+    <div class="kpi-row" id="kpi6">
+      <div class="kpi" id="k6-0"></div><div class="kpi" id="k6-1"></div>
+      <div class="kpi" id="k6-2"></div><div class="kpi" id="k6-3"></div>
+    </div>
+    <div class="dbody" id="body6">
+      <div class="lpanel" style="flex:0 0 65%;">
+        <div class="cc"><div class="cc-t"><span id="t6-hl">Volumen HL · Top 50</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld6a"></div>2026</div></div></div><div class="cdiv" id="c6-hl"></div></div>
+        <div class="cc"><div class="cc-t"><span>SKU/PDV Promedio</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld6b"></div>2026</div></div></div><div class="cdiv" id="c6-sku"></div></div>
+        <div class="cc"><div class="cc-t"><span>Mix Top 50 sobre total</span></div><div class="cdiv" id="c6-mix"></div></div>
+      </div>
+      <div class="rpanel" style="overflow:hidden;">
+        <div class="cc" style="flex:1;overflow:hidden;">
+          <div class="cc-t">Ranking Top 50 · Clientes</div>
+          <div style="overflow-y:auto;flex:1;min-height:0;">
+            <table id="t6-tabla" style="width:100%;border-collapse:collapse;font-family:'Roboto',sans-serif;font-size:clamp(9px,0.65vw,12px);">
+              <thead>
+                <tr style="background:var(--surf2);position:sticky;top:0;z-index:1;">
+                  <th style="padding:4px 6px;text-align:center;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);width:28px;">#</th>
+                  <th style="padding:4px 6px;text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">ID</th>
+                  <th style="padding:4px 6px;text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">Cliente</th>
+                  <th style="padding:4px 6px;text-align:right;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">HL</th>
+                  <th style="padding:4px 6px;text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">UN</th>
+                  <th style="padding:4px 6px;text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">Promotor</th>
+                  <th style="padding:4px 6px;text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">Supervisor</th>
+                </tr>
+              </thead>
+              <tbody id="t6-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-  // --- LOCAL DEV BYPASS ---
-  if (window.location.protocol === 'file:') {
-    EmcalaAuth.createSession({ usuario: u, rol: 'auditor', nombre: u + ' (DEV)', promotores: '', userHash: 'dev_hash' });
-    window.location.href = './portal/index.html';
-    return;
-  }
-  // ------------------------
+<!-- ═══ PAGE 5: NABS ══════════════════════════════════════════ -->
+<div class="page" id="pg5">
+  <div class="hdr">
+    <div class="sdv-group" id="sdv5"></div>
+    <button class="tot-btn all" id="tot5">TODOS</button>
+    <div class="sep"></div>
+    <div class="sdv-wrap" id="cal5-wrap">
+      <button class="sdv-btn all" id="cal5-drop-btn">Calibres <span class="chv">▼</span></button>
+      <div class="promo-panel" id="cal5-panel">
+        <div class="promo-hdr" id="cal5-hdr-all" style="cursor:poRoboto"></div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="sdv-wrap" id="marca5-wrap">
+      <button class="sdv-btn all" id="marca5-drop-btn">Marcas <span class="chv">▼</span></button>
+      <div class="promo-panel" id="marca5-panel">
+        <div class="promo-hdr" id="marca5-hdr-all" style="cursor:poRoboto"></div>
+      </div>
+    </div>
+  </div>
+  <div class="dmain">
+    <div class="up-state" id="up5"><div class="ico">🥤</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
+    <div class="kpi-row" id="kpi5">
+      <div class="kpi" id="k5-0"></div><div class="kpi" id="k5-1"></div>
+      <div class="kpi" id="k5-2"></div><div class="kpi" id="k5-3"></div>
+    </div>
+    <div class="dbody" id="body5">
+      <div class="lpanel">
+        <div class="cc"><div class="cc-t"><span id="t5-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#a855f7"></div>2026</div></div></div><div class="cdiv" id="c5-hl"></div></div>
+        <div class="cc"><div class="cc-t"><span>CCC · Clientes con Compra</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#a855f7"></div>2026</div></div></div><div class="cdiv" id="c5-ccc"></div></div>
+        <div class="cc"><div class="cc-t"><span>Total Brand Distribution</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#a855f7"></div>2026</div></div></div><div class="cdiv" id="c5-bd"></div></div>
+      </div>
+      <div class="rpanel">
+        <div class="rrow">
+          <div class="cc"><div class="cc-t">HL · YTD vs LYTD</div><div class="cdiv" id="c5-ytd-hl"></div></div>
+          <div class="cc"><div class="cc-t">HL · Comparativa</div><div class="cdiv" id="c5-comp-hl"></div></div>
+        </div>
+        <div class="rrow">
+          <div class="cc"><div class="cc-t">CCC · CCC vs CNC</div><div class="cdiv" id="c5-cnc"></div></div>
+          <div class="cc"><div class="cc-t">CCC · Comparativa</div><div class="cdiv" id="c5-comp-ccc"></div></div>
+        </div>
+        <div class="rrow">
+          <div class="cc"><div class="cc-t">TBD · YTD vs LYTD</div><div class="cdiv" id="c5-ytd-bd"></div></div>
+          <div class="cc"><div class="cc-t">TBD · Comparativa</div><div class="cdiv" id="c5-comp-bd"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-  btn.textContent = 'Verificando...'; 
-  btn.disabled = true;
-  document.getElementById('loginErr').style.display = 'none';
+<!-- ═══ PAGE 7: CRM ════════════════════════════════════════════ -->
+<div class="page" id="pg7">
+  <div class="hdr">
+    <h1 style="font-size:clamp(12px,1vw,18px);">CRM</h1>
+    <div class="sep"></div>
+    <div class="crm-search-wrap">
+      <span class="ico-search">🔍</span>
+      <input type="text" id="crm-input" placeholder="Buscar cliente por nombre o código…" autocomplete="off">
+      <div class="crm-dd" id="crm-dd"></div>
+    </div>
+    <div class="sep" id="crm-un-sep" style="display:none;"></div>
+    <div class="un-wrap" id="crm-un-wrap" style="display:none;">
+      <div class="un-btn" id="crm-un-btn"><span id="crm-un-lbl">Todas las UN</span><span class="arr">▼</span></div>
+      <div class="un-dd" id="crm-un-dd"></div>
+    </div>
+    <div class="sep"></div>
+    <div class="crm-ficha" id="crm-ficha" style="display:none">
+      <span class="crm-tag" id="crm-tag-canal"><span>Canal: </span><span id="crm-canal">—</span></span>
+      <span class="crm-tag" id="crm-tag-sup"><span>Supervisor: </span><span id="crm-sup">—</span></span>
+      <span class="crm-tag" id="crm-tag-prom"><span>Promotor: </span><span id="crm-prom">—</span></span>
+      <span class="crm-tag" id="crm-tag-dias"><span>Días visita: </span><span id="crm-dias">—</span></span>
+      <span class="crm-tag" id="crm-tag-un"><span>UN: </span><span id="crm-un">—</span></span>
+      <span class="crm-tag" style="background:#d1fae5;border-color:#6ee7b7;"><span>Última compra: </span><span id="crm-fecha">—</span></span>
+    </div>
+  </div>
+  <div class="dmain">
+    <div id="crm-empty"><div class="ico">👤</div><p>Buscá un cliente para ver su historial</p></div>
+    <div class="kpi-row" id="kpi7" style="display:none">
+      <div class="kpi" id="k7-0"></div><div class="kpi" id="k7-1"></div>
+      <div class="kpi" id="k7-2"></div><div class="kpi" id="k7-3"></div>
+    </div>
+    <div class="dbody" id="body7" style="display:none">
+      <div class="lpanel">
+        <div class="cc"><div class="cc-t"><span id="t7-hl">Volumen HL</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" id="ld7a" style="background:#10b981"></div>2026</div></div></div><div class="cdiv" id="c7-hl"></div></div>
+        <div class="cc"><div class="cc-t"><span>SKU/PDV Mensual</span><div class="leg"><div class="li"><div class="ld" style="background:#3b82f6"></div>2025</div><div class="li"><div class="ld" style="background:#10b981"></div>2026</div></div></div><div class="cdiv" id="c7-sku"></div></div>
+        <div class="cc"><div class="cc-t"><span>HL · Comparativa</span></div><div class="cdiv" id="c7-comp"></div></div>
+      </div>
+      <div class="rpanel" style="overflow:hidden;flex-direction:column;gap:6px;">
+        <div class="cc" style="flex-shrink:0;padding:6px 10px;">
+          <div class="cc-t" style="justify-content:flex-start;gap:8px;">
+            <span style="font-size:11px;color:var(--muted);font-weight:400;">Última compra:</span>
+            <span id="crm-last-fecha" style="font-size:14px;color:var(--acc);font-weight:900;">—</span>
+          </div>
+        </div>
+        <div class="cc" style="flex:1;overflow:hidden;">
+          <div class="cc-t">Productos · último mes</div>
+          <div style="overflow-y:auto;flex:1;min-height:0;">
+            <table id="t7-prods" style="width:100%;border-collapse:collapse;font-family:'Roboto',sans-serif;font-size:clamp(9px,0.65vw,12px);">
+              <thead>
+                <tr style="background:var(--surf2);position:sticky;top:0;z-index:1;">
+                  <th style="padding:4px 6px;text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">Producto</th>
+                  <th style="padding:4px 6px;text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">Marca</th>
+                  <th style="padding:4px 6px;text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">Calibre</th>
+                  <th style="padding:4px 6px;text-align:right;color:var(--muted);font-weight:700;border-bottom:1px solid var(--brd);">HL</th>
+                </tr>
+              </thead>
+              <tbody id="t7-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-  let retries = 3;
-  let success = false;
-  
-  while (retries > 0) {
-    try {
-      const response = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'login', usuario: u, password: p })
-      });
-      const data = await response.json();
-      
-      if (data.ok) {
-        EmcalaAuth.createSession({
-          usuario: u,
-          userHash: data.userHash, 
-          sessionToken: data.sessionToken, 
-          rol: data.rol,
-          nombre: data.label,
-          promotores: data.promotores
-        });
-        window.location.href = './portal/index.html';
-        success = true;
-        break;
-      } else {
-        document.getElementById('loginErr').textContent = 'Credenciales incorrectas';
-        document.getElementById('loginErr').style.display = 'block';
-        btn.textContent = 'Ingresar'; btn.disabled = false;
-        success = true; // no es error de red, así que no reintentar
-        break;
-      }
-    } catch (error) {
-      retries--;
-      if (retries > 0) {
-        btn.textContent = 'Reintentando...';
-        await new Promise(r => setTimeout(r, 1500));
-      }
-    }
-  }
-  
-  if (!success && retries === 0) {
-    document.getElementById('loginErr').textContent = 'Error de conexión';
-    document.getElementById('loginErr').style.display = 'block';
-    btn.textContent = 'Ingresar'; btn.disabled = false;
-  }
-}
+<!-- ═══ PAGE 8: MARCAS ═════════════════════════════════════════ -->
+<div class="page" id="pg8">
+  <div class="hdr">
+    <div style="display:flex;gap:4px;flex-wrap:wrap" id="marcas-tabs">
+      <button class="ftab active" data-marcas="CERV">Cervezas</button>
+      <button class="ftab" data-marcas="UNG">UNG</button>
+    </div>
+    <div class="sep"></div>
+    <div class="un-wrap" id="un-wrap-8" style="display:none;"><div class="un-btn" id="un-btn8"><span id="un-lbl8">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd8"></div></div>
+  </div>
+  <div class="dmain">
+    <div class="up-state" id="up8"><div class="ico">🏷️</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
+    <div class="dbody" id="body8" style="display:none; flex-direction:column; overflow-y:auto; align-items:center; justify-content:center; padding: 10px 0;">
+      <div class="marcas-carousel">
+        <button class="carousel-btn carousel-prev" id="marcas-prev">❮</button>
+        <button class="carousel-btn carousel-next" id="marcas-next">❯</button>
 
-// Si entra a esta página pero ya está logueado de antes, lo mandamos directo al portal
-window.onload = () => {
-  if (checkLocalDevBypass()) return;
-  
-  const s = localStorage.getItem('user_session');
-  if (s) {
-    window.location.href = './portal/index.html';
-  }
-};
-</script>
+        <!-- SLIDE 1: Tarjetas -->
+        <div class="carousel-slide active" id="slide-marcas-0">
+          <div id="marcas-grid" class="brand-grid"></div>
+        </div>
+
+        <!-- SLIDE 2: Gráfico de Volumen -->
+        <div class="carousel-slide" id="slide-marcas-1">
+          <div style="background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; width: 100%; max-width: 1450px; margin: 0 auto;">
+              <h3 style="text-align: center; font-family: 'Barlow Condensed', sans-serif; font-size: 28px; margin-bottom: 20px; font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">VOLUMEN MARCAS</h3>
+              <div id="marcas-chart-vol" style="width: 100%; height: 500px;"></div>
+          </div>
+        </div>
+
+        <!-- SLIDE 3: Gráfico de CCC -->
+        <div class="carousel-slide" id="slide-marcas-2">
+          <div style="background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; width: 100%; max-width: 1450px; margin: 0 auto;">
+              <h3 style="text-align: center; font-family: 'Barlow Condensed', sans-serif; font-size: 28px; margin-bottom: 20px; font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">CCC MARCAS</h3>
+              <div id="marcas-chart-ccc" style="width: 100%; height: 500px;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="data.js"></script>
+  <script src="charts.js"></script>
+  <script src="ui.js?v=3"></script>
+  <script src="main.js"></script>
+
 </body>
 </html>
