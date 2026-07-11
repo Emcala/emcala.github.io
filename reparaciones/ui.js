@@ -285,7 +285,7 @@ function buildRegItem(r,onclickAttr){
   if(r.cliente) {
     const cliKey = r.cliente.toString().trim();
     const currOt = r.ot ? r.ot.toString().trim() : '';
-    const currTs = r.timestamp ? new Date(r.timestamp) : new Date(0);
+    const currTs = r.ts ? new Date(r.ts) : new Date(0);
     const segVals = Object.values(seguimientos);
     for(let i=0; i<segVals.length; i++){
       if(segVals[i].cli === cliKey && segVals[i].ot !== currOt && (segVals[i].estado||'').toLowerCase() === 'resuelto') {
@@ -400,11 +400,11 @@ function generarLogs() {
   
   // 1. Creaciones de OT (desde allData)
   allData.forEach(r => {
-    if(!r.timestamp) return;
+    if(!r.ts) return;
     eventos.push({
       tipo: 'form',
-      ts: new Date(r.timestamp),
-      fechaFormato: r.fecha || formatFechaAR(new Date(r.timestamp)),
+      ts: new Date(r.ts),
+      fechaFormato: r.fecha || formatFechaAR(new Date(r.ts)),
       ot: r.ot || '—',
       cliente: r.cliente || '—',
       autor: r.nombre || 'Desconocido',
@@ -522,7 +522,7 @@ function renderDashboard() {
   
   allData.forEach(r => {
     const cliKey = r.cliente ? r.cliente.toString().trim().toUpperCase() : '';
-    const myTs = new Date(r.timestamp||0).getTime(); // real creation timestamp
+    const myTs = new Date(r.ts||0).getTime(); // real creation timestamp
     
     const seg = getSegByOt(r.ot, r.cliente);
     const estado = (seg && seg.estado) ? seg.estado.toLowerCase() : 'pendiente';
@@ -662,7 +662,7 @@ function renderDashboard() {
   });
 
   const allUniqueOts = new Map();
-  allData.forEach(r => { if(r.ot && r.timestamp) allUniqueOts.set(r.ot, { ts: r.timestamp, marca: r.marca, cli: r.cliente }); });
+  allData.forEach(r => { if(r.ot && r.ts) allUniqueOts.set(r.ot, { ts: r.ts, marca: r.marca, cli: r.cliente }); });
   historialData.forEach(h => { if(h.ot && h.ts) allUniqueOts.set(h.ot, { ts: h.ts, marca: h.marca, cli: h.cliente }); });
 
   let marcasEsteMes = {}, marcasMesPasado = {};
