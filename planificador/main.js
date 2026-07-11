@@ -457,8 +457,10 @@
                   volData[matchedProm]['obj-f2'] = 0;
                   resetProms[matchedProm] = true;
                 }
-                if (currentCategory.includes('CZA Core+Value') || currentCategory.includes('CZA Above Core')) {
-                  volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
+                if (currentCategory.includes('Total Cervezas')) {
+                  // El archivo nuevo ya trae el total de Foco I armado en una sola fila;
+                  // se asigna directo, NO se suma (evita duplicar lo que ya incluye "CZA Above Core").
+                  volData[matchedProm]['obj-f1'] = parseFloat(colG.toFixed(2));
                 } else if (currentCategory.includes('Total UNG 2026') || currentCategory.includes('4b - Aguas')) {
                   volData[matchedProm]['obj-f2'] = parseFloat((volData[matchedProm]['obj-f2'] + colG).toFixed(2));
                 }
