@@ -24,10 +24,16 @@ body{background:var(--bg);color:var(--txt);font-family:'Roboto',sans-serif;heigh
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
 /* PAGE TABS */
-#page-tabs{background:rgba(0,0,0,0.2);border-bottom:1px solid #e2e8f0;display:flex;gap:2px;padding:4px 12px 0;flex-shrink:0;}
-.ptab{padding:clamp(3px,0.4vh,6px) clamp(10px,1.2vw,20px);border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:clamp(10px,0.8vw,14px);font-weight:700;cursor:pointer;user-select:none;transition:all .15s;}
+#page-tabs{background:rgba(0,0,0,0.25);border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:2px;padding:0 8px;flex-shrink:0;}
+.ptab{padding:clamp(4px,0.5vh,8px) clamp(10px,1.2vw,20px);border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:clamp(10px,0.8vw,14px);font-weight:700;cursor:pointer;user-select:none;transition:all .15s;}
 .ptab:hover{background:var(--surf2);color:var(--txt);}
-.ptab.active{background:var(--surf);backdrop-filter:var(--glass);border-color:var(--brd);color:var(--acc);}
+.ptab.active{background:rgba(255,255,255,0.1);backdrop-filter:var(--glass);border-color:rgba(255,255,255,0.2);color:var(--acc);}
+.tabs-divider{width:1px;height:22px;background:rgba(255,255,255,0.2);margin:0 6px;flex-shrink:0;}
+/* EMCALA BRAND in tabs bar */
+#page-tabs .emcala-brand{display:flex;align-items:center;gap:6px;flex-shrink:0;padding:6px 4px;}
+#page-tabs .emcala-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(14px,1.2vw,20px);color:#fff;letter-spacing:2px;text-transform:uppercase;}
+#page-tabs .emcala-sep{color:rgba(255,255,255,0.3);font-size:clamp(12px,1vw,16px);}
+#page-tabs .emcala-sub{font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:clamp(10px,0.8vw,13px);color:rgba(255,255,255,0.55);letter-spacing:1px;text-transform:uppercase;}
 
 /* PAGES */
 .page{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
@@ -37,6 +43,12 @@ body{background:var(--bg);color:var(--txt);font-family:'Roboto',sans-serif;heigh
 .hdr{position:relative;z-index:100;background:var(--surf);backdrop-filter:var(--glass);border-bottom:1px solid #e2e8f0;padding:clamp(3px,0.4vh,8px) clamp(8px,0.8vw,16px);display:flex;align-items:center;gap:clamp(4px,0.5vw,10px);flex-shrink:0;flex-wrap:wrap;box-shadow:var(--shad);}
 .hdr h1{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(14px,1.1vw,22px);color:#fff;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
 .sep{width:1px;height:20px;background:var(--brd2);flex-shrink:0;}
+
+/* EMCALA BRAND */
+.emcala-brand{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.emcala-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(16px,1.4vw,24px);color:#fff;letter-spacing:2px;text-transform:uppercase;}
+.emcala-sep{color:rgba(255,255,255,0.35);font-size:clamp(14px,1.2vw,20px);font-weight:300;}
+.emcala-sub{font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:clamp(12px,1vw,16px);color:rgba(255,255,255,0.65);letter-spacing:1px;text-transform:uppercase;}
 
 /* FILE BTNS */
 .fbtn{position:relative;display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surf2);border:1px solid var(--brd2);border-radius:6px;color:var(--txt);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'Roboto',sans-serif;transition:all .2s;}
@@ -97,14 +109,15 @@ body{background:var(--bg);color:var(--txt);font-family:'Roboto',sans-serif;heigh
 .dmain{flex:1;min-height:0;display:flex;flex-direction:column;padding:clamp(4px,0.5vh,10px) clamp(6px,0.6vw,14px);gap:clamp(4px,0.4vh,8px);overflow:hidden;}
 
 /* UPLOAD STATE */
-.up-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);text-align:center;}
-.up-state .ico{font-size:38px;opacity:.8;}
-.up-state p{font-size:14px;font-weight:500;}
+.up-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);text-align:center;cursor:pointer;transition:background .2s;border-radius:12px;}
+.up-state:hover{background:rgba(255,255,255,0.05);}
+.up-state .ico{font-size:64px;opacity:.9;}
+.up-state p{font-size:20px;font-weight:600;}
 
 /* KPI ROW */
 .kpi-row{display:none;gap:6px;flex-shrink:0;}
 .kpi{flex:1;background:var(--surf);backdrop-filter:var(--glass);border:1px solid var(--brd);border-radius:12px;padding:clamp(6px,0.8vh,12px) clamp(10px,1vw,16px);min-width:0;box-shadow:var(--shad);}
-.kpi-lbl{font-size:clamp(8px,0.55vw,11px);color:#64748b;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.kpi-lbl{font-size:clamp(8px,0.55vw,11px);color:#ffffff;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
 .kpi-val{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(18px,1.6vw,28px);line-height:1.2;color:#fff;}
 .kpi-d{font-size:clamp(9px,0.6vw,12px);font-weight:700;display:inline-block;margin-top:2px;padding:2px 6px;border-radius:4px;background:var(--surf2);}
 .up{color:var(--green);} .dn{color:var(--red);}
@@ -229,10 +242,12 @@ body{background:var(--bg);color:var(--txt);font-family:'Roboto',sans-serif;heigh
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(0,0,0,0.12);
 }
-/* Solo la primera fila es cuadrada */
-.brand-row:first-child .brand-card {
+/* Solo la primera fila es cuadrada para Cervezas */
+.brand-grid.is-cerv .brand-row:first-child .brand-card {
   aspect-ratio: 1;
 }
+
+/* Logos en general */
 .brand-logo {
   height: clamp(66px, 9.6vh, 145px);
   width: 100%;
@@ -241,6 +256,17 @@ body{background:var(--bg);color:var(--txt);font-family:'Roboto',sans-serif;heigh
   justify-content: center;
   margin-bottom: clamp(8px, 1.2vh, 20px);
 }
+
+/* Para UNG, achicamos un poco los contenedores (dejando que envuelvan el contenido natural sin ser cuadrados) 
+   y agrandamos los logos para que destaquen más */
+.brand-grid:not(.is-cerv) .brand-card {
+  padding: clamp(10px, 1vh, 20px) clamp(8px, 1vw, 20px);
+}
+.brand-grid:not(.is-cerv) .brand-logo {
+  height: clamp(80px, 11vh, 160px);
+  margin-bottom: 12px;
+}
+
 .brand-logo img {
   max-height: 100%;
   max-width: 90%;
@@ -254,21 +280,33 @@ body{background:var(--bg);color:var(--txt);font-family:'Roboto',sans-serif;heigh
   letter-spacing: -0.5px;
 }
 .brand-vr {
-  font-size: clamp(13px, 1.2vw, 22px);
-  font-weight: 800;
+  font-size: clamp(12px, 1vw, 16px);
+  font-weight: 700;
   color: #1e293b;
 }
 .brand-vr span.val {
   color: #10b981;
-  font-size: clamp(19px, 1.8vw, 31px);
+  font-size: clamp(12px, 1vw, 16px);
+  font-weight: 800;
 }
 .brand-dif {
-  font-size: clamp(12px, 1.1vw, 19px);
+  font-size: clamp(12px, 1vw, 16px);
   font-weight: 700;
-  margin-top: clamp(4px, 0.5vh, 8px);
+  color: #1e293b;
+  margin-top: clamp(2px, 0.3vh, 5px);
 }
-.brand-dif.up { color: #10b981; }
-.brand-dif.dn { color: #ef4444; }
+.brand-dif span.up { color: #10b981; }
+.brand-dif span.dn { color: #ef4444; }
+.brand-pct {
+  font-size: clamp(22px, 2.2vw, 38px);
+  font-weight: 900;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: -0.5px;
+  margin-bottom: clamp(2px, 0.4vh, 6px);
+  line-height: 1;
+}
+.brand-pct.up { color: #10b981; }
+.brand-pct.dn { color: #ef4444; }
 
 /* MARCAS CAROUSEL */
 .marcas-carousel {

@@ -25,7 +25,11 @@ function parseCSV(txt) {
   const lines = txt.split(/\r?\n/).filter(l => l.trim());
   const H = lines[0].split(';').map(h => h.trim());
   const ix = n => H.indexOf(n);
-  const iS=ix('Sector de Supervisión'), iS2=ix('Sector de Venta'),
+  const iS=ix('Sector de Supervisión');
+  let iS2 = H.findIndex(h => {
+    const l = h.toLowerCase();
+    return l.includes('sector de venta') || l.includes('descripcion vendedor') || l === 'vendedor' || l === 'promotor';
+  });
         iUN=ix('Unidad de Negocio'),    iA=ix('Año'), iM=ix('Mes'),
         iHL=ix('Cantidad Total en HL'), iB=ix('Cantidad Total en Bultos'),
         iC=ix('Código Cliente'),        iP=ix('Código Producto'),
@@ -106,27 +110,51 @@ function makePromoFilter(pg) {
 }
 
 function getCartera(pg) {
-  let total = 0;
+  let apiTotal = 0;
   const ap = ST[pg].activePromos;
+  const cartKeys = Object.keys(CART_PROMO);
   const allOn = SEGS.every(seg => seg.promos.every(p => ap.has(seg.key+'|'+p)));
+
   if (allOn) {
-    Object.values(CART_PROMO).forEach(v => total += v);
-    return total;
-  }
-  SEGS.forEach(seg => {
-    seg.promos.forEach(p => {
-      if (ap.has(seg.key+'|'+p)) total += CART_PROMO[p] || 0;
+    Object.values(CART_PROMO).forEach(v => apiTotal += v);
+  } else {
+    SEGS.forEach(seg => {
+      seg.promos.forEach(p => {
+        if (ap.has(seg.key+'|'+p)) {
+          if (CART_PROMO[p]) {
+            apiTotal += CART_PROMO[p];
+          } else {
+            // Buscar match flexible
+            const match = cartKeys.find(k => p.includes(k) || k.includes(p));
+            if (match && CART_PROMO[match]) {
+              apiTotal += CART_PROMO[match];
+            }
+          }
+        }
+      });
     });
-  });
-  return total;
+  }
+
+  if (apiTotal > 0) return apiTotal;
+
+  // Fallback: contar clientes únicos directamente desde DATA
+  const uniqueClients = new Set();
+  const pf = makePromoFilter(pg);
+  if (pf) {
+    for (let i = 0; i < DATA.length; i++) {
+      const r = DATA[i];
+      if (pf(r) && r.cli) uniqueClients.add(r.cli);
+    }
+  }
+  return uniqueClients.size;
 }
 
 function canalFilter(r, canal) {
   switch(canal) {
     case 'TODOS':  return r.canal !== 'NO';
     case 'KT':     return r.canal === 'K+T';
-    case 'AS':     return r.canal === 'AS'  && r.sdv === 'PARODI EZEQUIEL';
-    case 'KTAS':   return r.canal === 'AS'  && r.sdv !== 'PARODI EZEQUIEL';
+    case 'AS':     return r.canal === 'AS'  && r.sdv === 'ARES PEDRO';
+    case 'KTAS':   return r.canal === 'AS'  && r.sdv !== 'ARES PEDRO';
     case 'REF':    return r.canal === 'REF' && r.sdv === 'LEMOS MAY';
     case 'KTREF':  return r.canal === 'REF' && r.sdv !== 'LEMOS MAY';
     case 'MAYO_C': return r.canal === 'MAYO';

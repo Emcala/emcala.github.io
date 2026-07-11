@@ -1,10 +1,7 @@
 document.getElementById('folder-input').addEventListener('change', e => {
   const files = [...e.target.files].filter(f => f.name.toLowerCase().endsWith('.csv'));
   if (!files.length) return;
-  const el = document.getElementById('s25');
-  el.textContent = 'Cargando…'; el.className = 'fst pend';
   let loaded = 0;
-  let totalRows = 0;
   files.forEach(file => {
     const rd = new FileReader();
     rd.onload = ev => {
@@ -13,14 +10,10 @@ document.getElementById('folder-input').addEventListener('change', e => {
         if (rows.length) {
           const yr = rows[0]?.yr;
           DATA = DATA.filter(r => r.yr !== yr).concat(rows);
-          totalRows += rows.length;
         }
       } catch(err) { console.error('Error en', file.name, err); }
       loaded++;
       if (loaded === files.length) {
-        const years = [...new Set(DATA.map(r=>r.yr))].sort().join(' · ');
-        el.textContent = '✓ ' + years + ' · ' + totalRows.toLocaleString() + ' filas';
-        el.className = 'fst ok';
         renderAll();
       }
     };
@@ -1126,31 +1119,99 @@ function render5() {
 // PAGE 6: RANKING
 // ═══════════════════════════════════════════════════════════════
 
-ST[6] = { un: 'CERVEZAS CMQ', activePromos: initActivePromos(), canal: 'TODOS', seg: 'TODOS',
+ST[6] = { un: 'CERVEZAS CMQ', activePromos: initActivePromos(), canal: new Set(), seg: new Set(),
   marcaSel: new Set(), calSel: new Set() };
 
 mkUN(6);
 mkSDV(6);
 
-// Canal tabs pg6
-document.querySelectorAll('#canal6-tabs .ftab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#canal6-tabs .ftab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    ST[6].canal = btn.dataset.canal6;
-    render6();
-  });
-});
+// Canal Dropdown pg6 (Multi-select)
+const c6Btn = document.getElementById('canal6-drop-btn');
+const c6Pan = document.getElementById('canal6-panel');
+const cAll = document.getElementById('c6-all');
 
-// Segmento tabs pg6
-document.querySelectorAll('[data-seg6]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-seg6]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    ST[6].seg = btn.dataset.seg6;
+if(c6Btn && c6Pan) {
+  c6Btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    c6Pan.style.display = c6Pan.style.display === 'none' ? 'block' : 'none';
+  });
+  
+  cAll.addEventListener('change', () => {
+    if(cAll.checked) {
+      ST[6].canal.clear();
+      c6Btn.classList.add('all');
+      document.querySelectorAll('.c6-chk').forEach(c => c.checked = false);
+    } else {
+      cAll.checked = true;
+    }
     render6();
   });
-});
+  
+  document.querySelectorAll('.c6-chk').forEach(chk => {
+    chk.addEventListener('change', () => {
+      if(chk.checked) {
+        ST[6].canal.add(chk.dataset.val);
+        cAll.checked = false;
+        c6Btn.classList.remove('all');
+      } else {
+        ST[6].canal.delete(chk.dataset.val);
+        if(ST[6].canal.size === 0) {
+          cAll.checked = true;
+          c6Btn.classList.add('all');
+        }
+      }
+      render6();
+    });
+  });
+  
+  document.addEventListener('click', e => {
+    if(!c6Btn.contains(e.target) && !c6Pan.contains(e.target)) c6Pan.style.display = 'none';
+  });
+}
+
+// Segmento Dropdown pg6 (Multi-select)
+const s6Btn = document.getElementById('seg6-drop-btn');
+const s6Pan = document.getElementById('seg6-panel');
+const sAll = document.getElementById('s6-all');
+
+if(s6Btn && s6Pan) {
+  s6Btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    s6Pan.style.display = s6Pan.style.display === 'none' ? 'block' : 'none';
+  });
+  
+  sAll.addEventListener('change', () => {
+    if(sAll.checked) {
+      ST[6].seg.clear();
+      s6Btn.classList.add('all');
+      document.querySelectorAll('.s6-chk').forEach(c => c.checked = false);
+    } else {
+      sAll.checked = true;
+    }
+    render6();
+  });
+  
+  document.querySelectorAll('.s6-chk').forEach(chk => {
+    chk.addEventListener('change', () => {
+      if(chk.checked) {
+        ST[6].seg.add(chk.dataset.val);
+        sAll.checked = false;
+        s6Btn.classList.remove('all');
+      } else {
+        ST[6].seg.delete(chk.dataset.val);
+        if(ST[6].seg.size === 0) {
+          sAll.checked = true;
+          s6Btn.classList.add('all');
+        }
+      }
+      render6();
+    });
+  });
+  
+  document.addEventListener('click', e => {
+    if(!s6Btn.contains(e.target) && !s6Pan.contains(e.target)) s6Pan.style.display = 'none';
+  });
+}
 
 // Marca dropdown pg6
 const MARCA6_CERV_LIST = ['BRAHMA','QUILMES','BUDWEISER','1890','ANDES','MICHELOB','STELLA','CORONA','PATAGONIA'];
@@ -1284,23 +1345,37 @@ initCal6UI(CAL6_CERV_LIST);
 // Mostrar/ocultar segmento según UN
 function updateSeg6Visibility() {
   const isCerv = ST[6].un === 'CERVEZAS CMQ';
-  document.getElementById('seg6-tabs').style.display = isCerv ? 'flex' : 'none';
+  const segWrap = document.getElementById('seg6-wrap');
+  if (segWrap) {
+    segWrap.style.display = isCerv ? 'flex' : 'none';
+  }
 }
 
 // Helper: segmento filter para pg6
 function seg6Filter(r) {
-  const seg = ST[6].seg;
-  if (seg === 'TODOS') return true;
+  const segs = ST[6].seg;
+  if (segs.size === 0) return true;
+  
   const m = getMarca(r.prod2);
-  if (seg === 'CV') return SEG_CV.has(m);
-  if (seg === 'AC') return SEG_AC.has(m) && !isBC(r);
-  if (seg === 'BC') return isBC(r);
-  return true;
+  
+  // If multiple are selected, we must check if the row matches ANY of the selected segments
+  if (segs.has('CV') && SEG_CV.has(m)) return true;
+  if (segs.has('AC') && (SEG_AC.has(m) && !isBC(r))) return true;
+  if (segs.has('BC') && isBC(r)) return true;
+  
+  return false;
 }
 
 // Helper: canal filter pg6 — mismo criterio que pestaña Canal (pg3)
 function canal6Filter(r) {
-  return canalFilter(r, ST[6].canal);
+  const canales = ST[6].canal;
+  if (canales.size === 0) return true;
+  
+  // If multiple are selected, we must check if the row matches ANY of the selected canales
+  for (const canal of canales) {
+    if (canalFilter(r, canal)) return true;
+  }
+  return false;
 }
 
 // Helper: marca/calibre filter pg6
@@ -1811,6 +1886,14 @@ const LOGOS = {
   'H2OH!': 'img/h2oh_logo.png'
 };
 
+// Preload all logos so they are in browser cache when ECharts renders them
+(function preloadLogos() {
+  Object.values(LOGOS).forEach(src => {
+    const img = new Image();
+    img.src = src;
+  });
+})();
+
 function render8() {
   const hasData = DATA.length > 0;
   const up = document.getElementById('up8');
@@ -1822,16 +1905,7 @@ function render8() {
   if (body) body.style.display = hasData ? 'flex' : 'none';
   if (!hasData) return;
 
-  const wrapUN = document.getElementById('un-wrap-8');
-  const sepUN = wrapUN.previousElementSibling;
-  
-  if (isCerv) {
-    wrapUN.style.display = 'block';
-    if(sepUN) sepUN.style.display = 'block';
-  } else {
-    wrapUN.style.display = 'none';
-    if(sepUN) sepUN.style.display = 'none';
-  }
+  // UN dropdown removed from Marcas page - no longer needed
 
   const yr26 = 2026;
   const yr25 = 2025;
@@ -1874,6 +1948,7 @@ function render8() {
 
   const grid = document.getElementById('marcas-grid');
   grid.innerHTML = '';
+  grid.classList.toggle('is-cerv', isCerv);
   
   let marcasList = isCerv 
     ? ['CORONA', 'PATAGONIA', 'STELLA', 'ANDES', 'MICHELOB', 'BRAHMA', 'BUDWEISER', 'QUILMES', '1890']
@@ -1913,14 +1988,19 @@ function render8() {
     const diffSign = isUp ? '+' : '';
     const logoUrl = LOGOS[bucket] || '';
     
+    const pct = v25 > 0 ? ((v26 - v25) / v25 * 100) : null;
+    const pctStr = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%' : '';
+    const pctCls = pct !== null ? (pct >= 0 ? 'up' : 'dn') : '';
+    
     const card = document.createElement('div');
     card.className = 'brand-card';
     card.innerHTML = `
       <div class="brand-logo">
         ${logoUrl ? `<img src="${logoUrl}" alt="${bucket}" onerror="this.outerHTML='<span>${bucket}</span>'">` : `<span>${bucket}</span>`}
       </div>
+      ${pctStr ? `<div class="brand-pct ${pctCls}">${pctStr}</div>` : ''}
       <div class="brand-vr">VR <span class="val">${Math.round(v26)}</span> HL YTD</div>
-      <div class="brand-dif ${diffCls}">${diffSign}${Math.round(diff)} HL vs ${lastMesName} 25</div>
+      <div class="brand-dif"><span class="${diffCls}">${diffSign}${Math.round(diff)}</span> HL vs ${lastMesName} 25</div>
     `;
     cards.push(card);
   });
@@ -2110,8 +2190,20 @@ function render8() {
     return s;
   };
   
-  window._chartVol8.setOption({ ...commonOptions, series: getSeries(volLast26, volPrev26, volLast25) });
-  window._chartCcc8.setOption({ ...commonOptions, series: getSeries(cccLast26, cccPrev26, cccLast25) });
+  // Wait for all logo images to be loaded before rendering charts
+  const imgPromises = Object.values(LOGOS).map(src => {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = resolve;
+      img.onerror = resolve; // resolve even on error so we don't block
+      img.src = src;
+    });
+  });
+
+  Promise.all(imgPromises).then(() => {
+    window._chartVol8.setOption({ ...commonOptions, series: getSeries(volLast26, volPrev26, volLast25) });
+    window._chartCcc8.setOption({ ...commonOptions, series: getSeries(cccLast26, cccPrev26, cccLast25) });
+  });
 }
 
 /* MARCAS CAROUSEL LOGIC */

@@ -9,6 +9,12 @@
 <body>
 
 <div id="page-tabs">
+  <div class="emcala-brand">
+    <span class="emcala-name">EMCALA</span>
+    <span class="emcala-sep">|</span>
+    <span class="emcala-sub">Análisis Anual</span>
+  </div>
+  <div class="tabs-divider"></div>
   <button class="ptab active" data-page="1">Mensual</button>
   <button class="ptab" data-page="2">Días de Visita</button>
   <button class="ptab" data-page="3">Canal</button>
@@ -22,19 +28,18 @@
 <!-- ═══ PAGE 1: MENSUAL ═══════════════════════════════════════ -->
 <div class="page active" id="pg1">
   <div class="hdr">
-    <h1>EMCALA</h1>
-    <div style="display:flex;align-items:center;gap:5px">
-      <label class="fbtn">📂 Cargar carpeta<input type="file" id="folder-input" webkitdirectory accept=".csv" multiple></label>
-      <span class="fst pend" id="s25">Sin archivos</span>
-    </div>
-    <div class="sep"></div>
+    <input type="file" id="folder-input" webkitdirectory accept=".csv" multiple style="display:none">
     <div class="un-wrap"><div class="un-btn" id="un-btn1"><span id="un-lbl1">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd1"></div></div>
     <div class="sep"></div>
     <div class="sdv-group" id="sdv1"></div>
     <button class="tot-btn all" id="tot1">TODOS</button>
   </div>
   <div class="dmain">
-    <div class="up-state" id="up1"><div class="ico">📊</div><p>Cargá los archivos CSV para comenzar</p><small style="font-size:11px;opacity:.7">Separador ; · UTF-16</small></div>
+    <label class="up-state" id="up1" for="folder-input">
+      <div class="ico">📂</div>
+      <p>Hacé clic aquí para cargar la carpeta de archivos CSV</p>
+      <small style="font-size:11px;opacity:.7">Separador ; · UTF-16</small>
+    </label>
     <div class="kpi-row" id="kpi1">
       <div class="kpi" id="k1-0"></div><div class="kpi" id="k1-1"></div>
       <div class="kpi" id="k1-2"></div><div class="kpi" id="k1-3"></div>
@@ -202,14 +207,17 @@
     <div class="sdv-group" id="sdv6"></div>
     <button class="tot-btn all" id="tot6">TODOS</button>
     <div class="sep"></div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap" id="canal6-tabs">
-      <button class="ftab active" data-canal6="TODOS">Todos</button>
-      <button class="ftab" data-canal6="KT">K+T</button>
-      <button class="ftab" data-canal6="AS">AS</button>
-      <button class="ftab" data-canal6="KTAS">K+T/AS</button>
-      <button class="ftab" data-canal6="REF">REF</button>
-      <button class="ftab" data-canal6="KTREF">K+T/REF</button>
-      <button class="ftab" data-canal6="MAYO_C">MAYO</button>
+    <div class="sdv-wrap" id="canal6-wrap">
+      <button class="sdv-btn all" id="canal6-drop-btn"><span id="canal6-lbl">Canales</span> <span class="chv">▼</span></button>
+      <div class="promo-panel" id="canal6-panel" style="width:140px;">
+        <div class="promo-item"><input type="checkbox" id="c6-all" checked> Todos</div>
+        <div class="promo-item"><input type="checkbox" class="c6-chk" data-val="KT"> K+T</div>
+        <div class="promo-item"><input type="checkbox" class="c6-chk" data-val="AS"> AS</div>
+        <div class="promo-item"><input type="checkbox" class="c6-chk" data-val="KTAS"> K+T/AS</div>
+        <div class="promo-item"><input type="checkbox" class="c6-chk" data-val="REF"> REF</div>
+        <div class="promo-item"><input type="checkbox" class="c6-chk" data-val="KTREF"> K+T/REF</div>
+        <div class="promo-item"><input type="checkbox" class="c6-chk" data-val="MAYO_C"> MAYO</div>
+      </div>
     </div>
     <div class="sep"></div>
     <div class="sdv-wrap" id="marca6-wrap">
@@ -226,11 +234,14 @@
       </div>
     </div>
     <div class="sep"></div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap" id="seg6-tabs">
-      <button class="ftab active" data-seg6="TODOS">Todos</button>
-      <button class="ftab" data-seg6="CV">Core+Value</button>
-      <button class="ftab" data-seg6="AC">Above Core</button>
-      <button class="ftab" data-seg6="BC">Bal.Choices</button>
+    <div class="sdv-wrap" id="seg6-wrap">
+      <button class="sdv-btn all" id="seg6-drop-btn"><span id="seg6-lbl">Segmentos</span> <span class="chv">▼</span></button>
+      <div class="promo-panel" id="seg6-panel" style="width:160px;">
+        <div class="promo-item"><input type="checkbox" id="s6-all" checked> Todos</div>
+        <div class="promo-item"><input type="checkbox" class="s6-chk" data-val="CV"> Core+Value</div>
+        <div class="promo-item"><input type="checkbox" class="s6-chk" data-val="AC"> Above Core</div>
+        <div class="promo-item"><input type="checkbox" class="s6-chk" data-val="BC"> Bal.Choices</div>
+      </div>
     </div>
   </div>
   <div class="dmain">
@@ -392,8 +403,6 @@
       <button class="ftab active" data-marcas="CERV">Cervezas</button>
       <button class="ftab" data-marcas="UNG">UNG</button>
     </div>
-    <div class="sep"></div>
-    <div class="un-wrap" id="un-wrap-8" style="display:none;"><div class="un-btn" id="un-btn8"><span id="un-lbl8">Cervezas CMQ</span><span class="arr">▼</span></div><div class="un-dd" id="un-dd8"></div></div>
   </div>
   <div class="dmain">
     <div class="up-state" id="up8"><div class="ico">🏷️</div><p>Cargá los CSV en la pestaña Mensual primero</p></div>
@@ -433,7 +442,7 @@
   <script src="api.js"></script>
   <script src="data.js"></script>
   <script src="charts.js"></script>
-  <script src="ui.js?v=3"></script>
+  <script src="ui.js?v=4"></script>
   <script src="main.js"></script>
 
 </body>

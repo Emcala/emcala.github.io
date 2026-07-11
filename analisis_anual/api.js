@@ -56,11 +56,9 @@ async function fetchConfigData() {
           const rawP = iMPromo >= 0 && r[iMPromo] ? String(r[iMPromo]).trim().toUpperCase() : '';
           if (rawP) {
             let p = rawP;
-            // Clean up typical "1234 - NAME" format or match with known promoters
-            const cleanP = rawP.replace(/^\d+\s*-\s*/, '').trim();
             const allKnownPromos = Object.values(supMap).flat();
-            const known = allKnownPromos.find(kp => cleanP.includes(kp) || kp.includes(cleanP));
-            p = known || cleanP;
+            const known = allKnownPromos.find(kp => rawP.includes(kp) || kp.includes(rawP));
+            p = known || rawP;
             promoCounts[p] = (promoCounts[p] || 0) + 1;
           }
         }
@@ -72,7 +70,7 @@ async function fetchConfigData() {
       const normCounts = {};
       const allKnownPromos = Object.values(supMap).flat();
       Object.entries(data.maestro_counts).forEach(([k, v]) => {
-        const cleanK = String(k).trim().toUpperCase().replace(/^\d+\s*-\s*/, '').trim();
+        const cleanK = String(k).trim().toUpperCase();
         const known = allKnownPromos.find(kp => cleanK.includes(kp) || kp.includes(cleanK));
         const p = known || cleanK;
         normCounts[p] = (normCounts[p] || 0) + v;
