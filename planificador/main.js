@@ -224,6 +224,20 @@
       btnImportCsv.disabled = true;
       // Sincronizar SKUs antes de procesar el archivo elegido
       await syncSkus();
+      // Sincronizar Plana de Tareas (del mes actual) y Maestro de Clientes — necesarios para validar CV
+      btnImportCsv.innerHTML = '⏳ Sincronizando Plana de Tareas...';
+      const cMonthActual = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
+      const okTareas = await syncTareas(cMonthActual);
+      const okVisitas = await syncVisitDays();
+      if (!okTareas || !okVisitas) {
+        const continuar = confirm('No se pudo cargar la Plana de Tareas y/o el Maestro de Clientes.\nLa validación de CV puede salir en 0 para todos los promotores.\n\n¿Querés continuar igual con la importación?');
+        if (!continuar) {
+          btnImportCsv.innerHTML = origText;
+          btnImportCsv.disabled = false;
+          csvFileInput.value = '';
+          return;
+        }
+      }
       btnImportCsv.innerHTML = '⏳ Procesando CSV...';
       const reader = new FileReader();
       reader.onload = (evt) => {
@@ -306,6 +320,77 @@
         }
         btnImportSkus.innerHTML = origText;
         btnImportSkus.disabled = false;
+      };
+      reader.readAsText(file);
+    });
+    const btnImportTareas = document.getElementById('btn-import-tareas');
+    const csvTareasInput = document.getElementById('csv-tareas-input');
+    btnImportTareas.addEventListener('click', () => {
+      csvTareasInput.click();
+    });
+    csvTareasInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const text = evt.target.result;
+        csvTareasInput.value = ''; // Reset
+        // Quitar BOM si viene (Excel suele agregarlo)
+        const cleanText = text.replace(/^\uFEFF/, '');
+        const lines = cleanText.split('\n');
+        if (lines.length < 2) { alert('CSV vacío o sin datos'); return; }
+        // Detectar separador (la bajada de tareas suele venir con ';')
+        const firstLine = lines[0];
+        const separator = firstLine.includes(';') ? ';' : ',';
+        // Autodetectar columnas: solo necesitamos cliente_id y TAREA, el resto se ignora
+        const headers = firstLine.split(separator).map(s => s.trim().toLowerCase());
+        const idxCliente = headers.findIndex(h => h.includes('cliente_id') || h === 'cliente' || h.includes('cod') && h.includes('cliente'));
+        const idxTarea = headers.findIndex(h => h.includes('tarea'));
+        if (idxCliente === -1 || idxTarea === -1) {
+          alert('❌ Error: El archivo CSV no tiene el formato correcto para la Plana de Tareas.\n\nDebe contener columnas "cliente_id" y "TAREA".');
+          return;
+        }
+        // Agrupar por cliente, deduplicando tareas repetidas (una fila por día/tarea en el archivo original)
+        const tareasPorCliente = {};
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const cols = line.split(separator);
+          if (cols.length <= Math.max(idxCliente, idxTarea)) continue;
+          const clienteId = (cols[idxCliente] || '').trim();
+          const tarea = (cols[idxTarea] || '').trim();
+          if (!clienteId || !tarea) continue;
+          if (!tareasPorCliente[clienteId]) tareasPorCliente[clienteId] = new Set();
+          tareasPorCliente[clienteId].add(tarea);
+        }
+        const clientesConTarea = Object.keys(tareasPorCliente);
+        if (clientesConTarea.length === 0) { alert('No se encontraron tareas asignadas en el CSV.'); return; }
+        // Convertir Sets a arrays para poder enviarlos como JSON
+        const tareasPayload = {};
+        clientesConTarea.forEach(cid => { tareasPayload[cid] = Array.from(tareasPorCliente[cid]); });
+
+        const cMonth = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
+        const origText = btnImportTareas.innerHTML;
+        btnImportTareas.innerHTML = '⏳ Subiendo...';
+        btnImportTareas.disabled = true;
+        try {
+          const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ req: 'upload_tareas', month: cMonth, tareas: tareasPayload })
+          });
+          const result = await response.json();
+          if (result.status === 'success') {
+            alert(`¡Plana de Tareas de ${cMonth} actualizada correctamente en la nube!\n(${clientesConTarea.length} clientes con tareas asignadas)`);
+            await syncTareas(cMonth, true); // Forzar refresco inmediato en esta sesión
+          } else {
+            alert('Hubo un problema: ' + result.message);
+          }
+        } catch(err) {
+          console.error(err);
+          alert('Error de conexión al subir la Plana de Tareas: ' + err.message);
+        }
+        btnImportTareas.innerHTML = origText;
+        btnImportTareas.disabled = false;
       };
       reader.readAsText(file);
     });

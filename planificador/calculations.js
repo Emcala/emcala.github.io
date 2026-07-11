@@ -1,5 +1,16 @@
     const feriados = HOLIDAYS; // Referencia a la lista global en config.js
 
+    // Devuelve la abreviatura de día usada en el Maestro de Clientes (LUN, MAR, MIE, JUE, VIE, SAB, DOM)
+    // a partir de una fecha en formato YYYY-MM-DD, interpretada como fecha LOCAL (no UTC).
+    function getWeekdayAbbrev(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return '';
+      const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      const abbrevs = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
+      return abbrevs[date.getDay()];
+    }
+
     window.getCommercialMonthAndStart = function(plannerDateStr) {
       if (!plannerDateStr) return { month: '', start: '', last: '' };
       

@@ -215,21 +215,9 @@
         } else if (category === 'AGUAS ECO' || category === 'AGUAS') {
           isAguas = true;
         }
-        // 2) SI ESTÁ EN EL MAESTRO (VALIDADO), ACUMULAR PARA KPIs FOCO III/IV
+        // 2) SI ESTÁ EN EL MAESTRO (VALIDADO), ACUMULAR VOL/CCC/TBD VALIDADOS (solo SKU) para KPIs
         if (skuData && csvSkuCode) {
-          // Acumular en los sets de CV
-          pSales.cvClientsEficiencia.add(csvSkuCode);
-          if (isCerveza) pSales.cvClientsCerveza.add(csvSkuCode);
-          if (isCore) pSales.cvClientsCore.add(csvSkuCode);
-          if (isValue) pSales.cvClientsValue.add(csvSkuCode);
-          if (isAboveCore) pSales.cvClientsAboveCore.add(csvSkuCode);
-          if (isLatones) pSales.cvClientsLatones.add(csvSkuCode);
-          if (isBalanced) pSales.cvClientsBalanced.add(csvSkuCode);
-          if (isNabs) pSales.cvClientsNabs.add(csvSkuCode);
-          if (isAguas) pSales.cvClientsAguas.add(csvSkuCode);
-          if (isUngTop) pSales.cvClientsUngTop.add(csvSkuCode);
           const tbdKey = clientId + '_' + csvSkuCode;
-          // Acumular VOL/CCC/TBD VALIDADOS (solo maestro) para KPIs
           if (isCerveza) {
             pSales.vCerveza += volume;
             if (clientId) pSales.vCccCerveza.add(clientId);
@@ -244,6 +232,31 @@
           if (isUngTop) pSales.vUngTop += volume;
           if (isAguas) pSales.vAguas += volume;
           if (isGaseosa) pSales.vTotalUng += volume;
+        }
+        // 3) VALIDACIÓN CV (tareas de creación de valor): además del SKU, ahora exige que
+        //    el cliente tenga la tarea asignada en la Plana de Tareas del mes Y que la fecha
+        //    de la venta coincida con el día de visita del cliente (Maestro de Clientes).
+        let cvValidado = false;
+        if (skuData && csvSkuCode) {
+          const tareaTexto = skuData.fullDesc ? String(skuData.fullDesc).trim() : '';
+          const tieneTareaAsignada = !!(tareaTexto && tareasMaster && tareasMaster[clientId] && tareasMaster[clientId].has(tareaTexto));
+          const diasVisitaStr = (visitDaysMaster && visitDaysMaster[clientId]) ? visitDaysMaster[clientId] : '';
+          const diasVisita = diasVisitaStr ? diasVisitaStr.split(',').map(function(s) { return s.trim(); }) : [];
+          const diaVenta = getWeekdayAbbrev(plannerDate);
+          const coincideDiaVisita = diasVisita.indexOf(diaVenta) !== -1;
+          cvValidado = tieneTareaAsignada && coincideDiaVisita;
+        }
+        if (cvValidado) {
+          pSales.cvClientsEficiencia.add(csvSkuCode);
+          if (isCerveza) pSales.cvClientsCerveza.add(csvSkuCode);
+          if (isCore) pSales.cvClientsCore.add(csvSkuCode);
+          if (isValue) pSales.cvClientsValue.add(csvSkuCode);
+          if (isAboveCore) pSales.cvClientsAboveCore.add(csvSkuCode);
+          if (isLatones) pSales.cvClientsLatones.add(csvSkuCode);
+          if (isBalanced) pSales.cvClientsBalanced.add(csvSkuCode);
+          if (isNabs) pSales.cvClientsNabs.add(csvSkuCode);
+          if (isAguas) pSales.cvClientsAguas.add(csvSkuCode);
+          if (isUngTop) pSales.cvClientsUngTop.add(csvSkuCode);
         }
         const tbdKeyGen = clientId + '_' + csvSkuCode;
         // Acumular volúmenes, CCC y TBD generales (tanto para maestro como para fallback)

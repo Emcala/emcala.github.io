@@ -1,4 +1,4 @@
-    // === SKU Master (solo en memoria, nunca en localStorage) ===
+// === SKU Master (solo en memoria, nunca en localStorage) ===
     function loadSkuMaster() {
       // SKUs se cargan exclusivamente desde la nube via syncSkus()
       // Esta función existe como placeholder para compatibilidad
@@ -18,6 +18,52 @@
         }
       } catch (e) {
         console.error('Error al sincronizar SKUs:', e);
+      }
+      return false;
+    }
+
+    // === Plana de Tareas (validación CV): { clienteId: Set(tarea1, tarea2, ...) } ===
+    // Se cachea por mes comercial durante la sesión — no se vuelve a pedir si ya se trajo ese mes.
+    let tareasMaster = null;
+    let tareasSyncedMonth = null;
+
+    async function syncTareas(cMonth, forceRefresh) {
+      if (tareasSyncedMonth === cMonth && tareasMaster && !forceRefresh) return true;
+      try {
+        const response = await fetch(`${SCRIPT_URL}?req=tareas&cMonth=${encodeURIComponent(cMonth)}`);
+        const result = await response.json();
+        if (result.status === 'success' && result.tareas) {
+          const map = {};
+          for (const clienteId in result.tareas) {
+            map[clienteId] = new Set(result.tareas[clienteId]);
+          }
+          tareasMaster = map;
+          tareasSyncedMonth = cMonth;
+          console.log('Plana de Tareas sincronizada para', cMonth, ':', Object.keys(map).length, 'clientes');
+          return true;
+        }
+      } catch (e) {
+        console.error('Error al sincronizar Plana de Tareas:', e);
+      }
+      return false;
+    }
+
+    // === Maestro de Clientes (días de visita): { clienteId: "LUN,JUE" } ===
+    // Vive en un Sheet aparte que mantiene el auditor a mano; se trae una sola vez por sesión.
+    let visitDaysMaster = null;
+
+    async function syncVisitDays() {
+      if (visitDaysMaster) return true;
+      try {
+        const response = await fetch(`${SCRIPT_URL}?req=maestrocli`);
+        const result = await response.json();
+        if (result.status === 'success' && result.clientes) {
+          visitDaysMaster = result.clientes;
+          console.log('Maestro de Clientes sincronizado:', Object.keys(visitDaysMaster).length, 'clientes');
+          return true;
+        }
+      } catch (e) {
+        console.error('Error al sincronizar Maestro de Clientes:', e);
       }
       return false;
     }
@@ -42,19 +88,32 @@
       if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') return false;
       const payload = [];
       const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
+      // Base de comparación: última foto conocida del servidor (o el último guardado exitoso).
+      // Evita reenviar TODOS los promotores en cada guardado; solo se manda lo que cambió.
+      let baseline = {};
+      try {
+        baseline = window.currentCloudState ? JSON.parse(window.currentCloudState) : {};
+      } catch (e) {
+        baseline = {};
+      }
       for (const spv in SPV_DATA) {
         SPV_DATA[spv].forEach(prom => {
           if (volData[prom]) {
             const cMonth = window.getCommercialMonthAndStart(date).month;
             const rowPayload = { date, spv, promotor: prom, cMonth };
-            let hasData = false;
+            let hasChanges = false;
+            const baseProm = baseline[prom] || {};
             planFields.forEach(f => {
-              if (volData[prom][f] !== undefined && volData[prom][f] !== "") {
-                rowPayload[f] = volData[prom][f];
-                hasData = true;
+              const curVal = volData[prom][f];
+              if (curVal !== undefined && curVal !== "") {
+                // Solo incluir el campo si difiere de lo último sincronizado con el servidor
+                if (baseProm[f] === undefined || String(baseProm[f]) !== String(curVal)) {
+                  rowPayload[f] = curVal;
+                  hasChanges = true;
+                }
               }
             });
-            if (hasData) {
+            if (hasChanges) {
               payload.push(rowPayload);
             }
           }
@@ -68,6 +127,11 @@
           body: JSON.stringify(payload)
         });
         const result = await response.json();
+        if (result.status === 'success') {
+          // Actualizar la base de comparación para que el próximo guardado
+          // solo mande lo que cambie a partir de ahora.
+          window.currentCloudState = JSON.stringify(volData);
+        }
         return result.status === 'success';
       } catch (e) {
         if (!silent) console.error('Error guardando al servidor:', e);
@@ -97,6 +161,9 @@
         // Sincronizar maestro de SKUs SOLO en carga inicial
         if (isAutoSync) {
           syncSkus(); // Non-blocking en auto-sync
+          const cMonthInit = window.getCommercialMonthAndStart(date).month;
+          syncTareas(cMonthInit); // Non-blocking: pre-cargar Plana de Tareas
+          syncVisitDays(); // Non-blocking: pre-cargar días de visita
         }
 
         // UN SOLO FETCH: traer TODOS los datos del día (sin filtrar por SPV)
