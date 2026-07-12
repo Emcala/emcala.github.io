@@ -252,9 +252,10 @@
                const tUpper = String(t).trim().toUpperCase();
                
                // Clasificar la tarea según las marcas/reglas del negocio
-               const tAbove = tUpper.includes('ANDES') || tUpper.includes('MICHELOB') || tUpper.includes('STELLA') || tUpper.includes('PATAGONIA') || tUpper.includes('CORONA');
+               // (mismas marcas que ya usa la clasificación de ventas más abajo — mantener ambas listas sincronizadas)
+               const tAbove = tUpper.includes('ANDES') || tUpper.includes('MICHELOB') || tUpper.includes('STELLA') || tUpper.includes('PATAGONIA') || tUpper.includes('CORONA') || tUpper.includes('GOOSE') || tUpper.includes('TEMPLE');
                const tCore = tUpper.includes('QUILMES') || tUpper.includes('BRAHMA') || tUpper.includes('BUDWEISER');
-               const tValue = tUpper.includes('1890');
+               const tValue = tUpper.includes('1890') || tUpper.includes('BAJO CERO');
                const tBalanced = tUpper.includes('MICHELOB') || (tUpper.includes('STELLA') && tUpper.includes('PURE GOLD')) || tUpper.includes('SIN ALCOHOL');
                const tLatones = tUpper.includes('LATON') || tUpper.includes('LATONES');
                const tNabs = tUpper.includes('UNG') || tUpper.includes('NABS') || tUpper.includes('GATORADE') || tUpper.includes('RED BULL') || tUpper.includes('ROCKSTAR');
@@ -279,9 +280,9 @@
         const diaVenta = getWeekdayAbbrev(plannerDate);
         coincideDiaVisita = (diasVisita.indexOf(diaVenta) !== -1);
 
-        // Agregar al CV si cumple la compra del SKU, tiene la tarea del mismo segmento,
-        // Y el día de la visita corresponde al día de visita del cliente.
-        if (coincideDiaVisita) {
+        // Agregar al CV si el SKU vendido está en el maestro que valida, cumple la tarea
+        // del mismo segmento, Y el día de la visita corresponde al día de visita del cliente.
+        if (coincideDiaVisita && skuData && csvSkuCode) {
           if (isCerveza && hasCervezaTask) pSales.cvClientsCerveza.add(clientId);
           if (isCore && hasCoreTask) pSales.cvClientsCore.add(clientId);
           if (isAboveCore && hasAboveCoreTask) pSales.cvClientsAboveCore.add(clientId);
@@ -289,8 +290,9 @@
           if (isLatones && hasLatonesTask) pSales.cvClientsLatones.add(clientId);
           if (isBalanced && hasBalancedTask) pSales.cvClientsBalanced.add(clientId);
           if (isNabs && hasNabsTask) pSales.cvClientsNabs.add(clientId);
-          if (isAguas) pSales.cvClientsAguas.add(clientId);
-          if (isUngTop) pSales.cvClientsUngTop.add(clientId);
+          // Aguas no tiene foco de CV — no cuenta nunca
+          // UngTop pertenece al segmento NABS, usa la misma tarea que NABS
+          if (isUngTop && hasNabsTask) pSales.cvClientsUngTop.add(clientId);
 
           // Eficiencia (Cualquier tarea cumplida)
           if ((isCerveza && hasCervezaTask) || (isNabs && hasNabsTask)) {
