@@ -272,20 +272,30 @@
           }
         }
 
-        // Agregar al CV si cumple tanto la compra del SKU como tener la tarea del mismo segmento
-        if (isCerveza && hasCervezaTask) pSales.cvClientsCerveza.add(clientId);
-        if (isCore && hasCoreTask) pSales.cvClientsCore.add(clientId);
-        if (isAboveCore && hasAboveCoreTask) pSales.cvClientsAboveCore.add(clientId);
-        if (isValue && hasValueTask) pSales.cvClientsValue.add(clientId);
-        if (isLatones && hasLatonesTask) pSales.cvClientsLatones.add(clientId);
-        if (isBalanced && hasBalancedTask) pSales.cvClientsBalanced.add(clientId);
-        if (isNabs && hasNabsTask) pSales.cvClientsNabs.add(clientId);
-        if (isAguas) pSales.cvClientsAguas.add(clientId);
-        if (isUngTop) pSales.cvClientsUngTop.add(clientId);
+        // Validación 3.2: ¿Coincide el día de visita?
+        let coincideDiaVisita = false;
+        const diasVisitaStr = visitDaysMaster ? (visitDaysMaster[clientId] || visitDaysMaster[normClientId] || '') : '';
+        const diasVisita = diasVisitaStr ? String(diasVisitaStr).toUpperCase().split(',').map(function(s) { return s.trim(); }) : [];
+        const diaVenta = getWeekdayAbbrev(plannerDate);
+        coincideDiaVisita = (diasVisita.indexOf(diaVenta) !== -1);
 
-        // Eficiencia (Cualquier tarea cumplida)
-        if ((isCerveza && hasCervezaTask) || (isNabs && hasNabsTask)) {
-          pSales.cvClientsEficiencia.add(clientId);
+        // Agregar al CV si cumple la compra del SKU, tiene la tarea del mismo segmento,
+        // Y el día de la visita corresponde al día de visita del cliente.
+        if (coincideDiaVisita) {
+          if (isCerveza && hasCervezaTask) pSales.cvClientsCerveza.add(clientId);
+          if (isCore && hasCoreTask) pSales.cvClientsCore.add(clientId);
+          if (isAboveCore && hasAboveCoreTask) pSales.cvClientsAboveCore.add(clientId);
+          if (isValue && hasValueTask) pSales.cvClientsValue.add(clientId);
+          if (isLatones && hasLatonesTask) pSales.cvClientsLatones.add(clientId);
+          if (isBalanced && hasBalancedTask) pSales.cvClientsBalanced.add(clientId);
+          if (isNabs && hasNabsTask) pSales.cvClientsNabs.add(clientId);
+          if (isAguas) pSales.cvClientsAguas.add(clientId);
+          if (isUngTop) pSales.cvClientsUngTop.add(clientId);
+
+          // Eficiencia (Cualquier tarea cumplida)
+          if ((isCerveza && hasCervezaTask) || (isNabs && hasNabsTask)) {
+            pSales.cvClientsEficiencia.add(clientId);
+          }
         }
         const tbdKeyGen = clientId + '_' + csvSkuCode;
         // Acumular volúmenes, CCC y TBD generales (tanto para maestro como para fallback)
