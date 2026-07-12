@@ -175,6 +175,7 @@
         let isUngTop = false;
         // Calcular dinámicamente calibre para UNG TOP basado en las columnas de la fila
         const brand = cols[cm.brand] ? cols[cm.brand].trim().toUpperCase() : '';
+        const articleName = cols[cm.article] ? cols[cm.article].trim().toUpperCase() : '';
         const calibreDesc = cols[cm.calibreDesc] ? cols[cm.calibreDesc].trim().toUpperCase() : '';
         const ccMatch = calibreDesc.match(/(\d+)\s*(CC|ML)/i);
         const cc = ccMatch ? parseInt(ccMatch[1], 10) : 9999;
@@ -185,7 +186,6 @@
         // 1) CLASIFICACIÓN USANDO SIEMPRE LAS COLUMNAS DEL CSV (Marca / Categoría / Artículo)
         if (category.includes('CERVEZA') || category.includes('ARTESANAL')) {
           isCerveza = true;
-          const articleName = cols[cm.article] ? cols[cm.article].trim().toUpperCase() : '';
           const isQuilmes1890 = (brand === 'QUILMES 1890' || brand === '1890' || articleName.includes('1890'));
           const isBajoCero = (brand.includes('BAJO CERO') || articleName.includes('BAJO CERO'));
           const isStellaPureGold = (brand.includes('STELLA') && articleName.includes('PURE GOLD'));
@@ -233,46 +233,59 @@
           if (isAguas) pSales.vAguas += volume;
           if (isGaseosa) pSales.vTotalUng += volume;
         }
-        // 3) VALIDACIÓN CV (tareas de creación de valor): además del SKU, ahora exige que
-        //    el cliente tenga la tarea asignada en la Plana de Tareas del mes Y que la fecha
-        //    de la venta coincida con el día de visita del cliente (Maestro de Clientes).
-        let cvValidado = false;
-        if (skuData && csvSkuCode) {
-          const tareaTexto = skuData.fullDesc ? String(skuData.fullDesc).trim().toUpperCase() : '';
-          const normClientId = String(clientId).replace(/^0+/, ''); // Quitar ceros a la izquierda
-          
-          let hasTarea = false;
-          if (tareasMaster) {
-            const tareasSet = tareasMaster[clientId] || tareasMaster[normClientId];
-            if (tareasSet) {
-               // Búsqueda case-insensitive en el Set
-               for (const t of tareasSet) {
-                 if (String(t).trim().toUpperCase() === tareaTexto) {
-                   hasTarea = true;
-                   break;
-                 }
-               }
-            }
+        // 3) VALIDACIÓN CV (Creación de Valor a nivel de segmento)
+        // El cliente cumple el CV de un segmento si compró un SKU de ese segmento 
+        // Y tenía asignada al menos una tarea correspondiente a ese mismo segmento.
+        let hasCervezaTask = false;
+        let hasCoreTask = false;
+        let hasAboveCoreTask = false;
+        let hasValueTask = false;
+        let hasLatonesTask = false;
+        let hasBalancedTask = false;
+        let hasNabsTask = false;
+
+        const normClientId = String(clientId).replace(/^0+/, '');
+        if (tareasMaster) {
+          const tareasSet = tareasMaster[clientId] || tareasMaster[normClientId];
+          if (tareasSet) {
+             for (const t of tareasSet) {
+               const tUpper = String(t).trim().toUpperCase();
+               
+               // Clasificar la tarea según las marcas/reglas del negocio
+               const tAbove = tUpper.includes('ANDES') || tUpper.includes('MICHELOB') || tUpper.includes('STELLA') || tUpper.includes('PATAGONIA') || tUpper.includes('CORONA');
+               const tCore = tUpper.includes('QUILMES') || tUpper.includes('BRAHMA') || tUpper.includes('BUDWEISER');
+               const tValue = tUpper.includes('1890');
+               const tBalanced = tUpper.includes('MICHELOB') || (tUpper.includes('STELLA') && tUpper.includes('PURE GOLD')) || tUpper.includes('SIN ALCOHOL');
+               const tLatones = tUpper.includes('LATON') || tUpper.includes('LATONES');
+               const tNabs = tUpper.includes('UNG') || tUpper.includes('NABS') || tUpper.includes('GATORADE') || tUpper.includes('RED BULL') || tUpper.includes('ROCKSTAR');
+               
+               const tCerveza = tAbove || tCore || tValue || tBalanced || tUpper.includes('CERVEZA') || tUpper.includes('CZA');
+
+               if (tCerveza) hasCervezaTask = true;
+               if (tAbove) hasAboveCoreTask = true;
+               if (tCore) hasCoreTask = true;
+               if (tValue) hasValueTask = true;
+               if (tBalanced) hasBalancedTask = true;
+               if (tLatones) hasLatonesTask = true;
+               if (tNabs) hasNabsTask = true;
+             }
           }
-          const tieneTareaAsignada = !!(tareaTexto && hasTarea);
-          
-          const diasVisitaStr = visitDaysMaster ? (visitDaysMaster[clientId] || visitDaysMaster[normClientId] || '') : '';
-          const diasVisita = diasVisitaStr ? String(diasVisitaStr).toUpperCase().split(',').map(function(s) { return s.trim(); }) : [];
-          const diaVenta = getWeekdayAbbrev(plannerDate);
-          const coincideDiaVisita = diasVisita.indexOf(diaVenta) !== -1;
-          cvValidado = tieneTareaAsignada && coincideDiaVisita;
         }
-        if (cvValidado) {
+
+        // Agregar al CV si cumple tanto la compra del SKU como tener la tarea del mismo segmento
+        if (isCerveza && hasCervezaTask) pSales.cvClientsCerveza.add(clientId);
+        if (isCore && hasCoreTask) pSales.cvClientsCore.add(clientId);
+        if (isAboveCore && hasAboveCoreTask) pSales.cvClientsAboveCore.add(clientId);
+        if (isValue && hasValueTask) pSales.cvClientsValue.add(clientId);
+        if (isLatones && hasLatonesTask) pSales.cvClientsLatones.add(clientId);
+        if (isBalanced && hasBalancedTask) pSales.cvClientsBalanced.add(clientId);
+        if (isNabs && hasNabsTask) pSales.cvClientsNabs.add(clientId);
+        if (isAguas) pSales.cvClientsAguas.add(clientId);
+        if (isUngTop) pSales.cvClientsUngTop.add(clientId);
+
+        // Eficiencia (Cualquier tarea cumplida)
+        if ((isCerveza && hasCervezaTask) || (isNabs && hasNabsTask)) {
           pSales.cvClientsEficiencia.add(clientId);
-          if (isCerveza) pSales.cvClientsCerveza.add(clientId);
-          if (isCore) pSales.cvClientsCore.add(clientId);
-          if (isValue) pSales.cvClientsValue.add(clientId);
-          if (isAboveCore) pSales.cvClientsAboveCore.add(clientId);
-          if (isLatones) pSales.cvClientsLatones.add(clientId);
-          if (isBalanced) pSales.cvClientsBalanced.add(clientId);
-          if (isNabs) pSales.cvClientsNabs.add(clientId);
-          if (isAguas) pSales.cvClientsAguas.add(clientId);
-          if (isUngTop) pSales.cvClientsUngTop.add(clientId);
         }
         const tbdKeyGen = clientId + '_' + csvSkuCode;
         // Acumular volúmenes, CCC y TBD generales (tanto para maestro como para fallback)
