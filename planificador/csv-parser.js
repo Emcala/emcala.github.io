@@ -238,25 +238,41 @@
         //    de la venta coincida con el día de visita del cliente (Maestro de Clientes).
         let cvValidado = false;
         if (skuData && csvSkuCode) {
-          const tareaTexto = skuData.fullDesc ? String(skuData.fullDesc).trim() : '';
-          const tieneTareaAsignada = !!(tareaTexto && tareasMaster && tareasMaster[clientId] && tareasMaster[clientId].has(tareaTexto));
-          const diasVisitaStr = (visitDaysMaster && visitDaysMaster[clientId]) ? visitDaysMaster[clientId] : '';
-          const diasVisita = diasVisitaStr ? diasVisitaStr.split(',').map(function(s) { return s.trim(); }) : [];
+          const tareaTexto = skuData.fullDesc ? String(skuData.fullDesc).trim().toUpperCase() : '';
+          const normClientId = String(clientId).replace(/^0+/, ''); // Quitar ceros a la izquierda
+          
+          let hasTarea = false;
+          if (tareasMaster) {
+            const tareasSet = tareasMaster[clientId] || tareasMaster[normClientId];
+            if (tareasSet) {
+               // Búsqueda case-insensitive en el Set
+               for (const t of tareasSet) {
+                 if (String(t).trim().toUpperCase() === tareaTexto) {
+                   hasTarea = true;
+                   break;
+                 }
+               }
+            }
+          }
+          const tieneTareaAsignada = !!(tareaTexto && hasTarea);
+          
+          const diasVisitaStr = visitDaysMaster ? (visitDaysMaster[clientId] || visitDaysMaster[normClientId] || '') : '';
+          const diasVisita = diasVisitaStr ? String(diasVisitaStr).toUpperCase().split(',').map(function(s) { return s.trim(); }) : [];
           const diaVenta = getWeekdayAbbrev(plannerDate);
           const coincideDiaVisita = diasVisita.indexOf(diaVenta) !== -1;
           cvValidado = tieneTareaAsignada && coincideDiaVisita;
         }
         if (cvValidado) {
-          pSales.cvClientsEficiencia.add(csvSkuCode);
-          if (isCerveza) pSales.cvClientsCerveza.add(csvSkuCode);
-          if (isCore) pSales.cvClientsCore.add(csvSkuCode);
-          if (isValue) pSales.cvClientsValue.add(csvSkuCode);
-          if (isAboveCore) pSales.cvClientsAboveCore.add(csvSkuCode);
-          if (isLatones) pSales.cvClientsLatones.add(csvSkuCode);
-          if (isBalanced) pSales.cvClientsBalanced.add(csvSkuCode);
-          if (isNabs) pSales.cvClientsNabs.add(csvSkuCode);
-          if (isAguas) pSales.cvClientsAguas.add(csvSkuCode);
-          if (isUngTop) pSales.cvClientsUngTop.add(csvSkuCode);
+          pSales.cvClientsEficiencia.add(clientId);
+          if (isCerveza) pSales.cvClientsCerveza.add(clientId);
+          if (isCore) pSales.cvClientsCore.add(clientId);
+          if (isValue) pSales.cvClientsValue.add(clientId);
+          if (isAboveCore) pSales.cvClientsAboveCore.add(clientId);
+          if (isLatones) pSales.cvClientsLatones.add(clientId);
+          if (isBalanced) pSales.cvClientsBalanced.add(clientId);
+          if (isNabs) pSales.cvClientsNabs.add(clientId);
+          if (isAguas) pSales.cvClientsAguas.add(clientId);
+          if (isUngTop) pSales.cvClientsUngTop.add(clientId);
         }
         const tbdKeyGen = clientId + '_' + csvSkuCode;
         // Acumular volúmenes, CCC y TBD generales (tanto para maestro como para fallback)
