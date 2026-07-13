@@ -273,16 +273,11 @@
           }
         }
 
-        // Validación 3.2: ¿Coincide el día de visita?
-        let coincideDiaVisita = false;
-        const diasVisitaStr = visitDaysMaster ? (visitDaysMaster[clientId] || visitDaysMaster[normClientId] || '') : '';
-        const diasVisita = diasVisitaStr ? String(diasVisitaStr).toUpperCase().split(',').map(function(s) { return s.trim(); }) : [];
-        const diaVenta = getWeekdayAbbrev(plannerDate);
-        coincideDiaVisita = (diasVisita.indexOf(diaVenta) !== -1);
-
-        // Agregar al CV si el SKU vendido está en el maestro que valida, cumple la tarea
-        // del mismo segmento, Y el día de la visita corresponde al día de visita del cliente.
-        if (coincideDiaVisita && skuData && csvSkuCode) {
+        // Agregar al CV si el SKU vendido está en el maestro que valida y el cliente tiene
+        // la tarea del mismo segmento asignada. (Se sacó el chequeo de día de visita: los
+        // clientes con tarea de CV quedan agrupados en ciertos días fijos, lo que hacía que
+        // muchos días dieran 0 sin que fuera un error — decisión de negocio, no bug.)
+        if (skuData && csvSkuCode) {
           if (isCerveza && hasCervezaTask) pSales.cvClientsCerveza.add(clientId);
           if (isCore && hasCoreTask) pSales.cvClientsCore.add(clientId);
           if (isAboveCore && hasAboveCoreTask) pSales.cvClientsAboveCore.add(clientId);

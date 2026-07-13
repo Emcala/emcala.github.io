@@ -224,13 +224,12 @@
       btnImportCsv.disabled = true;
       // Sincronizar SKUs antes de procesar el archivo elegido
       await syncSkus();
-      // Sincronizar Plana de Tareas (del mes actual) y Maestro de Clientes — necesarios para validar CV
+      // Sincronizar Plana de Tareas (del mes actual) — necesaria para validar CV
       btnImportCsv.innerHTML = '⏳ Sincronizando Plana de Tareas...';
       const cMonthActual = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
       const okTareas = await syncTareas(cMonthActual);
-      const okVisitas = await syncVisitDays();
-      if (!okTareas || !okVisitas) {
-        const continuar = confirm('No se pudo cargar la Plana de Tareas y/o el Maestro de Clientes.\nLa validación de CV puede salir en 0 para todos los promotores.\n\n¿Querés continuar igual con la importación?');
+      if (!okTareas) {
+        const continuar = confirm('No se pudo cargar la Plana de Tareas.\nLa validación de CV puede salir en 0 para todos los promotores.\n\n¿Querés continuar igual con la importación?');
         if (!continuar) {
           btnImportCsv.innerHTML = origText;
           btnImportCsv.disabled = false;

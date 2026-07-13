@@ -48,26 +48,6 @@
       return false;
     }
 
-    // === Maestro de Clientes (días de visita): { clienteId: "LUN,JUE" } ===
-    // Vive en un Sheet aparte que mantiene el auditor a mano; se trae una sola vez por sesión.
-    let visitDaysMaster = null;
-
-    async function syncVisitDays() {
-      if (visitDaysMaster) return true;
-      try {
-        const response = await fetch(`${SCRIPT_URL}?req=maestrocli`);
-        const result = await response.json();
-        if (result.status === 'success' && result.clientes) {
-          visitDaysMaster = result.clientes;
-          console.log('Maestro de Clientes sincronizado:', Object.keys(visitDaysMaster).length, 'clientes');
-          return true;
-        }
-      } catch (e) {
-        console.error('Error al sincronizar Maestro de Clientes:', e);
-      }
-      return false;
-    }
-
     // === Datos de volumen (solo en memoria, nube como fuente única de verdad) ===
 
     function deletePromoterData(prom) {
@@ -163,7 +143,6 @@
           syncSkus(); // Non-blocking en auto-sync
           const cMonthInit = window.getCommercialMonthAndStart(date).month;
           syncTareas(cMonthInit); // Non-blocking: pre-cargar Plana de Tareas
-          syncVisitDays(); // Non-blocking: pre-cargar días de visita
         }
 
         // UN SOLO FETCH: traer TODOS los datos del día (sin filtrar por SPV)
