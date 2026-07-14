@@ -273,10 +273,8 @@
           }
         }
 
-        // Agregar al CV si el SKU vendido está en el maestro que valida y el cliente tiene
-        // la tarea del mismo segmento asignada. (Se sacó el chequeo de día de visita: los
-        // clientes con tarea de CV quedan agrupados en ciertos días fijos, lo que hacía que
-        // muchos días dieran 0 sin que fuera un error — decisión de negocio, no bug.)
+        // Agregar al CV si el SKU vendido está en el maestro que valida y cumple la tarea
+        // del mismo segmento (gate de día de visita eliminado).
         if (skuData && csvSkuCode) {
           if (isCerveza && hasCervezaTask) pSales.cvClientsCerveza.add(clientId);
           if (isCore && hasCoreTask) pSales.cvClientsCore.add(clientId);
@@ -361,18 +359,20 @@
           let trackedPromoter = null;
           const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
           const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
-          const csvParts = normalizeParts(promoter);
           const csvFlat = normalizeFlat(promoter);
-          for (const spv in SPV_DATA) {
-            const match = SPV_DATA[spv].find(p => {
-              const pParts = normalizeParts(p);
-              const pFlat = normalizeFlat(p);
-              const pInCsv = pParts.every(part => csvParts.includes(part));
-              const csvInP = csvParts.every(part => pParts.includes(part));
-              const isFlatMatch = pFlat === csvFlat || pFlat.includes(csvFlat) || csvFlat.includes(pFlat);
-              return pInCsv || csvInP || isFlatMatch;
-            });
-            if (match) { trackedPromoter = match; break; }
+          if (csvFlat.length > 2) {
+            const csvParts = normalizeParts(promoter);
+            for (const spv in SPV_DATA) {
+              const match = SPV_DATA[spv].find(p => {
+                const pParts = normalizeParts(p);
+                const pFlat = normalizeFlat(p);
+                const pInCsv = pParts.every(part => csvParts.includes(part));
+                const csvInP = csvParts.every(part => pParts.includes(part));
+                const isFlatMatch = pFlat === csvFlat || csvFlat.includes(pFlat) || (csvFlat.length > 5 && pFlat.includes(csvFlat));
+                return pInCsv || csvInP || isFlatMatch;
+              });
+              if (match) { trackedPromoter = match; break; }
+            }
           }
           if (!trackedPromoter) continue;
           const pSales = daySales[promoter];
