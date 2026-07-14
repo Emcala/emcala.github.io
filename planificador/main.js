@@ -457,14 +457,18 @@
               const colDFlat = normalizeFlat(colD);
               const colDParts = normalizeParts(colD);
 
-              // Detectar si la fila contiene el nombre de algún promotor conocido en la Columna D
-              const matchedProm = allPromoters.find(p => {
-                const pFlat = normalizeFlat(p);
-                const pParts = normalizeParts(p);
-                const pInCol = pParts.every(part => colDParts.includes(part));
-                const isFlatMatch = colDFlat.includes(pFlat) || pFlat.includes(colDFlat);
-                return pInCol || isFlatMatch;
-              });
+              let matchedProm = null;
+              if (colDFlat.length > 2 && colDUpper !== 'TOTAL' && colDUpper !== 'FOCO') {
+                // Detectar si la fila contiene el nombre de algún promotor conocido en la Columna D
+                matchedProm = allPromoters.find(p => {
+                  const pFlat = normalizeFlat(p);
+                  const pParts = normalizeParts(p);
+                  const pInCol = pParts.every(part => colDParts.includes(part));
+                  const colInP = colDParts.every(part => pParts.includes(part));
+                  const isFlatMatch = colDFlat.includes(pFlat) || pFlat === colDFlat || (colDFlat.length > 5 && pFlat.includes(colDFlat));
+                  return pInCol || colInP || isFlatMatch;
+                });
+              }
 
               if (matchedProm && !colDUpper.includes('TOTAL') && !colDUpper.includes('FOCO')) {
                 if (!volData[matchedProm]) volData[matchedProm] = {};
@@ -472,13 +476,29 @@
                 if (!resetProms[matchedProm]) {
                   volData[matchedProm]['obj-f1'] = 0;
                   volData[matchedProm]['obj-f2'] = 0;
+                  volData[matchedProm]['has-total-f1'] = false;
+                  volData[matchedProm]['_seenCategories'] = new Set();
                   resetProms[matchedProm] = true;
                 }
                 if (currentCategory.includes('TOTAL CERVEZAS') || currentCategory.includes('TOTAL CERVEZA')) {
                   volData[matchedProm]['obj-f1'] = parseFloat(colG.toFixed(2));
+                  volData[matchedProm]['has-total-f1'] = true;
+                } else if (currentCategory.includes('CORE + VALUE') || currentCategory.includes('CORE+VALUE') || currentCategory.includes('CORE Y VALUE') || currentCategory.includes('ABOVE CORE')) {
+                  if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
+                    volData[matchedProm]['_seenCategories'].add(currentCategory);
+                    // Sumamos Core+Value y Above Core para totalizar cerveza (FOCO I)
+                    volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
+                  }
                 } else if (currentCategory.includes('CORE') || currentCategory.includes('VALUE')) {
-                  // Sumamos Core+Value y Above Core para totalizar cerveza (FOCO I)
-                  volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
+                  // Fallback: si el archivo NO tiene la categoría "Core + Value" agrupada, sino que vienen sueltas "Core" y "Value"
+                  if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
+                     // Solo sumar si no hemos visto la categoría agrupada (para no duplicar)
+                     const hasAgrupada = volData[matchedProm]['_seenCategories'].has('1A - CZA CORE + VALUE') || Array.from(volData[matchedProm]['_seenCategories']).some(c => c.includes('CORE + VALUE') || c.includes('CORE+VALUE'));
+                     if (!hasAgrupada) {
+                       volData[matchedProm]['_seenCategories'].add(currentCategory);
+                       volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
+                     }
+                  }
                 } else if (currentCategory.includes('TOTAL UNG 2026') || currentCategory.includes('TOTAL UNG') || currentCategory.includes('4B - AGUAS') || currentCategory.includes('AGUAS')) {
                   volData[matchedProm]['obj-f2'] = parseFloat((volData[matchedProm]['obj-f2'] + colG).toFixed(2));
                 }
