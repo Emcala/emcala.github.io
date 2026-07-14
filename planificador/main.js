@@ -224,12 +224,13 @@
       btnImportCsv.disabled = true;
       // Sincronizar SKUs antes de procesar el archivo elegido
       await syncSkus();
-      // Sincronizar Plana de Tareas (del mes actual) — necesaria para validar CV
+      // Sincronizar Plana de Tareas (del mes actual) y Maestro de Clientes — necesarios para validar CV
       btnImportCsv.innerHTML = '⏳ Sincronizando Plana de Tareas...';
       const cMonthActual = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
       const okTareas = await syncTareas(cMonthActual);
-      if (!okTareas) {
-        const continuar = confirm('No se pudo cargar la Plana de Tareas.\nLa validación de CV puede salir en 0 para todos los promotores.\n\n¿Querés continuar igual con la importación?');
+      const okVisitas = await syncVisitDays();
+      if (!okTareas || !okVisitas) {
+        const continuar = confirm('No se pudo cargar la Plana de Tareas y/o el Maestro de Clientes.\nLa validación de CV puede salir en 0 para todos los promotores.\n\n¿Querés continuar igual con la importación?');
         if (!continuar) {
           btnImportCsv.innerHTML = origText;
           btnImportCsv.disabled = false;
@@ -443,12 +444,29 @@
               const colA = String(row[0] || '').trim();
               const colD = String(row[3] || '').trim();
               const colG = parseFloat(row[6]) || 0; // Columna G es índice 6 (Objetivos)
+              
               if (colA !== '') {
-                currentCategory = colA;
+                currentCategory = colA.toUpperCase();
               }
+
+              // Normalización robusta para matching de promotores
+              const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
+              const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
+              
+              const colDUpper = colD.toUpperCase();
+              const colDFlat = normalizeFlat(colD);
+              const colDParts = normalizeParts(colD);
+
               // Detectar si la fila contiene el nombre de algún promotor conocido en la Columna D
-              const matchedProm = allPromoters.find(p => colD.includes(p));
-              if (matchedProm && !colD.includes('Total') && !colD.includes('FOCO')) {
+              const matchedProm = allPromoters.find(p => {
+                const pFlat = normalizeFlat(p);
+                const pParts = normalizeParts(p);
+                const pInCol = pParts.every(part => colDParts.includes(part));
+                const isFlatMatch = colDFlat.includes(pFlat) || pFlat.includes(colDFlat);
+                return pInCol || isFlatMatch;
+              });
+
+              if (matchedProm && !colDUpper.includes('TOTAL') && !colDUpper.includes('FOCO')) {
                 if (!volData[matchedProm]) volData[matchedProm] = {};
                 // Si es la primera vez que vemos este promotor en este parseo, inicializamos en 0
                 if (!resetProms[matchedProm]) {
@@ -456,11 +474,12 @@
                   volData[matchedProm]['obj-f2'] = 0;
                   resetProms[matchedProm] = true;
                 }
-                if (currentCategory.includes('Total Cervezas')) {
-                  // El archivo nuevo ya trae el total de Foco I armado en una sola fila;
-                  // se asigna directo, NO se suma (evita duplicar lo que ya incluye "CZA Above Core").
+                if (currentCategory.includes('TOTAL CERVEZAS') || currentCategory.includes('TOTAL CERVEZA')) {
                   volData[matchedProm]['obj-f1'] = parseFloat(colG.toFixed(2));
-                } else if (currentCategory.includes('Total UNG 2026') || currentCategory.includes('4b - Aguas')) {
+                } else if (currentCategory.includes('CORE') || currentCategory.includes('VALUE')) {
+                  // Sumamos Core+Value y Above Core para totalizar cerveza (FOCO I)
+                  volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
+                } else if (currentCategory.includes('TOTAL UNG 2026') || currentCategory.includes('TOTAL UNG') || currentCategory.includes('4B - AGUAS') || currentCategory.includes('AGUAS')) {
                   volData[matchedProm]['obj-f2'] = parseFloat((volData[matchedProm]['obj-f2'] + colG).toFixed(2));
                 }
                 promotoresFound++;
