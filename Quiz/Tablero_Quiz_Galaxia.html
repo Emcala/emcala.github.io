@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablero Quiz Galaxia 2026</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+:root{--bg:#0f1b35;--card:#1e2d50;--border:rgba(255,255,255,0.08);--text:#ffffff;--muted:rgba(255,255,255,0.55);--correct:#10b981;--wrong:#ef4444;--warn:#f59e0b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:40px;}
+.header{background:linear-gradient(135deg,#0f1b35 0%,#1a2d5a 100%);padding:26px 24px 20px;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.header::after{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(78,140,255,0.15) 0%,transparent 70%);border-radius:50%;}
+.htag{background:linear-gradient(90deg,#4e8cff,#7c3aed);color:white;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:10px;}
+.header h1{font-size:22px;font-weight:900;line-height:1.25;}
+.header h1 span{color:#4e8cff;}
+.hinfo{margin-top:8px;font-size:12px;color:var(--muted);}
+.container{max-width:900px;margin:0 auto;padding:20px 14px 40px;}
+
+/* FILTROS */
+.filters{background:var(--card);border-radius:14px;border:1px solid var(--border);padding:16px 20px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+.filters label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+select{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:var(--text);font-size:13px;font-weight:600;padding:7px 12px;outline:none;cursor:pointer;}
+select:focus{border-color:#4e8cff;}
+.btn-refresh{padding:8px 18px;background:linear-gradient(90deg,#4e8cff,#7c3aed);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;}
+.btn-refresh:hover{opacity:.88;}
+
+/* STATS CARDS */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--card);border-radius:14px;border:1px solid var(--border);padding:16px 18px;}
+.stat-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.stat-value{font-size:28px;font-weight:900;line-height:1;}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+.sv-green{color:var(--correct);}
+.sv-yellow{color:var(--warn);}
+.sv-red{color:var(--wrong);}
+.sv-blue{color:#4e8cff;}
+
+/* TABLA */
+.table-wrap{background:var(--card);border-radius:14px;border:1px solid var(--border);overflow:hidden;}
+.table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.table-header h3{font-size:15px;font-weight:800;}
+.table-count{font-size:12px;color:var(--muted);}
+table{width:100%;border-collapse:collapse;}
+th{padding:10px 16px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;border-bottom:1px solid var(--border);}
+td{padding:11px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:800;}
+.badge-pass{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3);}
+.badge-fail{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);}
+.score-high{color:var(--correct);font-weight:800;}
+.score-mid{color:var(--warn);font-weight:800;}
+.score-low{color:var(--wrong);font-weight:800;}
+.rol-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.rol-pv{background:rgba(239,68,68,.15);color:#f87171;}
+.rol-pas{background:rgba(245,158,11,.15);color:#fbbf24;}
+.rol-mer{background:rgba(139,92,246,.15);color:#a78bfa;}
+.rol-spv{background:rgba(78,140,255,.15);color:#93c5fd;}
+
+/* EMPTY / LOADING */
+.empty{padding:48px;text-align:center;color:var(--muted);}
+.empty-icon{font-size:40px;margin-bottom:12px;}
+.loading{padding:48px;text-align:center;color:var(--muted);font-size:14px;}
+
+/* RESUMEN POR SUPERVISOR */
+.sup-section{margin-bottom:28px;}
+.sup-title{font-size:13px;font-weight:800;color:#4e8cff;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(78,140,255,.2);}
+
+@media(max-width:600px){
+  th:nth-child(4),td:nth-child(4){display:none;}
+  th:nth-child(5),td:nth-child(5){display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="htag">Galaxia 2026</div>
+  <h1>Tablero de Resultados<br><span>Quiz de Conocimiento</span></h1>
+  <div class="hinfo">Últimos resultados del equipo · Se actualiza al recargar</div>
+</div>
+
+<div class="container">
+
+  <!-- FILTROS -->
+  <div class="filters">
+    <div>
+      <label>Supervisor</label><br>
+      <select id="filtro-sup" onchange="aplicarFiltros()">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <div>
+      <label>Rol</label><br>
+      <select id="filtro-rol" onchange="aplicarFiltros()">
+        <option value="">Todos los roles</option>
+        <option value="Promotor de Venta">Promotor de Venta</option>
+        <option value="Promotor AS">Promotor AS</option>
+        <option value="Merchand">Merchand</option>
+        <option value="Supervisor de Ventas">Supervisor de Ventas</option>
+      </select>
+    </div>
+    <div>
+      <label>Resultado</label><br>
+      <select id="filtro-resultado" onchange="aplicarFiltros()">
+        <option value="">Todos</option>
+        <option value="aprobado">Solo aprobados</option>
+        <option value="reprobado">Solo reprobados</option>
+      </select>
+    </div>
+    <div style="margin-left:auto;margin-top:16px;">
+      <button class="btn-refresh" onclick="cargarDatos()">🔄 Actualizar</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total intentos</div>
+      <div class="stat-value sv-blue" id="stat-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Promedio</div>
+      <div class="stat-value" id="stat-prom">—</div>
+      <div class="stat-sub">puntaje promedio</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Aprobados</div>
+      <div class="stat-value sv-green" id="stat-aprobados">—</div>
+      <div class="stat-sub" id="stat-aprobados-pct"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Reprobados</div>
+      <div class="stat-value sv-red" id="stat-reprobados">—</div>
+      <div class="stat-sub" id="stat-reprobados-pct"></div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>Detalle de resultados</h3>
+      <div class="table-count" id="table-count"></div>
+    </div>
+    <div id="tabla-body">
+      <div class="loading">⏳ Cargando datos...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec';
+
+let allData = [];
+
+async function cargarDatos(){
+  document.getElementById('tabla-body').innerHTML = '<div class="loading">⏳ Cargando datos...</div>';
+  try {
+    const res = await fetch(GAS_URL, {
+      method:'POST',
+      body: JSON.stringify({action:'getQuizResults'})
+    });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || 'Error desconocido');
+    allData = json.resultados || [];
+    poblarFiltroSupervisores();
+    aplicarFiltros();
+  } catch(e) {
+    document.getElementById('tabla-body').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>No se pudieron cargar los datos.<br><small>${e.message}</small></div>`;
+  }
+}
+
+function poblarFiltroSupervisores(){
+  const supSet = [...new Set(allData.map(r=>r.supervisor))].filter(Boolean).sort();
+  const sel = document.getElementById('filtro-sup');
+  sel.innerHTML = '<option value="">Todos los supervisores</option>';
+  supSet.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
+}
+
+function aplicarFiltros(){
+  const sup = document.getElementById('filtro-sup').value;
+  const rol = document.getElementById('filtro-rol').value;
+  const res = document.getElementById('filtro-resultado').value;
+
+  let filtered = allData.filter(r => {
+    if(sup && r.supervisor !== sup) return false;
+    if(rol && r.rol !== rol) return false;
+    if(res === 'aprobado' && r.puntaje < 70) return false;
+    if(res === 'reprobado' && r.puntaje >= 70) return false;
+    return true;
+  });
+
+  renderStats(filtered);
+  renderTabla(filtered);
+}
+
+function renderStats(data){
+  const total = data.length;
+  const aprobados = data.filter(r=>r.puntaje>=70).length;
+  const reprobados = total - aprobados;
+  const prom = total > 0 ? Math.round(data.reduce((a,r)=>a+r.puntaje,0)/total) : 0;
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-prom').textContent = prom + '%';
+  document.getElementById('stat-prom').className = 'stat-value ' + (prom>=70?'sv-green':prom>=50?'sv-yellow':'sv-red');
+  document.getElementById('stat-aprobados').textContent = aprobados;
+  document.getElementById('stat-aprobados-pct').textContent = total>0 ? Math.round(aprobados/total*100)+'% del total' : '';
+  document.getElementById('stat-reprobados').textContent = reprobados;
+  document.getElementById('stat-reprobados-pct').textContent = total>0 ? Math.round(reprobados/total*100)+'% del total' : '';
+}
+
+function rolClass(rol){
+  if(!rol) return '';
+  const r = rol.toLowerCase();
+  if(r.includes('promotor as') || r.includes('pas')) return 'rol-pas';
+  if(r.includes('promotor')) return 'rol-pv';
+  if(r.includes('merch')) return 'rol-mer';
+  if(r.includes('supervisor')) return 'rol-spv';
+  return '';
+}
+
+function scoreClass(pct){
+  if(pct>=80) return 'score-high';
+  if(pct>=70) return 'score-mid';
+  return 'score-low';
+}
+
+function formatFecha(iso){
+  if(!iso) return '—';
+  try{
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}) + ' ' +
+           d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){return iso;}
+}
+
+function renderTabla(data){
+  document.getElementById('table-count').textContent = data.length + ' registros';
+
+  if(data.length === 0){
+    document.getElementById('tabla-body').innerHTML = '<div class="empty"><div class="empty-icon">📭</div>Sin resultados para los filtros seleccionados.</div>';
+    return;
+  }
+
+  // Ordenar por fecha desc
+  const sorted = [...data].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  let html = '<table><thead><tr><th>Nombre</th><th>Rol</th><th>Supervisor</th><th>Puntaje</th><th>Correctas</th><th>Resultado</th><th>Fecha</th></tr></thead><tbody>';
+
+  sorted.forEach(r => {
+    const aprobado = r.puntaje >= 70;
+    html += `<tr>
+      <td style="font-weight:700;">${r.nombre||'—'}</td>
+      <td><span class="rol-pill ${rolClass(r.rol)}">${r.rol||'—'}</span></td>
+      <td style="color:var(--muted);font-size:12px;">${r.supervisor||'—'}</td>
+      <td class="${scoreClass(r.puntaje)}">${r.puntaje}%</td>
+      <td style="color:var(--muted);">${r.correctas}/${r.total}</td>
+      <td><span class="badge ${aprobado?'badge-pass':'badge-fail'}">${aprobado?'✅ APROBADO':'❌ REPROBADO'}</span></td>
+      <td style="color:var(--muted);font-size:12px;">${formatFecha(r.timestamp)}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('tabla-body').innerHTML = html;
+}
+
+// Cargar al iniciar
+cargarDatos();
+</script>
+</body>
+</html>

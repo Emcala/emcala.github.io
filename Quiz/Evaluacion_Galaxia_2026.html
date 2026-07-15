@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evaluación Galaxia 2026</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+:root {
+  --bg:#0f1b35; --card:#1e2d50; --border:rgba(255,255,255,0.08);
+  --text:#ffffff; --muted:rgba(255,255,255,0.55);
+  --correct:#10b981; --wrong:#ef4444;
+  --cbg:rgba(16,185,129,0.12); --wbg:rgba(239,68,68,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:90px;}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#0f1b35 0%,#1a2d5a 100%);padding:26px 24px 20px;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.header::after{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(78,140,255,0.15) 0%,transparent 70%);border-radius:50%;}
+.htag{background:linear-gradient(90deg,#4e8cff,#7c3aed);color:white;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:10px;}
+.header h1{font-size:22px;font-weight:900;line-height:1.25;}
+.header h1 span{color:#4e8cff;}
+.hinfo{margin-top:8px;font-size:12px;color:var(--muted);}
+.hinfo b{color:rgba(255,255,255,.85);}
+
+.container{max-width:680px;margin:0 auto;padding:20px 14px 40px;}
+
+/* ROLE SELECTOR */
+.role-card{background:var(--card);border-radius:18px;border:1px solid var(--border);padding:28px 24px;text-align:center;}
+.role-card h2{font-size:19px;font-weight:800;margin-bottom:6px;}
+.role-card p{font-size:13px;color:var(--muted);margin-bottom:22px;}
+.roles-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:480px){.roles-grid{grid-template-columns:1fr;}}
+.role-btn{
+  background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);
+  border-radius:14px;padding:18px 14px;cursor:pointer;transition:all .18s;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  text-align:center;
+}
+.role-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.role-btn .ricon{font-size:32px;}
+.role-btn .rname{font-size:14px;font-weight:800;text-align:center;}
+.role-btn .rdesc{font-size:11px;color:var(--muted);line-height:1.4;}
+.role-btn.soon{opacity:.45;cursor:not-allowed;}
+.role-btn.soon:hover{transform:none;box-shadow:none;}
+.soon-badge{background:rgba(255,255,255,.1);border-radius:10px;font-size:10px;font-weight:700;padding:2px 8px;color:var(--muted);}
+
+.role-pv  {border-color:rgba(239,68,68,.5);}   .role-pv:hover  {border-color:#ef4444;background:rgba(239,68,68,.08);}
+.role-pas {border-color:rgba(245,158,11,.5);}   .role-pas:hover {border-color:#f59e0b;background:rgba(245,158,11,.08);}
+.role-mer {border-color:rgba(139,92,246,.5);}   .role-mer:hover {border-color:#8b5cf6;background:rgba(139,92,246,.08);}
+.role-act {border-color:rgba(16,185,129,.5);}   .role-act:hover {border-color:#10b981;background:rgba(16,185,129,.08);}
+.role-spv {border-color:rgba(78,140,255,.5);}   .role-spv:hover {border-color:#4e8cff;background:rgba(78,140,255,.08);}
+
+/* INTRO */
+.intro-wrap{display:none;}
+.intro-card{background:var(--card);border-radius:18px;border:1px solid var(--border);padding:28px 24px;text-align:center;}
+.intro-card h2{font-size:18px;font-weight:800;margin-bottom:8px;}
+.intro-card p{font-size:13px;color:var(--muted);line-height:1.65;max-width:480px;margin:0 auto;}
+.intro-pills{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:16px;}
+.pill{border-radius:20px;font-size:11px;font-weight:700;padding:5px 12px;border:1px solid;}
+.pill-r{background:rgba(239,68,68,.15);color:#f87171;border-color:rgba(239,68,68,.3);}
+.pill-y{background:rgba(245,158,11,.15);color:#fbbf24;border-color:rgba(245,158,11,.3);}
+.pill-p{background:rgba(139,92,246,.15);color:#a78bfa;border-color:rgba(139,92,246,.3);}
+.pill-g{background:rgba(16,185,129,.15);color:#34d399;border-color:rgba(16,185,129,.3);}
+.pill-o{background:rgba(249,115,22,.15);color:#fb923c;border-color:rgba(249,115,22,.3);}
+.pill-c{background:rgba(6,182,212,.15);color:#22d3ee;border-color:rgba(6,182,212,.3);}
+.pill-k{background:rgba(236,72,153,.15);color:#f472b6;border-color:rgba(236,72,153,.3);}
+.btn-start{margin-top:20px;padding:14px 36px;background:linear-gradient(90deg,#4e8cff,#7c3aed);color:white;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(78,140,255,.35);transition:transform .15s;}
+.btn-start:hover{transform:translateY(-1px);}
+.btn-back{margin-top:12px;padding:8px 18px;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.15);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-back:hover{color:white;border-color:rgba(255,255,255,.35);}
+
+/* PROGRESS */
+.prog-wrap{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.prog-label{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;}
+.prog-track{flex:1;height:6px;background:rgba(255,255,255,.1);border-radius:10px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#4e8cff,#7c3aed);border-radius:10px;transition:width .4s ease;width:0%;}
+.prog-count{font-size:13px;font-weight:800;color:#4e8cff;white-space:nowrap;}
+
+/* QUESTION */
+.qcard{background:var(--card);border-radius:16px;border:2px solid var(--border);padding:20px;margin-bottom:14px;transition:border-color .2s;}
+.qcard.ok{border-color:var(--correct);}
+.qcard.bad{border-color:var(--wrong);}
+.qnum{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.qtopic{display:inline-block;font-size:10px;font-weight:800;padding:3px 9px;border-radius:20px;border:1px solid;margin-bottom:12px;letter-spacing:.05em;text-transform:uppercase;}
+.t-rutina{background:rgba(239,68,68,.15);color:#f87171;border-color:rgba(239,68,68,.35);}
+.t-force{background:rgba(245,158,11,.15);color:#fbbf24;border-color:rgba(245,158,11,.35);}
+.t-vision{background:rgba(139,92,246,.15);color:#a78bfa;border-color:rgba(139,92,246,.35);}
+.t-bees{background:rgba(16,185,129,.15);color:#34d399;border-color:rgba(16,185,129,.35);}
+.t-trade{background:rgba(249,115,22,.15);color:#fb923c;border-color:rgba(249,115,22,.35);}
+.t-gente{background:rgba(6,182,212,.15);color:#22d3ee;border-color:rgba(6,182,212,.35);}
+.t-seg{background:rgba(236,72,153,.15);color:#f472b6;border-color:rgba(236,72,153,.35);}
+.t-cx{background:rgba(168,85,247,.15);color:#c084fc;border-color:rgba(168,85,247,.35);}
+.t-prog{background:rgba(245,158,11,.15);color:#fcd34d;border-color:rgba(245,158,11,.35);}
+.t-org{background:rgba(251,191,36,.15);color:#fde68a;border-color:rgba(251,191,36,.35);}
+.qtext{font-size:15px;font-weight:700;line-height:1.45;margin-bottom:14px;}
+.options{display:flex;flex-direction:column;gap:8px;}
+.opt{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);border-radius:12px;cursor:pointer;transition:all .15s;font-size:13.5px;line-height:1.4;}
+.opt:hover{background:rgba(78,140,255,.1);border-color:rgba(78,140,255,.4);}
+.opt.sel{background:rgba(78,140,255,.15);border-color:#4e8cff;}
+.opt.cor{background:rgba(16,185,129,.15)!important;border-color:var(--correct)!important;}
+.opt.wrg{background:rgba(239,68,68,.15)!important;border-color:var(--wrong)!important;}
+.omark{width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;transition:all .15s;margin-top:1px;color:var(--muted);}
+.opt.sel .omark{background:#4e8cff;border-color:#4e8cff;color:white;}
+.opt.cor .omark{background:var(--correct);border-color:var(--correct);color:white;}
+.opt.wrg .omark{background:var(--wrong);border-color:var(--wrong);color:white;}
+.exp{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.6;}
+.exp.show{display:block;}
+.exp.cexp{background:var(--cbg);border-left:3px solid var(--correct);color:#6ee7b7;}
+.exp.wexp{background:var(--wbg);border-left:3px solid var(--wrong);color:#fca5a5;}
+.exp b{display:block;margin-bottom:4px;}
+.btn-ok{margin-top:14px;padding:10px 22px;background:rgba(78,140,255,.2);color:#4e8cff;border:1.5px solid rgba(78,140,255,.4);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-ok:disabled{opacity:.3;cursor:not-allowed;}
+.btn-ok:not(:disabled):hover{background:rgba(78,140,255,.3);}
+.btn-ok.gone{display:none;}
+
+/* RESULT */
+#result{display:none;background:var(--card);border-radius:18px;border:2px solid rgba(78,140,255,.4);padding:32px 24px;text-align:center;margin-top:20px;}
+#result.show{display:block;}
+.rscore{font-size:60px;font-weight:900;line-height:1;background:linear-gradient(135deg,#4e8cff,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.rlabel{font-size:13px;color:var(--muted);margin-top:4px;}
+.rbadge{display:inline-block;margin-top:16px;padding:9px 22px;border-radius:30px;font-size:14px;font-weight:800;}
+.rpass{background:rgba(16,185,129,.15);color:#34d399;border:2px solid rgba(16,185,129,.4);}
+.rfail{background:rgba(239,68,68,.15);color:#f87171;border:2px solid rgba(239,68,68,.4);}
+.rdetail{margin-top:14px;font-size:13px;color:var(--muted);line-height:1.7;}
+.rdetail b{color:var(--text);}
+.btn-retry{margin-top:22px;padding:13px 28px;background:linear-gradient(90deg,#4e8cff,#7c3aed);color:white;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;}
+.btn-retry:hover{opacity:.88;}
+.btn-newrole{margin-top:12px;display:block;padding:11px 28px;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.15);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;width:100%;}
+.btn-newrole:hover{color:white;border-color:rgba(255,255,255,.35);}
+
+/* SELECTOR DE NOMBRE */
+.nombre-wrap{display:none;}
+.nombre-card{background:var(--card);border-radius:18px;border:1px solid var(--border);padding:28px 24px;text-align:center;}
+.nombre-card h2{font-size:18px;font-weight:800;margin-bottom:6px;}
+.nombre-card p{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.sup-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;text-align:left;}
+.sup-btn{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 16px;cursor:pointer;font-size:14px;font-weight:700;color:var(--text);transition:all .15s;text-align:center;justify-content:center;}
+.sup-btn:hover{border-color:#4e8cff;background:rgba(78,140,255,.1);}
+.sup-btn.selected{border-color:#4e8cff;background:rgba(78,140,255,.15);}
+.mesa-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;margin-bottom:16px;padding-right:4px;}
+.mesa-btn{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text);transition:all .15s;text-align:center;}
+.mesa-btn:hover{border-color:#7c3aed;background:rgba(124,58,237,.1);}
+.mesa-btn.selected{border-color:#7c3aed;background:rgba(124,58,237,.15);}
+.loading-mesas{color:var(--muted);font-size:13px;padding:16px;text-align:center;}
+.selected-info{background:rgba(78,140,255,.1);border:1px solid rgba(78,140,255,.3);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:16px;text-align:left;}
+.selected-info span{color:var(--muted);}
+.selected-info b{color:#4e8cff;}
+
+/* BAR */
+.bar{position:fixed;bottom:0;left:0;right:0;background:rgba(15,27,53,0.96);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:100;}
+.bstat{font-size:13px;color:var(--muted);}
+.bstat b{color:var(--text);}
+.btn-sub{padding:11px 26px;background:linear-gradient(90deg,#4e8cff,#7c3aed);color:white;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(78,140,255,.3);}
+.btn-sub:disabled{opacity:.3;cursor:not-allowed;box-shadow:none;}
+.btn-sub:not(:disabled):hover{opacity:.88;}
+#quiz-section{display:none;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="htag">Galaxia 2026</div>
+  <h1>Evaluación de Conocimiento<br><span>CMQ · Distribuidores</span></h1>
+  <div class="hinfo">Seleccioná tu rol para comenzar · <b>10 preguntas aleatorias</b> por intento</div>
+</div>
+
+<div class="container">
+
+  <!-- ROLE SELECTOR -->
+  <div id="role-selector">
+    <div class="role-card">
+      <h2>¿Cuál es tu rol?</h2>
+      <p>Seleccioná tu puesto para recibir las preguntas correspondientes a tu trabajo.</p>
+      <div class="roles-grid">
+        <div class="role-btn role-pv" onclick="selectRole('pv')">
+          <div class="rname">Promotor de Venta</div>
+        </div>
+        <div class="role-btn role-pas" onclick="selectRole('pas')">
+          <div class="rname">Promotor AS</div>
+        </div>
+        <div class="role-btn role-mer" onclick="selectRole('mer')">
+          <div class="rname">Merchand</div>
+        </div>
+        <div class="role-btn role-spv" onclick="selectRole('spv')" style="grid-column:1/-1;">
+          <div class="rname">Supervisor de Ventas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SELECTOR DE NOMBRE -->
+  <div id="nombre-selector" class="nombre-wrap">
+    <div class="nombre-card">
+      <h2 id="nombre-titulo">Quien sos?</h2>
+      <p id="nombre-desc">Selecciona tu supervisor y luego tu nombre de la lista.</p>
+      <div id="paso-supervisor">
+        <div class="loading-mesas" id="mesas-loading">Cargando mesas...</div>
+        <div class="sup-list" id="sup-list" style="display:none;"></div>
+      </div>
+      <div id="paso-mesa" style="display:none;">
+        <div class="selected-info">
+          <span>Supervisor:</span> <b id="sup-elegido"></b>
+          <span style="margin-left:12px;cursor:pointer;font-size:11px;" onclick="volverASupervisores()">cambiar</span>
+        </div>
+        <div class="mesa-list" id="mesa-list"></div>
+      </div>
+      <button class="btn-start" id="btn-confirmar-nombre" style="display:none;" onclick="confirmarNombre()">Continuar</button>
+      <br><button class="btn-back" onclick="backToRoles()">Cambiar rol</button>
+    </div>
+  </div>
+
+  <!-- INTRO POR ROL -->
+  <div id="intro-pv" class="intro-wrap">
+    <div class="intro-card">
+      <h2>🛒 Promotor de Venta</h2>
+      <p>Se sortean <strong>10 preguntas al azar</strong> de un banco de 31, con al menos una de cada tema.</p>
+      <div class="intro-pills">
+        <div class="pill pill-r">🚶 Rutina del Promotor</div>
+        <div class="pill pill-y">⚡ BEES Force</div>
+        <div class="pill pill-p">👁️ BEES Vision</div>
+        <div class="pill pill-g">🐝 Compromiso BEES</div>
+        <div class="pill pill-o">🏪 Trade / Ejecución</div>
+        <div class="pill pill-c">👥 Gente</div>
+        <div class="pill pill-k">🦺 Seguridad</div>
+      </div>
+      <button class="btn-start" onclick="startQuiz('pv')">Comenzar evaluación →</button>
+      <br><button class="btn-back" onclick="backToRoles()">← Cambiar rol</button>
+    </div>
+  </div>
+
+  <div id="intro-pas" class="intro-wrap">
+    <div class="intro-card">
+      <h2>🏪 Promotor AS</h2>
+      <p>Se sortean <strong>10 preguntas al azar</strong> de un banco de 40, con al menos una de cada tema. Nivel de dificultad más alto.</p>
+      <div class="intro-pills">
+        <div class="pill pill-r">🚶 Rutina AS</div>
+        <div class="pill pill-y">⚡ BEES Force</div>
+        <div class="pill pill-p">👁️ BEES Vision</div>
+        <div class="pill pill-g">🐝 Compromiso BEES</div>
+        <div class="pill pill-o">🏪 Programa de Mercado AS</div>
+        <div class="pill pill-o">📦 Ejecución AS</div>
+        <div class="pill pill-c">📞 CXC / Cero Fallas</div>
+        <div class="pill pill-c">👥 Gente</div>
+        <div class="pill pill-k">🦺 Seguridad</div>
+      </div>
+      <button class="btn-start" onclick="startQuiz('pas')">Comenzar evaluación →</button>
+      <br><button class="btn-back" onclick="backToRoles()">← Cambiar rol</button>
+    </div>
+  </div>
+
+  <div id="intro-spv" class="intro-wrap">
+    <div class="intro-card">
+      <h2>👔 Supervisor de Ventas</h2>
+      <p>Se sortean <strong>10 preguntas al azar</strong> de un banco de 35, con al menos una de cada tema. Nivel avanzado: gestión, procesos y liderazgo.</p>
+      <div class="intro-pills">
+        <div class="pill pill-r">📋 Rutinas SPV</div>
+        <div class="pill pill-y">⚡ BEES Force / Vision</div>
+        <div class="pill pill-p">👁️ Fraude y Gestión</div>
+        <div class="pill pill-g">🐝 Compromiso BEES</div>
+        <div class="pill pill-o">🏪 Trade / Ejecución</div>
+        <div class="pill pill-c">👥 Gente y Desempeño</div>
+        <div class="pill pill-k">🦺 Seguridad</div>
+        <div class="pill pill-c">📞 CXC / Cero Fallas</div>
+      </div>
+      <button class="btn-start" onclick="startQuiz('spv')">Comenzar evaluación →</button>
+      <br><button class="btn-back" onclick="backToRoles()">← Cambiar rol</button>
+    </div>
+  </div>
+
+  <div id="intro-mer" class="intro-wrap">
+    <div class="intro-card">
+      <h2>🧹 Merchand</h2>
+      <p>Se sortean <strong>10 preguntas al azar</strong> de un banco de 27, con al menos una de cada tema.</p>
+      <div class="intro-pills">
+        <div class="pill pill-r">🚶 Rutina del Merchand</div>
+        <div class="pill pill-y">⚡ BEES Force</div>
+        <div class="pill pill-p">👁️ BEES Vision</div>
+        <div class="pill pill-o">📦 POP / QR</div>
+        <div class="pill pill-c">📞 CXC – Canales</div>
+        <div class="pill pill-k">🦺 Seguridad / EPP</div>
+        <div class="pill pill-c">👥 BEES Academy</div>
+        <div class="pill pill-o">🏢 Organización</div>
+      </div>
+      <button class="btn-start" onclick="startQuiz('mer')">Comenzar evaluación →</button>
+      <br><button class="btn-back" onclick="backToRoles()">← Cambiar rol</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz-section">
+    <div class="prog-wrap">
+      <div class="prog-label">Progreso</div>
+      <div class="prog-track"><div class="prog-fill" id="pFill"></div></div>
+      <div class="prog-count" id="pCount">0 / 10</div>
+    </div>
+    <div id="qcontainer"></div>
+    <div id="result">
+      <div style="font-size:40px;margin-bottom:10px;">🎯</div>
+      <div class="rscore" id="rScore">0%</div>
+      <div class="rlabel">de respuestas correctas</div>
+      <div id="rBadge"></div>
+      <div class="rdetail" id="rDetail"></div>
+      <button class="btn-retry" onclick="retryQuiz()">🔄 Nuevo intento — preguntas distintas</button>
+      <button class="btn-newrole" onclick="backToRoles()">← Elegir otro rol</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="bar" id="bar" style="display:none;">
+  <div class="bstat">Confirmadas: <b id="bCount">0</b> / 10</div>
+  <button class="btn-sub" id="subBtn" onclick="submitQuiz()" disabled>Ver resultado</button>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
+function topicClass(t) {
+  if(t.includes('Organización')) return 't-org';
+  if(t.includes('Rutina'))    return 't-rutina';
+  if(t.includes('Force'))     return 't-force';
+  if(t.includes('Vision'))    return 't-vision';
+  if(t.includes('Compromiso')||t.includes('NPS')||t.includes('BEES C')) return 't-bees';
+  if(t.includes('Programa'))  return 't-prog';
+  if(t.includes('Trade')||t.includes('Ejecución')||t.includes('POP')) return 't-trade';
+  if(t.includes('CXC')||t.includes('Cero Fallas')||t.includes('Fallas')) return 't-cx';
+  if(t.includes('Gente'))     return 't-gente';
+  if(t.includes('Seguridad')) return 't-seg';
+  return 't-bees';
+}
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function shuffleOpts(opts,ans){const idx=opts.map((o,i)=>({o,orig:i}));const s=shuffle(idx);return{opts:s.map(x=>x.o),newAns:s.findIndex(x=>x.orig===ans)};}
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let selected={}, confirmed={}, activeQuestions=[], currentRole=null, currentNombre=null, currentSupervisor=null;
+let mesasData = null;
+
+// Merchand hardcodeados
+const MERCH_SUPERVISOR = 'ARES PEDRO';
+const MERCH_MIEMBROS = ['MOLLI SANTINO','DOMINGUEZ NAHUEL','TORRES NICOLAS','SCHNEIDER MIGUEL','CRUZ CHRISTIAN','SMITH RODRIGO'];
+
+// ─────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────
+function selectRole(role){
+  document.getElementById('role-selector').style.display='none';
+  currentRole=role;
+  // Mostrar selector de nombre
+  document.getElementById('nombre-selector').style.display='block';
+  document.getElementById('nombre-titulo').textContent = roleLabel(role) + ' — Quien sos?';
+  cargarMesas();
+}
+function roleLabel(role){
+  return {pv:'Promotor de Venta',pas:'Promotor AS',mer:'Merchand',spv:'Supervisor de Ventas'}[role]||role;
+}
+function backToRoles(){
+  document.getElementById('role-selector').style.display='block';
+  document.getElementById('nombre-selector').style.display='none';
+  document.getElementById('intro-pv').style.display='none';
+  document.getElementById('intro-pas').style.display='none';
+  document.getElementById('intro-spv').style.display='none';
+  document.getElementById('intro-mer').style.display='none';
+  document.getElementById('quiz-section').style.display='none';
+  document.getElementById('bar').style.display='none';
+  selected={}; confirmed={}; activeQuestions=[];
+  currentNombre=null; currentSupervisor=null;
+}
+function comingSoon(rol){
+  alert('El formulario para '+rol+' estará disponible próximamente. 🚀');
+}
+function retryQuiz(){
+  document.getElementById('quiz-section').style.display='none';
+  document.getElementById('bar').style.display='none';
+  selected={}; confirmed={}; activeQuestions=[];
+  selectRole(currentRole);
+}
+
+// ─────────────────────────────────────────────
+// MESAS Y NOMBRE
+// ─────────────────────────────────────────────
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec';
+
+function filtrarMesasPorRol(mesas){
+  if(currentRole === 'pv')  return Object.fromEntries(Object.entries(mesas).filter(([sup,d])=>d.canal==='K+T' && !sup.includes('MAYO')));
+  if(currentRole === 'pas') return Object.fromEntries(Object.entries(mesas).filter(([,d])=>d.canal==='AS'));
+  // SPV: mostrar todos menos MAYO
+  return Object.fromEntries(Object.entries(mesas).filter(([sup])=>!sup.includes('MAYO')));
+}
+
+async function cargarMesas(){
+  document.getElementById('paso-supervisor').style.display='block';
+  document.getElementById('paso-mesa').style.display='none';
+  document.getElementById('btn-confirmar-nombre').style.display='none';
+  document.getElementById('mesas-loading').style.display='block';
+  document.getElementById('sup-list').style.display='none';
+
+  // Merch: hardcodeado, no necesita GAS
+  if(currentRole === 'mer'){
+    document.getElementById('mesas-loading').style.display='none';
+    renderSupervisores({ [MERCH_SUPERVISOR]: { miembros: MERCH_MIEMBROS } });
+    return;
+  }
+
+  if(mesasData){
+    renderSupervisores(filtrarMesasPorRol(mesasData));
+    return;
+  }
+  try {
+    const res = await fetch(GAS_URL, {method:'POST', body: JSON.stringify({action:'getMesasConCanal'})});
+    const json = await res.json();
+    mesasData = json.mesas || {};
+    renderSupervisores(filtrarMesasPorRol(mesasData));
+  } catch(e) {
+    document.getElementById('mesas-loading').textContent = 'Error al cargar mesas. Intenta de nuevo.';
+  }
+}
+
+function renderSupervisores(mesas){
+  document.getElementById('mesas-loading').style.display='none';
+  const list = document.getElementById('sup-list');
+  list.innerHTML='';
+  const supervisores = Object.keys(mesas).sort();
+  supervisores.forEach(sup => {
+    const entry = mesas[sup];
+    const miembros = entry.miembros || entry || [];
+    const btn = document.createElement('button');
+    btn.className='sup-btn';
+    btn.innerHTML = '<span>' + sup + '</span>';
+    btn.onclick = () => seleccionarSupervisor(sup, miembros);
+    list.appendChild(btn);
+  });
+  list.style.display='flex';
+}
+
+function seleccionarSupervisor(sup, miembros){
+  currentSupervisor = sup;
+  document.getElementById('sup-elegido').textContent = sup;
+  document.getElementById('paso-supervisor').style.display='none';
+  document.getElementById('paso-mesa').style.display='block';
+
+  // Para SPV, el nombre ES el supervisor
+  if(currentRole === 'spv'){
+    const list = document.getElementById('mesa-list');
+    list.innerHTML='';
+    const btn = document.createElement('button');
+    btn.className='mesa-btn selected';
+    btn.textContent = sup;
+    btn.onclick = () => {};
+    list.appendChild(btn);
+    currentNombre = sup;
+    document.getElementById('btn-confirmar-nombre').style.display='inline-block';
+    return;
+  }
+
+  const list = document.getElementById('mesa-list');
+  list.innerHTML='';
+  miembros.sort().forEach(nombre => {
+    const btn = document.createElement('button');
+    btn.className='mesa-btn';
+    btn.textContent = nombre;
+    btn.onclick = () => seleccionarNombre(nombre, btn);
+    list.appendChild(btn);
+  });
+}
+
+function seleccionarNombre(nombre, btn){
+  document.querySelectorAll('.mesa-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  currentNombre = nombre;
+  document.getElementById('btn-confirmar-nombre').style.display='inline-block';
+}
+
+function volverASupervisores(){
+  currentNombre = null; currentSupervisor = null;
+  document.getElementById('paso-supervisor').style.display='block';
+  document.getElementById('paso-mesa').style.display='none';
+  document.getElementById('btn-confirmar-nombre').style.display='none';
+}
+
+function confirmarNombre(){
+  if(!currentNombre) return;
+  document.getElementById('nombre-selector').style.display='none';
+  document.getElementById('intro-'+currentRole).style.display='block';
+}
+
+// ─────────────────────────────────────────────
+// GUARDAR RESULTADO EN SHEET
+// ─────────────────────────────────────────────
+async function guardarResultado(puntaje, correctas, total){
+  try {
+    await fetch(GAS_URL, {
+      method:'POST',
+      body: JSON.stringify({
+        action: 'saveQuizResult',
+        nombre: currentNombre,
+        supervisor: currentSupervisor,
+        rol: roleLabel(currentRole),
+        rolCode: currentRole,
+        puntaje: puntaje,
+        correctas: correctas,
+        total: total,
+        timestamp: new Date().toISOString()
+      })
+    });
+  } catch(e){ console.warn('No se pudo guardar resultado:', e); }
+}
+
+// ─────────────────────────────────────────────
+// QUIZ START
+// ─────────────────────────────────────────────
+function startQuiz(role){
+  document.getElementById('intro-'+role).style.display='none';
+  document.getElementById('quiz-section').style.display='block';
+  document.getElementById('bar').style.display='flex';
+  document.getElementById('result').classList.remove('show');
+  selected={}; confirmed={};
+
+  const bank = role==='pv' ? BANK_PV : role==='pas' ? BANK_PAS : role==='mer' ? BANK_MER : BANK_SPV;
+  const groups={};
+  bank.forEach(q=>{
+    const g=q.topic;
+    if(!groups[g]) groups[g]=[];
+    groups[g].push(q);
+  });
+
+  let picked=[];
+  for(const g of Object.values(groups)) picked.push(shuffle(g)[0]);
+  const rest=shuffle(bank.filter(q=>!picked.includes(q)));
+  picked=picked.concat(rest.slice(0,10-picked.length));
+  if(picked.length>10) picked=shuffle(picked).slice(0,10);
+  activeQuestions=shuffle(picked);
+  renderQuestions();
+}
+
+// ─────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────
+function renderQuestions(){
+  const c=document.getElementById('qcontainer');
+  c.innerHTML='';
+  document.getElementById('pFill').style.width='0%';
+  document.getElementById('pCount').textContent='0 / 10';
+  document.getElementById('bCount').textContent='0';
+  document.getElementById('subBtn').disabled=true;
+
+  activeQuestions.forEach((q,i)=>{
+    const sh=shuffleOpts(q.opts,q.ans);
+    q._opts=sh.opts; q._ans=sh.newAns;
+    const optsHtml=sh.opts.map((o,oi)=>`
+      <div class="opt" id="opt_${i}_${oi}" onclick="selectOpt(${i},${oi})">
+        <div class="omark">${String.fromCharCode(65+oi)}</div><span>${o}</span>
+      </div>`).join('');
+    const div=document.createElement('div');
+    div.className='qcard'; div.id='qcard_'+i;
+    div.innerHTML=`
+      <div class="qnum">Pregunta ${i+1} de 10</div>
+      <div class="qtopic ${topicClass(q.topic)}">${q.topic}</div>
+      <div class="qtext">${q.q}</div>
+      <div class="options">${optsHtml}</div>
+      <button class="btn-ok" id="btnok_${i}" onclick="confirmQ(${i})" disabled>Confirmar respuesta</button>
+      <div class="exp" id="exp_${i}"></div>`;
+    c.appendChild(div);
+  });
+}
+
+function selectOpt(qi,oi){
+  if(confirmed[qi]) return;
+  selected[qi]=oi;
+  for(let j=0;j<activeQuestions[qi]._opts.length;j++)
+    document.getElementById(`opt_${qi}_${j}`).classList.toggle('sel',j===oi);
+  document.getElementById('btnok_'+qi).disabled=false;
+  updateBar();
+}
+
+function confirmQ(qi){
+  if(confirmed[qi]) return;
+  confirmed[qi]=true;
+  const q=activeQuestions[qi],ua=selected[qi],ca=q._ans;
+  const card=document.getElementById('qcard_'+qi);
+  const exp=document.getElementById('exp_'+qi);
+  for(let j=0;j<q._opts.length;j++){
+    const el=document.getElementById(`opt_${qi}_${j}`);
+    if(j===ca) el.classList.add('cor');
+    if(j===ua&&ua!==ca) el.classList.add('wrg');
+  }
+  if(ua===ca){
+    card.classList.add('ok');
+    exp.innerHTML=`<b>✅ ¡Correcto!</b>${q.exp}`;
+    exp.classList.add('show','cexp');
+  } else {
+    card.classList.add('bad');
+    exp.innerHTML=`<b>❌ Incorrecto — La respuesta correcta era la opción ${String.fromCharCode(65+ca)}</b>${q.exp}`;
+    exp.classList.add('show','wexp');
+  }
+  document.getElementById('btnok_'+qi).classList.add('gone');
+  updateBar();
+}
+
+function updateBar(){
+  const done=Object.keys(confirmed).length;
+  document.getElementById('pFill').style.width=(done/10*100)+'%';
+  document.getElementById('pCount').textContent=done+' / 10';
+  document.getElementById('bCount').textContent=done;
+  document.getElementById('subBtn').disabled=done<10;
+}
+
+function submitQuiz(){
+  let score=0;
+  activeQuestions.forEach((q,i)=>{if(selected[i]===q._ans)score++;});
+  const pct=Math.round(score/10*100);
+  document.getElementById('rScore').textContent=pct+'%';
+  const badge=document.getElementById('rBadge'),detail=document.getElementById('rDetail');
+  if(pct>=70){
+    badge.innerHTML='<div class="rbadge rpass">✅ APROBADO — Superaste el 70%</div>';
+    detail.innerHTML=`Respondiste <b>${score} de 10 correctamente</b>.<br>En Galaxia equivale a <b>${Math.round(pct/100*40)} puntos</b> de los 40 posibles.<br>¡Seguí así para la auditoría!`;
+  } else {
+    badge.innerHTML='<div class="rbadge rfail">❌ No alcanzaste el 70% mínimo</div>';
+    detail.innerHTML=`Respondiste <b>${score} de 10 correctamente</b>.<br>Necesitás al menos <b>7 respuestas correctas</b> para aprobar.<br>Repasá la guía de estudio y volvé a intentarlo.`;
+  }
+  document.getElementById('result').classList.add('show');
+  document.getElementById('result').scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('bar').style.display='none';
+  // Guardar resultado en Sheet
+  guardarResultado(pct, score, 10);
+}
+
+// ═════════════════════════════════════════════
+// BANCO PV — PROMOTOR DE VENTA (31 preguntas)
+// ═════════════════════════════════════════════
+const BANK_PV = [
+{topic:"Rutina del Promotor",q:"¿Cuál es el ÚLTIMO paso de la rutina del promotor en la visita al PDV?",opts:["Revisión de stocks y detección de quiebres","Interacción con el dueño del negocio","Detección de oportunidades y segmentos potenciales","Check Out: confirmación del pedido, registro y cierre administrativo"],ans:3,exp:"El Check Out siempre cierra la visita: confirmás el pedido, registrás la gestión realizada y hacés el cierre administrativo en BEES Force. Es el paso final sin excepción."},
+{topic:"Rutina del Promotor",q:"¿Cuál es el PRIMER paso de la rutina al llegar a un PDV?",opts:["Revisar el stock disponible","Interactuar con el dueño","Hacer el Check In (registro de inicio de visita)","Revisar las tareas y tickets en BEES Force"],ans:2,exp:"El Check In es el primer paso: el registro de inicio de visita. Luego sigue revisión de tareas, análisis previo del negocio, interacción con el dueño, y así sucesivamente."},
+{topic:"Rutina del Promotor",q:"¿Qué debe analizar el promotor en el paso 'Análisis previo del negocio' ANTES de entrar al PDV?",opts:["El estado de los coolers y el stock en góndola","Los KPIs del PDV, acciones comerciales vigentes y oportunidades de la última visita","El precio de la competencia y las novedades del día","El historial de pedidos del mes anterior"],ans:1,exp:"Antes de entrar, el promotor revisa: KPIs del PDV, acciones comerciales y negociaciones vigentes, y las oportunidades detectadas en la visita anterior. Así entra preparado."},
+{topic:"Rutina del Promotor",q:"En la etapa de 'Ejecución y Reposición' dentro del PDV, ¿cuál de estas acciones NO forma parte?",opts:["Ejecutar PTC","Reponer heladeras propias y frío blanco","Revisar la nota de crédito del cliente","Maximizar ejecución de ofertas destacadas"],ans:2,exp:"La revisión de notas de crédito es una tarea administrativa. En esta etapa se trabaja en heladeras, góndolas, POP externo, exhibiciones adicionales, PTC y ofertas."},
+{topic:"Rutina del Promotor",q:"Durante la Reunión Matinal, ¿cuántos focos planifica el promotor para el día?",opts:["2 focos (Vol. Cerveza y Vol. NABs)","3 focos (2 de volumen y 1 KPI)","4 focos: 2 de volumen + 2 KPIs","5 focos según defina el SPV"],ans:2,exp:"El promotor planifica siempre 4 focos: Foco 1 = Volumen Total Cerveza · Foco 2 = Volumen Total NABs · Foco 3 = KPI 1 · Foco 4 = KPI 2. Es una negociación con el supervisor."},
+{topic:"Rutina del Promotor",q:"¿Cuál es el objetivo principal de la reunión vespertina entre el SPV y el promotor?",opts:["Planificar los focos del día siguiente","Repasar el contenido de la matinal","Analizar los desvíos vs. los focos planificados en la matinal y alinear acciones correctivas","Comunicar los resultados semanales de la mesa"],ans:2,exp:"La vespertina (~10 minutos por teléfono) busca revisar la dispersión respecto a los focos del día, entender los motivos del desvío y alinear acciones para los días siguientes."},
+{topic:"Rutina del Promotor",q:"¿A quiénes llama telefónicamente el SPV en la vespertina?",opts:["A todos los promotores de la mesa","Al promotor con mejor resultado del día","A los promotores que no cumplieron el compromiso diario en los 2 focos de volumen","A los promotores que no hicieron Check Out"],ans:2,exp:"El SPV contacta a los promotores que no cumplieron el compromiso diario en los 2 focos de volumen (máximo 2 PV por día). El objetivo es revisar causas y acordar acciones para el día siguiente."},
+{topic:"Rutina del Promotor",q:"¿Con qué frecuencia mínima el SPV debe realizar coaching al promotor?",opts:["Una vez por mes","Una vez por bimestre (cada 2 meses)","Una vez por trimestre","Cada 15 días"],ans:1,exp:"El coaching es bimestral (cada 2 meses) y es obligatorio para promotores, backups y merchand. Para SPV nuevos con menos de 3 meses: primer mes quincenal, segundo y tercero mensual."},
+{topic:"BEES Force",q:"¿Cuántas horas de Tiempo Efectivo debe alcanzar el promotor como objetivo mensual en BEES Force?",opts:["3 horas 30 minutos","4 horas 00 minutos","4 horas 15 minutos","5 horas 00 minutos"],ans:2,exp:"El objetivo de Tiempo Efectivo es 04:15 hs promedio mensual, de lunes a sábado. Mide la calidad real del tiempo dedicado a cada PDV."},
+{topic:"BEES Force",q:"¿Qué tipo de tareas de BEES Force NO se repiten una vez validadas durante el mes?",opts:["Tareas de ejecución","Tareas de creación de valor","Tareas de satisfacción del cliente","Tareas de educación digital"],ans:1,exp:"Las tareas de Creación de Valor son de portafolio: se hacen durante el mes y, una vez validadas, no vuelven a solicitarse. Las de ejecución, satisfacción y educación son tareas de rutina diarias."},
+{topic:"BEES Force",q:"Una tarea fue ejecutada pero no cumplió los criterios de validación. ¿En qué estado queda?",opts:["Completada","Justificada","Invalidada","Abierta"],ans:2,exp:"Invalidada: la tarea no cumplió los criterios o el algoritmo determinó que la foto no cumple lo solicitado. Afecta el % de tareas validadas del promotor y de la operación."},
+{topic:"BEES Force",q:"¿Cuáles son los 3 KPIs FOCO de BEES Force en Galaxia?",opts:["Visitas · Check Ins · Check Outs","% Tareas Validadas CV · % Tareas Validadas Resto Pilares · Tiempo Efectivo","NPS · Cero Fallas · Adopción CXC","Pedidos tomados · Rutas cumplidas · Horas en calle"],ans:1,exp:"Los KPIs foco son: % Tareas Validadas de Creación de Valor, % Tareas Validadas del Resto de Pilares, y Tiempo Efectivo (objetivo 04:15 hs)."},
+{topic:"BEES Force",q:"Si el promotor no puede completar una tarea de rutina y la justifica, ¿qué sucede con esa tarea?",opts:["Se elimina del sistema permanentemente","Queda como invalidada y baja el indicador","Se reprograma automáticamente para la próxima visita al PDV","El SPV debe autorizarla manualmente"],ans:2,exp:"Las tareas justificadas se reenvían automáticamente en la próxima visita al PDV. No afectan el indicador de la misma manera que las invalidadas."},
+{topic:"BEES Vision",q:"¿Cuáles son los 3 pilares que evalúa BEES Vision en la ejecución del PDV?",opts:["POP · Góndola · Heladera","Frío · Precio · Disponibilidad (DISPO)","Volumen · Cobertura · Ejecución","Tareas validadas · Tiempo efectivo · NPS"],ans:1,exp:"BEES Vision evalúa Frío (heladeras/EDF), Precio (PTC correctos), y Disponibilidad/DISPO (productos disponibles)."},
+{topic:"BEES Vision",q:"¿Cuál de estas situaciones es considerada FRAUDE en BEES Vision?",opts:["Foto tomada con poca iluminación dentro del PDV","Foto del producto colocado sobre el piso de la vereda (fuera del PDV)","Foto del heladera abierta mostrando quiebre de stock","Foto tomada desde lejos"],ans:1,exp:"Fraude = foto irreal para obtener validación. Las 4 categorías: foto a la pantalla de otro celular, foto a POP fuera del PDV (vereda/auto), producto frenteado sin contexto, y frentes sin contexto."},
+{topic:"BEES Vision",q:"¿Cuáles son las 4 categorías de FRAUDE en BEES Vision?",opts:["Foto borrosa · Foto de noche · Foto sin producto · Foto fuera de foco","Foto a la pantalla de otro celular · Foto a POP fuera del PDV · Producto frenteado en EDF o góndola · Frentes sin contexto","Foto sin fecha · Foto repetida · Foto en blanco y negro · Foto con filtros","Foto sin geolocalización · Foto editada · Foto en modo retrato · Foto de archivo"],ans:1,exp:"Las 4 categorías oficiales de fraude son: 1) Foto a la pantalla de otro celular, 2) Foto a POP ejecutado fuera del PDV, 3) Producto frenteado en EDF o góndola, 4) Frentes sin contexto."},
+{topic:"BEES Vision",q:"Si el % de fraude supera el 10% en el mes, ¿qué consecuencia tiene en Galaxia?",opts:["Se descuentan 10 puntos","Se pierde el 50% de los puntos de BEES Vision","Se pierden TODOS los puntos de BEES Vision aunque se haya alcanzado el objetivo","Se genera una advertencia sin pérdida de puntos"],ans:2,exp:"Si el % de fraude supera el 10%, se pierden TODOS los puntos de BEES Vision, sin importar si se alcanzó el objetivo de % tareas validadas."},
+{topic:"Compromiso BEES",q:"Un cliente compra por BEES, es AUTÓNOMO y cumple las 4 variables de digitalización. ¿En qué segmento está?",opts:["Avanzado","Potencial","Perfecto","Asistido"],ans:2,exp:"Perfecto = compra en BEES + autónomo + cumple las 4 variables. Avanzado tiene las mismas condiciones pero solo 3 variables."},
+{topic:"Compromiso BEES",q:"¿Cuántas acciones autónomas mínimas debe realizar un cliente al mes para considerarse 'autónomo'?",opts:["1 acción","2 acciones","3 o más acciones","5 o más acciones"],ans:2,exp:"Un cliente es autónomo cuando realiza 3 o más acciones autónomas durante el mes. Una acción es autónoma si fue realizada FUERA del día de visita del promotor."},
+{topic:"Compromiso BEES",q:"Un cliente compra por BEES, NO es autónomo y cumple 1 o 2 acciones. ¿En qué segmento está?",opts:["Asistido","Básico","Potencial","Cero"],ans:1,exp:"Básico = compra por BEES + NO autónomo + cumple 1 o 2 acciones. Asistido también es no autónomo pero cumple 3 o más acciones."},
+{topic:"Compromiso BEES",q:"¿Qué tienen en común los segmentos 'Básico' y 'Asistido'?",opts:["Ambos son autónomos con distinta cantidad de acciones","Ambos compran por BEES pero NO son autónomos","Ambos cumplen las 4 variables de digitalización","Ambos no compran por BEES"],ans:1,exp:"Básico y Asistido comparten que el cliente compra por BEES pero NO es autónomo. La diferencia es la cantidad de acciones: Básico 1-2, Asistido 3 o más."},
+{topic:"Compromiso BEES / NPS",q:"En el NPS, ¿qué puntuación corresponde a los clientes 'Detractores'?",opts:["Del 0 al 5","Del 0 al 6","Del 7 al 8","Del 0 al 7"],ans:1,exp:"Detractores: 0 al 6. Neutros: 7 y 8. Promotores: 9 y 10. La fórmula del NPS es: % Promotores − % Detractores."},
+{topic:"Compromiso BEES / NPS",q:"¿Cuántos KPIs componen el indicador 'Cero Fallas'?",opts:["3 KPIs","4 KPIs","6 KPIs","8 KPIs"],ans:2,exp:"Los 6 KPIs: 1) Visitas del promotor, 2) In Full, 3) On Time, 4) RMD, 5) DSL, 6) Tickets. Si el cliente falla en al menos uno, se lo considera cliente con falla."},
+{topic:"Compromiso BEES / NPS",q:"¿Por qué canal puede el cliente contactar al CXC a través de ELSA?",opts:["Por email a atencionaclientes@quilmes.com.ar","Por teléfono al 0810-222-1234","Por WhatsApp al +54 9 11 6678-4173","Por la sección 'Mi cuenta' de la app BEES"],ans:2,exp:"ELSA es el bot de WhatsApp en +54 9 11 6678-4173. Otros canales: BEES App (Mi cuenta → Ayuda), email y teléfono 0810-222-1234."},
+{topic:"Trade – Ejecución",q:"BEES Flex Delivery, ¿cuál es su objetivo principal?",opts:["Reducir el costo logístico","Mejorar el servicio al cliente ofreciéndole más días de entrega","Aumentar el volumen mínimo de pedido","Reemplazar los pedidos por BEES App en zonas sin conectividad"],ans:1,exp:"Flex Delivery mejora el nivel de servicio ofreciendo días adicionales de entrega (Flex), con un monto mínimo para evitar el recargo (OMM NR)."},
+{topic:"Gente – Ciclo de Gente",q:"¿Cuál es el objetivo principal de la Evaluación de Desempeño 180° para el promotor?",opts:["Definir el aumento salarial","Identificar fortalezas, áreas de mejora y oportunidades de desarrollo, alineando el desempeño con los objetivos del negocio","Medir únicamente los resultados de ventas del trimestre","Determinar si el promotor puede ascender a supervisor"],ans:1,exp:"La evaluación 180° evalúa competencias de liderazgo y funcionales. Su propósito es identificar fortalezas y áreas de mejora, y construir un Plan de Desarrollo Personal (PDP) junto al líder."},
+{topic:"Gente – BEES Academy",q:"¿Qué porcentaje mínimo de aprobación se necesita en BEES Academy para que el curso se considere completo?",opts:["60%","70%","80%","90%"],ans:2,exp:"El promotor debe obtener un promedio de 80% en el cuestionario. Si saca menos, debe volver a realizarlo. El curso NO se considera completo hasta ese puntaje."},
+{topic:"Gente – BEES Academy",q:"Un promotor estuvo de licencia durante el mes de la capacitación de BEES Academy. ¿Cuándo debe completar el curso?",opts:["No está obligado si estuvo de licencia","En los primeros 5 días del mes siguiente","A su regreso, dentro del mismo mes calendario","En el próximo ciclo de capacitación anual"],ans:2,exp:"El promotor debe ver el curso y responder la evaluación a su regreso, DENTRO DEL MISMO MES CALENDARIO. Si la ausencia es prolongada, se informa al equipo de BEES Academy."},
+{topic:"Seguridad – Accidentes",q:"Si un promotor sufre un accidente en ruta, ¿en qué plazo debe reportarlo al Líder o Referente de Seguridad?",opts:["Al finalizar la jornada laboral","Dentro de las 24 horas vía mail","Inmediatamente al momento del accidente","Dentro de las 48 horas vía WhatsApp"],ans:2,exp:"El promotor debe avisar INMEDIATAMENTE al Líder o Referente de Seguridad. Es el referente quien luego reporta al EDV/Supervisor dentro de las 24 hs y completa la alerta dentro de los 7 días."},
+{topic:"Seguridad – EPP",q:"Un promotor que usa MOTO, ¿cuáles son los EPPs OBLIGATORIOS?",opts:["Solo casco y guantes","Casco, chaqueta y pantalón refractarios, y guantes","Casco, chaleco de alta visibilidad y guantes","Casco y ropa de alta visibilidad únicamente"],ans:1,exp:"Para promotores en moto/bici son obligatorios: Casco + Chaqueta y pantalón refractarios + Guantes. Los zapatos de seguridad NO son obligatorios para el promotor en moto, sí para el Merchand."},
+{topic:"Seguridad – Zonas de Riesgo",q:"Respecto a las zonas y rutas de riesgo, ¿qué se espera que conozca el promotor?",opts:["Debe elaborar el informe anual de zonas críticas","Debe conocer las zonas/rutas con mayor riesgo de accidentes, robos y caminos dificultosos, y estar entrenado para evitar incidentes","Solo debe conocerlas si trabaja en ellas hace más de 6 meses","No es su responsabilidad, solo el Líder de Seguridad debe conocerlas"],ans:1,exp:"Todo el equipo, incluidos los promotores, debe conocer las zonas y rutas de mayor riesgo. El informe y las capacitaciones son responsabilidad del Líder de Seguridad, pero conocer las zonas es obligatorio para todos."},
+{topic:"Organización – Referentes",q:"¿Quién es el Referente/Líder de Seguridad en la empresa?",opts:["Busaid Pablo","Ares Walter","Tiara Lulich","Alonzo Gabriel","Avila Nestor"],ans:2,exp:"Tiara Lulich es la Referente/Líder de Seguridad · Busaid Pablo es Jefe de Venta · Alonzo Gabriel es Referente de Gente · Avila Nestor es Gerente · Ares Walter es Asesor Comercial."},
+{topic:"Organización – Referentes",q:"¿Quién es el Referente de Gente en la empresa?",opts:["Busaid Pablo","Avila Nestor","Tiara Lulich","Alonzo Gabriel","Ares Walter"],ans:3,exp:"Alonzo Gabriel es el Referente de Gente · Tiara Lulich es la Referente/Líder de Seguridad · Busaid Pablo es Jefe de Venta · Avila Nestor es Gerente · Ares Walter es Asesor Comercial."}
+];
+
+// ═════════════════════════════════════════════
+// BANCO PAS — PROMOTOR AS (40 preguntas)
+// ═════════════════════════════════════════════
+const BANK_PAS = [
+// ── RUTINA AS (5) ──
+{topic:"Rutina AS",q:"¿Cuál es el ÚLTIMO paso de la rutina del Promotor AS en la visita al PDV?",opts:["Verificar el estándar de ejecución en góndola","Interacción con el dueño / encargado del AS","Detección de oportunidades de exhibición adicional","Check Out: confirmación del pedido, registro y cierre administrativo"],ans:3,exp:"Al igual que cualquier promotor, el último paso siempre es el Check Out: confirmás el pedido, registrás la gestión y cerrás la visita en BEES Force."},
+{topic:"Rutina AS",q:"¿Cuántos focos planifica el Promotor AS en la Reunión Matinal?",opts:["2 focos de volumen únicamente","3 focos: 2 de volumen y 1 de ejecución","4 focos: 2 de volumen + 2 KPIs","Los que defina el SPV según el día"],ans:2,exp:"Son siempre 4 focos: Volumen Total Cerveza + Volumen Total NABs + KPI 1 + KPI 2. La planificación es una negociación con el supervisor y representa un compromiso."},
+{topic:"Rutina AS",q:"¿Cuál es el objetivo principal de la visita de un Promotor AS a un autoservicio?",opts:["Solo tomar el pedido y retirarse lo más rápido posible","Verificar ejecución, reponer productos, gestionar espacios y asegurar el estándar de la foto de éxito","Solo verificar que el POP esté colocado correctamente","Controlar que el precio de la competencia sea mayor al nuestro"],ans:1,exp:"La visita del Promotor AS busca asegurar la ejecución completa: verificar y reponer góndola, frío y exhibiciones adicionales, gestionar POP, revisar precios y asegurar el cumplimiento del estándar de la foto de éxito del canal AS."},
+{topic:"Rutina AS",q:"¿Con qué frecuencia de contacto mínima deben visitarse los autoservicios claves (CCC)?",opts:["Mensual (0.25)","Quincenal (0.5)","Semanal (1)","Bi-semanal (2)"],ans:2,exp:"Los clientes CCC (compradores en alguna categoría de los últimos 12 meses) deben tener asignada como mínimo una visita semanal, es decir frecuencia 1."},
+{topic:"Rutina AS",q:"¿Qué herramienta debe usar el Promotor AS para hacer Check In en cada PDV visitado?",opts:["Masuno únicamente","BEES Force","Una planilla en Excel compartida con el SPV","WhatsApp al supervisor al iniciar la visita"],ans:1,exp:"El Check In debe realizarse en BEES Force al inicio de cada visita. Esta herramienta registra la presencia en el PDV y es la fuente oficial para medir el Tiempo Efectivo y las tareas ejecutadas."},
+
+// ── BEES FORCE (4) ──
+{topic:"BEES Force",q:"¿Cuántas horas de Tiempo Efectivo en PDV debe alcanzar el Promotor AS como objetivo mensual?",opts:["3 horas 30 minutos","4 horas 00 minutos","4 horas 15 minutos","5 horas 00 minutos"],ans:2,exp:"El objetivo de Tiempo Efectivo es 04:15 hs promedio mensual, de lunes a sábado, para todos los promotores incluyendo los AS. Mide la calidad del tiempo dedicado a cada PDV."},
+{topic:"BEES Force",q:"¿Cuáles son los 3 KPIs FOCO de BEES Force en Galaxia?",opts:["Visitas realizadas · Pedidos tomados · Rutas cumplidas","% Tareas Validadas CV · % Tareas Validadas Resto Pilares · Tiempo Efectivo","NPS · Cero Fallas · Adopción CXC","Facing Share · EDF colocados · POP ejecutado"],ans:1,exp:"Los KPIs foco son: % Tareas Validadas de Creación de Valor, % Tareas Validadas del Resto de Pilares, y Tiempo Efectivo (objetivo 04:15 hs). Son los que suman puntos en Galaxia."},
+{topic:"BEES Force",q:"Si el Promotor AS no puede completar una tarea de rutina durante la visita y la justifica, ¿qué sucede?",opts:["Se elimina permanentemente del sistema","Queda como invalidada y baja el KPI","Se reprograma automáticamente para la próxima visita","El SPV debe autorizarla manualmente"],ans:2,exp:"Las tareas justificadas se reenvían automáticamente en la próxima visita al PDV. Es importante justificarlas correctamente para que no impacten negativamente en el indicador de tareas validadas."},
+{topic:"BEES Force",q:"¿Qué tipo de tareas de BEES Force ejecuta el Promotor AS para asegurar la correcta presencia de SKUs y patrones de góndola?",opts:["Tareas de creación de valor","Tareas de educación digital","Tareas de ejecución","Tareas de satisfacción del cliente"],ans:2,exp:"Las tareas de Ejecución son las que aseguran la presencia de SKUs, patrones de góndola y frío, y la ejecución de POP. Son tareas de rutina diaria y son validadas mediante foto por el algoritmo de BEES Vision."},
+
+// ── BEES VISION (3) ──
+{topic:"BEES Vision",q:"BEES Vision evalúa la ejecución en PDV analizando fotos. ¿Cuáles son sus 3 pilares?",opts:["POP · Góndola · Heladera","Volumen · Cobertura · Ejecución","Frío · Precio · Disponibilidad (DISPO)","Tareas validadas · Tiempo efectivo · NPS"],ans:2,exp:"BEES Vision evalúa: Frío (heladeras/EDF), Precio (PTC correctos), y Disponibilidad/DISPO (productos disponibles). En AS estos 3 pilares son especialmente críticos por el volumen de clientes atendidos."},
+{topic:"BEES Vision",q:"¿Cuáles son las 4 categorías de FRAUDE en BEES Vision?",opts:["Foto borrosa · sin fecha · repetida · con filtros","Foto a pantalla de otro celular · POP fuera del PDV · Producto frenteado en EDF/góndola · Frentes sin contexto","Foto sin geolocalización · editada · en modo retrato · de archivo","Foto de noche · sin producto · fuera de foco · en blanco y negro"],ans:1,exp:"Las 4 categorías oficiales: 1) Foto a la pantalla de otro celular, 2) Foto a POP ejecutado fuera del PDV (vereda/auto), 3) Producto frenteado en el EDF o la góndola, 4) Frentes sin contexto. Todas representan fotos irreales usadas para obtener validación."},
+{topic:"BEES Vision",q:"Si el % de fraude de la operación supera el 10% en el mes, ¿qué consecuencia tiene en Galaxia?",opts:["Se descuentan 10 puntos del total","Se pierde el 50% de los puntos de BEES Vision","Se pierden TODOS los puntos de BEES Vision aunque se haya alcanzado el objetivo de validación","Se emite una advertencia sin pérdida de puntos"],ans:2,exp:"Con fraude mayor al 10%, se pierden TODOS los puntos de BEES Vision sin excepción. Por eso la prevención y capacitación sobre fraude es responsabilidad de toda la mesa."},
+
+// ── PROGRAMA DE MERCADO AS (8) ──
+{topic:"Programa de Mercado AS",q:"¿Cuál es el objetivo principal del Programa de Mercado en Autoservicios?",opts:["Reducir el gasto de Trade Spend en el canal","Lograr una ejecución excelente y consistente en PDVs clave, focalizando la inversión y ganando espacios de calidad frente a la competencia","Aumentar la frecuencia de visita en todos los PDVs del canal","Reemplazar las negociaciones manuales por acuerdos digitales en BEES"],ans:1,exp:"El Programa de Mercado busca: ejecución excelente en PDV clave, focalizar la inversión comercial, ganar espacios de calidad y visibilidad, impulsar el SOM/SOS y posicionar la excelencia en ejecución como eje central."},
+{topic:"Programa de Mercado AS",q:"¿Sobre qué variables se construye el ranking que clasifica a los PDVs en el Programa de Mercado AS?",opts:["Frecuencia de visita · Antigüedad del cliente · Volumen actual · Deuda pendiente","Volumen potencial de la categoría · Mix Above Core · Mix Latones · Cantidad de SKU por PDV","NPS del cliente · Tiempo Efectivo del promotor · % Tareas validadas · Adherencia a BEES","Segmento del cliente · Zona geográfica · Tamaño del local · Años de relación comercial"],ans:1,exp:"El ranking objetivo del Programa de Mercado se construye sobre: Volumen potencial de la categoría, Mix Above Core, Mix Latones y Cantidad de SKU por punto de venta. Esto determina qué PDVs ingresan al programa."},
+{topic:"Programa de Mercado AS",q:"¿Cuántos tiers (niveles) tiene el Programa de Mercado AS y cuál tiene mayores beneficios?",opts:["3 tiers: Gold, Silver y Bronze; Gold tiene más beneficios","2 tiers: TIER A y TIER B; TIER A tiene mayores beneficios","4 tiers: Platinum, Gold, Silver, Bronze; Platinum tiene más beneficios","No tiene tiers, todos los PDVs reciben los mismos beneficios"],ans:1,exp:"El programa clasifica en TIER A y TIER B. La cantidad y tipo de beneficios/contraprestaciones varían según el TIER, siendo mayores para TIER A que para TIER B."},
+{topic:"Programa de Mercado AS",q:"¿Cuáles son los beneficios que reciben los PDVs que forman parte del Programa de Mercado AS?",opts:["Descuento en el precio de lista, devolución de mercadería y visita diaria del promotor","Negociaciones comerciales, Puntos BEES y prioridad en la asignación de materiales POP","Reducción del objetivo de volumen, acceso preferencial a lanzamientos y coaching mensual del JDV","Heladeras gratuitas, uniformes exclusivos y acceso anticipado a promociones"],ans:1,exp:"Los PDVs del Programa de Mercado reciben: negociaciones comerciales, Puntos BEES y prioridad en la asignación de materiales. La cantidad y tipo de beneficios varía según el TIER (A o B)."},
+{topic:"Programa de Mercado AS",q:"¿Cómo se mide el cumplimiento del estándar de ejecución en el Programa de Mercado AS?",opts:["Solo mediante la declaración del promotor en BEES Force","A través de auditorías externas presenciales, validación de tareas de ejecución en BEES Vision y estándar de ejecución","Solo con el relevamiento mensual del SPV","Mediante encuestas al dueño del local sobre la satisfacción con CMQ"],ans:1,exp:"La ejecución se mide por tres vías: 1) Auditorías externas y presenciales, 2) Validación de tareas de ejecución del promotor a través de BEES Vision, 3) Estándar de ejecución. Las contraprestaciones están sujetas al cumplimiento de estos estándares."},
+{topic:"Programa de Mercado AS",q:"En el Programa de Mercado AS, ¿qué espacios NO pueden faltar para validar las contraprestaciones?",opts:["Heladera llena · cartelería exterior · banner de entrada · precio competitivo","Puntera en 1ª posición con planograma correcto · Exhibición adicional (Latón/Above Core) · 70% Facing Share de góndola · EDF CZA CMQ en 1ª posición · Todo precificado","Solo la puntera correcta y el EDF CMQ visible desde la entrada","Góndola ordenada · precio correcto · producto disponible · vendedor informado"],ans:1,exp:"Los espacios que NO pueden faltar son: Puntera en 1ª posición con el planograma correcto, Exhibiciones adicionales de Latón y/o Above Core, 70% de Facing Share de góndola, EDF CZA CMQ en 1ª posición, y todo correctamente precificado."},
+{topic:"Programa de Mercado AS",q:"¿Cuál es el Facing Share mínimo de góndola que exige la Foto de Éxito en Autoservicios?",opts:["50%","60%","70%","80%"],ans:2,exp:"El estándar mínimo en Autoservicios es 70% de Facing Share de góndola. Es uno de los espacios que NO puede faltar para validar las contraprestaciones del Programa de Mercado."},
+{topic:"Programa de Mercado AS",q:"¿Cuál es el propósito de las contraprestaciones en el Programa de Mercado AS?",opts:["Son bonificaciones fijas que el PDV recibe independientemente de su ejecución","Son beneficios comerciales vinculados directamente al cumplimiento del estándar de ejecución definido por CMQ","Son descuentos automáticos que se aplican al precio de lista de todos los productos","Son premios anuales para los PDVs con mayor volumen de compra"],ans:1,exp:"Todas las contraprestaciones están SUJETAS al cumplimiento del estándar de ejecución. No son beneficios automáticos: el PDV debe cumplir con los lineamientos claros de góndola, EDF, punteras y exhibiciones para validarlas."},
+
+// ── EJECUCIÓN AS / POP (4) ──
+{topic:"Ejecución AS – POP",q:"Cuando el Promotor AS coloca un material POP Pesado en un PDV, ¿qué debe hacer para que sea contabilizado como colocado?",opts:["Tomar una foto y subirla directamente a BEES Force como tarea completada","Escanear el código QR del material y completar el formulario correspondiente","Registrarlo en el maestro de clientes de Chess","Informarlo al JDV en la reunión semanal de ventas"],ans:1,exp:"Desde 2025, los materiales POP Pesado tienen un código QR que el promotor/merchand DEBE escanear al colocarlos. Solo se contabilizan como colocados aquellos con QR escaneado y formulario completo. Sin esto, el material no existe para el sistema."},
+{topic:"Ejecución AS – POP",q:"¿Qué tipo de materiales son ejemplos de POP Pesado?",opts:["Stickers, banderines y cenefas de góndola","Punteras, racks/exhibidores, tarimas, canasteros y góndolas","Precios de cartón, volantes y adhesivos de heladera","Displays digitales y pantallas LED"],ans:1,exp:"POP Pesado incluye: punteras, racks/exhibidores, tarimas, canasteros, headers de punteras, góndolas, cubrecajón, revestimientos de puntera/góndola, PAI checkout y rollo sin fin. Son materiales de mayor inversión y requieren escaneo de QR al colocar."},
+
+{topic:"Ejecución AS – POP",q:"¿Qué porcentaje mínimo de colocación de POP Pesado se debe alcanzar para obtener el 33% del puntaje en Galaxia?",opts:["Menos del 80%","Entre el 80% y el 90%","Más del 90%","El 100% exacto"],ans:1,exp:"Los niveles de alcance son: menos del 80% = 0 puntos, entre 80% y 90% = 33% del puntaje, más del 90% = 100% del puntaje. El objetivo es superar el 90% para maximizar los puntos."},
+
+// ── CXC / CERO FALLAS (6) ──
+{topic:"CXC – Cero Fallas",q:"¿Qué mide el KPI 'Cero Fallas'?",opts:["La cantidad de pedidos entregados en tiempo y forma en el mes","La cantidad de veces que NO le fallamos al cliente en el nivel de servicio a lo largo de su experiencia","El porcentaje de tareas validadas en BEES Vision por el promotor","El nivel de satisfacción del cliente medido por encuesta mensual"],ans:1,exp:"Cero Fallas es un KPI creado para medir la cantidad de veces que NO le fallamos a nuestros clientes en el nivel de servicio a lo largo de toda su experiencia. Se compone de 6 KPIs; si falla en al menos uno, el cliente se clasifica como 'cliente con falla'."},
+{topic:"CXC – Cero Fallas",q:"¿Cuántos KPIs componen el indicador Cero Fallas?",opts:["3 KPIs","4 KPIs","5 KPIs","6 KPIs"],ans:3,exp:"Cero Fallas se compone de 6 KPIs: In Full, On Time, RMD (Rate My Delivery), Tickets, DSL (distribución sin quiebre) y Visita del Promotor. Si el cliente falla en al menos uno, se lo considera cliente con falla."},
+{topic:"CXC – Cero Fallas",q:"En el KPI 'In Full' de Cero Fallas, ¿cuándo se considera que hay una falla?",opts:["Cuando el pedido llega con más de 2 días de retraso","Cuando el pedido no es entregado con los mismos SKU y HL que lo solicitado","Cuando el cliente no estaba presente al momento de la entrega","Cuando el promotor no hizo Check In en la visita"],ans:1,exp:"In Full: se considera falla cuando el pedido NO es entregado con los mismos SKU y HL (hectolitros) que lo solicitado. Es decir, si falta algún producto o la cantidad es diferente a lo pedido."},
+{topic:"CXC – Cero Fallas",q:"En el KPI 'Visita del Promotor' de Cero Fallas, ¿cuándo se considera que una visita tiene FALLA?",opts:["Cuando el promotor llega más de 30 minutos tarde a la hora pactada","Cuando la visita no cumple con GPS OK y duración mayor a 2 minutos","Cuando el promotor no toma el pedido en la visita","Cuando el cliente califica la visita con menos de 3 estrellas"],ans:1,exp:"Se considera falla en 'Visita del Promotor' cuando la visita NO cumple con los criterios de visita de calidad: GPS OK (geolocalización correcta) y duración mayor a 2 minutos. El objetivo es que menos del 20% de los clientes tenga falla en este KPI."},
+{topic:"CXC – Cero Fallas",q:"En el KPI 'RMD' de Cero Fallas, ¿cuándo se considera que hay una falla?",opts:["Cuando el cliente no responde la encuesta RMD","Cuando la puntuación RMD es menor a 4","Cuando el pedido llega fuera del horario acordado","Cuando el chofer no usa BEES Deliver en la entrega"],ans:1,exp:"RMD (Rate My Delivery) es la encuesta de satisfacción que recibe el cliente post-entrega. Se considera falla cuando la puntuación es menor a 4. El objetivo es que todos los clientes califiquen con 4 o más."},
+
+
+// ── COMPROMISO BEES (4) ──
+{topic:"Compromiso BEES",q:"Un cliente compra por BEES, es AUTÓNOMO y cumple las 4 variables de digitalización. ¿En qué segmento está?",opts:["Avanzado","Asistido","Perfecto","Potencial"],ans:2,exp:"Perfecto = compra en BEES + autónomo + cumple las 4 variables de digitalización. Es el segmento más alto del modelo. El objetivo es migrar a los clientes hacia Avanzado y Perfecto."},
+{topic:"Compromiso BEES",q:"¿Cuántas acciones autónomas mínimas debe realizar un cliente al mes para ser considerado 'autónomo'?",opts:["1 acción autónoma","2 acciones autónomas","3 o más acciones autónomas","5 o más acciones autónomas"],ans:2,exp:"Un cliente es autónomo cuando realiza 3 o más acciones autónomas durante el mes. Una acción es autónoma si fue realizada FUERA del día de visita del promotor."},
+{topic:"Compromiso BEES",q:"Un cliente compra por BEES, NO es autónomo y cumple 3 o más acciones de digitalización. ¿En qué segmento está?",opts:["Básico","Potencial","Asistido","Avanzado"],ans:2,exp:"Asistido = compra en BEES + NO autónomo + cumple 3 o más acciones. Se diferencia del Básico (1-2 acciones) en la cantidad de variables digitales que utiliza, aunque ambos son no autónomos."},
+{topic:"Compromiso BEES",q:"¿Qué tiene en común el segmento 'Cero' con los demás segmentos del modelo Compromiso BEES?",opts:["Nada, el segmento Cero no existe en el modelo","El segmento Cero incluye clientes que compran pero NO lo hacen por BEES, independientemente de su autonomía o acciones","El segmento Cero son clientes que no compraron en ningún mes del año","El segmento Cero son clientes nuevos que aún no usan BEES"],ans:1,exp:"Cero = clientes que compran (tienen actividad), pero NO lo hacen a través de BEES. No importa si son autónomos o cuántas acciones cumplan: si no compran por BEES, van al segmento Cero. El objetivo es convertirlos en compradores BEES."},
+
+// ── GENTE (3) ──
+
+{topic:"Gente – BEES Academy",q:"¿Qué porcentaje mínimo debe obtener el Promotor AS en el cuestionario de BEES Academy para que el curso se considere completo?",opts:["60%","70%","80%","90%"],ans:2,exp:"El promotor debe obtener un promedio de 80% en el cuestionario. Si saca menos, debe volver a realizarlo. El curso NO se considera completo hasta alcanzar ese puntaje mínimo."},
+{topic:"Gente – BEES Academy",q:"Un Promotor AS estuvo de licencia durante el mes de la capacitación de BEES Academy. ¿Cuándo debe completar el curso?",opts:["No está obligado si estuvo de licencia","En los primeros 5 días del mes siguiente","A su regreso, dentro del mismo mes calendario","En el próximo ciclo de capacitación anual"],ans:2,exp:"El promotor debe completar el curso y la evaluación a su regreso, DENTRO DEL MISMO MES CALENDARIO. Para ausencias prolongadas, se informa al equipo de BEES Academy para gestionar la baja del usuario y evitar que afecte el indicador."},
+
+// ── SEGURIDAD (3) ──
+{topic:"Seguridad – Accidentes",q:"Si el Promotor AS sufre un accidente en ruta, ¿en qué plazo debe reportarlo al Líder o Referente de Seguridad?",opts:["Al finalizar la jornada laboral del mismo día","Dentro de las 24 horas vía mail","Inmediatamente al momento del accidente","Dentro de las 48 horas vía WhatsApp"],ans:2,exp:"El promotor debe avisar INMEDIATAMENTE al Líder o Referente de Seguridad. Es el referente quien luego gestiona el reporte al EDV/Supervisor dentro de las 24 hs y completa la alerta de seguridad dentro de los 7 días."},
+{topic:"Seguridad – EPP",q:"Un Promotor AS usa moto para su rutina diaria. ¿Cuáles son los EPPs OBLIGATORIOS?",opts:["Solo casco y guantes","Casco, chaqueta y pantalón refractarios, guantes y zapatos de seguridad","Casco, ropa de alta visibilidad y guantes","Casco y chaleco reflectivo únicamente"],ans:1,exp:"Para el Promotor AS en moto son obligatorios: Casco + Chaqueta y pantalón refractarios + Guantes + Zapatos de seguridad. A diferencia del Promotor PV general, el AS debe incluir calzado de seguridad."},
+{topic:"Seguridad – EPP",q:"Vas a buscar al depósito un cajón vacío para reponer cerveza Quilmes litro. ¿Qué EPPs necesitás?",opts:["Calzado de seguridad, anteojos y guantes","Solo guantes de seguridad","Calzado de seguridad y guantes","Calzado, guantes y ropa de alta visibilidad"],ans:2,exp:"Trasladar un cajón vacío es reposición sin manipulación de vidrio, por lo que solo se requieren calzado de seguridad y guantes. Los anteojos y la ropa de alta visibilidad aplican únicamente cuando hay manipulación de vidrio en el depósito de Trade Pesado."},
+{topic:"Seguridad – Zonas de Riesgo",q:"¿Qué debe saber el Promotor AS sobre las zonas y rutas de riesgo?",opts:["Debe elaborar el informe anual de zonas críticas y definir rutas alternativas","Debe conocer las zonas/rutas con mayor riesgo de accidentes, robos y caminos difíciles, y estar entrenado para evitar incidentes","Solo debe conocerlas si trabaja en ellas hace más de 6 meses","No es su responsabilidad, solo el Líder de Seguridad debe conocerlas"],ans:1,exp:"Todo el equipo, incluyendo los Promotores AS, debe conocer las zonas y rutas de mayor riesgo. El elaborar el informe y organizar las capacitaciones es responsabilidad del Líder de Seguridad, pero conocer y actuar en consecuencia es obligatorio para todos."},
+{topic:"CXC – Cero Fallas",q:"En el KPI 'On Time' de Cero Fallas, ¿cuándo se considera que una entrega fue realizada EN TIEMPO?",opts:["Solo si llega exactamente en la fecha comprometida (N)","Si llega el día acordado, el día anterior o el día siguiente (N-1, N o N+1)","Si llega dentro de los 2 días posteriores a la fecha acordada","Si el cliente confirma la recepción dentro de las 24 horas"],ans:1,exp:"On Time acepta como entrega en tiempo aquella que llega en N-1 (día anterior), N (día acordado) o N+1 (día siguiente). Todo pedido que llegue fuera de esa ventana se considera falla."},
+{topic:"Gente – Ciclo de Gente",q:"¿Qué es el Plan de Desarrollo Personal (PDP) y cuándo se crea?",opts:["Es un informe anual que elabora el JDV sobre cada promotor","Es una herramienta que permite planificar el crecimiento profesional con objetivos específicos y medibles; se crea en el momento del feedback de la evaluación de desempeño","Es el plan de objetivos de ventas que se define en la matinal con el SPV","Es un formulario que completa RRHH al momento del ingreso del promotor"],ans:1,exp:"El PDP (Plan de Desarrollo Personal) es una herramienta que permite a cada persona planificar su crecimiento profesional definiendo objetivos específicos, medibles, alcanzables y con plazo determinado. Se crea en el momento del feedback de evaluación, en conjunto entre el líder y el colaborador."},
+{topic:"Organización – Referentes",q:"¿Quién es el Referente/Líder de Seguridad en la empresa?",opts:["Busaid Pablo","Ares Walter","Tiara Lulich","Alonzo Gabriel","Avila Nestor"],ans:2,exp:"Tiara Lulich es la Referente/Líder de Seguridad · Busaid Pablo es Jefe de Venta · Alonzo Gabriel es Referente de Gente · Avila Nestor es Gerente · Ares Walter es Asesor Comercial."},
+{topic:"Organización – Referentes",q:"¿Quién es el Referente de Gente en la empresa?",opts:["Busaid Pablo","Avila Nestor","Tiara Lulich","Alonzo Gabriel","Ares Walter"],ans:3,exp:"Alonzo Gabriel es el Referente de Gente · Tiara Lulich es la Referente/Líder de Seguridad · Busaid Pablo es Jefe de Venta · Avila Nestor es Gerente · Ares Walter es Asesor Comercial."}
+];
+// ═════════════════════════════════════════════
+// BANCO SPV — SUPERVISOR DE VENTAS (35 preguntas)
+// ═════════════════════════════════════════════
+const BANK_SPV = [
+
+// ── RUTINAS SPV (8) ──
+{topic:"Rutinas SPV",q:"¿Cuántas horas semanales en el mercado debe cumplir el SPV y cuántas salidas mínimas al mes?",opts:["8 horas semanales y 8 salidas mínimas","12 horas semanales y 16 salidas mínimas","10 horas semanales y 12 salidas mínimas","16 horas semanales y 20 salidas mínimas"],ans:1,exp:"El SPV debe cumplir 12 horas semanales en el mercado (48 horas mensuales) divididas en ruta de coaching y ruta comercial, con un mínimo de 16 salidas al mes. El tiempo se mide a través de Masuno."},
+{topic:"Rutinas SPV",q:"¿Cuántos PDVs mínimos debe visitar el SPV en una salida de coaching con un promotor?",opts:["Al menos 3 PDVs","Al menos 5 PDVs","Al menos 8 PDVs","La ruta completa sin excepción"],ans:1,exp:"No es necesario hacer la ruta completa en el coaching. Se busca visitar al menos 5 PDVs con el promotor (y 3 con el merchand). Se recomienda visitar los PDVs de más bajo rendimiento de la ruta."},
+{topic:"Rutinas SPV",q:"¿Con qué frecuencia debe realizar el SPV el coaching al promotor?",opts:["Mensual","Bimestral (cada 2 meses)","Trimestral","Quincenal siempre"],ans:1,exp:"El coaching al promotor/backup/merchand es bimestral. Para SPV nuevos con menos de 3 meses en el puesto: primer mes quincenal, segundo y tercero mensual. Es obligatorio y debe tener seguimiento acumulado anual."},
+{topic:"Rutinas SPV",q:"¿Cuál es la estructura de la Reunión Matinal del SPV y cuánto dura?",opts:["15 minutos: resultados del día anterior + planificación del día","30 minutos: 3 etapas de 10 min cada una: resultados D-1 + avance mes/acciones + planificación","20 minutos: bajada estratégica + planificación de focos","45 minutos: revisión semanal completa + planificación diaria"],ans:1,exp:"La matinal del SPV dura 30 minutos y tiene 3 etapas de 10 minutos: 1) Resultados del día anterior (productividad + 2 focos volumen + 2 focos KPI), 2) Avance del mes, pilares, acciones y disponibilidad, 3) Planificación de los 4 focos del día."},
+{topic:"Rutinas SPV",q:"¿Cuántos focos planifica el SPV con cada promotor en la matinal?",opts:["2 focos de volumen únicamente","3 focos: 2 volumen y 1 KPI","4 focos: 2 de volumen (mandatorio) + 2 KPIs","Los que el JDV defina cada semana"],ans:2,exp:"Son siempre 4 focos: 2 focos de volumen (Vol. Total Cerveza y Vol. Total NABs, mandatorios) + 2 focos KPI. La selección de los 2 KPIs debe respaldarse con el análisis de performance de los planes comerciales."},
+{topic:"Rutinas SPV",q:"¿Cómo debe realizar el SPV la vespertina con los promotores?",opts:["Reunión presencial al final del día en la distribuidora","Mensaje grupal por WhatsApp con los resultados de la mesa","Comunica resultados a todos por WhatsApp y llama telefónicamente a los promotores que no cumplieron el compromiso diario (máx. 2 por día)","Email con el resumen del día a todos los promotores"],ans:2,exp:"La vespertina tiene dos partes: 1) El SPV comunica los resultados del día a TODOS sus promotores vía WhatsApp u otro medio digital, 2) Contacta TELEFÓNICAMENTE solo a los promotores que no cumplieron el compromiso en los 2 focos de volumen (máximo 2 PV por día)."},
+{topic:"Rutinas SPV",q:"¿Qué debe contener el registro de calendario del SPV respecto a los KPIs de la matinal?",opts:["Solo los resultados finales del mes","El registro de los KPIs que se fueron tratando en la matinal para no dejar ninguno sin abordar y planificar","Las ausencias y licencias de los promotores","Los pedidos tomados por cada promotor durante el mes"],ans:1,exp:"Es obligatorio que el SPV registre en el calendario los KPIs que se fueron tratando en la matinal. El objetivo es no dejar ningún KPI sin abordar y asegurar que todos se planifiquen a lo largo del mes."},
+{topic:"Rutinas SPV",q:"¿Qué sucede si la mesa del SPV tiene la posición de supervisor VACANTE?",opts:["Los promotores no realizan matinal hasta que se cubra la vacante","La rutina matinal debe ser cubierta por otro supervisor, un asistente de ventas o el jefe de ventas","Solo el JDV puede cubrirla y únicamente 2 veces por semana","La matinal se cancela hasta que se designe un reemplazante formal"],ans:1,exp:"Si una mesa tiene supervisor vacante, es importante que la rutina matinal sea cubierta por otro supervisor, un asistente de venta o el jefe de ventas. La planificación diaria no puede interrumpirse por una vacante."},
+
+// ── BEES FORCE / VISION (5) ──
+{topic:"BEES Force / Vision",q:"¿Cuáles son los 3 KPIs FOCO de BEES Force que monitorea el SPV?",opts:["Visitas realizadas · Pedidos tomados · Horas en calle","% Tareas Validadas CV · % Tareas Validadas Resto Pilares · Tiempo Efectivo","NPS · Cero Fallas · Adopción CXC","Facing Share · EDF colocados · POP ejecutado"],ans:1,exp:"Los KPIs foco de BEES Force son: % Tareas Validadas de Creación de Valor, % Tareas Validadas del Resto de Pilares y Tiempo Efectivo (objetivo 04:15 hs promedio mensual de lunes a sábado)."},
+{topic:"BEES Force / Vision",q:"Si el SPV detecta que un promotor realizó fraude en BEES Vision por PRIMERA VEZ, ¿cuál es el primer paso?",opts:["Elevar el caso por mail al JDV y al EDV con detalle de los fraudes","Aplicar directamente la sanción correspondiente","Conversar con el promotor para advertirlo y capacitarlo, y organizar una visita a la ruta para evaluar su ejecución","Ignorarlo la primera vez y actuar solo ante reincidencia"],ans:2,exp:"Primera vez: el SPV debe 1) conversar con el promotor/merchand para advertirlo y capacitarlo sobre las categorías de fraude y sus consecuencias, y 2) organizar una visita a la ruta para evaluar la ejecución real. Las tareas fraudulentas pasan a inválidas afectando el indicador."},
+{topic:"BEES Force / Vision",q:"Si el fraude en BEES Vision es REINCIDENTE (segunda vez o más), ¿qué debe hacer el SPV?",opts:["Volver a advertir al promotor y darle una última oportunidad","Elevar el caso por mail al JDV y al EDV detallando nombres, cantidad de fraudes y ejemplos, y comunicar la sanción correspondiente","Cancelar el acceso del promotor a BEES Force temporalmente","Reportarlo directamente al equipo de BEES Vision sin informar al JDV"],ans:1,exp:"Ante reincidencia de fraude: el SPV debe elevar el caso por mail al JDV del distribuidor Y al EDV, detallando nombres, cantidad de fraudes relevados y ejemplos. Se comunica la sanción correspondiente al promotor/merchand que realizó el fraude."},
+{topic:"BEES Force / Vision",q:"¿Qué porcentaje de fraude máximo puede tener la operación para mantener los puntos de BEES Vision en Galaxia?",opts:["Menos del 5%","Menos del 10%","Menos del 15%","Menos del 20%"],ans:1,exp:"Para obtener el NIVEL 1 en BEES Vision, la operación debe contar con un porcentaje de fraude MENOR AL 10% durante el mes. Si el fraude supera el 10%, se pierden TODOS los puntos aunque se haya alcanzado el objetivo de validación."},
+{topic:"BEES Force / Vision",q:"¿Cuáles son las 4 categorías de FRAUDE en BEES Vision?",opts:["Foto borrosa · sin fecha · repetida · con filtros","Foto a pantalla de otro celular · POP fuera del PDV · Producto frenteado en EDF/góndola · Frentes sin contexto","Foto sin geolocalización · editada · en modo retrato · de archivo","Foto de noche · sin producto · fuera de foco · en blanco y negro"],ans:1,exp:"Las 4 categorías oficiales: 1) Foto a la pantalla de otro celular, 2) Foto a POP ejecutado fuera del PDV (vereda/auto/piso), 3) Producto frenteado en el EDF o la góndola sin contexto real, 4) Frentes sin contexto. Todas son fotos irreales usadas para obtener validación sin ejecutar."},
+
+// ── GENTE Y DESEMPEÑO (7) ──
+{topic:"Gente – Desempeño",q:"¿Cuál es el objetivo principal de la Evaluación de Desempeño 180° para los promotores?",opts:["Definir el aumento salarial del año siguiente","Identificar fortalezas, áreas de mejora y oportunidades de desarrollo, construyendo un PDP alineado a los objetivos del negocio","Medir exclusivamente los resultados de ventas del trimestre","Determinar si el promotor puede ascender a supervisor"],ans:1,exp:"La evaluación 180° evalúa competencias de liderazgo y funcionales. Su propósito es identificar fortalezas y áreas de mejora, y construir un Plan de Desarrollo Personal (PDP) en conjunto entre el líder y el colaborador. Para roles de operación las calificaciones son A, B, C y D."},
+{topic:"Gente – Desempeño",q:"En la Evaluación de Desempeño 180° para roles de OPERACIÓN (promotores), ¿qué significa la calificación 'A'?",opts:["Debe mejorar su desempeño en el año","Mantenerse en el puesto y potenciar áreas de desarrollo","Posible sucesor a un cargo superior o para nuevas tareas y desafíos","Considerar reemplazar en el corto plazo"],ans:2,exp:"Calificaciones para operación: A = posible sucesor/nuevas responsabilidades · B = mantenerse en el puesto, potenciar y desarrollar · C = debe mejorar (si vuelve a tener C, considerar reemplazo a corto plazo) · D = considerar reemplazar en el corto plazo."},
+{topic:"Gente – Desempeño",q:"¿Qué debe hacer el SPV ANTES de comunicar la nota final a los promotores en la evaluación de operación?",opts:["Consultar al EDV para validar cada nota individualmente","Realizar una instancia de calibración de notas junto con otros supervisores y el JDV","Enviar las notas preliminares por mail a cada promotor para que las acepten","Compartir las notas con el equipo de Gente de CMQ para su aprobación"],ans:1,exp:"Es obligatorio realizar una instancia de calibración de notas: una reunión donde los supervisores y el jefe de ventas se reúnen para revisar las notas preliminares y, bajo un mismo criterio, determinar las notas finales. Es esta nota calibrada la que se comunica en el feedback."},
+{topic:"Gente – Desempeño",q:"¿Cuántos PDPs mínimos debe tener un colaborador con calificación 'D' en la evaluación de operación?",opts:["Al menos 1 PDP","Al menos 2 PDPs","Al menos 3 PDPs","No requiere PDP, directamente se evalúa el reemplazo"],ans:2,exp:"Los colaboradores con calificación D deben tener MÍNIMO 3 PDPs (Planes de Desarrollo Personal). Para los demás casos es mínimo 1 PDP. Los PDPs deben ser específicos, medibles, alcanzables, realizables y con plazo determinado."},
+{topic:"Gente – Desempeño",q:"¿Con qué frecuencia debe realizar el JDV el coaching al SPV?",opts:["Mensual","Bimestral (cada 2 meses)","Trimestral","Semanal durante la vespertina"],ans:1,exp:"El JDV debe realizar coaching bimestral a cada SPV con más de 3 meses en el puesto. Para SPV nuevos (menos de 3 meses): primer mes quincenal, segundo y tercero mensual. Al finalizar cada coaching debe hacerse una devolución formal al supervisor con lo relevado."},
+{topic:"Gente – Desempeño",q:"¿Qué calificaciones se utilizan en la Evaluación de Desempeño para roles de STAFF (supervisores, jefes, analistas)?",opts:["A, B, C y D igual que en operación","M (Mover/Promoción) · E (Excelente) · N (Nuevo) · U (Underperformance)","1, 2, 3 y 4 según nivel de competencia","Solo Aprobado o Desaprobado"],ans:1,exp:"Para roles de Staff las calificaciones son: M = listo para promoción/nuevas responsabilidades · E = buena performance, desarrollar en el rol · N = nuevo en el distribuidor (menos de 6 meses) · U = necesita recuperar performance. Son distintas a las de operación (A/B/C/D)."},
+{topic:"Gente – Desempeño",q:"¿Cuántos relevamientos mensuales de estándar de ejecución debe realizar cada SPV?",opts:["20 relevamientos","30 relevamientos","40 relevamientos","50 relevamientos"],ans:2,exp:"Cada SPV debe realizar 40 relevamientos mensuales de PTC & Ejecución. En casos especiales pueden compensarse entre SPVs o con el JDV, siempre manteniendo el total establecido para el distribuidor. El proceso se evalúa mensualmente."},
+
+// ── TRADE / EJECUCIÓN / POP (5) ──
+{topic:"Trade – Ejecución",q:"¿En qué fechas se audita la colocación de materiales POP Pesado del Q1 (enero-marzo)?",opts:["El 01/03/2026","El 01/05/2026","El 01/08/2026","El 31/12/2026"],ans:1,exp:"El 01/05/2026 se audita Q1 (enero-marzo). El 01/08/2026 evalúa Q2 (abril-junio) y el 01/11/2026 evalúa Q3 (julio-septiembre). Solo se contabilizan como colocados los materiales con QR escaneado y formulario completo."},
+{topic:"Trade – Ejecución",q:"En el Programa de Mercado AS, ¿cuáles son los espacios que NO pueden faltar para validar las contraprestaciones?",opts:["Heladera llena · cartelería exterior · banner de entrada · precio competitivo","Puntera en 1ª posición con planograma correcto · Exhibición adicional Latón/Above Core · 70% Facing Share · EDF CZA CMQ en 1ª posición · Todo precificado","Solo la puntera y el EDF CMQ visible desde la entrada","Góndola ordenada · precio correcto · producto disponible"],ans:1,exp:"Los espacios que NO pueden faltar son: Puntera en 1ª posición con planograma correcto, Exhibiciones adicionales de Latón y/o Above Core, 70% de Facing Share de góndola, EDF CZA CMQ en 1ª posición, y todo correctamente precificado."},
+{topic:"Trade – Ejecución",q:"¿Cuál es el Facing Share mínimo de góndola que exige la Foto de Éxito en Autoservicios?",opts:["50%","60%","70%","80%"],ans:2,exp:"El estándar mínimo en Autoservicios es 70% de Facing Share de góndola. Es uno de los espacios que NO puede faltar para validar las contraprestaciones del Programa de Mercado."},
+{topic:"Trade – Ejecución",q:"Cuando el promotor coloca un material POP Pesado, ¿qué debe hacer para que sea contabilizado como colocado?",opts:["Tomar una foto y subirla a BEES Force como tarea completada","Escanear el código QR del material y completar el formulario correspondiente","Registrarlo en el maestro de clientes de Chess","Informarlo al JDV en la reunión semanal"],ans:1,exp:"Desde 2025, los materiales POP Pesado tienen un código QR que el promotor/merchand DEBE escanear al colocarlos. Solo se contabilizan como colocados aquellos con QR escaneado y formulario completo. Es responsabilidad del SPV asegurar que su equipo cumpla con este proceso."},
+{topic:"Trade – Ejecución",q:"¿Qué porcentaje mínimo de colocación de POP Pesado debe alcanzar el distribuidor para obtener el 100% del puntaje en Galaxia?",opts:["Más del 70%","Más del 80%","Más del 90%","El 100% exacto"],ans:2,exp:"Los niveles son: menos del 80% = 0 puntos · entre 80% y 90% = 33% del puntaje · más del 90% = 100% del puntaje. El SPV debe asegurar que su equipo coloque y escanee los materiales para maximizar el puntaje."},
+
+// ── CXC / CERO FALLAS (4) ──
+{topic:"CXC – Cero Fallas",q:"¿Qué mide el KPI 'Cero Fallas' y de cuántos indicadores se compone?",opts:["Mide el volumen de ventas mensual, se compone de 4 KPIs","Mide las veces que NO le fallamos al cliente en su experiencia, se compone de 6 KPIs","Mide la satisfacción del cliente, se compone de 3 KPIs","Mide el nivel de servicio logístico, se compone de 5 KPIs"],ans:1,exp:"Cero Fallas mide la cantidad de veces que NO le fallamos al cliente a lo largo de toda su experiencia. Se compone de 6 KPIs: In Full, On Time, RMD, Tickets, DSL y Visita del Promotor. Si falla en al menos uno, el cliente se considera 'cliente con falla'."},
+{topic:"CXC – Cero Fallas",q:"En 'Visita del Promotor' dentro de Cero Fallas, ¿cuál es el objetivo que debe cumplir el SPV?",opts:["Que el 100% de los clientes reciban visita diaria del promotor","Que menos del 20% de los clientes tengan falla en el KPI de visita del promotor","Que todos los promotores hagan más de 15 visitas por día","Que el 90% de las visitas duren más de 30 minutos"],ans:1,exp:"El objetivo es que menos del 20% de los clientes tenga falla en el KPI 'Visita del Promotor'. Una visita tiene falla si no cumple los criterios de calidad: GPS OK y duración mayor a 2 minutos. El SPV debe monitorear este indicador mensualmente."},
+{topic:"CXC – Cero Fallas",q:"En el KPI 'On Time' de Cero Fallas, ¿cuándo se considera que una entrega fue realizada EN TIEMPO?",opts:["Solo si llega exactamente en la fecha comprometida (N)","Si llega el día acordado, el día anterior o el día siguiente (N-1, N o N+1)","Si llega dentro de los 2 días posteriores a la fecha acordada","Si el cliente confirma la recepción dentro de las 24 horas"],ans:1,exp:"On Time acepta como entrega en tiempo aquella que llega en N-1 (día anterior), N (día acordado) o N+1 (día siguiente). Todo pedido fuera de esa ventana es falla. El SPV debe hacer seguimiento semanal de este KPI con el equipo logístico."},
+{topic:"CXC – Cero Fallas",q:"¿Qué es un 'cliente crítico' en el modelo de CXC y qué debe hacer el SPV al respecto?",opts:["Un cliente con volumen de compra por debajo del objetivo mensual","Un cliente que inició 2 o más reclamos por el mismo inconveniente dentro del mes; el SPV debe tener planes de acción para el TOP 5 de clientes críticos","Un cliente que no compra hace más de 3 meses; debe visitarse con urgencia","Un cliente con NPS negativo por 2 meses consecutivos"],ans:1,exp:"Se considera 'crítico' a cualquier cliente que inició 2 o más reclamos por el MISMO inconveniente dentro del mes. El CXC envía mensualmente vía correo los clientes críticos por distribuidor. El SPV debe demostrar planes de acción para el TOP 5 de esos clientes."},
+
+// ── SEGURIDAD (4) ──
+{topic:"Seguridad – Accidentes",q:"¿Cuál es el procedimiento que debe seguir el Líder de Seguridad ante un accidente?",opts:["Esperar que el promotor lo reporte directamente al EDV","Reportar el evento dentro de las 24 hs al EDV/Supervisor vía mail + Google Forms, y completar la alerta de seguridad dentro de los 7 días","Reportar solo si el accidente generó días de licencia al trabajador","Comunicarlo en la próxima reunión CPR del mes"],ans:1,exp:"El Líder de Seguridad debe: 1) Reportar el evento DENTRO DE LAS 24 HS al EDV/Supervisor vía mail (con el 'Injury') Y por Google Forms, 2) Dentro de los 7 días, completar la alerta de seguridad con el análisis del evento y cargarla en el Drive del distribuidor."},
+{topic:"Seguridad – Accidentes",q:"¿Qué debe hacerse cuando un trabajador accidentado se reincorpora?",opts:["Nada especial, retoma su trabajo normalmente","El Jefe Directo y el Referente de Seguridad realizan una entrevista de reingreso revisando la alerta de seguridad, causas y acciones implementadas, con compromiso firmado","Solo el médico de empresa debe autorizarlo para volver a trabajar","El SPV le asigna una ruta más corta durante el primer mes"],ans:1,exp:"Al reincorporarse un trabajador accidentado, el Jefe Directo Y el Referente de Seguridad deben realizar una entrevista de reingreso revisando: la alerta de seguridad, las causas identificadas, las acciones implementadas, y firmando un compromiso de ambas partes para el cierre de las acciones."},
+{topic:"Seguridad – EPP",q:"¿Cuáles son los EPPs obligatorios para el Merchand que ingresa al depósito de Trade Pesado con manipulación de vidrio?",opts:["Solo guantes y calzado de seguridad","Calzado de seguridad, anteojos de seguridad, guantes y ropa de alta visibilidad","Anteojos, protección auditiva y guantes","Calzado, guantes y EPP de Motos"],ans:1,exp:"Para ingreso al depósito de Trade Pesado CON manipulación de vidrio, los EPPs obligatorios son: Calzado de seguridad + Anteojos de seguridad + Guantes de seguridad + Ropa de alta visibilidad. El SPV debe verificar que todo el equipo cuente con estos EPPs y los use correctamente."},
+{topic:"Seguridad – EPP",q:"¿Cuáles son los EPPs obligatorios para el Merchand que realiza reposición de mercadería SIN manipulación de vidrio?",opts:["Solo guantes de seguridad","Calzado de seguridad y guantes","Calzado, anteojos y guantes","Guantes y ropa de alta visibilidad"],ans:1,exp:"Para reposición sin manipulación de vidrio, los EPPs obligatorios son: Calzado de seguridad + Guantes. Los anteojos de seguridad y la ropa de alta visibilidad solo son requeridos cuando hay manipulación de vidrio en el depósito de Trade Pesado."},
+
+// ── COMPROMISO BEES (2) ──
+{topic:"Compromiso BEES",q:"¿Cuáles son los 3 requisitos que debe cumplir el distribuidor para formar parte del programa Compromiso BEES?",opts:["NPS mayor al 50% · más del 30% de clientes Avanzados/Perfectos · Tiempo Efectivo mayor a 4 hs","Facturación digital mayor al 90% · Antifraude menor al 5% · Tareas de educación digital validadas mayor al 20%","Más del 80% de tareas validadas · Cero Fallas mayor al 43% · NPS positivo","Adherencia al árbol mayor al 95% · Sin clientes Cero · Adopción CXC mayor al 15%"],ans:1,exp:"Los 3 requisitos para Compromiso BEES son: 1) Facturación digital superior al 90% (% Fact. Neta BEES / Fact. Neta Total), 2) Índice antifraude inferior al 5%, 3) Tareas validadas de educación digital mayor al 20%. Si no se cumplen los 3, no se accede al programa."},
+{topic:"Compromiso BEES",q:"¿Cuál es el objetivo de % de clientes Avanzados y Perfectos que debe alcanzar el distribuidor en Q4?",opts:["20%","30%","40%","50%"],ans:2,exp:"Los objetivos trimestrales de % de clientes Avanzados y Perfectos son: Q2 = 20% · Q3 = 30% · Q4 = 40%. Tener entre 15% y el objetivo del Q da 33% del puntaje; llegar al objetivo da el 100%. El SPV debe impulsar la migración de clientes hacia segmentos superiores."},
+{topic:"Organización – Referentes",q:"¿Quién es el Referente/Líder de Seguridad en la empresa?",opts:["Busaid Pablo","Ares Walter","Tiara Lulich","Alonzo Gabriel","Avila Nestor"],ans:2,exp:"Tiara Lulich es la Referente/Líder de Seguridad · Busaid Pablo es Jefe de Venta · Alonzo Gabriel es Referente de Gente · Avila Nestor es Gerente · Ares Walter es Asesor Comercial."},
+{topic:"Organización – Referentes",q:"¿Quién es el Referente de Gente en la empresa?",opts:["Busaid Pablo","Avila Nestor","Tiara Lulich","Alonzo Gabriel","Ares Walter"],ans:3,exp:"Alonzo Gabriel es el Referente de Gente · Tiara Lulich es la Referente/Líder de Seguridad · Busaid Pablo es Jefe de Venta · Avila Nestor es Gerente · Ares Walter es Asesor Comercial."}
+];
+
+// ═════════════════════════════════════════════
+// BANCO MER — MERCHAND (27 preguntas)
+// ═════════════════════════════════════════════
+const BANK_MER = [
+
+// ── RUTINA DEL MERCHAND – NDS (4) ──
+{topic:"Rutina del Merchand",q:"Según los lineamientos NDS (Nivel de Servicio), ¿cuántas visitas mínimas debe realizar el Merchand por día?",opts:["3 lunes a viernes y 2 los sábados","5 lunes a viernes y 3 los sábados","8 todos los días de la semana","5 todos los días incluyendo sábados"],ans:1,exp:"Los lineamientos NDS (Nivel de Servicio) establecen mínimo 5 visitas de lunes a viernes y 3 visitas los sábados, con una duración promedio de 50 minutos por visita."},
+{topic:"Rutina del Merchand",q:"¿Cuántas visitas mínimas y máximas debe recibir cada PDV del Merchand por semana?",opts:["1 mínimo y 3 máximo semanal","2 mínimo mensual y 3 máximo semanal","2 mínimo mensual y 2 máximo semanal","1 mínimo semanal y 4 máximo mensual"],ans:2,exp:"Cada PDV debe recibir mínimo 2 visitas mensuales y máximo 2 visitas semanales. La cartera promedio ronda los 40 clientes según la relación promotor/merchand."},
+{topic:"Rutina del Merchand",q:"¿Qué herramienta debe usar el Merchand para hacer Check In en cada PDV y registrar sus tareas?",opts:["Una planilla compartida con el promotor","El BEES Force del promotor asignado a esa ruta","BEES Force propio, con usuario individual","WhatsApp al SPV al iniciar cada visita"],ans:2,exp:"Todos los Merchand deben tener un usuario de BEES Force PROPIO y realizar las tareas asignadas a los PDVs del día. Esto permite evidenciar el % de Tareas Validadas del Merchand en los tableros."},
+{topic:"Rutina del Merchand",q:"¿Cuáles son los 3 pasos de la rutina matinal del Merchand?",opts:["Check In · Revisión de góndola · Reporte al SPV","Entregar reporte de novedades del día anterior · Informarse y preparar la ruta del día · Seleccionar materiales POP y EPPs","Reunión con el promotor · Revisión de tareas BEES Force · Planificación de focos","Revisar stock · Armar pedidos · Coordinar con logística"],ans:1,exp:"La matinal del Merchand tiene 3 pasos: 1) Entregar reportes de novedades de la ruta del día anterior, 2) Informarse y preparar la ruta del día, 3) Seleccionar y asegurarse de contar con todos los materiales de ejecución (POP) y EPPs para el día."},
+
+// ── RUTINA – MERCADO (3) ──
+{topic:"Rutina del Merchand",q:"Dentro del PDV, ¿en qué momento de la rutina de mercado debe asegurarse el Merchand de usar los EPPs obligatorios?",opts:["Solo cuando ingresa al depósito de Trade Pesado","Desde el Check In, como parte del paso 3 de la rutina de mercado","Solo cuando manipula vidrio o productos pesados","No es obligatorio dentro del PDV, solo en ruta"],ans:1,exp:"El paso 3 de la rutina de mercado indica que dentro del PDV el Merchand debe asegurarse de utilizar los EPPs obligatorios. No es opcional ni situacional: aplica desde el ingreso al PDV."},
+{topic:"Rutina del Merchand",q:"El Merchand detecta que las góndolas no están según el planograma, pero BEES Force no lo pide como tarea. ¿Qué debe hacer?",opts:["Esperar a que BEES Force genere la tarea en la próxima visita","Reportarlo al promotor para que lo gestione él","Ejecutar la corrección igual, aunque BEES Force no lo pida como tarea, y controlar también los PTCs de la competencia","Notificar al SPV por WhatsApp y no intervenir"],ans:2,exp:"El paso 6 de la rutina indica que el Merchand debe verificar y ejecutar góndolas y frío según el planograma AUNQUE BEES Force no lo pida como tarea. Además en ese paso debe controlar los PTCs propios y de la competencia."},
+{topic:"Rutina del Merchand",q:"¿Cuál es el último paso de la rutina de mercado del Merchand en el PDV?",opts:["Verificar la disponibilidad de productos en el depósito","Ejecutar el POP físico y digital","Abastecer los espacios calientes y fríos","Levantar las necesidades de pedidos en los PDVs al promotor"],ans:3,exp:"El paso 10 y último de la rutina de mercado es levantar las necesidades de pedidos en los PDVs al promotor de ventas (PV). El Merchand no toma el pedido directamente, lo deriva al promotor."},
+
+// ── BEES FORCE (4) ──
+{topic:"BEES Force",q:"¿Cuántas horas de Tiempo Efectivo en PDV debe alcanzar el Merchand como objetivo mensual?",opts:["3 horas 30 minutos","4 horas 00 minutos","4 horas 15 minutos","5 horas 00 minutos"],ans:2,exp:"El objetivo de Tiempo Efectivo es 04:15 hs promedio mensual, de lunes a sábado. Mide la calidad real del tiempo dedicado a cada PDV y es uno de los 3 KPIs foco de BEES Force en Galaxia."},
+{topic:"BEES Force",q:"¿Cuáles son los 3 KPIs FOCO de BEES Force en Galaxia?",opts:["Visitas realizadas · Pedidos tomados · Rutas cumplidas","% Tareas Validadas CV · % Tareas Validadas Resto Pilares · Tiempo Efectivo","NPS · Cero Fallas · Adopción CXC","Facing Share · EDF colocados · POP ejecutado"],ans:1,exp:"Los KPIs foco son: % Tareas Validadas de Creación de Valor, % Tareas Validadas del Resto de Pilares, y Tiempo Efectivo (objetivo 04:15 hs). Son los indicadores que suman puntos en Galaxia."},
+{topic:"BEES Force",q:"¿Cuántos estados posibles tiene una tarea en BEES Force?",opts:["3 estados","4 estados","5 estados","6 estados"],ans:3,exp:"Las tareas en BEES Force tienen 6 estados: Enviadas · Abiertas · Completadas · Validadas · Invalidadas · Justificadas. Conocerlos permite entender en qué punto está cada tarea y cómo impacta en los indicadores."},
+{topic:"BEES Force",q:"Una tarea fue declarada como realizada por el Merchand pero el algoritmo determinó que la foto no cumple con lo solicitado. ¿En qué estado queda?",opts:["Completada","Justificada","Invalidada","Abierta"],ans:2,exp:"Completada significa que el Merchand la declaró como realizada. Validada es cuando el algoritmo confirma que la ejecución cumple los requisitos. Si no los cumple, pasa a Invalidada — y afecta negativamente el % de tareas validadas."},
+{topic:"BEES Force",q:"¿Qué sucede con una tarea que el Merchand no pudo completar durante la visita y la justifica?",opts:["Se elimina permanentemente del sistema","Queda como invalidada y baja el indicador","Se reprograma automáticamente para la próxima visita al PDV","El SPV debe autorizarla manualmente"],ans:2,exp:"Las tareas justificadas son aquellas que no pudieron completarse durante la visita. Se reenvían automáticamente en la próxima visita, a diferencia de las invalidadas que sí impactan negativamente en el indicador."},
+
+// ── BEES VISION (4) ──
+{topic:"BEES Vision",q:"¿Cuáles son los 3 pilares que evalúa BEES Vision en la ejecución del PDV?",opts:["POP · Góndola · Heladera","Frío · Precio · Disponibilidad (DISPO)","Volumen · Cobertura · Ejecución","Tareas validadas · Tiempo efectivo · NPS"],ans:1,exp:"BEES Vision evalúa Frío (heladeras/EDF), Precio (PTCs correctos), y Disponibilidad/DISPO (productos disponibles). Las fotos que toma el Merchand son analizadas por el algoritmo en base a estos 3 pilares."},
+{topic:"BEES Vision",q:"¿Cuáles son las 4 categorías de FRAUDE en BEES Vision?",opts:["Foto borrosa · sin fecha · repetida · con filtros","Foto a pantalla de otro celular · Foto a POP fuera del PDV · Producto frenteado en EDF/góndola · Frentes sin contexto","Foto sin geolocalización · editada · en modo retrato · de archivo","Foto de noche · sin producto · fuera de foco · en blanco y negro"],ans:1,exp:"Las 4 categorías oficiales de fraude son: 1) Foto a la pantalla de otro celular, 2) Foto a POP ejecutado fuera del PDV (vereda/auto), 3) Producto frenteado en EDF o góndola sin contexto real, 4) Frentes sin contexto. Todas representan fotos irreales para obtener validación sin ejecutar."},
+{topic:"BEES Vision",q:"¿Cuál de estas situaciones es considerada FRAUDE en BEES Vision?",opts:["Foto tomada con poca iluminación dentro del PDV","Foto del producto colocado sobre el piso de la vereda (fuera del PDV)","Foto del heladera abierta mostrando quiebre de stock","Foto tomada desde lejos"],ans:1,exp:"Fraude es cualquier foto irreal usada para obtener validación sin haber ejecutado. Sacar una foto al producto fuera del PDV (en la vereda, el auto o el piso) es una de las 4 categorías oficiales de fraude en BEES Vision."},
+{topic:"BEES Vision",q:"Si el % de fraude de la operación supera el 10% en el mes, ¿qué consecuencia tiene en Galaxia?",opts:["Se descuentan 10 puntos del total","Se pierde el 50% de los puntos de BEES Vision","Se pierden TODOS los puntos de BEES Vision aunque se haya alcanzado el objetivo de validación","Se emite una advertencia sin pérdida de puntos"],ans:2,exp:"Con fraude mayor al 10%, se pierden TODOS los puntos de BEES Vision sin excepción. Por eso es fundamental que el Merchand conozca las categorías de fraude y las evite — cada foto irreal perjudica a toda la operación."},
+
+// ── POP / QR (1) ──
+{topic:"Ejecución – POP",q:"Cuando el Merchand coloca un material POP Pesado en un PDV, ¿qué debe hacer para que sea contabilizado como colocado?",opts:["Tomar una foto y subirla a BEES Force como tarea completada","Escanear el código QR del material y completar el formulario correspondiente","Avisarle al promotor para que lo registre en su visita","Informarlo al SPV en la reunión semanal"],ans:1,exp:"Desde 2025, todos los materiales POP Pesado tienen un código QR que el Merchand DEBE escanear al momento de colocarlos en el PDV. Solo se contabilizan como colocados aquellos cuyo QR fue escaneado y el formulario está completo. Sin esto, el material no existe para el sistema."},
+
+// ── CXC – CANALES (2) ──
+{topic:"CXC – Canales",q:"¿Por qué canales puede un cliente contactarse con el CXC?",opts:["Solo por BEES App y WhatsApp","Teléfono (0810-222-1234), mail, WhatsApp con ELSA Bot y BEES App (Mi cuenta > Ayuda y Soporte)","Solo por teléfono y mail","Por BEES Force, WhatsApp y visita presencial del promotor"],ans:1,exp:"Los 4 canales oficiales son: Teléfono 0810-222-1234 · Mail atencionaclientes@quilmes.com.ar · WhatsApp ELSA Bot +54 9 11 6678-4173 · BEES App (Mi cuenta > Ayuda y Soporte). El Merchand debe conocerlos para poder orientar al cliente cuando corresponda."},
+{topic:"CXC – Canales",q:"¿Qué es ELSA y cómo se contacta el cliente?",opts:["Es un sistema interno de tickets accesible solo para el promotor desde BEES Force","Es el bot de WhatsApp del CXC, contactable al +54 9 11 6678-4173","Es la sección de ayuda dentro de la BEES App","Es el mail oficial de atención al cliente de CMQ"],ans:1,exp:"ELSA es el bot de WhatsApp disponible en el número +54 9 11 6678-4173. Es uno de los 4 canales oficiales para que el cliente contacte al CXC junto con el teléfono 0810-222-1234, el mail y la BEES App."},
+
+// ── SEGURIDAD – EPP (3) ──
+{topic:"Seguridad – EPP",q:"¿Qué es un EPP?",opts:["Un tipo de material POP para colocar en el PDV","Un elemento de protección personal que debe usarse para prevenir accidentes en el trabajo","Un formulario de reporte de incidentes de seguridad","Un código de identificación del Merchand en BEES Force"],ans:1,exp:"EPP significa Elemento de Protección Personal. Son los equipos que el Merchand debe usar para protegerse según la actividad que realiza: calzado de seguridad, guantes, anteojos de seguridad, ropa de alta visibilidad, entre otros."},
+{topic:"Seguridad – EPP",q:"Un Merchand va a ingresar al depósito de Trade Pesado y va a manipular vidrio. ¿Cuáles son los EPPs obligatorios?",opts:["Solo guantes y calzado de seguridad","Calzado de seguridad, anteojos de seguridad, guantes y ropa de alta visibilidad","Anteojos, protección auditiva y guantes","Calzado, guantes y EPP Motos"],ans:1,exp:"Para ingreso al depósito CON manipulación de vidrio son obligatorios: Calzado de seguridad + Anteojos de seguridad + Guantes + Ropa de alta visibilidad. Es la actividad que requiere la mayor cantidad de EPPs dentro de la tabla."},
+{topic:"Seguridad – EPP",q:"Un Merchand realiza reposición de mercadería sin manipulación de vidrio. ¿Qué EPPs debe usar?",opts:["Solo guantes de seguridad","Calzado de seguridad y guantes","Calzado, anteojos y guantes","Guantes y ropa de alta visibilidad"],ans:1,exp:"Para reposición sin manipulación de vidrio los EPPs obligatorios son: Calzado de seguridad + Guantes. Los anteojos de seguridad y la ropa de alta visibilidad solo son requeridos cuando hay manipulación de vidrio en el depósito de Trade Pesado."},
+
+// ── BEES ACADEMY (1) ──
+{topic:"Gente – BEES Academy",q:"Un Merchand estuvo de licencia durante el mes de la capacitación de BEES Academy. ¿Cuándo debe completar el curso?",opts:["No está obligado si estuvo de licencia","En los primeros 5 días del mes siguiente","A su regreso, dentro del mismo mes calendario","En el próximo ciclo de capacitación anual"],ans:2,exp:"El Merchand debe completar el curso y la evaluación a su regreso, dentro del mismo mes calendario. Si la ausencia es prolongada, se debe informar al equipo de BEES Academy antes de que concluya el mes para gestionar la baja del usuario y evitar que afecte el indicador."},
+
+// ── ORGANIZACIÓN – REFERENTES (2) ──
+{topic:"Organización – Referentes",q:"¿Quién es el Referente/Líder de Seguridad en la empresa?",opts:["Busaid Pablo","Ares Walter","Tiara Lulich","Alonzo Gabriel","Avila Nestor"],ans:2,exp:"Tiara Lulich es la Referente/Líder de Seguridad · Busaid Pablo es Jefe de Venta · Alonzo Gabriel es Referente de Gente · Avila Nestor es Gerente · Ares Walter es Asesor Comercial."},
+{topic:"Organización – Referentes",q:"¿Quién es el Referente de Gente en la empresa?",opts:["Busaid Pablo","Avila Nestor","Tiara Lulich","Alonzo Gabriel","Ares Walter"],ans:3,exp:"Alonzo Gabriel es el Referente de Gente · Tiara Lulich es la Referente/Líder de Seguridad · Busaid Pablo es Jefe de Venta · Avila Nestor es Gerente · Ares Walter es Asesor Comercial."}
+];
+
+</script>
+</body>
+</html>
