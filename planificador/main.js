@@ -366,7 +366,12 @@
         if (clientesConTarea.length === 0) { alert('No se encontraron tareas asignadas en el CSV.'); return; }
         // Convertir Sets a arrays para poder enviarlos como JSON
         const tareasPayload = {};
-        clientesConTarea.forEach(cid => { tareasPayload[cid] = Array.from(tareasPorCliente[cid]); });
+        let totalTareas = 0;
+        clientesConTarea.forEach(cid => { 
+          const arr = Array.from(tareasPorCliente[cid]);
+          tareasPayload[cid] = arr;
+          totalTareas += arr.length;
+        });
 
         const cMonth = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
         const origText = btnImportTareas.innerHTML;
@@ -379,7 +384,7 @@
           });
           const result = await response.json();
           if (result.status === 'success') {
-            alert(`¡Plana de Tareas de ${cMonth} actualizada correctamente en la nube!\n(${clientesConTarea.length} clientes con tareas asignadas)`);
+            alert(`¡Plana de Tareas de ${cMonth} actualizada correctamente en la nube!\n(${totalTareas} tareas asignadas en ${clientesConTarea.length} clientes)`);
             await syncTareas(cMonth, true); // Forzar refresco inmediato en esta sesión
           } else {
             alert('Hubo un problema: ' + result.message);
