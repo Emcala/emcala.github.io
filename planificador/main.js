@@ -501,6 +501,12 @@
                     volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
                   }
                   volData[matchedProm]['obj-cv'] = parseFloat(((volData[matchedProm]['obj-cv'] || 0) + colG).toFixed(2));
+                } else if (currentCategory.includes('ABOVE CORE') || currentCategory.includes('2 – CZA ABOVE CORE')) {
+                  if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
+                    volData[matchedProm]['_seenCategories'].add(currentCategory);
+                    volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
+                  }
+                  volData[matchedProm]['obj-ac'] = parseFloat(((volData[matchedProm]['obj-ac'] || 0) + colG).toFixed(2));
                 } else if (currentCategory.includes('CORE') || currentCategory.includes('VALUE')) {
                   if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
                      const hasAgrupada = volData[matchedProm]['_seenCategories'].has('1A - CZA CORE + VALUE') || Array.from(volData[matchedProm]['_seenCategories']).some(c => c.includes('CORE + VALUE') || c.includes('CORE+VALUE'));
@@ -510,12 +516,6 @@
                      }
                   }
                   volData[matchedProm]['obj-cv'] = parseFloat(((volData[matchedProm]['obj-cv'] || 0) + colG).toFixed(2));
-                } else if (currentCategory.includes('ABOVE CORE') || currentCategory.includes('2 – CZA ABOVE CORE')) {
-                  if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
-                    volData[matchedProm]['_seenCategories'].add(currentCategory);
-                    volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
-                  }
-                  volData[matchedProm]['obj-ac'] = parseFloat(((volData[matchedProm]['obj-ac'] || 0) + colG).toFixed(2));
                 } else if (currentCategory.includes('BALANCED')) {
                   volData[matchedProm]['obj-bc'] = parseFloat(((volData[matchedProm]['obj-bc'] || 0) + colG).toFixed(2));
                 } else if (currentCategory.includes('LATONES')) {
