@@ -480,6 +480,14 @@
                 if (!resetProms[matchedProm]) {
                   volData[matchedProm]['obj-f1'] = 0;
                   volData[matchedProm]['obj-f2'] = 0;
+                  volData[matchedProm]['obj-cv'] = 0;
+                  volData[matchedProm]['obj-ac'] = 0;
+                  volData[matchedProm]['obj-bc'] = 0;
+                  volData[matchedProm]['obj-lt'] = 0;
+                  volData[matchedProm]['obj-ung'] = 0;
+                  volData[matchedProm]['obj-up'] = 0;
+                  volData[matchedProm]['obj-rb'] = 0;
+                  volData[matchedProm]['obj-ag'] = 0;
                   volData[matchedProm]['has-total-f1'] = false;
                   volData[matchedProm]['_seenCategories'] = new Set();
                   resetProms[matchedProm] = true;
@@ -487,24 +495,40 @@
                 if (currentCategory.includes('TOTAL CERVEZAS') || currentCategory.includes('TOTAL CERVEZA')) {
                   volData[matchedProm]['obj-f1'] = parseFloat(colG.toFixed(2));
                   volData[matchedProm]['has-total-f1'] = true;
-                } else if (currentCategory.includes('CORE + VALUE') || currentCategory.includes('CORE+VALUE') || currentCategory.includes('CORE Y VALUE') || currentCategory.includes('ABOVE CORE')) {
+                } else if (currentCategory.includes('CORE + VALUE') || currentCategory.includes('CORE+VALUE') || currentCategory.includes('CORE Y VALUE') || currentCategory.includes('1 – CZA CORE')) {
                   if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
                     volData[matchedProm]['_seenCategories'].add(currentCategory);
-                    // Sumamos Core+Value y Above Core para totalizar cerveza (FOCO I)
                     volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
                   }
+                  volData[matchedProm]['obj-cv'] = parseFloat(((volData[matchedProm]['obj-cv'] || 0) + colG).toFixed(2));
                 } else if (currentCategory.includes('CORE') || currentCategory.includes('VALUE')) {
-                  // Fallback: si el archivo NO tiene la categoría "Core + Value" agrupada, sino que vienen sueltas "Core" y "Value"
                   if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
-                     // Solo sumar si no hemos visto la categoría agrupada (para no duplicar)
                      const hasAgrupada = volData[matchedProm]['_seenCategories'].has('1A - CZA CORE + VALUE') || Array.from(volData[matchedProm]['_seenCategories']).some(c => c.includes('CORE + VALUE') || c.includes('CORE+VALUE'));
                      if (!hasAgrupada) {
                        volData[matchedProm]['_seenCategories'].add(currentCategory);
                        volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
                      }
                   }
-                } else if (currentCategory.includes('TOTAL UNG 2026') || currentCategory.includes('TOTAL UNG') || currentCategory.includes('4B - AGUAS') || currentCategory.includes('AGUAS')) {
-                  volData[matchedProm]['obj-f2'] = parseFloat((volData[matchedProm]['obj-f2'] + colG).toFixed(2));
+                  volData[matchedProm]['obj-cv'] = parseFloat(((volData[matchedProm]['obj-cv'] || 0) + colG).toFixed(2));
+                } else if (currentCategory.includes('ABOVE CORE') || currentCategory.includes('2 – CZA ABOVE CORE')) {
+                  if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
+                    volData[matchedProm]['_seenCategories'].add(currentCategory);
+                    volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
+                  }
+                  volData[matchedProm]['obj-ac'] = parseFloat(((volData[matchedProm]['obj-ac'] || 0) + colG).toFixed(2));
+                } else if (currentCategory.includes('BALANCED')) {
+                  volData[matchedProm]['obj-bc'] = parseFloat(((volData[matchedProm]['obj-bc'] || 0) + colG).toFixed(2));
+                } else if (currentCategory.includes('LATONES')) {
+                  volData[matchedProm]['obj-lt'] = parseFloat(((volData[matchedProm]['obj-lt'] || 0) + colG).toFixed(2));
+                } else if (currentCategory.includes('TOTAL UNG 2026') || currentCategory.includes('TOTAL UNG') || currentCategory.includes('FOCO 3')) {
+                  volData[matchedProm]['obj-f2'] = parseFloat(colG.toFixed(2));
+                  volData[matchedProm]['obj-ung'] = parseFloat(colG.toFixed(2));
+                } else if (currentCategory.includes('4A - UNG TOP') || currentCategory.includes('UNG TOP') || currentCategory === 'UNG') {
+                  volData[matchedProm]['obj-up'] = parseFloat(((volData[matchedProm]['obj-up'] || 0) + colG).toFixed(2));
+                } else if (currentCategory.includes('4B - AGUAS') || currentCategory.includes('AGUAS')) {
+                  volData[matchedProm]['obj-ag'] = parseFloat(((volData[matchedProm]['obj-ag'] || 0) + colG).toFixed(2));
+                } else if (currentCategory.includes('RED BULL') || currentCategory.includes('REDBULL')) {
+                  volData[matchedProm]['obj-rb'] = parseFloat(((volData[matchedProm]['obj-rb'] || 0) + colG).toFixed(2));
                 }
                 promotoresFound++;
               }
@@ -515,9 +539,18 @@
           let monthObjs = {};
           for (let p in volData) {
             if (volData[p]['obj-f1'] !== undefined || volData[p]['obj-f2'] !== undefined) {
-              monthObjs[p] = {};
-              if (volData[p]['obj-f1'] !== undefined) monthObjs[p]['obj-f1'] = volData[p]['obj-f1'];
-              if (volData[p]['obj-f2'] !== undefined) monthObjs[p]['obj-f2'] = volData[p]['obj-f2'];
+              monthObjs[p] = {
+                'obj-f1': volData[p]['obj-f1'],
+                'obj-f2': volData[p]['obj-f2'],
+                'obj-cv': volData[p]['obj-cv'],
+                'obj-ac': volData[p]['obj-ac'],
+                'obj-bc': volData[p]['obj-bc'],
+                'obj-lt': volData[p]['obj-lt'],
+                'obj-ung': volData[p]['obj-ung'],
+                'obj-up': volData[p]['obj-up'],
+                'obj-rb': volData[p]['obj-rb'],
+                'obj-ag': volData[p]['obj-ag']
+              };
             }
           }
           
