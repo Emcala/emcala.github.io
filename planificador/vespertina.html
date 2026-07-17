@@ -158,10 +158,25 @@
   // VISTA SPV — su propia mesa
   // =========================================================
   function renderVistaSpv(container, rows, fecha) {
+    // Calcular porcentajes para identificar a los de mayor desvío
+    rows.forEach(r => {
+      r.p1 = r.f1Plan > 0 ? Math.round((r.f1Real/r.f1Plan)*100) : 0;
+      r.p2 = r.f2Plan > 0 ? Math.round((r.f2Real/r.f2Plan)*100) : 0;
+      r.promedio = (r.p1 + r.p2) / 2;
+    });
+
     const cumplen = rows.filter(r => r.cumpleAmbos === true).length;
     const aContactar = rows.filter(r => r.cumpleAmbos !== true);
-    const yaContactados = aContactar.filter(r => r.contactado === true).length;
-    const nivel1 = aContactar.length > 0 ? (yaContactados === aContactar.length) : true;
+    
+    // De los que no cumplen, ordenamos por promedio de menor a mayor y tomamos máx 2
+    const prioritarios = [...aContactar].sort((a, b) => a.promedio - b.promedio).slice(0, 2);
+    prioritarios.forEach(p => p.esPrioritario = true);
+
+    const prioritariosContactados = prioritarios.filter(r => r.contactado === true).length;
+    const totalYaContactados = aContactar.filter(r => r.contactado === true).length;
+    
+    // Nivel 1 se logra al contactar obligatoriamente a los 2 peores
+    const nivel1 = prioritarios.length > 0 ? (prioritariosContactados === prioritarios.length) : true;
 
     let html = `
       <div class="card">
@@ -174,33 +189,33 @@
         </div>
         <div class="stats-grid">
           <div class="stat"><div class="stat-label">Promotores</div><div class="stat-value">${rows.length}</div></div>
-          <div class="stat"><div class="stat-label">Cumplen ambos focos</div><div class="stat-value">${cumplen}</div></div>
-          <div class="stat"><div class="stat-label">A contactar</div><div class="stat-value">${aContactar.length - yaContactados}</div></div>
-          <div class="stat"><div class="stat-label">Ya contactados</div><div class="stat-value">${yaContactados}</div></div>
+          <div class="stat"><div class="stat-label">Cumplen focos</div><div class="stat-value">${cumplen}</div></div>
+          <div class="stat"><div class="stat-label">Obligatorios a llamar</div><div class="stat-value">${prioritarios.length - prioritariosContactados}</div></div>
+          <div class="stat"><div class="stat-label">Total contactados</div><div class="stat-value">${totalYaContactados}</div></div>
         </div>
         <table>
           <thead><tr>
-            <th>Promotor</th><th>Foco 1 real/plan</th><th>%</th><th>Foco 2 real/plan</th><th>%</th><th>Contactado</th><th>Motivo del desvío</th>
+            <th>Promotor</th><th>Foco 1 real/plan</th><th>%</th><th>Foco 2 real/plan</th><th>%</th><th>Obligatorio</th><th>Contactado</th><th>Motivo del desvío</th>
           </tr></thead>
           <tbody>`;
 
     rows.forEach(r => {
-      const p1 = r.f1Plan > 0 ? Math.round((r.f1Real/r.f1Plan)*100) : 0;
-      const p2 = r.f2Plan > 0 ? Math.round((r.f2Real/r.f2Plan)*100) : 0;
       const necesita = r.cumpleAmbos !== true;
+      const esOblig = r.esPrioritario === true;
       html += `<tr>
         <td style="font-weight:600;">${r.promotor}</td>
         <td>${r.f1Real} / ${r.f1Plan}</td>
-        <td class="${p1>=100?'ok':'bad'}">${p1}%</td>
+        <td class="${r.p1>=100?'ok':'bad'}">${r.p1}%</td>
         <td>${r.f2Real} / ${r.f2Plan}</td>
-        <td class="${p2>=100?'ok':'bad'}">${p2}%</td>
+        <td class="${r.p2>=100?'ok':'bad'}">${r.p2}%</td>
+        <td>${esOblig ? '<span style="color:#dc2626; font-size:10px; font-weight:800; text-transform:uppercase;">⚠️ Llamar</span>' : '—'}</td>
         <td>${necesita ? `<input type="checkbox" data-prom="${r.promotor}" class="chk-contacto" ${r.contactado?'checked':''}>` : '—'}</td>
-        <td>${necesita ? `<input type="text" data-prom="${r.promotor}" class="txt-motivo" placeholder="ej: falta stock en punto" value="${r.motivo||''}">` : '—'}</td>
+        <td>${necesita ? `<input type="text" data-prom="${r.promotor}" class="txt-motivo" placeholder="${esOblig ? 'Motivo (Obligatorio)' : 'Opcional'}" value="${r.motivo||''}">` : '—'}</td>
       </tr>`;
     });
 
     html += `</tbody></table>
-        <div class="save-hint">Los cambios se guardan automáticamente. Recordá avisar por WhatsApp a los promotores que no cumplieron.</div>
+        <div class="save-hint">Los cambios se guardan automáticamente. Es <b>obligatorio</b> contactar y detallar el motivo de los 2 promotores con mayor desvío.</div>
       </div>`;
     container.innerHTML = html;
 
@@ -249,19 +264,31 @@
   // VISTA JDV / AUDITOR — todas las mesas
   // =========================================================
   function renderVistaJdv(container, rows, jdvRows, fecha) {
+    // Calculamos el % de cumplimiento de todos para poder ordenar
+    rows.forEach(r => {
+      r.p1 = r.f1Plan > 0 ? (r.f1Real/r.f1Plan)*100 : 0;
+      r.p2 = r.f2Plan > 0 ? (r.f2Real/r.f2Plan)*100 : 0;
+      r.promedio = (r.p1 + r.p2) / 2;
+    });
+
     const mesas = {};
     rows.forEach(r => {
-      if (!mesas[r.spv]) mesas[r.spv] = { promotores:0, sumaPct:0, pendientes:0, cerrada:false };
-      const p1 = r.f1Plan > 0 ? (r.f1Real/r.f1Plan)*100 : 0;
-      const p2 = r.f2Plan > 0 ? (r.f2Real/r.f2Plan)*100 : 0;
+      if (!mesas[r.spv]) mesas[r.spv] = { promotores:0, sumaPct:0, filas:[] };
       mesas[r.spv].promotores++;
-      mesas[r.spv].sumaPct += (p1+p2)/2;
-      if (r.cumpleAmbos !== true && r.contactado !== true) mesas[r.spv].pendientes++;
+      mesas[r.spv].sumaPct += r.promedio;
+      mesas[r.spv].filas.push(r);
     });
+
     Object.keys(mesas).forEach(spv => {
-      const pend = rows.filter(r => r.spv === spv && r.cumpleAmbos !== true);
-      mesas[spv].cerrada = pend.length === 0 || pend.every(r => r.contactado === true);
-      mesas[spv].pctMesa = Math.round(mesas[spv].sumaPct / mesas[spv].promotores);
+      const m = mesas[spv];
+      m.pctMesa = Math.round(m.sumaPct / m.promotores);
+      
+      const aContactar = m.filas.filter(r => r.cumpleAmbos !== true);
+      const prioritarios = [...aContactar].sort((a, b) => a.promedio - b.promedio).slice(0, 2);
+      const prioritariosContactados = prioritarios.filter(r => r.contactado === true).length;
+      
+      m.pendientes = prioritarios.length - prioritariosContactados;
+      m.cerrada = prioritarios.length === 0 || m.pendientes === 0;
     });
 
     const spvList = Object.keys(mesas);
