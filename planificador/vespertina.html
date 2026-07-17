@@ -275,13 +275,25 @@
   // =========================================================
   // VISTA JDV / AUDITOR — todas las mesas
   // =========================================================
-  function renderVistaJdv(container, rows, jdvRows, fecha) {
+  function renderVistaJdv(container, rowsRaw, jdvRows, fecha) {
+    // Filtro MAYO y BDR
+    const rows = rowsRaw.filter(r => {
+      const s = normalize(r.spv || '');
+      return !s.includes('MAYO') && !s.includes('BDR');
+    });
+
     // Calculamos el % de cumplimiento de todos para poder ordenar
     rows.forEach(r => {
       r.p1 = r.f1Plan > 0 ? (r.f1Real/r.f1Plan)*100 : 0;
       r.p2 = r.f2Plan > 0 ? (r.f2Real/r.f2Plan)*100 : 0;
       r.promedio = (r.p1 + r.p2) / 2;
     });
+
+    function getEstructura(spv) {
+      const s = normalize(spv || '');
+      if (s.includes('ARES')) return 'AS';
+      return 'K+T';
+    }
 
     const mesas = {};
     rows.forEach(r => {
@@ -310,18 +322,40 @@
     let html = `
       <div class="card">
         <div class="card-title">Reunión vespertina — Vista JDV</div>
-        <div class="card-sub">${fecha} · Todas las mesas</div>
+        <div class="card-sub">${fecha} · Todas las mesas (Filtrado)</div>
         <div class="stats-grid">
           <div class="stat"><div class="stat-label">Mesas (SPV)</div><div class="stat-value">${spvList.length}</div></div>
           <div class="stat"><div class="stat-label">Vespertinas cerradas</div><div class="stat-value">${cerradas}/${spvList.length}</div></div>
           <div class="stat"><div class="stat-label">Cumplimiento promedio</div><div class="stat-value">${promedio}%</div></div>
         </div>
+
+        <h4 style="margin-top:16px; margin-bottom:8px; color:#1e293b; font-size:14px;">Estructura K+T</h4>
         <div class="table-responsive">
           <table>
             <thead><tr><th>SPV</th><th>Promotores</th><th>% cumpl. mesa</th><th>Pend. contacto</th><th>Vespertina SPV</th></tr></thead>
             <tbody>`;
 
-    spvList.forEach(spv => {
+    spvList.filter(s => getEstructura(s) === 'K+T').forEach(spv => {
+      const m = mesas[spv];
+      const colorClass = m.pctMesa>=90?'ok':(m.pctMesa>=70?'warn':'bad');
+      html += `<tr>
+        <td style="font-weight:600;">${spv}</td>
+        <td>${m.promotores}</td>
+        <td class="${colorClass}">${m.pctMesa}%</td>
+        <td>${m.pendientes > 0 ? m.pendientes : '—'}</td>
+        <td class="${m.cerrada?'ok':'bad'}">${m.cerrada ? '✔' : '✘'}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table></div>
+
+        <h4 style="margin-top:16px; margin-bottom:8px; color:#1e293b; font-size:14px;">Estructura AS</h4>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>SPV</th><th>Promotores</th><th>% cumpl. mesa</th><th>Pend. contacto</th><th>Vespertina SPV</th></tr></thead>
+            <tbody>`;
+
+    spvList.filter(s => getEstructura(s) === 'AS').forEach(spv => {
       const m = mesas[spv];
       const colorClass = m.pctMesa>=90?'ok':(m.pctMesa>=70?'warn':'bad');
       html += `<tr>
