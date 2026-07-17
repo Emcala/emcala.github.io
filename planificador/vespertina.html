@@ -335,25 +335,59 @@
 
     html += `</tbody></table></div></div>`;
 
-    // Checklist de reunión JDV con cada SPV
-    spvList.forEach(spv => {
-      const existente = jdvRows.find(j => normalize(j.spv) === normalize(spv)) || {};
+    // ANÁLISIS AUTOMÁTICO
+    if (rows.length > 0) {
+      const sortedRows = [...rows].sort((a,b) => b.promedio - a.promedio);
+      const mejores = sortedRows.slice(0, 3);
+      const peores = [...sortedRows].reverse().slice(0, 3);
+      const spvsList = Object.keys(mesas).map(spv => ({ spv, pct: mesas[spv].pctMesa })).sort((a,b) => b.pct - a.pct);
+      const mejorSpv = spvsList[0] || {spv: '-', pct: 0};
+      
       html += `
-        <div class="card" data-spv="${spv}">
-          <div class="card-title">Reunión JDV con ${spv}</div>
-          <div class="card-sub">Presencial, estructura definida (L-V)</div>
-          <label class="jdv-check"><input type="checkbox" class="c1" ${existente.revision?'checked':''}> Revisión de resultados del día</label>
-          <label class="jdv-check"><input type="checkbox" class="c2" ${existente.analisis?'checked':''}> Análisis de desvíos relevantes</label>
-          <label class="jdv-check"><input type="checkbox" class="c3" ${existente.alineacion?'checked':''}> Alineación de prioridades y KPI para la jornada siguiente</label>
-          <textarea class="notas" placeholder="Notas de la reunión (opcional)">${existente.notas||''}</textarea>
-        </div>`;
-    });
+      <div class="card" style="background: linear-gradient(145deg, #ffffff, #f8fafc); border: 1px solid #e2e8f0; margin-bottom: 4px;">
+        <div class="card-title">✨ Análisis Automático del Día</div>
+        <div style="font-size:13px; color:#475569; margin-top:12px; display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <strong style="color:#059669;">🚀 Fortalezas y Contexto:</strong>
+            <p style="margin-top:4px;">El cumplimiento general de la jornada es del <b>${promedio}%</b>. 
+            La mesa de mayor rendimiento fue <b>${mejorSpv.spv}</b> con un <b>${mejorSpv.pct}%</b> promedio.
+            ${mejorSpv.pct >= 100 ? '¡Excelente trabajo de equipo empujando la venta global!' : 'Aún hay oportunidad de mejora para alcanzar el 100% de los focos.'}
+            </p>
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+            <div style="background:#f0fdf4; padding:12px; border-radius:8px; border:1px solid #bbf7d0;">
+              <strong style="color:#166534; font-size:12px;">🏆 Mejores Resultados (Top 3)</strong>
+              <ul style="margin-top:8px; padding-left:16px; font-size:12px; color:#15803d; display:flex; flex-direction:column; gap:4px;">
+                ${mejores.map(r => `<li><b>${r.promotor}</b> (${Math.round(r.promedio)}%)</li>`).join('')}
+              </ul>
+            </div>
+            <div style="background:#fef2f2; padding:12px; border-radius:8px; border:1px solid #fecaca;">
+              <strong style="color:#991b1b; font-size:12px;">⚠️ Mayor Oportunidad (Peores 3)</strong>
+              <ul style="margin-top:8px; padding-left:16px; font-size:12px; color:#b91c1c; display:flex; flex-direction:column; gap:4px;">
+                ${peores.map(r => `<li><b>${r.promotor}</b> (${Math.round(r.promedio)}%)</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // Checklist general JDV (Único por día)
+    const existente = jdvRows.find(j => normalize(j.spv) === 'GENERAL') || jdvRows[0] || {};
+    html += `
+      <div class="card" data-spv="GENERAL">
+        <div class="card-title">Reunión Vespertina JDV</div>
+        <div class="card-sub">Estructura general del día</div>
+        <label class="jdv-check"><input type="checkbox" class="c1" ${existente.revision?'checked':''}> Revisión de resultados del día</label>
+        <label class="jdv-check"><input type="checkbox" class="c2" ${existente.analisis?'checked':''}> Análisis de desvíos relevantes</label>
+        <label class="jdv-check"><input type="checkbox" class="c3" ${existente.alineacion?'checked':''}> Alineación de prioridades y KPI a planificar para la jornada siguiente</label>
+        <textarea class="notas" placeholder="Notas de la reunión o focos KPI I y II (opcional)">${existente.notas||''}</textarea>
+      </div>`;
 
     container.innerHTML = html;
 
-    spvList.forEach(spv => {
-      const card = container.querySelector(`.card[data-spv="${spv}"]`);
-      if (!card) return;
+    const card = container.querySelector(`.card[data-spv="GENERAL"]`);
+    if (card) {
       const guardar = async () => {
         const revision = card.querySelector('.c1').checked;
         const analisis = card.querySelector('.c2').checked;
@@ -363,7 +397,7 @@
           const resp = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ req: 'vespertina_jdv_update', fecha, spv, jdv: session.nombre, revision, analisis, alineacion, notas })
+            body: JSON.stringify({ req: 'vespertina_jdv_update', fecha, spv: 'GENERAL', jdv: session.nombre, revision, analisis, alineacion, notas })
           });
           const result = await resp.json();
           marcarGuardado(result.status === 'success');
@@ -379,7 +413,7 @@
         clearTimeout(t);
         t = setTimeout(() => { yaMarcadoNotas = false; guardar(); }, 800);
       });
-    });
+    }
   }
 
   dateInput.addEventListener('change', cargar);
