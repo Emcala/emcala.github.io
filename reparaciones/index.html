@@ -122,6 +122,7 @@
             <label class="multi-filter-option"><input type="checkbox" value="pendiente" onchange="applyFilters()"> ⏳ Pendiente</label>
             <label class="multi-filter-option"><input type="checkbox" value="resuelto" onchange="applyFilters()"> ✅ Resuelto</label>
             <label class="multi-filter-option"><input type="checkbox" value="retiro" onchange="applyFilters()"> 📦 Retiro</label>
+            <label class="multi-filter-option"><input type="checkbox" value="retiro-sin-reparacion" onchange="applyFilters()"> 📦 Retiro (Sin reparación)</label>
             <label class="multi-filter-option"><input type="checkbox" value="cliente-cerrado" onchange="applyFilters()"> 🔴 Cliente Cerrado</label>
             <label class="multi-filter-option"><input type="checkbox" value="sin-estado" onchange="applyFilters()"> Sin estado</label>
           </div>
@@ -240,11 +241,26 @@
   <div class="card" style="max-width:1400px;margin:0 auto;width:100%;">
     <div class="card-header" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
       <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin:0;">Solicitudes cargadas por Promotores</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+        <input type="text" id="sFiltBusqueda" placeholder="🔍 Buscar OT, cliente, estado, devolución..." oninput="renderSolicitudes()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);min-width:260px;">
+        <input type="text" id="sFiltPromotor" placeholder="👤 Promotor..." oninput="renderSolicitudes()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
+        <select id="sFiltEstado" onchange="renderSolicitudes()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:white;">
+          <option value="">Todos los estados</option>
+          <option value="pendiente">⏳ Pendiente</option>
+          <option value="resuelto">✅ Resuelto</option>
+          <option value="retiro">📦 Retiro</option>
+          <option value="retiro-sin-reparacion">📦 Retiro (Sin reparación)</option>
+          <option value="cliente-cerrado">🔴 Cliente Cerrado</option>
+        </select>
+        <input type="date" id="sFiltDesde" onchange="renderSolicitudes()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
+        <input type="date" id="sFiltHasta" onchange="renderSolicitudes()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);">
+        <button onclick="document.getElementById('sFiltBusqueda').value='';document.getElementById('sFiltPromotor').value='';document.getElementById('sFiltEstado').value='';document.getElementById('sFiltDesde').value='';document.getElementById('sFiltHasta').value='';renderSolicitudes();" style="padding:7px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;background:white;color:var(--navy);cursor:pointer;font-family:'Bricolage Grotesque',sans-serif;">✕ Limpiar</button>
+      </div>
     </div>
     <div style="overflow-x:auto;">
       <table class="excel-table" id="tablaSolicitudes">
-        <thead><tr><th>OT</th><th>Fecha</th><th>Promotor</th><th>Cliente</th><th>Marca</th><th>EDF</th><th>Falla Sugerida</th><th>Ubicación</th></tr></thead>
-        <tbody id="tablaSolicitudesBody"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px;font-size:13px;">Cargando...</td></tr></tbody>
+        <thead><tr><th>OT</th><th>Fecha</th><th>Promotor</th><th>Cliente</th><th>Marca</th><th>EDF</th><th>Falla Sugerida</th><th>Estado</th><th>Devolución</th><th>Ubicación</th></tr></thead>
+        <tbody id="tablaSolicitudesBody"><tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px;font-size:13px;">Cargando...</td></tr></tbody>
       </table>
     </div>
   </div>

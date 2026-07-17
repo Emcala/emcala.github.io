@@ -205,6 +205,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
 .estado-pill.resuelto{background:#D1FAE5;color:#065F46}
 .estado-pill.pendiente{background:#FEF3C7;color:#B45309}
 .estado-pill.retiro{background:#EDE9FE;color:#6D28D9}
+.estado-pill.retiro-sin-rep{background:#FCE7F3;color:#9D174D}
 .estado-pill.sin-estado{background:#F1F5F9;color:#64748B}
 .empty-state{padding:48px 24px;text-align:center;color:var(--muted);font-size:14px}
 .empty-state .ico{font-size:32px;margin-bottom:8px}

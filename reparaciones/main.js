@@ -56,7 +56,7 @@ const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwreokQunVau5zi-QN-NzP
 
 function formatFechaAR(d){if(!d||isNaN(d))return '';return d.toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires',day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{timeZone:'America/Argentina/Buenos_Aires',hour:'2-digit',minute:'2-digit'});}
 
-const ESTADO_META={'resuelto':{label:'Resuelto',cls:'resuelto',icon:'✅'},'pendiente':{label:'Pendiente',cls:'pendiente',icon:'⏳'},'retiro':{label:'Retiro',cls:'retiro',icon:'📦'},'cliente-cerrado':{label:'Cliente Cerrado',cls:'retiro',icon:'🔴'},'':{label:'Pendiente',cls:'pendiente',icon:'⏳'}};
+const ESTADO_META={'resuelto':{label:'Resuelto',cls:'resuelto',icon:'✅'},'pendiente':{label:'Pendiente',cls:'pendiente',icon:'⏳'},'retiro':{label:'Retiro',cls:'retiro',icon:'📦'},'retiro-sin-reparacion':{label:'Retiro · Sin reparación',cls:'retiro-sin-rep',icon:'📦'},'cliente-cerrado':{label:'Cliente Cerrado',cls:'retiro',icon:'🔴'},'':{label:'Pendiente',cls:'pendiente',icon:'⏳'}};
 let allData=[],seguimientos={},seguimientosRaw=[],chatData={},historialData=[],filtered=[],leafMap=null,markers=[],modalLeaf=null;
 let diasCargados=30,ordenDescendente=true;
 
