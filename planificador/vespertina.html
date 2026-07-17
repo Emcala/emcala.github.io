@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Vespertina · EMCALA</title>
+<script src="../emcala-auth.js"></script>
+<script>
+  if (!EmcalaAuth.requireRole(['auditor', 'supervisor'])) {
+    throw new Error("No autorizado");
+  }
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#f1f5f9; color:#0f172a; font-family:'Bricolage Grotesque',sans-serif; min-height:100vh; padding-bottom:60px; }
+
+  .hdr { background:linear-gradient(135deg,#0B2559,#1B5FA8); padding:16px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; position:sticky; top:0; z-index:50; }
+  .hdr h1 { color:#fff; font-weight:800; font-size:20px; text-transform:uppercase; letter-spacing:-0.02em; }
+  .hdr h1 span { color:rgba(255,255,255,0.6); font-weight:600; font-size:16px; }
+  .hdr-right { display:flex; align-items:center; gap:10px; }
+  .hdr input[type="date"] { padding:8px 10px; border-radius:8px; border:none; font-family:inherit; font-weight:600; }
+
+  .container { max-width:1100px; margin:0 auto; padding:20px; display:flex; flex-direction:column; gap:20px; }
+
+  .card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 10px 24px rgba(0,0,0,0.05); }
+  .card-title { font-weight:800; font-size:16px; margin-bottom:4px; }
+  .card-sub { font-size:12px; color:#64748b; margin-bottom:16px; }
+
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:18px; }
+  .stat { background:#f8fafc; border-radius:12px; padding:12px 14px; }
+  .stat-label { font-size:11px; color:#64748b; text-transform:uppercase; font-weight:700; letter-spacing:0.03em; }
+  .stat-value { font-size:22px; font-weight:800; margin-top:2px; }
+
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; padding:8px 6px; color:#64748b; font-weight:700; border-bottom:1px solid #e2e8f0; font-size:11px; text-transform:uppercase; }
+  td { padding:8px 6px; border-bottom:1px solid #f1f5f9; }
+  .ok { color:#059669; font-weight:700; }
+  .bad { color:#dc2626; font-weight:700; }
+  .warn { color:#d97706; font-weight:700; }
+  input[type="text"] { width:100%; padding:6px 8px; border:1px solid #e2e8f0; border-radius:6px; font-family:inherit; font-size:12px; }
+  input[type="checkbox"] { width:18px; height:18px; cursor:pointer; }
+
+  .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; }
+  .badge.n1 { background:#d1fae5; color:#065f46; }
+  .badge.n0 { background:#fee2e2; color:#991b1b; }
+
+  .jdv-check { display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:8px; }
+  textarea { width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:8px; font-family:inherit; font-size:13px; min-height:60px; margin-top:8px; }
+
+  .save-hint { font-size:11px; color:#94a3b8; text-align:right; margin-top:10px; }
+  .loading { text-align:center; padding:40px; color:#94a3b8; font-weight:600; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>EMCALA <span>| Vespertina</span></h1>
+  <div class="hdr-right">
+    <input type="date" id="date-input">
+    <div id="userBadgeContainer"></div>
+  </div>
+</div>
+
+<div class="container" id="app-container">
+  <div class="loading">Cargando datos del día...</div>
+</div>
+
+<script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
+
+  const session = EmcalaAuth.getSession();
+  const isSupervisor = session && session.rol.toLowerCase() === 'supervisor';
+  const MY_SPV = session ? session.nombre.toUpperCase() : '';
+
+  const dateInput = document.getElementById('date-input');
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  dateInput.value = todayStr();
+
+  function normalize(s) {
+    return String(s||'').normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim();
+  }
+
+  async function cargar() {
+    const container = document.getElementById('app-container');
+    container.innerHTML = '<div class="loading">Cargando datos del día...</div>';
+    const fecha = dateInput.value;
+    const spvParam = isSupervisor ? MY_SPV : 'ALL';
+
+    try {
+      const resp = await fetch(`${SCRIPT_URL}?req=vespertina&date=${fecha}&spv=${encodeURIComponent(spvParam)}&_t=${Date.now()}`);
+      const result = await resp.json();
+      if (result.status !== 'success') throw new Error(result.message || 'Error');
+      const rows = result.rows || [];
+
+      if (isSupervisor) {
+        renderVistaSpv(container, rows, fecha);
+      } else {
+        // Vista JDV/auditor: también trae el checklist propio
+        const respJdv = await fetch(`${SCRIPT_URL}?req=vespertina_jdv&date=${fecha}&_t=${Date.now()}`);
+        const resultJdv = await respJdv.json();
+        renderVistaJdv(container, rows, resultJdv.rows || [], fecha);
+      }
+    } catch (e) {
+      container.innerHTML = `<div class="card"><p style="color:#dc2626;">Error al cargar: ${e.message}</p></div>`;
+    }
+  }
+
+  // =========================================================
+  // VISTA SPV — su propia mesa
+  // =========================================================
+  function renderVistaSpv(container, rows, fecha) {
+    const cumplen = rows.filter(r => r.cumpleAmbos === true).length;
+    const aContactar = rows.filter(r => r.cumpleAmbos !== true);
+    const yaContactados = aContactar.filter(r => r.contactado === true).length;
+    const nivel1 = aContactar.length > 0 ? (yaContactados === aContactar.length) : true;
+
+    let html = `
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div class="card-title">Reunión vespertina — Mesa ${rows[0]?.spv || MY_SPV}</div>
+            <div class="card-sub">${fecha}</div>
+          </div>
+          <span class="badge ${nivel1 ? 'n1' : 'n0'}">${nivel1 ? 'Nivel 1 — 100%' : 'Nivel 0 — 0%'}</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat"><div class="stat-label">Promotores</div><div class="stat-value">${rows.length}</div></div>
+          <div class="stat"><div class="stat-label">Cumplen ambos focos</div><div class="stat-value">${cumplen}</div></div>
+          <div class="stat"><div class="stat-label">A contactar</div><div class="stat-value">${aContactar.length - yaContactados}</div></div>
+          <div class="stat"><div class="stat-label">Ya contactados</div><div class="stat-value">${yaContactados}</div></div>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Promotor</th><th>Foco 1 real/plan</th><th>%</th><th>Foco 2 real/plan</th><th>%</th><th>Contactado</th><th>Motivo del desvío</th>
+          </tr></thead>
+          <tbody>`;
+
+    rows.forEach(r => {
+      const p1 = r.f1Plan > 0 ? Math.round((r.f1Real/r.f1Plan)*100) : 0;
+      const p2 = r.f2Plan > 0 ? Math.round((r.f2Real/r.f2Plan)*100) : 0;
+      const necesita = r.cumpleAmbos !== true;
+      html += `<tr>
+        <td style="font-weight:600;">${r.promotor}</td>
+        <td>${r.f1Real} / ${r.f1Plan}</td>
+        <td class="${p1>=100?'ok':'bad'}">${p1}%</td>
+        <td>${r.f2Real} / ${r.f2Plan}</td>
+        <td class="${p2>=100?'ok':'bad'}">${p2}%</td>
+        <td>${necesita ? `<input type="checkbox" data-prom="${r.promotor}" class="chk-contacto" ${r.contactado?'checked':''}>` : '—'}</td>
+        <td>${necesita ? `<input type="text" data-prom="${r.promotor}" class="txt-motivo" placeholder="ej: falta stock en punto" value="${r.motivo||''}">` : '—'}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table>
+        <div class="save-hint">Los cambios se guardan automáticamente. Recordá avisar por WhatsApp a los promotores que no cumplieron.</div>
+      </div>`;
+    container.innerHTML = html;
+
+    container.querySelectorAll('.chk-contacto').forEach(el => {
+      el.addEventListener('change', e => guardarContacto(e.target.dataset.prom, fecha, e.target.checked, getMotivo(e.target.dataset.prom)));
+    });
+    container.querySelectorAll('.txt-motivo').forEach(el => {
+      let timeout;
+      el.addEventListener('input', e => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          const chk = container.querySelector(`.chk-contacto[data-prom="${e.target.dataset.prom}"]`);
+          guardarContacto(e.target.dataset.prom, fecha, chk ? chk.checked : false, e.target.value);
+        }, 600); // debounce para no pegarle al servidor en cada tecla
+      });
+    });
+
+    function getMotivo(prom) {
+      const el = container.querySelector(`.txt-motivo[data-prom="${prom}"]`);
+      return el ? el.value : '';
+    }
+  }
+
+  async function guardarContacto(promotor, fecha, contactado, motivo) {
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ req: 'vespertina_update', fecha, promotor, contactado, motivo })
+      });
+    } catch (e) { console.error('Error guardando contacto:', e); }
+  }
+
+  // =========================================================
+  // VISTA JDV / AUDITOR — todas las mesas
+  // =========================================================
+  function renderVistaJdv(container, rows, jdvRows, fecha) {
+    const mesas = {};
+    rows.forEach(r => {
+      if (!mesas[r.spv]) mesas[r.spv] = { promotores:0, sumaPct:0, pendientes:0, cerrada:false };
+      const p1 = r.f1Plan > 0 ? (r.f1Real/r.f1Plan)*100 : 0;
+      const p2 = r.f2Plan > 0 ? (r.f2Real/r.f2Plan)*100 : 0;
+      mesas[r.spv].promotores++;
+      mesas[r.spv].sumaPct += (p1+p2)/2;
+      if (r.cumpleAmbos !== true && r.contactado !== true) mesas[r.spv].pendientes++;
+    });
+    Object.keys(mesas).forEach(spv => {
+      const pend = rows.filter(r => r.spv === spv && r.cumpleAmbos !== true);
+      mesas[spv].cerrada = pend.length === 0 || pend.every(r => r.contactado === true);
+      mesas[spv].pctMesa = Math.round(mesas[spv].sumaPct / mesas[spv].promotores);
+    });
+
+    const spvList = Object.keys(mesas);
+    const cerradas = spvList.filter(s => mesas[s].cerrada).length;
+    const promedio = spvList.length ? Math.round(spvList.reduce((a,s)=>a+mesas[s].pctMesa,0)/spvList.length) : 0;
+
+    let html = `
+      <div class="card">
+        <div class="card-title">Reunión vespertina — Vista JDV</div>
+        <div class="card-sub">${fecha} · Todas las mesas</div>
+        <div class="stats-grid">
+          <div class="stat"><div class="stat-label">Mesas (SPV)</div><div class="stat-value">${spvList.length}</div></div>
+          <div class="stat"><div class="stat-label">Vespertinas cerradas</div><div class="stat-value">${cerradas}/${spvList.length}</div></div>
+          <div class="stat"><div class="stat-label">Cumplimiento promedio</div><div class="stat-value">${promedio}%</div></div>
+        </div>
+        <table>
+          <thead><tr><th>SPV</th><th>Promotores</th><th>% cumpl. mesa</th><th>Pend. contacto</th><th>Vespertina SPV</th></tr></thead>
+          <tbody>`;
+
+    spvList.forEach(spv => {
+      const m = mesas[spv];
+      const colorClass = m.pctMesa>=90?'ok':(m.pctMesa>=70?'warn':'bad');
+      html += `<tr>
+        <td style="font-weight:600;">${spv}</td>
+        <td>${m.promotores}</td>
+        <td class="${colorClass}">${m.pctMesa}%</td>
+        <td>${m.pendientes > 0 ? m.pendientes : '—'}</td>
+        <td class="${m.cerrada?'ok':'bad'}">${m.cerrada ? '✔' : '✘'}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+
+    // Checklist de reunión JDV con cada SPV
+    spvList.forEach(spv => {
+      const existente = jdvRows.find(j => normalize(j.spv) === normalize(spv)) || {};
+      html += `
+        <div class="card" data-spv="${spv}">
+          <div class="card-title">Reunión JDV con ${spv}</div>
+          <div class="card-sub">Presencial, estructura definida (L-V)</div>
+          <label class="jdv-check"><input type="checkbox" class="c1" ${existente.revision?'checked':''}> Revisión de resultados del día</label>
+          <label class="jdv-check"><input type="checkbox" class="c2" ${existente.analisis?'checked':''}> Análisis de desvíos relevantes</label>
+          <label class="jdv-check"><input type="checkbox" class="c3" ${existente.alineacion?'checked':''}> Alineación de prioridades y KPI para la jornada siguiente</label>
+          <textarea class="notas" placeholder="Notas de la reunión (opcional)">${existente.notas||''}</textarea>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+
+    spvList.forEach(spv => {
+      const card = container.querySelector(`.card[data-spv="${spv}"]`);
+      if (!card) return;
+      const guardar = () => {
+        const revision = card.querySelector('.c1').checked;
+        const analisis = card.querySelector('.c2').checked;
+        const alineacion = card.querySelector('.c3').checked;
+        const notas = card.querySelector('.notas').value;
+        fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ req: 'vespertina_jdv_update', fecha, spv, jdv: session.nombre, revision, analisis, alineacion, notas })
+        }).catch(e => console.error('Error guardando JDV:', e));
+      };
+      card.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', guardar));
+      let t; card.querySelector('.notas').addEventListener('input', () => { clearTimeout(t); t = setTimeout(guardar, 800); });
+    });
+  }
+
+  dateInput.addEventListener('change', cargar);
+  EmcalaAuth.renderUserBadge('userBadgeContainer');
+  cargar();
+</script>
+</body>
+</html>
