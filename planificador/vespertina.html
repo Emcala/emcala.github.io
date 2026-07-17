@@ -51,6 +51,23 @@
 
   .save-hint { font-size:11px; color:#94a3b8; text-align:right; margin-top:10px; }
   .loading { text-align:center; padding:40px; color:#94a3b8; font-weight:600; }
+  
+  .btn-refresh {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+  }
+  .btn-refresh:hover { background: rgba(255,255,255,0.3); }
 </style>
 </head>
 <body>
@@ -58,6 +75,7 @@
 <div class="hdr">
   <h1>EMCALA <span>| Vespertina</span></h1>
   <div class="hdr-right">
+    <button class="btn-refresh" onclick="cargar()" title="Traer ventas actualizadas">🔄 Sincronizar</button>
     <span id="save-indicator" style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.75); display:none;"></span>
     <input type="date" id="date-input">
     <div id="userBadgeContainer"></div>
