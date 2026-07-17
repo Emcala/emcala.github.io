@@ -58,6 +58,7 @@
 <div class="hdr">
   <h1>EMCALA <span>| Vespertina</span></h1>
   <div class="hdr-right">
+    <span id="save-indicator" style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.75); display:none;"></span>
     <input type="date" id="date-input">
     <div id="userBadgeContainer"></div>
   </div>
@@ -75,6 +76,31 @@
   const MY_SPV = session ? session.nombre.toUpperCase() : '';
 
   const dateInput = document.getElementById('date-input');
+  const saveIndicator = document.getElementById('save-indicator');
+
+  // ---------------------------------------------------------
+  // Control de guardados pendientes: mientras haya algo sin
+  // confirmar contra el servidor, se bloquea el cambio de fecha
+  // para no perder cambios a mitad de camino.
+  // ---------------------------------------------------------
+  let pendingSaves = 0;
+
+  function marcarPendiente() {
+    pendingSaves++;
+    dateInput.disabled = true;
+    saveIndicator.style.display = 'inline';
+    saveIndicator.textContent = '⏳ Guardando...';
+  }
+
+  function marcarGuardado(ok) {
+    pendingSaves = Math.max(0, pendingSaves - 1);
+    if (pendingSaves === 0) {
+      dateInput.disabled = false;
+      saveIndicator.textContent = ok === false ? '⚠️ Error al guardar' : '✅ Guardado';
+      setTimeout(() => { if (pendingSaves === 0) saveIndicator.style.display = 'none'; }, 2000);
+    }
+  }
+
   function todayStr() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -161,13 +187,19 @@
     container.innerHTML = html;
 
     container.querySelectorAll('.chk-contacto').forEach(el => {
-      el.addEventListener('change', e => guardarContacto(e.target.dataset.prom, fecha, e.target.checked, getMotivo(e.target.dataset.prom)));
+      el.addEventListener('change', e => {
+        marcarPendiente();
+        guardarContacto(e.target.dataset.prom, fecha, e.target.checked, getMotivo(e.target.dataset.prom));
+      });
     });
     container.querySelectorAll('.txt-motivo').forEach(el => {
       let timeout;
+      let yaMarcado = false; // evita marcar pendiente en cada tecla; solo una vez por tanda de escritura
       el.addEventListener('input', e => {
+        if (!yaMarcado) { marcarPendiente(); yaMarcado = true; }
         clearTimeout(timeout);
         timeout = setTimeout(() => {
+          yaMarcado = false; // se resetea acá; el fetch de abajo es el que hace el marcarGuardado()
           const chk = container.querySelector(`.chk-contacto[data-prom="${e.target.dataset.prom}"]`);
           guardarContacto(e.target.dataset.prom, fecha, chk ? chk.checked : false, e.target.value);
         }, 600); // debounce para no pegarle al servidor en cada tecla
@@ -182,12 +214,17 @@
 
   async function guardarContacto(promotor, fecha, contactado, motivo) {
     try {
-      await fetch(SCRIPT_URL, {
+      const resp = await fetch(SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ req: 'vespertina_update', fecha, promotor, contactado, motivo })
       });
-    } catch (e) { console.error('Error guardando contacto:', e); }
+      const result = await resp.json();
+      marcarGuardado(result.status === 'success');
+    } catch (e) {
+      console.error('Error guardando contacto:', e);
+      marcarGuardado(false);
+    }
   }
 
   // =========================================================
@@ -259,19 +296,31 @@
     spvList.forEach(spv => {
       const card = container.querySelector(`.card[data-spv="${spv}"]`);
       if (!card) return;
-      const guardar = () => {
+      const guardar = async () => {
         const revision = card.querySelector('.c1').checked;
         const analisis = card.querySelector('.c2').checked;
         const alineacion = card.querySelector('.c3').checked;
         const notas = card.querySelector('.notas').value;
-        fetch(SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ req: 'vespertina_jdv_update', fecha, spv, jdv: session.nombre, revision, analisis, alineacion, notas })
-        }).catch(e => console.error('Error guardando JDV:', e));
+        try {
+          const resp = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ req: 'vespertina_jdv_update', fecha, spv, jdv: session.nombre, revision, analisis, alineacion, notas })
+          });
+          const result = await resp.json();
+          marcarGuardado(result.status === 'success');
+        } catch (e) {
+          console.error('Error guardando JDV:', e);
+          marcarGuardado(false);
+        }
       };
-      card.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', guardar));
-      let t; card.querySelector('.notas').addEventListener('input', () => { clearTimeout(t); t = setTimeout(guardar, 800); });
+      card.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', () => { marcarPendiente(); guardar(); }));
+      let t, yaMarcadoNotas = false;
+      card.querySelector('.notas').addEventListener('input', () => {
+        if (!yaMarcadoNotas) { marcarPendiente(); yaMarcadoNotas = true; }
+        clearTimeout(t);
+        t = setTimeout(() => { yaMarcadoNotas = false; guardar(); }, 800);
+      });
     });
   }
 
