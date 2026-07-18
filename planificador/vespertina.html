@@ -322,9 +322,9 @@
       
       const aContactar = m.filas.filter(r => r.cumpleAmbos !== true);
       const prioritarios = [...aContactar].sort((a, b) => a.promedio - b.promedio).slice(0, 2);
-      const prioritariosContactados = prioritarios.filter(r => r.contactado === true).length;
+      m.prioritariosNoContactados = prioritarios.filter(r => r.contactado !== true);
       
-      m.pendientes = prioritarios.length - prioritariosContactados;
+      m.pendientes = m.prioritariosNoContactados.length;
       m.cerrada = prioritarios.length === 0 || m.pendientes === 0;
     });
 
@@ -351,11 +351,30 @@
     spvList.filter(s => getEstructura(s) === 'K+T').forEach(spv => {
       const m = mesas[spv];
       const colorClass = m.pctMesa>=90?'ok':(m.pctMesa>=70?'warn':'bad');
+      
+      let pendientesHtml = '—';
+      if (m.pendientes > 0) {
+        const detalles = m.prioritariosNoContactados.map(r => {
+          let d = [];
+          if(r.p1<100) d.push(`F1: ${r.f1Real}/${r.f1Plan}`);
+          if(r.p2<100) d.push(`F2: ${r.f2Real}/${r.f2Plan}`);
+          return `<b>${r.promotor}</b><br><span style="color:#64748b; font-size:10px;">${d.join(' | ')}</span>`;
+        }).join('<hr style="margin:4px 0; border:none; border-top:1px solid #e2e8f0;">');
+        
+        pendientesHtml = `
+          <details style="cursor:pointer; position:relative;">
+            <summary style="color:#dc2626; font-weight:700; outline:none;">${m.pendientes} pendientes</summary>
+            <div style="margin-top:4px; font-size:11px; background:#fff; padding:6px; border:1px solid #e2e8f0; border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,0.1); width:max-content; max-width:200px;">
+              ${detalles}
+            </div>
+          </details>`;
+      }
+
       html += `<tr>
         <td style="font-weight:600;">${spv}</td>
         <td>${m.promotores}</td>
         <td class="${colorClass}">${m.pctMesa}%</td>
-        <td>${m.pendientes > 0 ? m.pendientes : '—'}</td>
+        <td>${pendientesHtml}</td>
         <td class="${m.cerrada?'ok':'bad'}">${m.cerrada ? '✔' : '✘'}</td>
       </tr>`;
     });
@@ -371,11 +390,30 @@
     spvList.filter(s => getEstructura(s) === 'AS').forEach(spv => {
       const m = mesas[spv];
       const colorClass = m.pctMesa>=90?'ok':(m.pctMesa>=70?'warn':'bad');
+      
+      let pendientesHtml = '—';
+      if (m.pendientes > 0) {
+        const detalles = m.prioritariosNoContactados.map(r => {
+          let d = [];
+          if(r.p1<100) d.push(`F1: ${r.f1Real}/${r.f1Plan}`);
+          if(r.p2<100) d.push(`F2: ${r.f2Real}/${r.f2Plan}`);
+          return `<b>${r.promotor}</b><br><span style="color:#64748b; font-size:10px;">${d.join(' | ')}</span>`;
+        }).join('<hr style="margin:4px 0; border:none; border-top:1px solid #e2e8f0;">');
+        
+        pendientesHtml = `
+          <details style="cursor:pointer; position:relative;">
+            <summary style="color:#dc2626; font-weight:700; outline:none;">${m.pendientes} pendientes</summary>
+            <div style="margin-top:4px; font-size:11px; background:#fff; padding:6px; border:1px solid #e2e8f0; border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,0.1); width:max-content; max-width:200px;">
+              ${detalles}
+            </div>
+          </details>`;
+      }
+
       html += `<tr>
         <td style="font-weight:600;">${spv}</td>
         <td>${m.promotores}</td>
         <td class="${colorClass}">${m.pctMesa}%</td>
-        <td>${m.pendientes > 0 ? m.pendientes : '—'}</td>
+        <td>${pendientesHtml}</td>
         <td class="${m.cerrada?'ok':'bad'}">${m.cerrada ? '✔' : '✘'}</td>
       </tr>`;
     });
@@ -398,9 +436,33 @@
           </div>`;
       }
 
+      function renderOportunidades(title, arr, titleColor, textColor, bgColor, borderColor) {
+        if(arr.length===0) return `<div style="background:${bgColor}; padding:12px; border-radius:8px; border:1px solid ${borderColor};"><span style="color:${textColor}; font-size:12px;">Sin desvíos</span></div>`;
+        return `
+          <div style="background:${bgColor}; padding:12px; border-radius:8px; border:1px solid ${borderColor};">
+            <strong style="color:${titleColor}; font-size:12px;">${title}</strong>
+            <ul style="margin-top:8px; padding-left:16px; font-size:12px; color:${textColor}; display:flex; flex-direction:column; gap:6px;">
+              ${arr.map(r => {
+                let desvioStr = '';
+                if (r.p1 < 100 && r.p2 < 100) desvioStr = `Desvío F1 (${Math.round(r.p1)}%) y F2 (${Math.round(r.p2)}%)`;
+                else if (r.p1 < 100) desvioStr = `Desvío F1 (${Math.round(r.p1)}%)`;
+                else if (r.p2 < 100) desvioStr = `Desvío F2 (${Math.round(r.p2)}%)`;
+                else desvioStr = `Desvío global`;
+                
+                return `<li>
+                  <b>${r.promotor}</b> — ${desvioStr}<br>
+                  <span style="font-size:10.5px; opacity:0.85;">F1: ${r.f1Real}/${r.f1Plan} | F2: ${r.f2Real}/${r.f2Plan}</span>
+                </li>`;
+              }).join('')}
+            </ul>
+          </div>`;
+      }
+
       const getTopBottom = (canalRows) => {
         const sorted = [...canalRows].sort((a,b) => b.promedio - a.promedio);
-        return { mejores: sorted.slice(0, 3), peores: [...sorted].reverse().slice(0, 3) };
+        const mejores = sorted.filter(r => r.cumpleAmbos).slice(0, 3);
+        const peores = sorted.filter(r => !r.cumpleAmbos).reverse().slice(0, 3);
+        return { mejores, peores };
       };
       
       const kt = getTopBottom(rows.filter(r => getEstructura(r.spv) === 'K+T'));
@@ -418,13 +480,13 @@
           <h5 style="margin-top:4px; color:#1e293b; font-size:13px; font-weight:700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Canal K+T</h5>
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
             ${renderList('🏆 Mejores Resultados', kt.mejores, '#166534', '#15803d', '#f0fdf4', '#bbf7d0')}
-            ${renderList('⚠️ Mayores oportunidades', kt.peores, '#991b1b', '#b91c1c', '#fef2f2', '#fecaca')}
+            ${renderOportunidades('⚠️ Mayores oportunidades', kt.peores, '#991b1b', '#b91c1c', '#fef2f2', '#fecaca')}
           </div>
           
           <h5 style="margin-top:8px; color:#1e293b; font-size:13px; font-weight:700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Canal AS</h5>
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
             ${renderList('🏆 Mejores Resultados', as.mejores, '#166534', '#15803d', '#f0fdf4', '#bbf7d0')}
-            ${renderList('⚠️ Mayores oportunidades', as.peores, '#991b1b', '#b91c1c', '#fef2f2', '#fecaca')}
+            ${renderOportunidades('⚠️ Mayores oportunidades', as.peores, '#991b1b', '#b91c1c', '#fef2f2', '#fecaca')}
           </div>
         </div>
       </div>`;
@@ -433,13 +495,15 @@
     // Checklist general JDV (Único por día)
     const existente = jdvRows.find(j => normalize(j.spv) === 'GENERAL') || jdvRows[0] || {};
     html += `
-      <div class="card" data-spv="GENERAL">
-        <div class="card-title">Reunión Vespertina JDV</div>
-        <div class="card-sub">Estructura general del día</div>
+      <div class="card" data-spv="GENERAL" style="margin-bottom: 16px;">
+        <div class="card-title">📝 Acciones para mañana y Cierre</div>
+        <div class="card-sub">Estructura general de la reunión</div>
         <label class="jdv-check"><input type="checkbox" class="c1" ${existente.revision?'checked':''}> Revisión de resultados del día</label>
         <label class="jdv-check"><input type="checkbox" class="c2" ${existente.analisis?'checked':''}> Análisis de desvíos relevantes</label>
         <label class="jdv-check"><input type="checkbox" class="c3" ${existente.alineacion?'checked':''}> Alineación de prioridades y KPI a planificar para la jornada siguiente</label>
-        <textarea class="notas" placeholder="Notas de la reunión o focos KPI I y II (opcional)">${existente.notas||''}</textarea>
+        
+        <h5 style="margin-top:16px; margin-bottom:8px; font-size:13px; color:#1e293b;">Plan de Acción (Opcional)</h5>
+        <textarea class="notas" style="min-height:90px;" placeholder="Ej:&#10;K+T: García Maira -> reforzar Foco I / revisar ejecución.&#10;AS: Miño Renzo -> revisar cumplimiento Foco II.">${existente.notas||''}</textarea>
       </div>`;
 
     container.innerHTML = html;
