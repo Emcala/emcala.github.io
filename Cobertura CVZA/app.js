@@ -101,7 +101,7 @@ async function loadMesas() {
 // ==========================================
 // LOAD MAESTRO  (Google Sheets via Apps Script)
 // ==========================================
-async function loadMaestro(forceRefresh) {
+async function loadMaestro() {
   updateStatus('maestro', 'loading');
   try {
     if (MAESTRO_SCRIPT_URL === 'PEGAR_AQUI_LA_URL_DEL_SCRIPT') {
@@ -112,7 +112,7 @@ async function loadMaestro(forceRefresh) {
 
     const r = await fetch(MAESTRO_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'getCartera', forceRefresh: !!forceRefresh }),
+      body: JSON.stringify({ action: 'getCartera', forceRefresh: true }),
       // text/plain avoids CORS preflight issues with GAS
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
@@ -120,15 +120,24 @@ async function loadMaestro(forceRefresh) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
     
+    console.log("Respuesta Maestro/Historicos:", data);
+    
     if (!data.ok) throw new Error(data.error || 'Error desconocido');
 
     maestroData = data.cartera;
     
     if (data.historicos && Object.keys(data.historicos).length > 0) {
+      console.log("Historicos recibidos:", data.historicos);
       historicosData = data.historicos;
       updateStatus('historicos', 'loaded', Object.keys(historicosData).length + ' PR');
     } else {
-      updateStatus('historicos', 'error', 'Sin datos');
+      if (data.histError) {
+        console.error("Error al leer históricos en Apps Script:", data.histError);
+        updateStatus('historicos', 'error', 'Permiso Denegado / Error: ' + data.histError);
+      } else {
+        console.warn("Historicos vacíos o no recibidos:", data.historicos);
+        updateStatus('historicos', 'error', 'Sin datos');
+      }
     }
     
     updateStatus('maestro', 'loaded', data.total + ' cli');
@@ -291,16 +300,20 @@ function tryRender() {
       const cnc = Math.max(cartera - ccc, 0);
       const avance = cartera > 0 ? (ccc / cartera * 100) : 0;
 
-      let cccMA = 0, cccMMAA = 0;
+      let cccMA = '', cccMMAA = '';
       if (histKeys) {
         const hKey = findMatch(pn, histKeys);
-        if (hKey) { cccMA = historicosData[hKey].cccMA; cccMMAA = historicosData[hKey].cccMMAA; }
+        if (hKey) { 
+          cccMA = historicosData[hKey].cccMA; 
+          cccMMAA = historicosData[hKey].cccMMAA; 
+        }
       }
 
       const media = dias > 0 ? Math.round(cnc / dias) : cnc;
 
       sCartera += cartera; sCCC += ccc; sCNC += cnc;
-      sMA += cccMA; sAA += cccMMAA;
+      if (cccMA !== '') sMA += cccMA; 
+      if (cccMMAA !== '') sAA += cccMMAA;
 
       promRows.push({ canal: m.canal, promotor: m.promotor, cartera, ccc, cnc, avance, cccMA, cccMMAA, media });
     }
@@ -319,8 +332,8 @@ function tryRender() {
       `<td>${sCCC.toLocaleString('es-AR')}</td>` +
       `<td>${sCNC.toLocaleString('es-AR')}</td>` +
       `<td><span class="avance-cell" style="${avanceStyle(sAvance)}">${sAvance.toFixed(2)}%</span></td>` +
-      `<td>${sMA || ''}</td>` +
-      `<td>${sAA || ''}</td>` +
+      `<td>${sMA !== 0 ? sMA : ''}</td>` +
+      `<td>${sAA !== 0 ? sAA : ''}</td>` +
       `<td>${sMedia.toLocaleString('es-AR')}</td>`;
     tbody.appendChild(sRow);
 
@@ -335,8 +348,8 @@ function tryRender() {
         `<td>${p.ccc.toLocaleString('es-AR')}</td>` +
         `<td>${p.cnc.toLocaleString('es-AR')}</td>` +
         `<td><span class="avance-cell" style="${avanceStyle(p.avance)}">${p.avance.toFixed(2)}%</span></td>` +
-        `<td>${p.cccMA || ''}</td>` +
-        `<td>${p.cccMMAA || ''}</td>` +
+        `<td>${p.cccMA !== '' ? p.cccMA : ''}</td>` +
+        `<td>${p.cccMMAA !== '' ? p.cccMMAA : ''}</td>` +
         `<td>${p.media.toLocaleString('es-AR')}</td>`;
       tbody.appendChild(pRow);
     }
@@ -358,8 +371,8 @@ function tryRender() {
     `<td>${jCCC.toLocaleString('es-AR')}</td>` +
     `<td>${jCNC.toLocaleString('es-AR')}</td>` +
     `<td><span class="avance-cell" style="${avanceStyle(jAvance)}">${jAvance.toFixed(2)}%</span></td>` +
-    `<td>${jMA || ''}</td>` +
-    `<td>${jAA || ''}</td>` +
+    `<td>${jMA !== 0 ? jMA : ''}</td>` +
+    `<td>${jAA !== 0 ? jAA : ''}</td>` +
     `<td>${jMedia.toLocaleString('es-AR')}</td>`;
   tbody.appendChild(jRow);
 
@@ -401,51 +414,10 @@ function showToast(msg) {
 }
 
 // ==========================================
-// REFRESH MANUAL  (fuerza datos frescos, ignora caché)
-// ==========================================
-async function refreshAll() {
-  const btn = document.getElementById('btnRefresh');
-  if (btn) {
-    btn.disabled = true;
-    btn.classList.add('spinning');
-  }
-
-  // Reset de estado para que tryRender() no pinte con datos viejos mezclados
-  maestroData = null;
-  ventasData = null;
-  mesasData = null;
-  historicosData = null;
-  document.getElementById('tableScroll').style.display = 'none';
-  document.getElementById('emptyState').style.display = 'block';
-
-  updateStatus('maestro', 'pending');
-  updateStatus('mesas', 'pending');
-  updateStatus('ventas', 'pending');
-  updateStatus('historicos', 'pending');
-
-  try {
-    await Promise.all([
-      loadMesas(),
-      loadMaestro(true),   // forceRefresh=true → saltea el caché de 2hs del Maestro
-      loadAvance()         // ya trae datos en vivo (sin caché) desde el Planificador
-    ]);
-    showToast('✅ Datos actualizados al instante');
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.classList.remove('spinning');
-    }
-  }
-}
-
-// ==========================================
 // INIT
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   loadMesas();
   loadMaestro();
   loadAvance();
-
-  const btn = document.getElementById('btnRefresh');
-  if (btn) btn.addEventListener('click', refreshAll);
 });
