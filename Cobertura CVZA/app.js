@@ -136,6 +136,9 @@ async function loadMaestro() {
         updateStatus('historicos', 'error', 'Permiso Denegado / Error: ' + data.histError);
       } else {
         console.warn("Historicos vacíos o no recibidos:", data.historicos);
+        if (data.histDebug) {
+          console.warn("Info de depuración de la hoja de Históricos:", data.histDebug);
+        }
         updateStatus('historicos', 'error', 'Sin datos');
       }
     }
