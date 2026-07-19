@@ -101,7 +101,7 @@ async function loadMesas() {
 // ==========================================
 // LOAD MAESTRO  (Google Sheets via Apps Script)
 // ==========================================
-async function loadMaestro() {
+async function loadMaestro(forceRefresh) {
   updateStatus('maestro', 'loading');
   try {
     if (MAESTRO_SCRIPT_URL === 'PEGAR_AQUI_LA_URL_DEL_SCRIPT') {
@@ -112,7 +112,7 @@ async function loadMaestro() {
 
     const r = await fetch(MAESTRO_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'getCartera' }),
+      body: JSON.stringify({ action: 'getCartera', forceRefresh: !!forceRefresh }),
       // text/plain avoids CORS preflight issues with GAS
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
@@ -401,10 +401,51 @@ function showToast(msg) {
 }
 
 // ==========================================
+// REFRESH MANUAL  (fuerza datos frescos, ignora caché)
+// ==========================================
+async function refreshAll() {
+  const btn = document.getElementById('btnRefresh');
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('spinning');
+  }
+
+  // Reset de estado para que tryRender() no pinte con datos viejos mezclados
+  maestroData = null;
+  ventasData = null;
+  mesasData = null;
+  historicosData = null;
+  document.getElementById('tableScroll').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+
+  updateStatus('maestro', 'pending');
+  updateStatus('mesas', 'pending');
+  updateStatus('ventas', 'pending');
+  updateStatus('historicos', 'pending');
+
+  try {
+    await Promise.all([
+      loadMesas(),
+      loadMaestro(true),   // forceRefresh=true → saltea el caché de 2hs del Maestro
+      loadAvance()         // ya trae datos en vivo (sin caché) desde el Planificador
+    ]);
+    showToast('✅ Datos actualizados al instante');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('spinning');
+    }
+  }
+}
+
+// ==========================================
 // INIT
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   loadMesas();
   loadMaestro();
   loadAvance();
+
+  const btn = document.getElementById('btnRefresh');
+  if (btn) btn.addEventListener('click', refreshAll);
 });
