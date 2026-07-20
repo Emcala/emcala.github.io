@@ -36,6 +36,29 @@
       </button>
     </div>
 
+
+    <!-- BADGES AL MEDIO (Planificador Style) -->
+    <div class="nav-center">
+      <div class="status-bar" id="statusBar">
+        <div class="status-item">
+          <span class="status-dot pending" id="statusMaestro"></span>
+          <span id="statusMaestroText">MAESTRO</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot pending" id="statusMesas"></span>
+          <span id="statusMesasText">MESAS</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot pending" id="statusVentas"></span>
+          <span id="statusVentasText">AVANCE</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot pending" id="statusHistoricos"></span>
+          <span id="statusHistoricosText">HISTÓRICOS</span>
+        </div>
+      </div>
+    </div>
+
     <div class="nav-right">
       <button class="nav-btn btn-refresh" id="btnRefresh" title="Traer datos frescos ahora">
         <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -47,28 +70,7 @@
     </div>
   </nav>
 
-  <!-- Status Badges Row -->
-  <div class="header-status-container">
-    <div class="status-bar" id="statusBar">
-      <div class="status-item">
-        <span class="status-dot pending" id="statusMaestro"></span>
-        <span id="statusMaestroText">MAESTRO</span>
-      </div>
-      <div class="status-item">
-        <span class="status-dot pending" id="statusMesas"></span>
-        <span id="statusMesasText">MESAS</span>
-      </div>
-      <div class="status-item">
-        <span class="status-dot pending" id="statusVentas"></span>
-        <span id="statusVentasText">AVANCE</span>
-      </div>
-      <div class="status-item">
-        <span class="status-dot pending" id="statusHistoricos"></span>
-        <span id="statusHistoricosText">HISTÓRICOS</span>
-      </div>
-    </div>
-    <div class="dias-info" id="diasInfo" style="display:none"></div>
-  </div>
+  <div class="dias-info" id="diasInfo" style="display:none"></div>
 
   <!-- Main Table -->
   <div class="table-container" id="tableContainer">
