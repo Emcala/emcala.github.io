@@ -236,10 +236,10 @@ thead th {
   color: #fff;
   font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 13px 10px;
+  padding: 9px 8px;
   text-align: center;
   white-space: nowrap;
   border-bottom: 2px solid rgba(255,255,255,0.12);
@@ -249,10 +249,11 @@ thead th {
 }
 
 tbody td {
-  padding: 9px 10px;
+  padding: 6px 8px;
   text-align: center;
   border-bottom: 1px solid rgba(255,255,255,0.05);
   font-weight: 500;
+  font-size: 12.5px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   transition: background 0.15s ease;
@@ -260,17 +261,11 @@ tbody td {
 tbody tr.row-promotor:hover td { background: rgba(255,255,255,0.04); }
 
 /* Promotor row */
-.row-promotor td:nth-child(2) {
-  text-align: left;
-  padding-left: 28px;
-  font-weight: 500;
-  font-size: 12.5px;
-}
 .row-promotor td:first-child {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  letter-spacing: 0.06em;
+  text-align: left;
+  padding-left: 16px;
+  font-weight: 500;
+  font-size: 12px;
 }
 
 /* Supervisor row */
@@ -278,19 +273,16 @@ tbody tr.row-promotor:hover td { background: rgba(255,255,255,0.04); }
   background: var(--row-spv) !important;
   font-weight: 800 !important;
   font-family: 'Bricolage Grotesque', sans-serif;
-  font-size: 13.5px;
+  font-size: 12.5px;
   border-bottom: 2px solid rgba(255,255,255,0.1);
   border-top: 2px solid rgba(255,255,255,0.1);
-  padding: 11px 10px;
+  padding: 8px 8px;
 }
-.row-supervisor td:nth-child(2) {
+.row-supervisor td:first-child {
   text-align: left;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-}
-.row-supervisor td:first-child {
-  font-size: 10px;
-  color: rgba(255,255,255,0.5);
+  padding-left: 16px;
 }
 
 /* JDV total */
@@ -298,13 +290,22 @@ tbody tr.row-promotor:hover td { background: rgba(255,255,255,0.04); }
   background: var(--row-jdv) !important;
   font-weight: 800 !important;
   font-family: 'Bricolage Grotesque', sans-serif;
-  font-size: 14.5px;
+  font-size: 13.5px;
   border-top: 3px solid rgba(255,255,255,0.18);
-  padding: 13px 10px;
+  padding: 10px 8px;
 }
-.row-jdv td:nth-child(2) {
+.row-jdv td:first-child {
   text-align: left;
   letter-spacing: 0.08em;
+  padding-left: 16px;
+}
+
+/* Achieved Historic CCC */
+tbody td.achieved {
+  background: rgba(102, 187, 106, 0.15) !important;
+  color: #81c784;
+  font-weight: 700;
+  border-bottom-color: rgba(102, 187, 106, 0.25) !important;
 }
 
 /* Avance cell */

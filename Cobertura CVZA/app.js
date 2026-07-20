@@ -313,7 +313,6 @@ function tryRender() {
     const sRow = document.createElement('tr');
     sRow.className = 'row-supervisor';
     sRow.innerHTML =
-      `<td></td>` +
       `<td>${spv}</td>` +
       `<td>${sCartera.toLocaleString('es-AR')}</td>` +
       `<td>${sCCC.toLocaleString('es-AR')}</td>` +
@@ -328,15 +327,18 @@ function tryRender() {
     for (const p of promRows) {
       const pRow = document.createElement('tr');
       pRow.className = 'row-promotor';
+      
+      const classMA = (p.cccMA > 0 && p.ccc >= p.cccMA) ? ' class="achieved"' : '';
+      const classAA = (p.cccMMAA > 0 && p.ccc >= p.cccMMAA) ? ' class="achieved"' : '';
+
       pRow.innerHTML =
-        `<td>${p.canal}</td>` +
         `<td>${p.promotor}</td>` +
         `<td>${p.cartera.toLocaleString('es-AR')}</td>` +
         `<td>${p.ccc.toLocaleString('es-AR')}</td>` +
         `<td>${p.cnc.toLocaleString('es-AR')}</td>` +
         `<td><span class="avance-cell" style="${avanceStyle(p.avance)}">${p.avance.toFixed(2)}%</span></td>` +
-        `<td>${p.cccMA || ''}</td>` +
-        `<td>${p.cccMMAA || ''}</td>` +
+        `<td${classMA}>${p.cccMA || ''}</td>` +
+        `<td${classAA}>${p.cccMMAA || ''}</td>` +
         `<td>${p.media.toLocaleString('es-AR')}</td>`;
       tbody.appendChild(pRow);
     }
@@ -352,7 +354,6 @@ function tryRender() {
   const jRow = document.createElement('tr');
   jRow.className = 'row-jdv';
   jRow.innerHTML =
-    `<td></td>` +
     `<td>JDV</td>` +
     `<td>${jCartera.toLocaleString('es-AR')}</td>` +
     `<td>${jCCC.toLocaleString('es-AR')}</td>` +
