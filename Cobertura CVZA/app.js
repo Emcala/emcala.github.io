@@ -236,7 +236,7 @@ function avanceStyle(pct) {
   const sat = p > 85 ? 55 : 65;
   const lgt = p > 85 ? 38 : (p < 40 ? 42 : 40);
   const txtColor = p >= 48 && p <= 58 ? '#1a1a1a' : '#fff';
-  return `background:hsl(${hue},${sat}%,${lgt}%);color:${txtColor}`;
+  return `hsl(${hue},${sat}%,${lgt}%)`;
 }
 
 // ==========================================
@@ -317,7 +317,7 @@ function tryRender() {
       `<td>${sCartera.toLocaleString('es-AR')}</td>` +
       `<td>${sCCC.toLocaleString('es-AR')}</td>` +
       `<td>${sCNC.toLocaleString('es-AR')}</td>` +
-      `<td><span class="avance-cell" style="${avanceStyle(sAvance)}">${sAvance.toFixed(2)}%</span></td>` +
+      `<td><div class="avance-cell"><div class="avance-bar" style="width:${Math.min(sAvance,100)}%; background:${avanceStyle(sAvance)};"></div><span class="avance-text">${sAvance.toFixed(2)}%</span></div></td>` +
       `<td>${sMA || ''}</td>` +
       `<td>${sAA || ''}</td>` +
       `<td>${sMedia.toLocaleString('es-AR')}</td>`;
@@ -336,7 +336,7 @@ function tryRender() {
         `<td>${p.cartera.toLocaleString('es-AR')}</td>` +
         `<td>${p.ccc.toLocaleString('es-AR')}</td>` +
         `<td>${p.cnc.toLocaleString('es-AR')}</td>` +
-        `<td><span class="avance-cell" style="${avanceStyle(p.avance)}">${p.avance.toFixed(2)}%</span></td>` +
+        `<td><div class="avance-cell"><div class="avance-bar" style="width:${Math.min(p.avance,100)}%; background:${avanceStyle(p.avance)};"></div><span class="avance-text">${p.avance.toFixed(2)}%</span></div></td>` +
         `<td${classMA}>${p.cccMA || ''}</td>` +
         `<td${classAA}>${p.cccMMAA || ''}</td>` +
         `<td>${p.media.toLocaleString('es-AR')}</td>`;
@@ -358,7 +358,7 @@ function tryRender() {
     `<td>${jCartera.toLocaleString('es-AR')}</td>` +
     `<td>${jCCC.toLocaleString('es-AR')}</td>` +
     `<td>${jCNC.toLocaleString('es-AR')}</td>` +
-    `<td><span class="avance-cell" style="${avanceStyle(jAvance)}">${jAvance.toFixed(2)}%</span></td>` +
+    `<td><div class="avance-cell"><div class="avance-bar" style="width:${Math.min(jAvance,100)}%; background:${avanceStyle(jAvance)};"></div><span class="avance-text">${jAvance.toFixed(2)}%</span></div></td>` +
     `<td>${jMA || ''}</td>` +
     `<td>${jAA || ''}</td>` +
     `<td>${jMedia.toLocaleString('es-AR')}</td>`;
