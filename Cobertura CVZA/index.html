@@ -10,15 +10,34 @@
 </head>
 <body>
 
-  <a href="../portal/index.html" class="back-link" id="backLink">← Portal</a>
+  <!-- Top Nav Bar (Estilo Planificador) -->
+  <nav class="top-nav">
+    <div class="nav-left">
+      <div class="nav-brand">
+        <span class="brand-emcala">EMCALA</span>
+        <span class="brand-divider">|</span>
+        <span class="brand-app">Cobertura CVZA</span>
+      </div>
+      
+      <!-- Home Button -->
+      <a href="../portal/index.html" class="nav-icon-btn" title="Volver al Portal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </a>
+    </div>
 
-  <header class="header">
-    <div class="header-brand">COBERTURA CVZA</div>
-    <div class="header-subtitle">Clientes con Compra de Cerveza</div>
-    <button class="refresh-btn" id="btnRefresh" title="Traer datos frescos ahora, sin esperar caché">
-      <span class="refresh-icon">⟳</span> Actualizar ahora
-    </button>
-  </header>
+    <div class="nav-right">
+      <button class="nav-btn btn-refresh" id="btnRefresh" title="Traer datos frescos ahora">
+        <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        ACTUALIZAR DATOS
+      </button>
+    </div>
+  </nav>
 
   <!-- Status Bar -->
   <div class="status-bar" id="statusBar">
