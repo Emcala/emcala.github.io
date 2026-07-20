@@ -131,12 +131,12 @@ async function loadMaestro(forceRefresh) {
       updateStatus('historicos', 'error', 'Sin datos');
     }
     
-    updateStatus('maestro', 'loaded', data.total + ' cli');
+    updateStatus('maestro', 'loaded', data.total + ' CLI');
     showToast('✅ Maestro cargado: ' + data.total + ' clientes con licencia alcohol');
     tryRender();
   } catch (e) {
     console.error('Maestro error:', e);
-    updateStatus('maestro', 'error', e.message);
+    updateStatus('maestro', 'error');
     showToast('❌ Error al cargar maestro.');
   }
 }
@@ -378,7 +378,7 @@ function updateStatus(src, state, detail) {
   if (!dot || !text) return;
 
   dot.className = 'status-dot ' + state;
-  const labels = { maestro: 'Maestro', mesas: 'Mesas', ventas: 'Avance', historicos: 'Históricos' };
+  const labels = { maestro: 'MAESTRO', mesas: 'MESAS', ventas: 'AVANCE', historicos: 'HISTÓRICOS' };
   const icons  = { pending: '', loading: '⏳', loaded: '✓', error: '✗' };
   text.textContent = (labels[src] || src) + ' ' + (icons[state] || '') + (detail ? ' · ' + detail : '');
 }

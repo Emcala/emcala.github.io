@@ -26,6 +26,14 @@
           <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
       </a>
+
+      <!-- Logout Button -->
+      <button id="logoutBtn" class="nav-icon-btn btn-logout" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+          <line x1="12" y1="2" x2="12" y2="12"></line>
+        </svg>
+      </button>
     </div>
 
     <div class="nav-right">
@@ -39,29 +47,28 @@
     </div>
   </nav>
 
-  <!-- Status Bar -->
-  <div class="status-bar" id="statusBar">
-    <div class="status-item">
-      <span class="status-dot pending" id="statusMaestro"></span>
-      <span id="statusMaestroText">Maestro Clientes</span>
+  <!-- Status Badges Row -->
+  <div class="header-status-container">
+    <div class="status-bar" id="statusBar">
+      <div class="status-item">
+        <span class="status-dot pending" id="statusMaestro"></span>
+        <span id="statusMaestroText">MAESTRO</span>
+      </div>
+      <div class="status-item">
+        <span class="status-dot pending" id="statusMesas"></span>
+        <span id="statusMesasText">MESAS</span>
+      </div>
+      <div class="status-item">
+        <span class="status-dot pending" id="statusVentas"></span>
+        <span id="statusVentasText">AVANCE</span>
+      </div>
+      <div class="status-item">
+        <span class="status-dot pending" id="statusHistoricos"></span>
+        <span id="statusHistoricosText">HISTÓRICOS</span>
+      </div>
     </div>
-    <div class="status-item">
-      <span class="status-dot pending" id="statusMesas"></span>
-      <span id="statusMesasText">Mesas</span>
-    </div>
-    <div class="status-item">
-      <span class="status-dot pending" id="statusVentas"></span>
-      <span id="statusVentasText">Avance (Planificador)</span>
-    </div>
-    <div class="status-item">
-      <span class="status-dot pending" id="statusHistoricos"></span>
-      <span id="statusHistoricosText">Históricos</span>
-    </div>
+    <div class="dias-info" id="diasInfo" style="display:none"></div>
   </div>
-
-  <!-- Upload Section Removed (100% Automated) -->
-
-  <div class="dias-info" id="diasInfo" style="display:none"></div>
 
   <!-- Main Table -->
   <div class="table-container" id="tableContainer">
