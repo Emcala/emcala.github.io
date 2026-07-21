@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Efectividad de Cobertura · EMCALA</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&family=Barlow:wght@400;600;700&display=swap');
+
+  :root{
+    --bg: linear-gradient(145deg, #0B2559 0%, #1B5FA8 60%, #0D3880 100%);
+    --surf:#ffffff; --surf2:#f8fafc; --brd:#e2e8f0; --acc:#1B5FA8; --txt:#0f172a; --muted:#64748b;
+    --c-red:#ef4444; --c-orange:#f97316; --c-yellow:#eab308; --c-green:#22c55e; --c-grey:#94a3b8;
+    --fs-base:12px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--txt);font-family:'Bricolage Grotesque',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+
+  .hdr{background:rgba(22,49,84,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.1);
+    padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 15px rgba(0,0,0,0.15);}
+  .hdr-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:10px;margin-right:8px;}
+  .brand strong{font-size:20px;letter-spacing:-0.02em;color:#fff;font-weight:800;}
+  .brand .sep{width:1.5px;height:20px;background:rgba(255,255,255,0.25);}
+  .brand span{font-size:14px;font-weight:600;color:rgba(255,255,255,0.7);}
+
+  input[type=date]{font-weight:600;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.95);color:var(--txt);outline:none;}
+
+  .btn{background:linear-gradient(135deg,#fff 0%,#f8fafc 100%);color:var(--acc);border:1px solid rgba(0,0,0,0.05);
+    padding:7px 12px;border-radius:8px;font-weight:800;font-size:11px;text-transform:uppercase;cursor:pointer;
+    display:flex;align-items:center;gap:6px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);transition:.2s;white-space:nowrap;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .btn-outline{background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.25);}
+  .btn-outline:hover{background:rgba(255,255,255,0.16);}
+  .btn-yellow{border-color:#eab308;color:#eab308;}
+  .btn-green{border-color:#22c55e;color:#22c55e;}
+
+  .file-label{font-size:10.5px;color:rgba(255,255,255,0.65);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  .container{flex:1;padding:14px;display:flex;flex-direction:column;min-height:0;}
+
+  #error-banner{display:none;background:#ef4444;color:#fff;font-weight:700;font-size:12px;padding:8px 16px;text-align:center;}
+  #warn-banner{display:none;background:#fde68a;color:#78350f;font-weight:600;font-size:11px;padding:6px 16px;text-align:center;}
+
+  .table-wrap{background:var(--surf);border-radius:12px;box-shadow:0 12px 24px rgba(0,0,0,0.3);border:1px solid var(--brd);
+    width:100%;max-width:550px;margin:0 auto;overflow:auto;flex:1;min-height:0;display:flex;flex-direction:column;}
+
+  table{width:100%;flex:1;border-collapse:separate;border-spacing:0;text-align:center;}
+  thead th{background:var(--acc);color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;padding:6px 4px;
+    position:sticky;top:0;z-index:5;border-bottom:2px solid rgba(0,0,0,0.2);}
+  thead th:first-child, thead th:nth-child(2){text-align:left;padding-left:10px;}
+
+  td{padding:2px 4px;font-size:11.5px;border-bottom:1px solid #eef1f5;}
+  td.name-col{text-align:left;padding-left:10px;font-weight:600;color:#334155;}
+  tr.prom-row td:not(.pct-cell){background:#fff;}
+  tr.prom-row:hover td:not(.pct-cell){background:#f8fafc;}
+
+  tr.sdv-row td{background:var(--acc);color:#fff;font-weight:800;font-size:12px;padding:4px;text-transform:uppercase;}
+  tr.sdv-row td.name-col{padding-left:10px;}
+
+  tr.grand-row td{background:#0B2559;color:#fff;font-weight:800;font-size:12.5px;padding:6px;text-transform:uppercase;}
+
+  .progress-cell {
+    position: relative;
+    width: 65px;
+    min-width: 65px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--txt);
+    vertical-align: middle;
+    padding: 0 4px !important;
+    text-align: center;
+    overflow: hidden;
+    background: transparent !important;
+  }
+  .progress-bar-bg {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
+    background: #4a5568;
+    border-radius: 4px;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 0;
+  }
+  .progress-cell span {
+    position: relative;
+    z-index: 1;
+    color: #ffffff;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 1px rgba(0, 0, 0, 1);
+  }
+
+  .empty-state{flex:1;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.85);
+    font-size:15px;font-weight:600;text-align:center;max-width:520px;margin:40px auto;line-height:1.5;}
+
+  @media (max-width:640px){
+    .hdr{padding:8px 12px;}
+    .brand strong{font-size:16px;}
+    .file-label{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="brand">
+      <strong>EMCALA</strong>
+      <div class="sep"></div>
+      <span>Efectividad</span>
+    </div>
+    <input type="date" id="date-input">
+  </div>
+  <div class="hdr-left">
+    <button class="btn btn-yellow" id="btn-upload"><i class="fa-solid fa-file-excel"></i> Cargar Clientes a Visitar</button>
+    <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none;">
+    <span class="file-label" id="file-label">Ningún archivo cargado</span>
+    <button class="btn btn-green" id="btn-calc"><i class="fa-solid fa-rotate"></i> Calcular</button>
+    <button class="btn btn-outline" id="btn-cloud" style="display:none;"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar en la nube</button>
+  </div>
+</div>
+
+<div id="error-banner"></div>
+<div id="warn-banner"></div>
+
+<div class="container">
+  <div id="empty-state" class="empty-state">
+    Cargá el archivo Excel de <strong>Clientes a Visitar</strong> y elegí la fecha para calcular la efectividad del día.
+  </div>
+  <div class="table-wrap" id="table-wrap" style="display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th>SDV</th>
+          <th>Promotor</th>
+          <th>Clientes a<br>Visitar</th>
+          <th>CCC</th>
+          <th>Efectividad<br>de venta %</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ==============================
+// CONFIG
+// ==============================
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
+const AUTH_URL   = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec';
+const CLOUD_URL  = 'https://script.google.com/macros/s/AKfycbwyNIGLygcCTmkXrbVbFqnLLkt8Z9RRJ34ya1d6TooxEgtiOhahAIY1-2MagjlfNpEJrA/exec';
+
+const HOLIDAYS = [
+  '2026-06-15','2026-06-20','2026-07-09'
+];
+
+// Umbrales de semáforo (% efectividad) — ajustables a ojo según cómo lo quieran ver
+// Planificador thresholds: <50 Rojo, 50-89 Ambar/Naranja, >=90 Verde Excel
+const UMBRAL_VERDE   = 90;
+const UMBRAL_AMARILLO= 50;
+
+// ==============================
+// ESTADO
+// ==============================
+let visitRows = [];      // filas crudas del excel: {vnd, modo, days:{LU,MA,MI,JU,VI,SA,DO}}
+let vendMap = {};         // vend(code) -> {promotor, supName}
+let sdvOrder = [];        // orden de supervisores según Mesas
+let mesasLoaded = false;
+
+const dateInput = document.getElementById('date-input');
+const fileInput = document.getElementById('file-input');
+const fileLabel = document.getElementById('file-label');
+const errorBanner = document.getElementById('error-banner');
+const warnBanner = document.getElementById('warn-banner');
+const emptyState = document.getElementById('empty-state');
+const tableWrap = document.getElementById('table-wrap');
+const tbody = document.getElementById('tbody');
+const btnCloud = document.getElementById('btn-cloud');
+
+function setToday(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+dateInput.value = setToday();
+
+function showError(msg){
+  errorBanner.textContent = msg;
+  errorBanner.style.display = 'block';
+}
+function clearError(){ errorBanner.style.display = 'none'; }
+function showWarn(msg){
+  warnBanner.textContent = msg;
+  warnBanner.style.display = 'block';
+}
+function clearWarn(){ warnBanner.style.display = 'none'; }
+
+// ==============================
+// NORMALIZACION
+// ==============================
+function normHeader(h){
+  return h ? h.toString().trim().toLowerCase().replace(/\.$/,'') : '';
+}
+function normName(s){
+  return (s || '').toString()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .trim().toUpperCase().replace(/\s+/g,' ');
+}
+function normVend(v){
+  // "02" y "2" deben matchear
+  const s = (v === null || v === undefined) ? '' : v.toString().trim();
+  const n = parseInt(s, 10);
+  return isNaN(n) ? s : String(n);
+}
+
+// ==============================
+// FECHA -> COLUMNA DEL DIA (LU/MA/MI/JU/VI/SA/DO)
+// ==============================
+const DAY_KEYS = ['DO','LU','MA','MI','JU','VI','SA'];
+function dayKeyFromDate(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  return DAY_KEYS[d.getDay()];
+}
+
+// ==============================
+// MES COMERCIAL (mismo criterio que el planificador)
+// ==============================
+function computeCommercialMonth(dateStr){
+  const formatD = (d) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  const parts = dateStr.split('-');
+  let date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  do {
+    date.setDate(date.getDate() + 1);
+  } while (date.getDay() === 0 || HOLIDAYS.includes(formatD(date)));
+  return formatD(date).substring(0, 7);
+}
+
+// ==============================
+// CARGA DE MESAS (Vend. -> Promotor / SDV)
+// ==============================
+async function loadMesas(){
+  try{
+    const response = await fetch(AUTH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'getMesasEfectividad' })
+    });
+    const result = await response.json();
+    if (result.ok && Array.isArray(result.mesas)){
+      vendMap = {};
+      sdvOrder = [];
+      result.mesas.forEach(m => {
+        const sName = normName(m.supName);
+        if (!sdvOrder.includes(sName)) sdvOrder.push(sName);
+        vendMap[normVend(m.vend)] = { promotor: normName(m.promotor), supName: sName };
+      });
+      mesasLoaded = true;
+      return true;
+    }
+    throw new Error('Respuesta sin datos de mesas');
+  }catch(e){
+    showError('No se pudo cargar el mapeo de Mesas (Vend./Promotor/SDV). Reintentá "Calcular".');
+    console.error(e);
+    return false;
+  }
+}
+
+// ==============================
+// CARGA DE VENTAS (CCC = bol-v) DESDE EL PLANIFICADOR
+// ==============================
+async function loadVentas(dateStr){
+  const cMonth = computeCommercialMonth(dateStr);
+  const url = `${SCRIPT_URL}?date=${dateStr}&cMonth=${cMonth}&spv=ALL&_t=${Date.now()}`;
+  try{
+    const response = await fetch(url);
+    const result = await response.json();
+    if (result.status !== 'success') throw new Error(result.message || 'Error al traer ventas');
+    const ventas = {};
+    const fetched = result.data || {};
+    for (let originalProm in fetched){
+      let prom = originalProm;
+      if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) prom = 'MIÑO RENZO';
+      ventas[normName(prom)] = fetched[originalProm];
+    }
+    return ventas;
+  }catch(e){
+    showError('No se pudo traer la venta del día (CCC) desde el planificador.');
+    console.error(e);
+    return null;
+  }
+}
+
+// ==============================
+// PARSEO DEL EXCEL DE CLIENTES A VISITAR
+// ==============================
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  fileLabel.textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try{
+      const wb = XLSX.read(ev.target.result, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      if (!rows.length) throw new Error('Excel vacío');
+      const headers = rows[0].map(normHeader);
+
+      const iVnd  = headers.findIndex(h => h === 'vnd');
+      const iModo = headers.findIndex(h => h === 'modo');
+      const dayIdx = {};
+      ['lu','ma','mi','ju','vi','sa','do'].forEach(k => {
+        dayIdx[k.toUpperCase()] = headers.findIndex(h => h === k);
+      });
+
+      if (iVnd < 0 || iModo < 0){
+        throw new Error('No se encontraron las columnas "Vnd." o "Modo" en el Excel');
+      }
+
+      visitRows = [];
+      for (let i = 1; i < rows.length; i++){
+        const r = rows[i];
+        if (!r || r.length === 0) continue;
+        const vnd = normVend(r[iVnd]);
+        const modo = (r[iModo] || '').toString().trim().toUpperCase();
+        const days = {};
+        DAY_KEYS.forEach(k => { if (k !== 'DO' || dayIdx['DO'] >= 0) days[k] = dayIdx[k] >= 0 ? (r[dayIdx[k]] || '').toString().trim().toUpperCase() : ''; });
+        visitRows.push({ vnd, modo, days });
+      }
+      clearError();
+      btnCloud.style.display = 'flex'; // Mostrar botón de nube al parsear localmente
+      calcular();
+    }catch(err){
+      showError('Error leyendo el Excel: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+document.getElementById('btn-upload').addEventListener('click', () => fileInput.click());
+document.getElementById('btn-calc').addEventListener('click', () => calcular());
+dateInput.addEventListener('change', () => calcular());
+
+// ==============================
+// GUARDAR EN LA NUBE
+// ==============================
+btnCloud.addEventListener('click', async () => {
+  if (!visitRows || visitRows.length === 0) return;
+  
+  if (CLOUD_URL === 'PEGAR_AQUI_LA_URL_DEL_NUEVO_SCRIPT') {
+    showError('Debes configurar CLOUD_URL en el código con la URL del nuevo script de Apps Script.');
+    return;
+  }
+
+  btnCloud.disabled = true;
+  const origHtml = btnCloud.innerHTML;
+  btnCloud.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+  
+  try {
+    const payload = { action: 'saveVisits', visitRows: visitRows };
+    const response = await fetch(CLOUD_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json();
+    if (result.ok) {
+      btnCloud.innerHTML = '<i class="fa-solid fa-check"></i> Guardado en la nube';
+      btnCloud.classList.replace('btn-outline', 'btn-green');
+      setTimeout(() => {
+        btnCloud.style.display = 'none';
+        btnCloud.classList.replace('btn-green', 'btn-outline');
+        btnCloud.innerHTML = origHtml;
+        btnCloud.disabled = false;
+      }, 3000);
+    } else {
+      throw new Error(result.error || 'Error desconocido');
+    }
+  } catch(err) {
+    showError('Error al guardar en la nube: ' + err.message);
+    btnCloud.innerHTML = origHtml;
+    btnCloud.disabled = false;
+  }
+});
+
+// ==============================
+// CALCULO PRINCIPAL
+// ==============================
+async function calcular(){
+  clearError();
+  clearWarn();
+
+  if (visitRows.length === 0){
+    return; // todavía no cargaron el excel
+  }
+
+  const dateStr = dateInput.value;
+  if (!dateStr) return;
+
+  const btn = document.getElementById('btn-calc');
+  btn.disabled = true;
+  const origBtnHtml = btn.innerHTML;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Calculando...';
+
+  if (!mesasLoaded){
+    const ok = await loadMesas();
+    if (!ok){ btn.disabled = false; btn.innerHTML = origBtnHtml; return; }
+  }
+
+  const ventas = await loadVentas(dateStr);
+  btn.disabled = false;
+  btn.innerHTML = origBtnHtml;
+  if (!ventas) return;
+
+  const dayKey = dayKeyFromDate(dateStr);
+
+  // 1. Filtrar visitas del día, excluyendo MER
+  const countByVend = {};
+  visitRows.forEach(r => {
+    if (r.modo === 'MER') return;
+    if ((r.days[dayKey] || '') !== 'X') return;
+    if (!r.vnd) return;
+    countByVend[r.vnd] = (countByVend[r.vnd] || 0) + 1;
+  });
+
+  // 2. Mapear Vend -> Promotor/SDV
+  const unmapped = [];
+  const clientesPorPromotor = {}; // promotor -> {clientes, supName}
+  Object.keys(countByVend).forEach(vend => {
+    const map = vendMap[vend];
+    if (!map){ unmapped.push(vend); return; }
+    if (!clientesPorPromotor[map.promotor]){
+      clientesPorPromotor[map.promotor] = { clientes: 0, supName: map.supName };
+    }
+    clientesPorPromotor[map.promotor].clientes += countByVend[vend];
+  });
+
+  // if (unmapped.length){
+  //   showWarn(`Códigos de Vend. sin mapear en Mesas (no se contaron): ${unmapped.join(', ')}`);
+  // }
+
+  // 3. Unir con CCC (ventas) — union de promotores presentes en cualquiera de las dos fuentes
+  const promotoresAll = new Set([...Object.keys(clientesPorPromotor), ...Object.keys(ventas)]);
+
+  // Para promotores que solo vinieron de ventas (sin match en visitas), intentar resolver su SDV
+  // buscando en vendMap por nombre de promotor.
+  const supByPromotorFallback = {};
+  Object.values(vendMap).forEach(m => { supByPromotorFallback[m.promotor] = m.supName; });
+
+  const rows = [];
+  promotoresAll.forEach(prom => {
+    const clientesInfo = clientesPorPromotor[prom];
+    const clientes = clientesInfo ? clientesInfo.clientes : 0;
+    const supName = (clientesInfo && clientesInfo.supName) || supByPromotorFallback[prom] || 'SIN SDV';
+    const ccc = (ventas[prom] && ventas[prom]['bol-v']) ? Number(ventas[prom]['bol-v']) : 0;
+    const efect = clientes > 0 ? (ccc / clientes * 100) : (ccc > 0 ? null : 0); // null = sin base para dividir pero con venta
+    rows.push({ promotor: prom, supName, clientes, ccc, efect });
+  });
+
+  renderTabla(rows);
+}
+
+// ==============================
+// RENDER
+// ==============================
+function getProgressColor(pct){
+  if (pct === null) return 'transparent';
+  if (pct < UMBRAL_AMARILLO) return '#ef4444'; // Rojo
+  if (pct < UMBRAL_VERDE) return '#f59e0b'; // Naranja/Ambar
+  return '#107c41'; // Verde Excel
+}
+
+function renderProgressCell(pct){
+  if (pct === null) {
+    return `<td class="progress-cell"><span>S/D</span></td>`;
+  }
+  const color = getProgressColor(pct);
+  const w = Math.min(100, pct);
+  return `<td class="progress-cell">
+    <span>${pct.toFixed(2).replace('.', ',')}%</span>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" style="width:${w}%; background-color:${color};"></div>
+    </div>
+  </td>`;
+}
+
+function renderTabla(rows){
+  // Agrupar por SDV, preservando el orden de primera aparición
+  const grupos = [];
+  const grupoIndex = {};
+  rows.forEach(r => {
+    if (!(r.supName in grupoIndex)){
+      grupoIndex[r.supName] = grupos.length;
+      grupos.push({ supName: r.supName, promotores: [] });
+    }
+    grupos[grupoIndex[r.supName]].promotores.push(r);
+  });
+
+  // Ordenar grupos por el orden original de Mesas
+  grupos.sort((a, b) => {
+    let idxA = sdvOrder.indexOf(a.supName);
+    let idxB = sdvOrder.indexOf(b.supName);
+    if (idxA === -1) idxA = 999;
+    if (idxB === -1) idxB = 999;
+    return idxA - idxB;
+  });
+
+  // Ordenar promotores dentro de cada grupo por clientes a visitar desc
+  grupos.forEach(g => g.promotores.sort((a,b) => b.clientes - a.clientes));
+
+  let html = '';
+  let grandClientes = 0, grandCcc = 0;
+
+  grupos.forEach(g => {
+    const totClientes = g.promotores.reduce((s,p) => s + p.clientes, 0);
+    const totCcc = g.promotores.reduce((s,p) => s + p.ccc, 0);
+    const totEfect = totClientes > 0 ? (totCcc / totClientes * 100) : (totCcc > 0 ? null : 0);
+    grandClientes += totClientes;
+    grandCcc += totCcc;
+
+    html += `<tr class="sdv-row">
+      <td colspan="2" class="name-col">${g.supName}</td>
+      <td>${totClientes}</td>
+      <td>${totCcc}</td>
+      ${renderProgressCell(totEfect)}
+    </tr>`;
+
+    g.promotores.forEach(p => {
+      html += `<tr class="prom-row">
+        <td></td>
+        <td class="name-col">${p.promotor}</td>
+        <td>${p.clientes}</td>
+        <td>${p.ccc}</td>
+        ${renderProgressCell(p.efect)}
+      </tr>`;
+    });
+  });
+
+  const grandEfect = grandClientes > 0 ? (grandCcc / grandClientes * 100) : (grandCcc > 0 ? null : 0);
+  html += `<tr class="grand-row">
+    <td colspan="2" class="name-col">TOTAL GENERAL</td>
+    <td>${grandClientes}</td>
+    <td>${grandCcc}</td>
+    ${renderProgressCell(grandEfect)}
+  </tr>`;
+
+  tbody.innerHTML = html;
+  emptyState.style.display = 'none';
+  tableWrap.style.display = 'block';
+}
+
+// ==============================
+// INICIALIZACION
+// ==============================
+async function init() {
+  await loadMesas();
+  
+  if (CLOUD_URL !== 'PEGAR_AQUI_LA_URL_DEL_NUEVO_SCRIPT') {
+    try {
+      const response = await fetch(CLOUD_URL);
+      const result = await response.json();
+      if (result.ok && result.visitRows && result.visitRows.length > 0) {
+        visitRows = result.visitRows;
+        fileLabel.textContent = "Datos cargados desde la nube";
+        calcular();
+      }
+    } catch (err) {
+      console.warn("No se pudo cargar de la nube:", err);
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>
