@@ -111,8 +111,14 @@
   <script>
   const HERRAMIENTAS = {
     // COMERCIAL
-    planificador: { href: '../planificador/index.html', label: '📋 PLANIFICADOR', col: 'comercial' },
-    vespertina: { href: '../Vespertina/index.html', label: '🌙 VESPERTINA', col: 'comercial' },
+    planificador: { 
+      isSplit: true,
+      col: 'comercial',
+      tools: [
+        { href: '../planificador/index.html', label: '📋 PLANIFICADOR' },
+        { href: '../planificador/vespertina.html', label: '🌙 VESPERTINA' }
+      ]
+    },
     cobertura_efectividad: { 
       isSplit: true, 
       col: 'comercial', 
@@ -144,13 +150,13 @@
   
   const MENU_POR_ROL = {
     auditor: [
-      'planificador', 'vespertina', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'ventas', 'zonas_merch', 
+      'planificador', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'ventas', 'zonas_merch', 
       'reparaciones', 'consulta_pi', 'retiro_edf', 
       'form_planificacion', 'form_coaching', 'form_abm', 'form_reparacion', 
       'cuentas'
     ],
     supervisor: [
-      'planificador', 'vespertina', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'ventas', 'zonas_merch', 
+      'planificador', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'ventas', 'zonas_merch', 
       'reparaciones', 'consulta_pi', 'retiro_edf', 
       'form_planificacion', 'form_coaching', 'form_abm', 'form_reparacion'
     ],
