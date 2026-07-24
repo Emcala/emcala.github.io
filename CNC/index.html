@@ -250,7 +250,7 @@ table.cnc-table tbody tr:nth-child(even):hover { background:#f1f5f9; }
   <div id="kpi-section" style="display:none">
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Total Clientes</div><div class="kpi-value" id="kpi-total">0</div></div>
-      <div class="kpi-card"><div class="kpi-label">Compradores Activos</div><div class="kpi-value" id="kpi-activos">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">UM (Compradores Activos)</div><div class="kpi-value" id="kpi-activos">0</div></div>
       <div class="kpi-card"><div class="kpi-label">Total CNC</div><div class="kpi-value" id="kpi-cnc">0</div></div>
       <div class="kpi-card"><div class="kpi-label">U3M · Completos</div><div class="kpi-value small" id="kpi-u3m">0 / 0</div></div>
       <div class="kpi-card"><div class="kpi-label">U12M · Cumple Frec.</div><div class="kpi-value small" id="kpi-u12m">0 / 0</div></div>
@@ -275,7 +275,7 @@ table.cnc-table tbody tr:nth-child(even):hover { background:#f1f5f9; }
         <input type="text" id="f-search" placeholder="Buscar cliente o razón social...">
         <select id="f-horizonte">
           <option value="">Horizonte: Todos</option>
-          <option value="Comprador Activo">Comprador Activo</option>
+          <option value="UM">UM</option>
           <option value="U3M">U3M</option>
           <option value="U6M">U6M</option>
           <option value="U12M">U12M</option>
@@ -303,6 +303,7 @@ table.cnc-table tbody tr:nth-child(even):hover { background:#f1f5f9; }
               <th>Horizonte</th>
               <th>Motivo</th>
               <th>Detalle</th>
+              <th>Censo BEES</th>
               <th>PDA Asociado</th>
               <th>Fecha PDA</th>
               <th>Oport. Censo</th>
@@ -391,7 +392,7 @@ function toDate(v) {
 }
 
 function horizonteFromDias(dias) {
-  if (dias < 90) return 'Comprador Activo';
+  if (dias < 90) return 'UM';
   if (dias < 180) return 'U3M';
   if (dias < 365) return 'U6M';
   return 'U12M';
@@ -637,13 +638,15 @@ function recomputeUniverse() {
     } else if (App.ventasLoaded) {
       horizonte = 'U12M'; // CSV real de ventas cargado: ausencia = confirmado sin compra en el período
     } else if (App.offlineDemo) {
-      horizonte = 'Comprador Activo'; // demo: BAJADA solo cubre a los CNC ya detectados, no a todo el universo
+      horizonte = 'UM'; // demo: BAJADA solo cubre a los CNC ya detectados, no a todo el universo
     }
-    const mo = App.motivos.get(cliente) || {};
+    const moRaw = App.motivos.get(cliente);
+    const censoBees = !!moRaw;
+    const mo = moRaw || {};
     universe.push({
       cliente, razon: base.razon,
       promotor: base.promotor, supervisor: base.supervisor, canal: base.canal,
-      dias, horizonte, motivo: mo.motivo || '', detalle: mo.detalle || '', fechaRelevamiento: mo.fecha || null
+      dias, horizonte, censoBees, motivo: mo.motivo || '', detalle: mo.detalle || '', fechaRelevamiento: mo.fecha || null
     });
   });
   App.universe = universe;
@@ -671,9 +674,15 @@ function getManual(cliente) {
   return App.manual.get(cliente);
 }
 
+function aplicaPDA(row, m) {
+  m = m || getManual(row.cliente);
+  return row.horizonte === 'U3M' && (m.negocio === 'CZA' || m.negocio === 'NABS');
+}
+
 function computeEstado(row) {
   const m = getManual(row.cliente);
   if (row.horizonte === 'U3M') {
+    if (!aplicaPDA(row, m)) return 'N/A';
     return (row.motivo && m.pda) ? 'Completo' : 'Pendiente';
   }
   if (row.horizonte === 'U12M') {
@@ -708,7 +717,7 @@ function fmtDate(d) {
    RENDER
    ============================================================ */
 function badgeHorizonte(h) {
-  const map = { 'Comprador Activo':'b-activo', 'U3M':'b-u3m', 'U6M':'b-u6m', 'U12M':'b-u12m', 'Sin datos de venta':'b-grey' };
+  const map = { 'UM':'b-activo', 'U3M':'b-u3m', 'U6M':'b-u6m', 'U12M':'b-u12m', 'Sin datos de venta':'b-grey' };
   return `<span class="badge ${map[h] || 'b-grey'}">${h}</span>`;
 }
 function badgeEstado(e) {
@@ -752,9 +761,9 @@ function applyFilters() {
 
 function renderKpis() {
   const total = App.universe.length;
-  const activos = App.universe.filter(r => r.horizonte === 'Comprador Activo').length;
+  const activos = App.universe.filter(r => r.horizonte === 'UM').length;
   const cnc = App.universe.filter(r => ['U3M', 'U6M', 'U12M'].includes(r.horizonte)).length;
-  const u3mRows = App.universe.filter(r => r.horizonte === 'U3M');
+  const u3mRows = App.universe.filter(r => r.horizonte === 'U3M' && aplicaPDA(r));
   const u3mCompletos = u3mRows.filter(r => computeEstado(r) === 'Completo').length;
   const u12mRows = App.universe.filter(r => r.horizonte === 'U12M');
   const u12mCumple = u12mRows.filter(r => computeEstado(r) === 'Cumple').length;
@@ -804,13 +813,13 @@ function rowHtml(row) {
   const m = getManual(row.cliente);
   const estado = computeEstado(row);
   const proximo = computeProximoContacto(row);
-  const showU3mFields = row.horizonte === 'U3M';
+  const showU3mPda = aplicaPDA(row, m);
   const showU12mFields = row.horizonte === 'U12M';
 
-  const pdaCell = showU3mFields
+  const pdaCell = showU3mPda
     ? `<select class="cell-select" data-cli="${row.cliente}" data-field="pda">${PDA_OPTIONS.map(o => `<option value="${o}" ${m.pda===o?'selected':''}>${o||'- Elegir -'}</option>`).join('')}</select>`
     : `<span class="muted-cell">—</span>`;
-  const fechaPdaCell = showU3mFields
+  const fechaPdaCell = showU3mPda
     ? `<input type="date" class="cell-input" data-cli="${row.cliente}" data-field="fechaPda" value="${m.fechaPda||''}">`
     : `<span class="muted-cell">—</span>`;
   const censoCell = showU12mFields
@@ -822,6 +831,7 @@ function rowHtml(row) {
   const ultimoContactoCell = showU12mFields
     ? `<input type="date" class="cell-input" data-cli="${row.cliente}" data-field="ultimoContacto" value="${m.ultimoContacto||''}">`
     : `<span class="muted-cell">—</span>`;
+  const censoBeesBadge = `<span class="badge ${row.censoBees ? 'b-activo' : 'b-grey'}">${row.censoBees ? 'Sí' : 'No'}</span>`;
 
   return `<tr data-cliente="${row.cliente}">
     <td>${row.cliente}</td>
@@ -832,12 +842,15 @@ function rowHtml(row) {
     <td><select class="cell-select" data-cli="${row.cliente}" data-field="negocio">
         <option value="" ${m.negocio===''?'selected':''}>-</option>
         <option value="CZA" ${m.negocio==='CZA'?'selected':''}>CZA</option>
-        <option value="NABs" ${m.negocio==='NABs'?'selected':''}>NABs</option>
+        <option value="NABS" ${m.negocio==='NABS'?'selected':''}>NABS</option>
+        <option value="AGUAS" ${m.negocio==='AGUAS'?'selected':''}>AGUAS</option>
+        <option value="MARKETPLACE" ${m.negocio==='MARKETPLACE'?'selected':''}>MARKETPLACE</option>
       </select></td>
     <td>${row.dias ?? '—'}</td>
     <td>${badgeHorizonte(row.horizonte)}</td>
     <td>${row.motivo || '<span class="muted-cell">—</span>'}</td>
     <td class="detalle-cell" title="${row.detalle||''}">${row.detalle || '<span class="muted-cell">—</span>'}</td>
+    <td>${censoBeesBadge}</td>
     <td>${pdaCell}</td>
     <td>${fechaPdaCell}</td>
     <td>${censoCell}</td>
@@ -883,6 +896,7 @@ function exportEstado() {
       'Horizonte': row.horizonte,
       'Motivo': row.motivo,
       'Detalle': row.detalle,
+      'Censo BEES': row.censoBees ? 'Sí' : 'No',
       'PDA Asociado': m.pda,
       'Fecha PDA': m.fechaPda,
       'Oportunidad Censo': m.censo,
