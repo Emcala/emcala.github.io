@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clientes No Compradores · EMCALA</title>
+<script src="../emcala-auth.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script>
+  if (!EmcalaAuth.requireRole(['auditor', 'supervisor'])) {
+    throw new Error("No autorizado");
+  }
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&family=Barlow:wght@400;600;700&display=swap');
+
+:root {
+  --bg: linear-gradient(145deg, #0B2559 0%, #1B5FA8 60%, #0D3880 100%);
+  --surf: #ffffff;
+  --surf2: #f8fafc;
+  --brd: #e2e8f0;
+  --acc: #1B5FA8;
+  --txt: #0f172a;
+  --muted: #64748b;
+  --green: #10b981;
+  --c-red: #ef4444;
+  --c-yellow: #eab308;
+  --c-green: #22c55e;
+  --c-blue: #0284c7;
+  --c-pink: #ec4899;
+  --c-lightblue: #38bdf8;
+  --c-grey: #94a3b8;
+  --c-yellow2: #fde047;
+  --c-purple: #9333ea;
+  --c-purple2: #a855f7;
+  --fs-base: 12px;
+  --fs-sm: 11px;
+  --fs-hdr: 11px;
+  --fs-title: 14px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'Barlow', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+/* HEADER */
+.hdr {
+  background: rgba(22,49,84,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  flex-shrink: 0;
+  z-index: 1000;
+  position: relative;
+  flex-wrap: wrap;
+}
+.hdr-left { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.header-logo { display:flex; align-items:center; gap:10px; margin-right:8px; }
+.header-logo strong { font-size:20px; letter-spacing:-0.02em; color:#fff; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; }
+.header-logo .sep { width:1.5px; height:20px; background:rgba(255,255,255,0.25); }
+.header-logo span { font-size:14px; font-weight:600; color:rgba(255,255,255,0.7); font-family:'Bricolage Grotesque',sans-serif; }
+
+.btn-action {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  color: var(--acc);
+  border: 1px solid rgba(0,0,0,0.05);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform .12s ease, box-shadow .12s ease;
+  white-space: nowrap;
+}
+.btn-action:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+.btn-action:active { transform: translateY(0); }
+.btn-outline {
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+.btn-outline:hover { background: rgba(255,255,255,0.15); }
+.btn-action:disabled { opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
+
+.container { flex:1; display:flex; flex-direction:column; padding:18px 20px 24px; gap:16px; overflow:auto; }
+
+/* KPI CARDS */
+.kpi-row { display:grid; grid-template-columns: repeat(7, 1fr); gap:12px; }
+.kpi-card {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  backdrop-filter: blur(6px);
+}
+.kpi-card .kpi-label { font-family:'Bricolage Grotesque',sans-serif; font-size:10px; font-weight:600; color:rgba(255,255,255,0.65); text-transform:uppercase; letter-spacing:.04em; }
+.kpi-card .kpi-value { font-family:'Bricolage Grotesque',sans-serif; font-size:22px; font-weight:800; color:#fff; margin-top:4px; }
+.kpi-card .kpi-value.small { font-size:15px; }
+.kpi-card.nivel1 .kpi-value { color: var(--c-green); }
+.kpi-card.nivel0 .kpi-value { color: var(--c-yellow2); }
+
+/* PANEL / EMPTY STATE */
+.panel {
+  background: var(--surf);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.empty-state {
+  flex: 1;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:14px; padding:60px 20px; text-align:center;
+}
+.empty-state i { font-size:40px; color: var(--acc); opacity:.4; }
+.empty-state h2 { font-family:'Bricolage Grotesque',sans-serif; font-size:18px; color:var(--txt); }
+.empty-state p { color:var(--muted); font-size:13px; max-width:420px; }
+
+/* FILTER BAR */
+.filter-bar {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:12px 16px; border-bottom:1px solid var(--brd); background: var(--surf2);
+}
+.filter-bar input[type="text"], .filter-bar select {
+  font-family:'Barlow',sans-serif;
+  font-size: 12.5px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--brd);
+  background: #fff;
+  color: var(--txt);
+  outline: none;
+}
+.filter-bar input[type="text"] { min-width:200px; }
+.filter-bar .spacer { flex:1; }
+.seg-toggle { display:flex; border:1px solid var(--brd); border-radius:8px; overflow:hidden; }
+.seg-toggle button {
+  border:none; background:#fff; color:var(--muted); padding:6px 12px; font-size:12px; font-weight:600;
+  font-family:'Bricolage Grotesque',sans-serif; cursor:pointer;
+}
+.seg-toggle button.active { background: var(--acc); color:#fff; }
+
+/* TABLE */
+.table-wrap { flex:1; overflow:auto; min-height:0; }
+table.cnc-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+table.cnc-table thead th {
+  position: sticky; top:0; z-index:5;
+  background: var(--acc); color:#fff;
+  font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:10.5px;
+  text-transform:uppercase; letter-spacing:.02em;
+  padding:9px 8px; text-align:left; white-space:nowrap;
+  border-right: 1px solid rgba(255,255,255,0.12);
+}
+table.cnc-table tbody td {
+  padding:6px 8px; border-bottom:1px solid var(--brd); white-space:nowrap; color:var(--txt);
+}
+table.cnc-table tbody tr:hover { background: #f1f5f9; }
+table.cnc-table tbody tr:nth-child(even) { background: #fafbfc; }
+table.cnc-table tbody tr:nth-child(even):hover { background:#f1f5f9; }
+
+.badge { display:inline-block; padding:2px 9px; border-radius:999px; font-size:10.5px; font-weight:700; font-family:'Bricolage Grotesque',sans-serif; color:#fff; }
+.b-activo { background: var(--c-green); }
+.b-u3m { background: var(--c-yellow); color:#3f2d00; }
+.b-u6m { background: var(--c-purple2); }
+.b-u12m { background: var(--c-red); }
+.b-grey { background: var(--c-grey); }
+.b-completo, .b-cumple { background: var(--c-green); }
+.b-pendiente { background: var(--c-yellow); color:#3f2d00; }
+.b-vencido { background: var(--c-red); }
+.b-na { background: var(--c-grey); }
+
+.cell-input, .cell-select {
+  font-family:'Barlow',sans-serif; font-size:12px; padding:4px 6px; border-radius:6px;
+  border:1px solid var(--brd); background:#fff; color:var(--acc); font-weight:600; min-width:110px;
+}
+.cell-input:focus, .cell-select:focus { outline:2px solid var(--acc); outline-offset:1px; }
+.muted-cell { color: var(--muted); font-style:italic; }
+.detalle-cell { max-width:180px; overflow:hidden; text-overflow:ellipsis; }
+
+/* PAGINATION */
+.pager {
+  display:flex; align-items:center; gap:10px; padding:10px 16px; border-top:1px solid var(--brd);
+  background: var(--surf2); font-size:12.5px; color:var(--muted);
+}
+.pager .spacer { flex:1; }
+.pager button {
+  border:1px solid var(--brd); background:#fff; border-radius:6px; padding:4px 10px; cursor:pointer; font-weight:600;
+}
+.pager button:disabled { opacity:.4; cursor:not-allowed; }
+.pager select { border:1px solid var(--brd); border-radius:6px; padding:4px 6px; }
+
+.note-strip {
+  font-size:11.5px; color:rgba(255,255,255,0.75); padding: 0 4px;
+}
+
+@media (max-width: 1100px) {
+  .kpi-row { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="header-logo">
+      <strong>EMCALA</strong>
+      <div class="sep"></div>
+      <span>Clientes No Compradores</span>
+    </div>
+  </div>
+  <div class="hdr-left">
+    <button class="btn-action" id="btn-conectar"><i class="fa-solid fa-plug"></i> Conectar a EMCALA</button>
+    <button class="btn-action btn-outline" id="btn-load-ventas" style="border-color:var(--c-yellow2); color:var(--c-yellow2)" disabled><i class="fa-solid fa-file-csv"></i> Cargar Ventas CSV</button>
+    <input type="file" id="file-ventas" style="display:none" accept=".csv">
+    <button class="btn-action btn-outline" id="btn-load-motivos" style="border-color:var(--c-pink); color:var(--c-pink)" disabled><i class="fa-solid fa-file-csv"></i> Cargar Motivos BEES</button>
+    <input type="file" id="file-motivos" style="display:none" accept=".xlsx,.xls,.csv">
+    <button class="btn-action btn-outline" id="btn-import-estado" disabled><i class="fa-solid fa-file-import"></i> Importar Estado Anterior</button>
+    <input type="file" id="file-estado" style="display:none" accept=".xlsx,.xls">
+    <button class="btn-action btn-outline" id="btn-export-estado" disabled style="border-color:var(--green); color:var(--green)"><i class="fa-solid fa-file-export"></i> Exportar Estado</button>
+    <button class="btn-action btn-outline" id="btn-load-offline" style="opacity:.75"><i class="fa-solid fa-flask"></i> Modo Offline (Excel demo)</button>
+    <input type="file" id="file-offline" style="display:none" accept=".xlsx,.xls">
+    <div id="userBadgeContainer" style="margin-left: 4px;"></div>
+  </div>
+</div>
+
+<div class="container" style="padding-bottom:0">
+  <div id="conn-status" class="note-strip"></div>
+</div>
+
+<div class="container" style="padding-top:0">
+
+  <div id="kpi-section" style="display:none">
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Total Clientes</div><div class="kpi-value" id="kpi-total">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Compradores Activos</div><div class="kpi-value" id="kpi-activos">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total CNC</div><div class="kpi-value" id="kpi-cnc">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">U3M · Completos</div><div class="kpi-value small" id="kpi-u3m">0 / 0</div></div>
+      <div class="kpi-card"><div class="kpi-label">U12M · Cumple Frec.</div><div class="kpi-value small" id="kpi-u12m">0 / 0</div></div>
+      <div class="kpi-card"><div class="kpi-label">% Cumplimiento U3M</div><div class="kpi-value small" id="kpi-pct-u3m">-</div></div>
+      <div class="kpi-card" id="kpi-nivel-card"><div class="kpi-label">Nivel de Auditoría</div><div class="kpi-value small" id="kpi-nivel">-</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div id="empty-state" class="empty-state">
+      <i class="fa-solid fa-plug"></i>
+      <h2>Conectá la base para empezar</h2>
+      <p>1) <b>Conectá a EMCALA</b> para traer el Maestro de Clientes y el equipo Promotor/Supervisor/Canal en vivo desde Sheets.
+        2) Cargá el <b>CSV de Ventas</b> (el mismo que subís al planificador) para saber quién compró y quién es CNC.
+        3) Cargá el <b>relevamiento de Motivos BEES</b> para completar los CNC de U3M. También podés probar todo junto con el
+        botón "Modo Offline" usando un Excel de ejemplo con hojas MDC/SUP/BAJADA.</p>
+      <button class="btn-action" id="btn-conectar-2" style="background:var(--acc); color:#fff;"><i class="fa-solid fa-plug"></i> Conectar a EMCALA</button>
+    </div>
+
+    <div id="data-view" style="display:none; flex:1; flex-direction:column; min-height:0;">
+      <div class="filter-bar">
+        <input type="text" id="f-search" placeholder="Buscar cliente o razón social...">
+        <select id="f-horizonte">
+          <option value="">Horizonte: Todos</option>
+          <option value="Comprador Activo">Comprador Activo</option>
+          <option value="U3M">U3M</option>
+          <option value="U6M">U6M</option>
+          <option value="U12M">U12M</option>
+        </select>
+        <select id="f-supervisor"><option value="">Supervisor: Todos</option></select>
+        <select id="f-promotor"><option value="">Promotor: Todos</option></select>
+        <select id="f-canal"><option value="">Canal: Todos</option></select>
+        <div class="spacer"></div>
+        <div class="seg-toggle">
+          <button id="seg-cnc" class="active">Solo CNC</button>
+          <button id="seg-all">Todos los clientes</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="cnc-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Razón Social</th>
+              <th>Canal</th>
+              <th>Supervisor</th>
+              <th>Promotor</th>
+              <th>Negocio</th>
+              <th>Días</th>
+              <th>Horizonte</th>
+              <th>Motivo</th>
+              <th>Detalle</th>
+              <th>PDA Asociado</th>
+              <th>Fecha PDA</th>
+              <th>Oport. Censo</th>
+              <th>Últ. Contacto SPV</th>
+              <th>Próx. Contacto</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span>Filas por página</span>
+        <select id="page-size"><option>25</option><option selected>50</option><option>100</option><option>250</option></select>
+        <span id="pager-info">-</span>
+        <div class="spacer"></div>
+        <button id="page-prev"><i class="fa-solid fa-chevron-left"></i></button>
+        <span id="page-current">1</span>
+        <button id="page-next"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIGURACIÓN
+   ============================================================ */
+const CONFIG = {
+  // Pegá acá la URL del deployment del Apps Script (Code.gs) una vez publicado,
+  // ej: 'https://script.google.com/macros/s/XXXXX/exec'
+  API_URL: 'https://script.google.com/macros/s/AKfycbzJdkXstZOOxG0SCxu2CivcnpoPrG2UaM5Hu11RGXT-Vb9xlzxPfgSiLJ23nTtCie-S/exec'
+};
+
+/* ============================================================
+   ESTADO GLOBAL
+   ============================================================ */
+const App = {
+  clientesBase: new Map(),   // cliente -> {razon, promotor, supervisor, canal}   (Maestro + Equipo)
+  ventas: new Map(),         // cliente -> {dias, fecha}                          (CSV de Ventas)
+  ventasLoaded: false,       // true = hay un CSV de Ventas real cargado (ausencia = confirmado sin compra)
+  offlineDemo: false,        // true = modo offline (BAJADA solo cubre a los CNC ya conocidos, no a todo el universo)
+  motivos: new Map(),        // cliente -> {motivo, detalle, fecha}               (BAJADA / Motivos BEES)
+  manual: new Map(),         // cliente -> {negocio, pda, fechaPda, censo, ultimoContacto}
+  universe: [],              // resultado combinado de las 3 fuentes de arriba
+  filtered: [],
+  page: 1,
+  pageSize: 50,
+  mode: 'cnc'                // 'cnc' | 'all'
+};
+window.App = App; // expuesto para debugging en consola del navegador
+
+const PDA_OPTIONS = [
+  "", "Visita SPV + oferta comercial", "Renegociación de condiciones",
+  "Reactivación con descuento inicial", "Visita conjunta Promotor - SPV",
+  "Gestión de stock / logística", "Actualización de datos de contacto",
+  "Otro (detallar)"
+];
+
+const MESES_ES = { ene:0, feb:1, mar:2, abr:3, may:4, jun:5, jul:6, ago:7, sep:8, oct:9, nov:10, dic:11 };
+
+/* ============================================================
+   HELPERS GENERALES
+   ============================================================ */
+function findSheetJson(wb, regex) {
+  const name = wb.SheetNames.find(n => regex.test(n));
+  if (!name) return null;
+  return XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: '', raw: true });
+}
+
+function cleanRespuesta(s) {
+  if (!s) return '';
+  s = String(s);
+  let m = s.match(/\\+"?([^\\\]"]+)\\+"?\]/);
+  if (m) return m[1].trim();
+  m = s.match(/"([^"]+)"/);
+  if (m) return m[1].trim();
+  return s.replace(/[\[\]\\"]/g, '').trim();
+}
+
+function toDate(v) {
+  if (v instanceof Date) return v;
+  if (typeof v === 'number') return new Date(Math.round((v - 25569) * 86400 * 1000));
+  const d = new Date(v);
+  return isNaN(d) ? new Date(0) : d;
+}
+
+function horizonteFromDias(dias) {
+  if (dias < 90) return 'Comprador Activo';
+  if (dias < 180) return 'U3M';
+  if (dias < 365) return 'U6M';
+  return 'U12M';
+}
+
+function normalizeKey(k) {
+  return String(k).trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function buildHeaderMap(keys) {
+  const map = {};
+  keys.forEach(k => {
+    const norm = normalizeKey(k);
+    if (!(norm in map)) map[norm] = k;
+  });
+  return map;
+}
+
+function parseNumeroAR(v) {
+  if (typeof v === 'number') return v;
+  if (!v) return 0;
+  let s = String(v).trim();
+  if (!s) return 0;
+  if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (s.includes(',')) s = s.replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseFechaCorta(v) {
+  if (v instanceof Date) return v;
+  // SheetJS suele auto-detectar "1-jul-26" como fecha y convertirlo a serial numérico de Excel.
+  if (typeof v === 'number') return toDate(v);
+  const s = String(v).trim().toLowerCase();
+  const m = s.match(/^(\d{1,2})-([a-zñ]{3})-(\d{2,4})$/);
+  if (!m) return null;
+  const day = parseInt(m[1], 10);
+  const mesIdx = MESES_ES[m[2]];
+  if (mesIdx === undefined) return null;
+  let year = parseInt(m[3], 10);
+  if (year < 100) year += 2000;
+  return new Date(year, mesIdx, day);
+}
+
+/* ============================================================
+   FUENTE 1: MAESTRO + EQUIPO (vía Apps Script, o Excel offline)
+   ============================================================ */
+async function conectarEmcala() {
+  const statusEl = document.getElementById('conn-status');
+  if (!CONFIG.API_URL) {
+    statusEl.textContent = 'Falta configurar CONFIG.API_URL con la URL del Apps Script (Code.gs) publicado.';
+    return;
+  }
+  statusEl.textContent = 'Conectando a EMCALA...';
+  try {
+    const [rU, rE] = await Promise.all([
+      fetch(CONFIG.API_URL + '?action=universo'),
+      fetch(CONFIG.API_URL + '?action=equipo')
+    ]);
+    const jU = await rU.json();
+    const jE = await rE.json();
+    if (jU.status !== 'success' || jE.status !== 'success') {
+      throw new Error(jU.error || jE.error || 'Respuesta inesperada del backend.');
+    }
+
+    const equipoMap = new Map();
+    jE.equipo.forEach(r => equipoMap.set(String(r.promotor).trim().toUpperCase(), { supervisor: r.supervisor, canal: r.canal }));
+
+    const clientesBase = new Map();
+    jU.clientes.forEach(([cliente, razon, promotor]) => {
+      const sc = equipoMap.get(promotor) || {};
+      clientesBase.set(cliente, {
+        razon: razon || '(sin nombre)',
+        promotor: promotor || '(sin asignar)',
+        supervisor: sc.supervisor || '(sin asignar)',
+        canal: sc.canal || '(sin asignar)'
+      });
+    });
+    App.clientesBase = clientesBase;
+    recomputeUniverse();
+    onDataLoaded();
+    statusEl.textContent = `Conectado — ${clientesBase.size.toLocaleString('es-AR')} clientes cargados desde el Maestro.`;
+  } catch (err) {
+    statusEl.textContent = 'Error al conectar: ' + err.message;
+  }
+}
+
+function loadOfflineWorkbook(wb) {
+  const mdc = findSheetJson(wb, /mdc/i);
+  const sup = findSheetJson(wb, /sup/i);
+  const bajada = findSheetJson(wb, /bajada/i);
+  if (!mdc || !sup || !bajada) {
+    throw new Error('El archivo debe tener hojas llamadas MDC, SUP y BAJADA.');
+  }
+
+  const promMap = new Map();
+  sup.forEach(r => {
+    const prom = String(r['Promotor'] || '').trim().toUpperCase();
+    if (prom) promMap.set(prom, { supervisor: r['Supervisor'] || '', canal: r['Canal'] || '' });
+  });
+
+  const bajadaMap = groupBajada(bajada);
+
+  const clientesBase = new Map();
+  const ventas = new Map();
+  const motivos = new Map();
+  mdc.forEach(r => {
+    if (String(r['Anulado'] || '').trim().toUpperCase() === 'SI') return;
+    const cliente = r['Cliente'];
+    if (cliente === undefined || cliente === '') return;
+    const razon = r['Razon social'] || r['Nombre de fantasia'] || '(sin nombre)';
+    const promotorName = String(r['Fuerza de venta 1 Descripcion personal comercial'] || '').trim().toUpperCase();
+    const sc = promMap.get(promotorName) || {};
+    clientesBase.set(cliente, {
+      razon, promotor: promotorName || '(sin asignar)',
+      supervisor: sc.supervisor || '(sin asignar)', canal: sc.canal || '(sin asignar)'
+    });
+    const bj = bajadaMap.get(cliente);
+    if (bj) {
+      if (bj.dias !== null) ventas.set(cliente, { dias: bj.dias, fecha: bj.fecha });
+      if (bj.motivo || bj.detalle) motivos.set(cliente, { motivo: bj.motivo, detalle: bj.detalle, fecha: bj.fecha });
+    }
+  });
+
+  App.clientesBase = clientesBase;
+  App.ventas = ventas;
+  App.offlineDemo = true;
+  App.motivos = motivos;
+}
+
+/* ============================================================
+   FUENTE 2: VENTAS CSV (misma exportación que el planificador)
+   ============================================================ */
+async function handleVentasFile(file) {
+  const statusEl = document.getElementById('conn-status');
+  const text = await file.text();
+  const wb = XLSX.read(text, { type: 'string' });
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+  if (!rows.length) throw new Error('El CSV de ventas está vacío.');
+
+  const headerMap = buildHeaderMap(Object.keys(rows[0]));
+  const kCliente = headerMap['cod cliente'];
+  const kPeriodo = headerMap['descripcion periodo'];
+  const kCant = headerMap['cantidades totales'];
+  if (!kCliente || !kPeriodo) {
+    throw new Error('No encontré las columnas "Cod. Cliente" / "Descripción Período" en el CSV.');
+  }
+
+  const ultimaFecha = new Map();
+  rows.forEach(r => {
+    const cliente = r[kCliente];
+    if (cliente === '' || cliente === undefined) return;
+    const cant = kCant ? parseNumeroAR(r[kCant]) : 1;
+    if (cant <= 0) return;
+    const fecha = parseFechaCorta(r[kPeriodo]);
+    if (!fecha) return;
+    const prev = ultimaFecha.get(cliente);
+    if (!prev || fecha > prev) ultimaFecha.set(cliente, fecha);
+  });
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const ventas = new Map();
+  ultimaFecha.forEach((fecha, cliente) => {
+    const dias = Math.round((today - fecha) / 86400000);
+    ventas.set(cliente, { dias, fecha });
+  });
+
+  App.ventas = ventas;
+  App.ventasLoaded = true;
+  recomputeUniverse();
+  applyFilters();
+  if (statusEl) statusEl.textContent = `Ventas cargadas — ${ventas.size.toLocaleString('es-AR')} clientes con compra detectada.`;
+}
+
+/* ============================================================
+   FUENTE 3: MOTIVOS BEES (hoja/archivo BAJADA)
+   ============================================================ */
+function groupBajada(bajada) {
+  const map = new Map();
+  bajada.forEach(r => {
+    const cli = r['cliente'];
+    if (cli === undefined || cli === '') return;
+    const fecha = toDate(r['fecha_tarea']);
+    const tarea = String(r['tarea'] || '');
+    const diasMatch = tarea.match(/en (\d+) d[ií]as/i);
+    const dias = diasMatch ? parseInt(diasMatch[1], 10) : null;
+    const tipo = r['tipo_pregunta'];
+    const resp = cleanRespuesta(r['respuesta']);
+
+    if (!map.has(cli)) map.set(cli, { fecha, dias, motivo: '', detalle: '' });
+    const entry = map.get(cli);
+    if (fecha >= entry.fecha) {
+      entry.fecha = fecha;
+      if (dias !== null) entry.dias = dias;
+      if (tipo === 'CONDITIONAL' && resp) entry.motivo = resp;
+      if (tipo === 'FREETEXT' && resp) entry.detalle = resp;
+    } else {
+      if (tipo === 'CONDITIONAL' && resp && !entry.motivo) entry.motivo = resp;
+      if (tipo === 'FREETEXT' && resp && !entry.detalle) entry.detalle = resp;
+    }
+  });
+  return map;
+}
+
+async function handleMotivosFile(file) {
+  const statusEl = document.getElementById('conn-status');
+  const isCsv = /\.csv$/i.test(file.name);
+  let wb;
+  if (isCsv) {
+    const text = await file.text();
+    wb = XLSX.read(text, { type: 'string' });
+  } else {
+    const buf = await file.arrayBuffer();
+    wb = XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true });
+  }
+  const name = wb.SheetNames.find(n => /bajada/i.test(n)) || wb.SheetNames[0];
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: '', raw: true });
+  const bajadaMap = groupBajada(rows);
+
+  const motivos = new Map();
+  bajadaMap.forEach((entry, cliente) => {
+    if (entry.motivo || entry.detalle) motivos.set(cliente, { motivo: entry.motivo, detalle: entry.detalle, fecha: entry.fecha });
+  });
+  App.motivos = motivos;
+  recomputeUniverse();
+  applyFilters();
+  if (statusEl) statusEl.textContent = `Motivos BEES cargados — ${motivos.size.toLocaleString('es-AR')} clientes con motivo relevado.`;
+}
+
+/* ============================================================
+   COMBINAR LAS 3 FUENTES EN EL UNIVERSO FINAL
+   ============================================================ */
+function recomputeUniverse() {
+  const universe = [];
+  App.clientesBase.forEach((base, cliente) => {
+    const v = App.ventas.get(cliente);
+    let dias = null, horizonte = 'Sin datos de venta';
+    if (v) {
+      dias = v.dias;
+      horizonte = horizonteFromDias(dias);
+    } else if (App.ventasLoaded) {
+      horizonte = 'U12M'; // CSV real de ventas cargado: ausencia = confirmado sin compra en el período
+    } else if (App.offlineDemo) {
+      horizonte = 'Comprador Activo'; // demo: BAJADA solo cubre a los CNC ya detectados, no a todo el universo
+    }
+    const mo = App.motivos.get(cliente) || {};
+    universe.push({
+      cliente, razon: base.razon,
+      promotor: base.promotor, supervisor: base.supervisor, canal: base.canal,
+      dias, horizonte, motivo: mo.motivo || '', detalle: mo.detalle || '', fechaRelevamiento: mo.fecha || null
+    });
+  });
+  App.universe = universe;
+}
+
+function onDataLoaded() {
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('data-view').style.display = 'flex';
+  document.getElementById('kpi-section').style.display = 'block';
+  document.getElementById('btn-load-ventas').disabled = false;
+  document.getElementById('btn-load-motivos').disabled = false;
+  document.getElementById('btn-import-estado').disabled = false;
+  document.getElementById('btn-export-estado').disabled = false;
+  populateFilterOptions();
+  applyFilters();
+}
+
+/* ============================================================
+   CAMPOS MANUALES Y CÁLCULOS DERIVADOS
+   ============================================================ */
+function getManual(cliente) {
+  if (!App.manual.has(cliente)) {
+    App.manual.set(cliente, { negocio: '', pda: '', fechaPda: '', censo: 'No', ultimoContacto: '' });
+  }
+  return App.manual.get(cliente);
+}
+
+function computeEstado(row) {
+  const m = getManual(row.cliente);
+  if (row.horizonte === 'U3M') {
+    return (row.motivo && m.pda) ? 'Completo' : 'Pendiente';
+  }
+  if (row.horizonte === 'U12M') {
+    if (!m.ultimoContacto) return 'Sin dato';
+    const freq = m.censo === 'Sí' ? 0.5 : 0.25;
+    const last = new Date(m.ultimoContacto);
+    const next = new Date(last);
+    next.setDate(next.getDate() + (freq === 0.5 ? 14 : 28));
+    return next < new Date() ? 'Vencido' : 'Cumple';
+  }
+  return 'N/A';
+}
+
+function computeProximoContacto(row) {
+  const m = getManual(row.cliente);
+  if (row.horizonte !== 'U12M' || !m.ultimoContacto) return null;
+  const freq = m.censo === 'Sí' ? 0.5 : 0.25;
+  const last = new Date(m.ultimoContacto);
+  const next = new Date(last);
+  next.setDate(next.getDate() + (freq === 0.5 ? 14 : 28));
+  return next;
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = (d instanceof Date) ? d : new Date(d);
+  if (isNaN(dt)) return '';
+  return String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function badgeHorizonte(h) {
+  const map = { 'Comprador Activo':'b-activo', 'U3M':'b-u3m', 'U6M':'b-u6m', 'U12M':'b-u12m', 'Sin datos de venta':'b-grey' };
+  return `<span class="badge ${map[h] || 'b-grey'}">${h}</span>`;
+}
+function badgeEstado(e) {
+  const map = { 'Completo':'b-completo', 'Cumple':'b-cumple', 'Pendiente':'b-pendiente', 'Vencido':'b-vencido', 'N/A':'b-na', 'Sin dato':'b-grey' };
+  return `<span class="badge ${map[e] || 'b-grey'}">${e}</span>`;
+}
+
+function populateFilterOptions() {
+  const sups = [...new Set(App.universe.map(r => r.supervisor))].sort();
+  const proms = [...new Set(App.universe.map(r => r.promotor))].sort();
+  const canales = [...new Set(App.universe.map(r => r.canal))].sort();
+  fillSelect('f-supervisor', sups, 'Supervisor: Todos');
+  fillSelect('f-promotor', proms, 'Promotor: Todos');
+  fillSelect('f-canal', canales, 'Canal: Todos');
+}
+function fillSelect(id, values, placeholder) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<option value="">${placeholder}</option>` + values.map(v => `<option value="${v}">${v}</option>`).join('');
+}
+
+function applyFilters() {
+  const q = document.getElementById('f-search').value.trim().toLowerCase();
+  const fh = document.getElementById('f-horizonte').value;
+  const fs = document.getElementById('f-supervisor').value;
+  const fp = document.getElementById('f-promotor').value;
+  const fc = document.getElementById('f-canal').value;
+
+  App.filtered = App.universe.filter(r => {
+    if (App.mode === 'cnc' && !['U3M', 'U6M', 'U12M'].includes(r.horizonte)) return false;
+    if (fh && r.horizonte !== fh) return false;
+    if (fs && r.supervisor !== fs) return false;
+    if (fp && r.promotor !== fp) return false;
+    if (fc && r.canal !== fc) return false;
+    if (q && !(String(r.cliente).includes(q) || r.razon.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  App.page = 1;
+  renderKpis();
+  renderTable();
+}
+
+function renderKpis() {
+  const total = App.universe.length;
+  const activos = App.universe.filter(r => r.horizonte === 'Comprador Activo').length;
+  const cnc = App.universe.filter(r => ['U3M', 'U6M', 'U12M'].includes(r.horizonte)).length;
+  const u3mRows = App.universe.filter(r => r.horizonte === 'U3M');
+  const u3mCompletos = u3mRows.filter(r => computeEstado(r) === 'Completo').length;
+  const u12mRows = App.universe.filter(r => r.horizonte === 'U12M');
+  const u12mCumple = u12mRows.filter(r => computeEstado(r) === 'Cumple').length;
+
+  document.getElementById('kpi-total').textContent = total.toLocaleString('es-AR');
+  document.getElementById('kpi-activos').textContent = activos.toLocaleString('es-AR');
+  document.getElementById('kpi-cnc').textContent = cnc.toLocaleString('es-AR');
+  document.getElementById('kpi-u3m').textContent = `${u3mCompletos} / ${u3mRows.length}`;
+  document.getElementById('kpi-u12m').textContent = `${u12mCumple} / ${u12mRows.length}`;
+
+  const pctU3m = u3mRows.length ? Math.round(100 * u3mCompletos / u3mRows.length) : null;
+  document.getElementById('kpi-pct-u3m').textContent = pctU3m === null ? '-' : pctU3m + '%';
+
+  const pctU12m = u12mRows.length ? (u12mCumple / u12mRows.length) : 1;
+  const pctU3mFrac = u3mRows.length ? (u3mCompletos / u3mRows.length) : 1;
+  const nivelCard = document.getElementById('kpi-nivel-card');
+  const nivelEl = document.getElementById('kpi-nivel');
+  if (cnc === 0) {
+    nivelEl.textContent = 'Sin datos';
+    nivelCard.className = 'kpi-card';
+  } else if (pctU3mFrac >= 0.999 && pctU12m >= 0.999) {
+    nivelEl.textContent = 'Nivel 1 (100%)';
+    nivelCard.className = 'kpi-card nivel1';
+  } else {
+    nivelEl.textContent = 'Nivel 0';
+    nivelCard.className = 'kpi-card nivel0';
+  }
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tbody');
+  const start = (App.page - 1) * App.pageSize;
+  const pageRows = App.filtered.slice(start, start + App.pageSize);
+
+  tbody.innerHTML = pageRows.map(row => rowHtml(row)).join('');
+
+  attachRowEvents();
+
+  const totalPages = Math.max(1, Math.ceil(App.filtered.length / App.pageSize));
+  document.getElementById('pager-info').textContent = `${App.filtered.length.toLocaleString('es-AR')} clientes`;
+  document.getElementById('page-current').textContent = `${App.page} / ${totalPages}`;
+  document.getElementById('page-prev').disabled = App.page <= 1;
+  document.getElementById('page-next').disabled = App.page >= totalPages;
+}
+
+function rowHtml(row) {
+  const m = getManual(row.cliente);
+  const estado = computeEstado(row);
+  const proximo = computeProximoContacto(row);
+  const showU3mFields = row.horizonte === 'U3M';
+  const showU12mFields = row.horizonte === 'U12M';
+
+  const pdaCell = showU3mFields
+    ? `<select class="cell-select" data-cli="${row.cliente}" data-field="pda">${PDA_OPTIONS.map(o => `<option value="${o}" ${m.pda===o?'selected':''}>${o||'- Elegir -'}</option>`).join('')}</select>`
+    : `<span class="muted-cell">—</span>`;
+  const fechaPdaCell = showU3mFields
+    ? `<input type="date" class="cell-input" data-cli="${row.cliente}" data-field="fechaPda" value="${m.fechaPda||''}">`
+    : `<span class="muted-cell">—</span>`;
+  const censoCell = showU12mFields
+    ? `<select class="cell-select" data-cli="${row.cliente}" data-field="censo">
+         <option value="No" ${m.censo!=='Sí'?'selected':''}>No</option>
+         <option value="Sí" ${m.censo==='Sí'?'selected':''}>Sí</option>
+       </select>`
+    : `<span class="muted-cell">—</span>`;
+  const ultimoContactoCell = showU12mFields
+    ? `<input type="date" class="cell-input" data-cli="${row.cliente}" data-field="ultimoContacto" value="${m.ultimoContacto||''}">`
+    : `<span class="muted-cell">—</span>`;
+
+  return `<tr data-cliente="${row.cliente}">
+    <td>${row.cliente}</td>
+    <td title="${row.razon}">${row.razon}</td>
+    <td>${row.canal}</td>
+    <td>${row.supervisor}</td>
+    <td>${row.promotor}</td>
+    <td><select class="cell-select" data-cli="${row.cliente}" data-field="negocio">
+        <option value="" ${m.negocio===''?'selected':''}>-</option>
+        <option value="CZA" ${m.negocio==='CZA'?'selected':''}>CZA</option>
+        <option value="NABs" ${m.negocio==='NABs'?'selected':''}>NABs</option>
+      </select></td>
+    <td>${row.dias ?? '—'}</td>
+    <td>${badgeHorizonte(row.horizonte)}</td>
+    <td>${row.motivo || '<span class="muted-cell">—</span>'}</td>
+    <td class="detalle-cell" title="${row.detalle||''}">${row.detalle || '<span class="muted-cell">—</span>'}</td>
+    <td>${pdaCell}</td>
+    <td>${fechaPdaCell}</td>
+    <td>${censoCell}</td>
+    <td>${ultimoContactoCell}</td>
+    <td>${proximo ? fmtDate(proximo) : '<span class="muted-cell">—</span>'}</td>
+    <td>${badgeEstado(estado)}</td>
+  </tr>`;
+}
+
+function attachRowEvents() {
+  document.querySelectorAll('#tbody [data-field]').forEach(el => {
+    el.addEventListener('change', (e) => {
+      const cli = parseInt(e.target.dataset.cli, 10) || e.target.dataset.cli;
+      const field = e.target.dataset.field;
+      const m = getManual(cli);
+      m[field] = e.target.value;
+      // recompute row in place
+      const row = App.universe.find(r => r.cliente == cli);
+      const tr = document.querySelector(`#tbody tr[data-cliente="${cli}"]`);
+      if (row && tr) {
+        tr.outerHTML = rowHtml(row);
+        attachRowEvents();
+      }
+      renderKpis();
+    });
+  });
+}
+
+/* ============================================================
+   EXPORT / IMPORT DE ESTADO
+   ============================================================ */
+function exportEstado() {
+  const rows = App.universe.map(row => {
+    const m = getManual(row.cliente);
+    return {
+      'Cliente': row.cliente,
+      'Razon Social': row.razon,
+      'Canal': row.canal,
+      'Supervisor': row.supervisor,
+      'Promotor': row.promotor,
+      'Negocio': m.negocio,
+      'Dias Sin Comprar': row.dias,
+      'Horizonte': row.horizonte,
+      'Motivo': row.motivo,
+      'Detalle': row.detalle,
+      'PDA Asociado': m.pda,
+      'Fecha PDA': m.fechaPda,
+      'Oportunidad Censo': m.censo,
+      'Ultimo Contacto SPV': m.ultimoContacto,
+      'Proximo Contacto': fmtDate(computeProximoContacto(row)),
+      'Estado Seguimiento': computeEstado(row)
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Estado_CNC');
+  const fecha = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Estado_CNC_${fecha}.xlsx`);
+}
+
+function importEstado(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+    const sheetName = wb.SheetNames.find(n => /estado/i.test(n)) || wb.SheetNames[0];
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+    rows.forEach(r => {
+      const cli = r['Cliente'];
+      if (cli === undefined || cli === '') return;
+      App.manual.set(cli, {
+        negocio: r['Negocio'] || '',
+        pda: r['PDA Asociado'] || '',
+        fechaPda: '', // las fechas de un export previo se re-cargan solo si coinciden formato ISO
+        censo: r['Oportunidad Censo'] || 'No',
+        ultimoContacto: ''
+      });
+    });
+    renderKpis();
+    renderTable();
+    toast('Estado anterior importado (' + rows.length + ' clientes).');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function toast(msg) {
+  console.log('[EMCALA CNC]', msg);
+}
+
+/* ============================================================
+   EVENTOS DE CARGA DE ARCHIVO / UI
+   ============================================================ */
+document.getElementById('btn-conectar').addEventListener('click', conectarEmcala);
+document.getElementById('btn-conectar-2').addEventListener('click', conectarEmcala);
+
+document.getElementById('btn-load-ventas').addEventListener('click', () => document.getElementById('file-ventas').click());
+document.getElementById('file-ventas').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  handleVentasFile(f).catch(err => alert('No se pudo procesar el CSV de ventas: ' + err.message));
+});
+
+document.getElementById('btn-load-motivos').addEventListener('click', () => document.getElementById('file-motivos').click());
+document.getElementById('file-motivos').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  handleMotivosFile(f).catch(err => alert('No se pudo procesar el archivo de motivos: ' + err.message));
+});
+
+document.getElementById('btn-load-offline').addEventListener('click', () => document.getElementById('file-offline').click());
+document.getElementById('file-offline').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array', cellDates: true });
+      loadOfflineWorkbook(wb);
+      recomputeUniverse();
+      onDataLoaded();
+      document.getElementById('conn-status').textContent = `Modo offline — ${App.clientesBase.size.toLocaleString('es-AR')} clientes cargados desde el Excel de ejemplo.`;
+    } catch (err) {
+      alert('No se pudo procesar el archivo: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(f);
+});
+
+document.getElementById('btn-import-estado').addEventListener('click', () => document.getElementById('file-estado').click());
+document.getElementById('file-estado').addEventListener('change', (e) => { if (e.target.files[0]) importEstado(e.target.files[0]); });
+
+document.getElementById('btn-export-estado').addEventListener('click', exportEstado);
+
+['f-search','f-horizonte','f-supervisor','f-promotor','f-canal'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyFilters);
+  document.getElementById(id).addEventListener('change', applyFilters);
+});
+
+document.getElementById('seg-cnc').addEventListener('click', () => { App.mode='cnc'; toggleSeg(); applyFilters(); });
+document.getElementById('seg-all').addEventListener('click', () => { App.mode='all'; toggleSeg(); applyFilters(); });
+function toggleSeg() {
+  document.getElementById('seg-cnc').classList.toggle('active', App.mode==='cnc');
+  document.getElementById('seg-all').classList.toggle('active', App.mode==='all');
+}
+
+document.getElementById('page-size').addEventListener('change', (e) => { App.pageSize = parseInt(e.target.value,10); App.page=1; renderTable(); });
+document.getElementById('page-prev').addEventListener('click', () => { if (App.page>1) { App.page--; renderTable(); } });
+document.getElementById('page-next').addEventListener('click', () => {
+  const totalPages = Math.max(1, Math.ceil(App.filtered.length / App.pageSize));
+  if (App.page < totalPages) { App.page++; renderTable(); }
+});
+
+if (typeof EmcalaAuth !== 'undefined' && EmcalaAuth.renderUserBadge) {
+  EmcalaAuth.renderUserBadge('userBadgeContainer');
+}
+</script>
+</body>
+</html>
