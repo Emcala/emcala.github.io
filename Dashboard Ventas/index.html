@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal EMCALA · Dashboard de Ventas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&display=swap');
+  :root {
+    --navy: #0B2559;
+    --navy-2: #123168;
+    --green: #107c41;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --bg: linear-gradient(145deg, #0B2559 0%, #1B5FA8 60%, #0D3880 100%);
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-dim: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    background: rgba(22, 49, 84, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 {
+    font-size: 1.25rem;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: .3px;
+  }
+  header .sub { font-size: .8rem; color: #b9c6e6; margin-top: 2px; }
+  .controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .controls select, .controls input {
+    padding: 7px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: .85rem;
+  }
+  .controls button {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .controls button:hover { background: #2563eb; }
+
+  main { padding: 12px 20px 20px; max-width: 1400px; margin: 0 auto; }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+  .kpi-card .label { font-size: .75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
+  .kpi-card .value { font-size: 1.6rem; font-weight: 700; margin-top: 4px; }
+  .kpi-card .bar-bg { height: 6px; background: #eef1f6; border-radius: 4px; margin-top: 8px; overflow: hidden; }
+  .kpi-card .bar-fill { height: 100%; border-radius: 4px; }
+
+  .chart-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+  .chart-card .chart-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .chart-card h2 { font-size: 1rem; margin: 0; }
+  .chart-subtitle { font-size: 0.85rem; color: var(--text-dim); font-weight: 600; margin-left: 12px; padding: 4px 10px; background: #f1f5f9; border-radius: 4px; }
+  
+  .toggle-group {
+    display: flex;
+    background: #eef1f6;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .toggle-group button {
+    border: none;
+    background: transparent;
+    padding: 6px 14px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-dim);
+  }
+  .toggle-group button.active { background: var(--navy); color: #fff; }
+  canvas#evolucion-chart-f1, canvas#evolucion-chart-f2 { max-height: 180px; }
+
+  .table-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  }
+  .table-container { max-height: 380px; overflow: auto; }
+  table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: .8rem; }
+  thead th {
+    padding: 8px 6px;
+    text-align: center;
+    font-size: .7rem;
+    text-transform: uppercase;
+    position: sticky; top: 0;
+    z-index: 10;
+    border: 1px solid #111;
+  }
+  thead tr:nth-child(2) th { top: 31px; }
+  td { padding: 4px 4px; border: 1px solid #111; text-align: center !important; font-variant-numeric: tabular-nums; font-size: .75rem; color: #111; }
+  td:first-child { text-align: left !important; position: sticky; left: 0; z-index: 5; background: #fff; font-weight: 700; font-size: .75rem; color: #111; }
+  
+  tr.spv-header td { background: var(--navy-2); color: #fff; cursor: pointer; text-align: left; z-index: 6; }
+  tr.spv-header:hover td { filter: brightness(1.1); }
+  tr.mesa-row td { background: #fff; color: var(--text-dim); cursor: pointer; }
+  tr.mesa-row:hover td { background: #f8fafc; }
+  tr.totales-row td { background: #000; color: #fff; font-weight: 700; cursor: pointer; }
+  tr.totales-row:hover td { background: #222; }
+  
+  tr.selected-row td { border-top: 2px solid var(--blue); border-bottom: 2px solid var(--blue); }
+  tr.selected-row td:first-child { border-left: 4px solid var(--blue); }
+
+  .bg-blue { background: #0B2559 !important; color: #fff !important; }
+  .bg-blue-dark { background: #123168 !important; color: #fff !important; }
+  .bg-red { background: #da291c !important; color: #fff !important; }
+  .bg-yellow { background: #f1c40f !important; color: #000 !important; }
+  .bg-green { background: #27ae60 !important; color: #fff !important; }
+  .bg-pink { background: #ff4785 !important; color: #fff !important; }
+  .bg-lightblue { background: #0ea5e9 !important; color: #fff !important; }
+  .progress-cell { position: relative; width: 48px; min-width: 48px; text-align: center !important; overflow: hidden; background: #fff !important; padding: 0 2px; vertical-align: middle; }
+  .progress-bar-bg { position: absolute; top: 2px; left: 2px; width: calc(100% - 4px); height: calc(100% - 4px); background: #4a5568; border-radius: 4px; z-index: 0; overflow: hidden; }
+  .progress-bar-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 3px; z-index: 0; }
+  .progress-cell span { position: relative; z-index: 1; color: #fff; font-size: .75rem; font-weight: 800; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
+
+  .loading { text-align: center; padding: 60px; color: var(--text-dim); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📊 Dashboard de Ventas · Portal EMCALA</h1>
+    <div class="sub">Objetivo vs Acumulado del Mes — Vista Consolidada</div>
+  </div>
+  <div class="controls">
+    <input type="month" id="month-input">
+    <select id="spv-select"><option value="ALL">Todos los SPV</option></select>
+    <button id="btn-refresh">Actualizar</button>
+  </div>
+</header>
+
+<main>
+  <div class="kpi-row" id="kpi-row"></div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 10px; margin-bottom: 12px;">
+    <div class="chart-card" style="margin-bottom: 0;">
+      <div class="chart-head">
+        <div style="display:flex; align-items:center;">
+          <h2>Evolución diaria — Cerveza</h2>
+          <span id="chart-subtitle-f1" class="chart-subtitle">Toda la empresa</span>
+        </div>
+      </div>
+      <canvas id="evolucion-chart-f1"></canvas>
+    </div>
+    <div class="chart-card" style="margin-bottom: 0;">
+      <div class="chart-head">
+        <div style="display:flex; align-items:center;">
+          <h2>Evolución diaria — NABs</h2>
+          <span id="chart-subtitle-f2" class="chart-subtitle">Toda la empresa</span>
+        </div>
+      </div>
+      <canvas id="evolucion-chart-f2"></canvas>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2" style="background:#fff; color:#000; min-width:200px; text-align: left; padding-left: 12px; z-index: 15;">SUPERVISOR / PROMOTOR<br><span style="font-size:0.65rem;font-weight:400;color:var(--text-dim);text-transform:none;">(Clic en fila para ver gráfico)</span></th>
+            <th colspan="3" class="bg-blue">FOCO I (TOTAL CVZA)</th>
+            <th colspan="3" class="bg-yellow">CORE+VALUE</th>
+            <th colspan="3" class="bg-green">ABOVE CORE</th>
+            
+            <th colspan="3" class="bg-blue">FOCO II (TOTAL NABS)</th>
+            <th colspan="3" class="bg-pink">UNG TOP</th>
+            <th colspan="3" class="bg-lightblue">AGUAS</th>
+          </tr>
+          <tr>
+            <!-- CVZA Total -->
+            <th class="bg-red">OBJETIVO</th><th class="bg-red">ACUMULADO</th><th class="bg-red">AVANCE</th>
+            <!-- CV -->
+            <th class="bg-yellow">OBJ.</th><th class="bg-yellow">ACUM.</th><th class="bg-yellow">AVANCE</th>
+            <!-- AC -->
+            <th class="bg-green">OBJ.</th><th class="bg-green">ACUM.</th><th class="bg-green">AVANCE</th>
+            
+            <!-- NABS Total -->
+            <th class="bg-blue-dark">OBJETIVO</th><th class="bg-blue-dark">ACUMULADO</th><th class="bg-blue-dark">AVANCE</th>
+            <!-- UNG TOP -->
+            <th class="bg-pink">OBJ.</th><th class="bg-pink">ACUM.</th><th class="bg-pink">AVANCE</th>
+            <!-- AGUAS -->
+            <th class="bg-lightblue">OBJ.</th><th class="bg-lightblue">ACUM.</th><th class="bg-lightblue">AVANCE</th>
+          </tr>
+        </thead>
+        <tbody id="dash-tbody">
+          <tr><td colspan="19" class="loading">Conectando con la nube…</td></tr>
+        </tbody>
+        <tfoot id="dash-tfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
+
+let dashData = null;
+let evoChartF1 = null;
+let evoChartF2 = null;
+let entidadSeleccionada = { tipo: 'TOTAL', id: 'TOTAL' };
+
+function getCurrentMonth() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function pct(real, plan, diasInfo) {
+  if (!plan || plan <= 0) return 0;
+  let target = plan;
+  if (diasInfo && diasInfo.diasPeso && diasInfo.pesoPasado && diasInfo.diasPeso > 0) {
+    target = (plan / diasInfo.diasPeso) * diasInfo.pesoPasado;
+  }
+  if (target <= 0) return 0;
+  return Math.round((real / target) * 100);
+}
+
+function colorFor(p) {
+  if (p >= 100) return 'var(--green)';
+  if (p >= 90) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+function format(num) {
+  return parseFloat(num || 0).toFixed(2);
+}
+
+function cell(obj, real, diasInfo) {
+  const p = pct(real, obj, diasInfo);
+  if (!obj || obj <= 0) {
+    return `<td>${format(obj)}</td><td>${format(real)}</td><td class="progress-cell"><span>-</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:0%;background:#94a3b8"></div></div></td>`;
+  }
+  const barCol = colorFor(p);
+  return `<td>${format(obj)}</td><td>${format(real)}</td><td class="progress-cell"><span>${p}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.min(100, p)}%;background:${barCol}"></div></div></td>`;
+}
+
+async function cargarDashboard() {
+  const cMonth = document.getElementById('month-input').value || getCurrentMonth();
+  const spv = document.getElementById('spv-select').value;
+  document.getElementById('dash-tbody').innerHTML = '<tr><td colspan="19" class="loading">Cargando datos…</td></tr>';
+
+  try {
+    const url = `${SCRIPT_URL}?req=dashboard&cMonth=${cMonth}&spv=${encodeURIComponent(spv)}`;
+    const res = await fetch(url);
+    dashData = await res.json();
+    if (dashData.status !== 'success') {
+      document.getElementById('dash-tbody').innerHTML = `<tr><td colspan="19" class="loading">Error: ${dashData.message}</td></tr>`;
+      return;
+    }
+    
+    // Calcular días trabajados y peso automáticamente si no viene de backend
+    if (!dashData.diasInfo || !dashData.diasInfo.diasHabiles) {
+      let maxDate = cMonth + '-01';
+      if (dashData.evolucionF1 && dashData.evolucionF1.length > 0) {
+        maxDate = dashData.evolucionF1[dashData.evolucionF1.length - 1].date;
+      } else {
+        const hoy = new Date();
+        maxDate = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+      }
+      dashData.diasInfo = calcularDiasMes(cMonth, maxDate);
+    }
+    
+    // Restablecer seleccion al cargar nuevo mes
+    entidadSeleccionada = { tipo: 'TOTAL', id: 'TOTAL' };
+    
+    poblarSelectSpv();
+    renderKpis();
+    renderDashboard();
+    seleccionarEntidad('TOTAL', 'TOTAL'); // Dibuja el grafico y resalta la fila
+  } catch (err) {
+    document.getElementById('dash-tbody').innerHTML = `<tr><td colspan="19" class="loading">Error de conexión: ${err.message}</td></tr>`;
+  }
+}
+
+function calcularDiasMes(mesStr, maxDateStr) {
+  const parts = mesStr.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const diasEnMes = new Date(year, month, 0).getDate();
+  
+  let habiles = 0;
+  let pesoTotal = 0;
+  let trabajados = 0;
+  let pesoPasado = 0;
+  
+  // Feriados nacionales (aproximado 2026)
+  const feriados = [
+    '01-01', '02-16', '02-17', '03-24', '04-02', '04-03', '05-01', '05-25', 
+    '06-15', '06-20', '07-09', '08-17', '10-12', '11-23', '12-08', '12-25'
+  ];
+  
+  for (let d = 1; d <= diasEnMes; d++) {
+    const fecha = new Date(year, month - 1, d);
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const mdStr = `${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayOfWeek = fecha.getDay();
+    
+    if (dayOfWeek === 0) continue; // Domingo
+    if (feriados.includes(mdStr)) continue; // Feriado
+    
+    const pesoDia = (dayOfWeek === 6) ? 0.6 : 1.0;
+    
+    habiles++;
+    pesoTotal += pesoDia;
+    
+    if (dateStr <= maxDateStr) {
+      trabajados++;
+      pesoPasado += pesoDia;
+    }
+  }
+  
+  return {
+    diasHabiles: habiles,
+    diasPeso: parseFloat(pesoTotal.toFixed(2)),
+    diasTrabajados: trabajados,
+    pesoPasado: parseFloat(pesoPasado.toFixed(2))
+  };
+}
+
+function poblarSelectSpv() {
+  const sel = document.getElementById('spv-select');
+  const current = sel.value;
+  if (sel.dataset.filled) return; // solo la primera vez
+  (dashData.spvOrder || []).forEach(spv => {
+    const opt = document.createElement('option');
+    opt.value = spv; opt.textContent = spv;
+    sel.appendChild(opt);
+  });
+  sel.value = current;
+  sel.dataset.filled = '1';
+}
+
+function renderKpis() {
+  let subText = "Objetivo vs Acumulado del Mes — Vista Consolidada";
+  if (dashData.diasInfo && dashData.diasInfo.diasHabiles > 0) {
+    subText += ` | Días Hábiles: ${dashData.diasInfo.diasHabiles} (Trabajados: ${dashData.diasInfo.diasTrabajados})`;
+    document.querySelector('.sub').textContent = subText;
+  }
+  
+  let f1Plan = 0, f1Real = 0, f2Plan = 0, f2Real = 0;
+  for (const prom in dashData.mesas) {
+    const d = dashData.mesas[prom];
+    const obj = dashData.objetivos[prom] || {};
+    f1Plan += obj.objF1 || 0;
+    f1Real += d.f1Real;
+    f2Plan += obj.objF2 || 0;
+    f2Real += d.f2Real;
+  }
+  const pF1 = pct(f1Real, f1Plan, dashData.diasInfo);
+  const pF2 = pct(f2Real, f2Plan, dashData.diasInfo);
+  document.getElementById('kpi-row').innerHTML = `
+    ${kpiCard('Cerveza · Foco 1', f1Real, f1Plan, pF1)}
+    ${kpiCard('NABs · Foco 2', f2Real, f2Plan, pF2)}
+  `;
+}
+
+function kpiCard(label, real, plan, p) {
+  const barCol = plan > 0 ? colorFor(p) : '#94a3b8';
+  const pTxt = plan > 0 ? `${p}% cumplido` : 'Sin objetivo definido';
+  return `
+    <div class="kpi-card">
+      <div class="label">${label}</div>
+      <div class="value">${real.toFixed(2)} <span style="font-size:.9rem;color:var(--text-dim);font-weight:400">/ ${plan.toFixed(2)}</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100, p)}%;background:${barCol}"></div></div>
+      <div style="font-size:.75rem;color:var(--text-dim);margin-top:4px">${pTxt}</div>
+    </div>`;
+}
+
+function renderDashboard() {
+  const tbody = document.getElementById('dash-tbody');
+  let html = '';
+  const orden = dashData.spvOrder || Object.keys(dashData.mesasPorSpv || {});
+
+  // Acumuladores Globales Totales
+  let tF1Plan = 0, tF1Real = 0;
+  let tCVPlan = 0, tCVReal = 0, tACPlan = 0, tACReal = 0, tBCPlan = 0, tBCReal = 0, tLTPlan = 0, tLTReal = 0;
+  
+  let tF2Plan = 0, tF2Real = 0;
+  let tUNGPlan = 0, tUNGReal = 0, tUPPlan = 0, tUPReal = 0, tRBPlan = 0, tRBReal = 0, tAGPlan = 0, tAGReal = 0;
+
+  orden.forEach(spv => {
+    const promotores = (dashData.mesasPorSpv && dashData.mesasPorSpv[spv]) || [];
+    if (promotores.length === 0) return;
+    
+    // Acumuladores de Supervisor
+    let sF1Plan = 0, sF1Real = 0;
+    let sCVPlan = 0, sCVReal = 0, sACPlan = 0, sACReal = 0, sBCPlan = 0, sBCReal = 0, sLTPlan = 0, sLTReal = 0;
+    
+    let sF2Plan = 0, sF2Real = 0;
+    let sUNGPlan = 0, sUNGReal = 0, sUPPlan = 0, sUPReal = 0, sRBPlan = 0, sRBReal = 0, sAGPlan = 0, sAGReal = 0;
+
+    let promRowsHtml = '';
+
+    promotores.forEach(prom => {
+      const d = dashData.mesas[prom];
+      if (!d) return;
+      const obj = dashData.objetivos[prom] || {};
+      
+      const pF1 = obj.objF1 || 0;
+      const pCV = obj.objCV || 0;
+      const pAC = obj.objAC || 0;
+      const pBC = obj.objBC || 0;
+      const pLT = obj.objLT || 0;
+      
+      const pF2 = obj.objF2 || 0;
+      const pUNG = obj.objUNG || 0;
+      const pUP = obj.objUP || 0;
+      const pRB = obj.objRB || 0;
+      const pAG = obj.objAG || 0;
+
+      // Sum to supervisor
+      sF1Plan += pF1; sF1Real += d.f1Real;
+      sCVPlan += pCV; sCVReal += d.cv;
+      sACPlan += pAC; sACReal += d.ac;
+      sBCPlan += pBC; sBCReal += d.bc;
+      sLTPlan += pLT; sLTReal += d.lt;
+
+      sF2Plan += pF2; sF2Real += d.f2Real;
+      sUNGPlan += pUNG; sUNGReal += d.ung;
+      sRBPlan += pRB; sRBReal += d.rb;
+      sAGPlan += pAG; sAGReal += d.ag;
+
+      // Sum to totals
+      tF1Plan += pF1; tF1Real += d.f1Real;
+      tCVPlan += pCV; tCVReal += d.cv;
+      tACPlan += pAC; tACReal += d.ac;
+      tBCPlan += pBC; tBCReal += d.bc;
+      tLTPlan += pLT; tLTReal += d.lt;
+
+      tF2Plan += pF2; tF2Real += d.f2Real;
+      tUNGPlan += pUNG; tUNGReal += d.ung;
+      tRBPlan += pRB; tRBReal += d.rb;
+      tAGPlan += pAG; tAGReal += d.ag;
+
+      const promIdStr = prom.replace(/\s+/g, '');
+      promRowsHtml += `<tr class="mesa-row spv-${spv.replace(/\s+/g, '')}" id="row-PROM-${promIdStr}" onclick="seleccionarProm(event, '${prom}')" style="display:none">
+        <td style="padding-left:24px">▶ ${prom}</td>
+        ${cell(pF1, d.f1Real, dashData.diasInfo)}
+        ${cell(pCV, d.cv, dashData.diasInfo)}
+        ${cell(pAC, d.ac, dashData.diasInfo)}
+        
+        ${cell(pF2, d.f2Real, dashData.diasInfo)}
+        ${cell(pUNG, d.ung, dashData.diasInfo)}
+        ${cell(pAG, d.ag, dashData.diasInfo)}
+      </tr>`;
+    });
+
+    const spvIdStr = spv.replace(/\s+/g, '');
+    html += `<tr class="spv-header" id="row-SPV-${spvIdStr}" onclick="toggleSpv(event, '${spv}')">
+      <td>▼ ${spv}</td>
+      ${cell(sF1Plan, sF1Real, dashData.diasInfo)}
+      ${cell(sCVPlan, sCVReal, dashData.diasInfo)}
+      ${cell(sACPlan, sACReal, dashData.diasInfo)}
+      
+      ${cell(sF2Plan, sF2Real, dashData.diasInfo)}
+      ${cell(sUNGPlan, sUNGReal, dashData.diasInfo)}
+      ${cell(sAGPlan, sAGReal, dashData.diasInfo)}
+    </tr>`;
+    html += promRowsHtml;
+  });
+
+  const tfoot = document.getElementById('dash-tfoot');
+  if (tfoot) {
+    if (!html) {
+      tfoot.innerHTML = '';
+    } else {
+      tfoot.innerHTML = `<tr class="totales-row" id="row-TOTAL" onclick="seleccionarEntidad('TOTAL', 'TOTAL')">
+        <td>TOTALES</td>
+        ${cell(tF1Plan, tF1Real, dashData.diasInfo)}
+        ${cell(tCVPlan, tCVReal, dashData.diasInfo)}
+        ${cell(tACPlan, tACReal, dashData.diasInfo)}
+        
+        ${cell(tF2Plan, tF2Real, dashData.diasInfo)}
+        ${cell(tUNGPlan, tUNGReal, dashData.diasInfo)}
+        ${cell(tAGPlan, tAGReal, dashData.diasInfo)}
+      </tr>`;
+    }
+  }
+
+  tbody.innerHTML = html || '<tr><td colspan="19" class="loading">Sin datos para el mes seleccionado.</td></tr>';
+}
+
+window.toggleSpv = function (event, spvName) {
+  event.stopPropagation();
+  seleccionarEntidad('SPV', spvName);
+  const rows = document.querySelectorAll(`.spv-${spvName.replace(/\s+/g, '')}`);
+  rows.forEach(r => {
+    r.style.display = r.style.display === 'none' ? '' : 'none';
+  });
+};
+
+window.seleccionarProm = function(event, promName) {
+  event.stopPropagation();
+  seleccionarEntidad('PROM', promName);
+};
+
+window.seleccionarEntidad = function(tipo, id) {
+  entidadSeleccionada = { tipo, id };
+  
+  // Resaltar fila seleccionada
+  document.querySelectorAll('tr').forEach(r => r.classList.remove('selected-row'));
+  const rowId = tipo === 'TOTAL' ? 'row-TOTAL' : `row-${tipo}-${id.replace(/\s+/g, '')}`;
+  const r = document.getElementById(rowId);
+  if (r) r.classList.add('selected-row');
+
+  // Actualizar subtitulo
+  const titulos = { TOTAL: 'Toda la empresa', SPV: `Equipo ${id}`, PROM: `Promotor ${id}` };
+  document.getElementById('chart-subtitle-f1').textContent = titulos[tipo] || '';
+  document.getElementById('chart-subtitle-f2').textContent = titulos[tipo] || '';
+
+  renderEvolucionCharts();
+};
+
+function renderEvolucionCharts() {
+  if (!dashData || !dashData.rawDaily) return;
+  const ctxF1 = document.getElementById('evolucion-chart-f1').getContext('2d');
+  const ctxF2 = document.getElementById('evolucion-chart-f2').getContext('2d');
+  
+  // 1. Calcular el objetivo de la entidad seleccionada
+  let objF1 = 0, objF2 = 0;
+  if (entidadSeleccionada.tipo === 'TOTAL') {
+    objF1 = Object.values(dashData.objetivos).reduce((sum, obj) => sum + (obj.objF1||0), 0);
+    objF2 = Object.values(dashData.objetivos).reduce((sum, obj) => sum + (obj.objF2||0), 0);
+  } else if (entidadSeleccionada.tipo === 'SPV') {
+    const proms = dashData.mesasPorSpv[entidadSeleccionada.id] || [];
+    objF1 = proms.reduce((sum, prom) => sum + ((dashData.objetivos[prom]||{}).objF1||0), 0);
+    objF2 = proms.reduce((sum, prom) => sum + ((dashData.objetivos[prom]||{}).objF2||0), 0);
+  } else if (entidadSeleccionada.tipo === 'PROM') {
+    const obj = dashData.objetivos[entidadSeleccionada.id] || {};
+    objF1 = (obj.objF1||0);
+    objF2 = (obj.objF2||0);
+  }
+
+  // 2. Agrupar y sumar ventas de rawDaily por fecha
+  const porFecha = {};
+  dashData.rawDaily.forEach(r => {
+    if (entidadSeleccionada.tipo === 'SPV' && r.spv !== entidadSeleccionada.id) return;
+    if (entidadSeleccionada.tipo === 'PROM' && r.prom !== entidadSeleccionada.id) return;
+    
+    if (!porFecha[r.date]) porFecha[r.date] = { f1: 0, f2: 0, cv: 0, ac: 0, ung: 0, ag: 0 };
+    porFecha[r.date].f1 += (r.f1Real || 0);
+    porFecha[r.date].f2 += (r.f2Real || 0);
+    porFecha[r.date].cv += (r.cv || 0);
+    porFecha[r.date].ac += (r.ac || 0);
+    porFecha[r.date].ung += (r.ung || 0);
+    porFecha[r.date].ag += (r.ag || 0);
+  });
+
+  // 3. Crear serie acumulada
+  const fechas = Object.keys(porFecha).sort();
+  const labels = [];
+  const dataAcumF1 = [], dataAcumF2 = [];
+  const dataObjF1 = [], dataObjF2 = [];
+  const dataAcumCV = [], dataAcumAC = [];
+  const dataAcumUNG = [], dataAcumAG = [];
+
+  let acumF1 = 0, acumF2 = 0;
+  let acumCV = 0, acumAC = 0;
+  let acumUNG = 0, acumAG = 0;
+  
+  fechas.forEach(f => {
+    labels.push(f.slice(8, 10) + '/' + f.slice(5, 7));
+    acumF1 += porFecha[f].f1; acumF2 += porFecha[f].f2;
+    acumCV += porFecha[f].cv; acumAC += porFecha[f].ac;
+    acumUNG += porFecha[f].ung; acumAG += porFecha[f].ag;
+    
+    dataAcumF1.push(+acumF1.toFixed(2));
+    dataAcumF2.push(+acumF2.toFixed(2));
+    dataObjF1.push(+objF1.toFixed(2));
+    dataObjF2.push(+objF2.toFixed(2));
+    dataAcumCV.push(+acumCV.toFixed(2));
+    dataAcumAC.push(+acumAC.toFixed(2));
+    dataAcumUNG.push(+acumUNG.toFixed(2));
+    dataAcumAG.push(+acumAG.toFixed(2));
+  });
+
+  const createChart = (chartInstance, ctx, labels, dataObj, dataAcum, label1, label2, dataSub1, labelSub1, colorSub1, dataSub2, labelSub2, colorSub2) => {
+    if (chartInstance) chartInstance.destroy();
+    
+    const datasets = [
+      { 
+        label: label1, 
+        data: dataObj, 
+        borderColor: '#3b82f6', 
+        backgroundColor: 'transparent', 
+        borderDash: [5, 5], 
+        tension: 0, 
+        pointRadius: 0, 
+        borderWidth: 2 
+      },
+      { 
+        label: label2, 
+        data: dataAcum, 
+        borderColor: '#107c41', 
+        backgroundColor: '#107c4120', 
+        tension: 0.25, 
+        pointRadius: 3, 
+        fill: true, 
+        borderWidth: 3 
+      }
+    ];
+
+    if (dataSub1 && labelSub1) {
+      datasets.push({
+        label: labelSub1,
+        data: dataSub1,
+        borderColor: colorSub1 || '#eab308',
+        backgroundColor: 'transparent',
+        tension: 0.25,
+        pointRadius: 2,
+        borderWidth: 1.5
+      });
+    }
+
+    if (dataSub2 && labelSub2) {
+      datasets.push({
+        label: labelSub2,
+        data: dataSub2,
+        borderColor: colorSub2 || '#22c55e',
+        backgroundColor: 'transparent',
+        tension: 0.25,
+        pointRadius: 2,
+        borderWidth: 1.5
+      });
+    }
+
+    return new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { 
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.y.toFixed(2);
+              }
+            }
+          }
+        },
+        scales: { 
+          y: { beginAtZero: true } 
+        }
+      }
+    });
+  };
+
+  evoChartF1 = createChart(evoChartF1, ctxF1, labels, dataObjF1, dataAcumF1, 'Objetivo F1', 'Acumulado F1', dataAcumCV, 'Core+Value', '#eab308', dataAcumAC, 'Above Core', '#22c55e');
+  evoChartF2 = createChart(evoChartF2, ctxF2, labels, dataObjF2, dataAcumF2, 'Objetivo F2', 'Acumulado F2', dataAcumUNG, 'UNG Top', '#ec4899', dataAcumAG, 'Aguas', '#0ea5e9');
+}
+document.getElementById('btn-refresh').addEventListener('click', cargarDashboard);
+document.getElementById('month-input').addEventListener('change', cargarDashboard);
+document.getElementById('spv-select').addEventListener('change', cargarDashboard);
+
+document.getElementById('month-input').value = getCurrentMonth();
+cargarDashboard();
+</script>
+</body>
+</html>
