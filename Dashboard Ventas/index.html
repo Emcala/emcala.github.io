@@ -499,7 +499,7 @@ function renderDashboard() {
         ${cell(pAC, d.ac, dashData.diasInfo)}
         
         ${cell(pF2, d.f2Real, dashData.diasInfo)}
-        ${cell(pUNG, d.ung, dashData.diasInfo)}
+        ${cell(pUP, d.up, dashData.diasInfo)}
         ${cell(pAG, d.ag, dashData.diasInfo)}
       </tr>`;
     });
@@ -512,7 +512,7 @@ function renderDashboard() {
       ${cell(sACPlan, sACReal, dashData.diasInfo)}
       
       ${cell(sF2Plan, sF2Real, dashData.diasInfo)}
-      ${cell(sUNGPlan, sUNGReal, dashData.diasInfo)}
+      ${cell(sUPPlan, sUPReal, dashData.diasInfo)}
       ${cell(sAGPlan, sAGReal, dashData.diasInfo)}
     </tr>`;
     html += promRowsHtml;
@@ -530,7 +530,7 @@ function renderDashboard() {
         ${cell(tACPlan, tACReal, dashData.diasInfo)}
         
         ${cell(tF2Plan, tF2Real, dashData.diasInfo)}
-        ${cell(tUNGPlan, tUNGReal, dashData.diasInfo)}
+        ${cell(tUPPlan, tUPReal, dashData.diasInfo)}
         ${cell(tAGPlan, tAGReal, dashData.diasInfo)}
       </tr>`;
     }
@@ -596,12 +596,12 @@ function renderEvolucionCharts() {
     if (entidadSeleccionada.tipo === 'SPV' && r.spv !== entidadSeleccionada.id) return;
     if (entidadSeleccionada.tipo === 'PROM' && r.prom !== entidadSeleccionada.id) return;
     
-    if (!porFecha[r.date]) porFecha[r.date] = { f1: 0, f2: 0, cv: 0, ac: 0, ung: 0, ag: 0 };
+    if (!porFecha[r.date]) porFecha[r.date] = { f1: 0, f2: 0, cv: 0, ac: 0, up: 0, ag: 0 };
     porFecha[r.date].f1 += (r.f1Real || 0);
     porFecha[r.date].f2 += (r.f2Real || 0);
     porFecha[r.date].cv += (r.cv || 0);
     porFecha[r.date].ac += (r.ac || 0);
-    porFecha[r.date].ung += (r.ung || 0);
+    porFecha[r.date].up += (r.up || 0);
     porFecha[r.date].ag += (r.ag || 0);
   });
 
@@ -611,17 +611,17 @@ function renderEvolucionCharts() {
   const dataAcumF1 = [], dataAcumF2 = [];
   const dataObjF1 = [], dataObjF2 = [];
   const dataAcumCV = [], dataAcumAC = [];
-  const dataAcumUNG = [], dataAcumAG = [];
+  const dataAcumUP = [], dataAcumAG = [];
 
   let acumF1 = 0, acumF2 = 0;
   let acumCV = 0, acumAC = 0;
-  let acumUNG = 0, acumAG = 0;
+  let acumUP = 0, acumAG = 0;
   
   fechas.forEach(f => {
     labels.push(f.slice(8, 10) + '/' + f.slice(5, 7));
     acumF1 += porFecha[f].f1; acumF2 += porFecha[f].f2;
     acumCV += porFecha[f].cv; acumAC += porFecha[f].ac;
-    acumUNG += porFecha[f].ung; acumAG += porFecha[f].ag;
+    acumUP += porFecha[f].up; acumAG += porFecha[f].ag;
     
     dataAcumF1.push(+acumF1.toFixed(2));
     dataAcumF2.push(+acumF2.toFixed(2));
@@ -629,7 +629,7 @@ function renderEvolucionCharts() {
     dataObjF2.push(+objF2.toFixed(2));
     dataAcumCV.push(+acumCV.toFixed(2));
     dataAcumAC.push(+acumAC.toFixed(2));
-    dataAcumUNG.push(+acumUNG.toFixed(2));
+    dataAcumUP.push(+acumUP.toFixed(2));
     dataAcumAG.push(+acumAG.toFixed(2));
   });
 
