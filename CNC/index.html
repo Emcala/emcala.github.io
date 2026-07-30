@@ -443,22 +443,55 @@ function parseFechaCorta(v) {
 /* ============================================================
    FUENTE 1: MAESTRO + EQUIPO (vía Apps Script, o Excel offline)
    ============================================================ */
-async function conectarEmcala() {
+async function conectarEmcala(forceRefresh = false) {
   const statusEl = document.getElementById('conn-status');
   if (!CONFIG.API_URL) {
     statusEl.textContent = 'Falta configurar CONFIG.API_URL con la URL del Apps Script (Code.gs) publicado.';
     return;
   }
-  statusEl.textContent = 'Conectando a EMCALA...';
+  
   try {
-    const [rU, rE] = await Promise.all([
-      fetch(CONFIG.API_URL + '?action=universo'),
-      fetch(CONFIG.API_URL + '?action=equipo')
-    ]);
-    const jU = await rU.json();
-    const jE = await rE.json();
-    if (jU.status !== 'success' || jE.status !== 'success') {
-      throw new Error(jU.error || jE.error || 'Respuesta inesperada del backend.');
+    let jU, jE;
+    const cacheKeyU = 'emcala_universo_cache';
+    const cacheKeyE = 'emcala_equipo_cache';
+    const cacheTimeKey = 'emcala_cache_time';
+    
+    // Si forceRefresh es un objeto Event (cuando se llama directo por el click), forzamos false.
+    const isForce = forceRefresh === true;
+    
+    if (!isForce) {
+      const cachedTime = localStorage.getItem(cacheTimeKey);
+      // Usar caché si tiene menos de 12 horas
+      if (cachedTime && (Date.now() - parseInt(cachedTime, 10) < 12 * 60 * 60 * 1000)) {
+        const u = localStorage.getItem(cacheKeyU);
+        const e = localStorage.getItem(cacheKeyE);
+        if (u && e) {
+          jU = JSON.parse(u);
+          jE = JSON.parse(e);
+        }
+      }
+    }
+
+    if (!jU || !jE) {
+      statusEl.textContent = 'Conectando a EMCALA (descargando Maestro por primera vez)...';
+      const [rU, rE] = await Promise.all([
+        fetch(CONFIG.API_URL + '?action=universo'),
+        fetch(CONFIG.API_URL + '?action=equipo')
+      ]);
+      jU = await rU.json();
+      jE = await rE.json();
+      if (jU.status !== 'success' || jE.status !== 'success') {
+        throw new Error(jU.error || jE.error || 'Respuesta inesperada del backend.');
+      }
+      try {
+        localStorage.setItem(cacheKeyU, JSON.stringify(jU));
+        localStorage.setItem(cacheKeyE, JSON.stringify(jE));
+        localStorage.setItem(cacheTimeKey, Date.now().toString());
+      } catch (e) {
+        console.warn('No se pudo guardar en caché local:', e);
+      }
+    } else {
+      statusEl.textContent = 'Cargando Maestro desde caché local...';
     }
 
     const equipoMap = new Map();
@@ -477,7 +510,12 @@ async function conectarEmcala() {
     App.clientesBase = clientesBase;
     recomputeUniverse();
     onDataLoaded();
-    statusEl.textContent = `Conectado — ${clientesBase.size.toLocaleString('es-AR')} clientes cargados desde el Maestro.`;
+    
+    statusEl.innerHTML = `Conectado — ${clientesBase.size.toLocaleString('es-AR')} clientes cargados del Maestro. <a href="#" id="force-refresh-btn" style="color:var(--c-yellow2); margin-left:10px; text-decoration:underline;">Forzar actualización</a>`;
+    document.getElementById('force-refresh-btn').addEventListener('click', (e) => {
+        e.preventDefault();
+        conectarEmcala(true);
+    });
   } catch (err) {
     statusEl.textContent = 'Error al conectar: ' + err.message;
   }
