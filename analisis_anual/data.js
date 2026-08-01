@@ -170,6 +170,7 @@ function getRows(yr, pg, extra) {
     if (r.yr != yr || r.un !== ST[pg].un) return false;
     if (!pf(r)) return false;
     if (extra && !extra(r)) return false;
+    if (r.yr == 2026 && window.GLOBAL_ALLOWED_MONTHS && !window.GLOBAL_ALLOWED_MONTHS.has(r.mes)) return false;
     return true;
   });
 }

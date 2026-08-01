@@ -35,6 +35,16 @@ document.querySelectorAll('.ptab').forEach(btn => {
   });
 });
 
+const monthSelect = document.getElementById('global-month-select');
+if (monthSelect) {
+  monthSelect.addEventListener('change', (e) => {
+    window.GLOBAL_MONTH_LIMIT = parseInt(e.target.value, 10);
+    window.GLOBAL_ALLOWED_MONTHS = new Set(MESES.slice(0, window.GLOBAL_MONTH_LIMIT));
+    renderAll();
+  });
+}
+
+
 // ═══════════════════════════════════════════════════════════════
 // UN DROPDOWNS
 // ═══════════════════════════════════════════════════════════════
@@ -839,6 +849,7 @@ function getRows4(yr, extraFilter) {
     // Marca filter
     if (!ST[4].marcaSel.has(marca)) return false;
     if (extraFilter && !extraFilter(r)) return false;
+    if (r.yr == 2026 && window.GLOBAL_ALLOWED_MONTHS && !window.GLOBAL_ALLOWED_MONTHS.has(r.mes)) return false;
     return true;
   });
 }
@@ -1068,6 +1079,7 @@ function getRows5(yr, extra) {
     if (ST[5].calSel.size > 0 && !ST[5].calSel.has(r.calibre)) return false;
     if (ST[5].marcaSel.size > 0 && !ST[5].marcaSel.has(marca)) return false;
     if (extra && !extra(r)) return false;
+    if (r.yr == 2026 && window.GLOBAL_ALLOWED_MONTHS && !window.GLOBAL_ALLOWED_MONTHS.has(r.mes)) return false;
     return true;
   });
 }
@@ -1406,6 +1418,7 @@ function getRows6(yr, extra) {
     if (!canal6Filter(r)) return false;
     if (!marcaCal6Filter(r)) return false;
     if (extra && !extra(r)) return false;
+    if (r.yr == 2026 && window.GLOBAL_ALLOWED_MONTHS && !window.GLOBAL_ALLOWED_MONTHS.has(r.mes)) return false;
     return true;
   });
 }
@@ -1494,7 +1507,11 @@ function render6() {
   const ld6b = document.getElementById('ld6b'); if (ld6b) ld6b.style.background = col;
 
   // Determinar último mes de 2026
-  const rows26all = DATA.filter(r => r.yr == 2026 && r.un === ST[6].un && r.hl > 0);
+  const checkMonth = r => {
+    if (r.yr == 2026 && window.GLOBAL_ALLOWED_MONTHS && !window.GLOBAL_ALLOWED_MONTHS.has(r.mes)) return false;
+    return true;
+  };
+  const rows26all = DATA.filter(r => r.yr == 2026 && r.un === ST[6].un && r.hl > 0 && checkMonth(r));
   const mesesConDatos = MESES.filter(m => rows26all.some(r => r.mes === m));
   const last = mesesConDatos[mesesConDatos.length - 1] || MESES[0];
   const lastIdx = MESES.indexOf(last);
@@ -1729,9 +1746,13 @@ function renderCRM() {
   if (el('crm-dias'))  el('crm-dias').textContent  = info.dias || '—';
   if (el('crm-un'))    el('crm-un').textContent    = ST[7].un === 'TODAS' ? (info.un || '—') : ST[7].un;
 
+  const checkMonth = r => {
+    if (r.yr == 2026 && window.GLOBAL_ALLOWED_MONTHS && !window.GLOBAL_ALLOWED_MONTHS.has(r.mes)) return false;
+    return true;
+  };
   const unFilter = ST[7].un;
-  const rows26 = DATA.filter(r => r.yr == 2026 && r.cli === CRM_CLI && (unFilter === 'TODAS' || r.un === unFilter));
-  const rows25 = DATA.filter(r => r.yr == 2025 && r.cli === CRM_CLI && (unFilter === 'TODAS' || r.un === unFilter));
+  const rows26 = DATA.filter(r => r.yr == 2026 && r.cli === CRM_CLI && (unFilter === 'TODAS' || r.un === unFilter) && checkMonth(r));
+  const rows25 = DATA.filter(r => r.yr == 2025 && r.cli === CRM_CLI && (unFilter === 'TODAS' || r.un === unFilter) && checkMonth(r));
   
   let dynamicLastFecha = '';
   if (unFilter !== 'TODAS') {
@@ -1750,7 +1771,7 @@ function renderCRM() {
   // Último mes con datos (global)
   let globalLast = MESES[0];
   for (let i = MESES.length - 1; i >= 0; i--) {
-    if (DATA.some(r => r.yr == 2026 && r.mes === MESES[i] && r.hl > 0)) {
+    if (DATA.some(r => r.yr == 2026 && r.mes === MESES[i] && r.hl > 0 && checkMonth(r))) {
       globalLast = MESES[i];
       break;
     }
@@ -1910,13 +1931,18 @@ function render8() {
   const yr26 = 2026;
   const yr25 = 2025;
   
+  const checkMonth = r => {
+    if (r.yr == 2026 && window.GLOBAL_ALLOWED_MONTHS && !window.GLOBAL_ALLOWED_MONTHS.has(r.mes)) return false;
+    return true;
+  };
+
   let rows26, rows25;
   if (isCerv) {
-    rows26 = DATA.filter(r => r.yr == yr26 && r.un === ST[8].un && getMarca(r.prod2));
-    rows25 = DATA.filter(r => r.yr == yr25 && r.un === ST[8].un && getMarca(r.prod2));
+    rows26 = DATA.filter(r => r.yr == yr26 && r.un === ST[8].un && getMarca(r.prod2) && checkMonth(r));
+    rows25 = DATA.filter(r => r.yr == yr25 && r.un === ST[8].un && getMarca(r.prod2) && checkMonth(r));
   } else {
-    rows26 = DATA.filter(r => r.yr == yr26 && r.un !== 'CERVEZAS CMQ' && r.marca);
-    rows25 = DATA.filter(r => r.yr == yr25 && r.un !== 'CERVEZAS CMQ' && r.marca);
+    rows26 = DATA.filter(r => r.yr == yr26 && r.un !== 'CERVEZAS CMQ' && r.marca && checkMonth(r));
+    rows25 = DATA.filter(r => r.yr == yr25 && r.un !== 'CERVEZAS CMQ' && r.marca && checkMonth(r));
   }
 
   const mesesConDatos = MESES.filter(m => rows26.some(r => r.mes === m && r.hl > 0));
@@ -2075,8 +2101,8 @@ function render8() {
     }
   };
   
-  DATA.filter(r => r.yr == 2026 && (isCerv ? r.un === ST[8].un : r.un !== 'CERVEZAS CMQ')).forEach(r => processRow(r, true));
-  DATA.filter(r => r.yr == 2025 && (isCerv ? r.un === ST[8].un : r.un !== 'CERVEZAS CMQ')).forEach(r => processRow(r, false));
+  DATA.filter(r => r.yr == 2026 && (isCerv ? r.un === ST[8].un : r.un !== 'CERVEZAS CMQ') && checkMonth(r)).forEach(r => processRow(r, true));
+  DATA.filter(r => r.yr == 2025 && (isCerv ? r.un === ST[8].un : r.un !== 'CERVEZAS CMQ') && checkMonth(r)).forEach(r => processRow(r, false));
   
   marcasList.forEach(mRaw => {
     const bucket = mRaw.trim().toUpperCase();

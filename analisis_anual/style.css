@@ -35,6 +35,12 @@ body{background:var(--bg);color:var(--txt);font-family:'Roboto',sans-serif;heigh
 #page-tabs .emcala-sep{color:rgba(255,255,255,0.3);font-size:clamp(12px,1vw,16px);}
 #page-tabs .emcala-sub{font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:clamp(10px,0.8vw,13px);color:rgba(255,255,255,0.55);letter-spacing:1px;text-transform:uppercase;}
 
+/* GLOBAL MONTH SELECTOR */
+.global-month-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 8px; }
+.m-lbl { color: rgba(255, 255, 255, 0.7); font-size: 11px; font-weight: 700; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; }
+.global-month-select { padding: 4px 8px; font-size: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; border-radius: 4px; background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); outline: none; cursor: pointer; }
+.global-month-select option { color: #000; }
+
 /* PAGES */
 .page{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
 .page.active{display:flex;}
