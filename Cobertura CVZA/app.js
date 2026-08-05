@@ -243,9 +243,19 @@ async function loadAvance(selectedMonth) {
             if (ccc > 0) {
               ventasData[promFlat].size = ccc;
             }
-            const nuevos = parseInt(result.data[prom]['clientes-nuevos']) || 0;
-            if (nuevos > 0) {
-              ventasData[promFlat].nuevos = nuevos;
+            
+            // "Clientes Nuevos" is a list of IDs (e.g. "9052, 12266" or just 9052)
+            let nuevosCount = 0;
+            const rawNuevos = result.data[prom]['clientes-nuevos'];
+            if (rawNuevos !== undefined && rawNuevos !== null && rawNuevos !== "") {
+              if (typeof rawNuevos === 'string') {
+                nuevosCount = rawNuevos.split(',').filter(x => x.trim() !== '').length;
+              } else if (typeof rawNuevos === 'number') {
+                nuevosCount = 1;
+              }
+            }
+            if (nuevosCount > 0) {
+              ventasData[promFlat].nuevos = nuevosCount;
             }
           }
         }
