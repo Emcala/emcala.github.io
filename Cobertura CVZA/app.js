@@ -245,17 +245,21 @@ async function loadAvance(selectedMonth) {
             }
             
             // "Clientes Nuevos" is a list of IDs (e.g. "9052, 12266" or just 9052)
-            let nuevosCount = 0;
+            let nuevosIds = new Set();
             const rawNuevos = result.data[prom]['clientes-nuevos'];
             if (rawNuevos !== undefined && rawNuevos !== null && rawNuevos !== "") {
               if (typeof rawNuevos === 'string') {
-                nuevosCount = rawNuevos.split(',').filter(x => x.trim() !== '').length;
+                rawNuevos.split(',').forEach(x => {
+                  const id = x.trim();
+                  if (id) nuevosIds.add(id);
+                });
               } else if (typeof rawNuevos === 'number') {
-                nuevosCount = 1;
+                nuevosIds.add(String(rawNuevos));
               }
             }
-            if (nuevosCount > 0) {
-              ventasData[promFlat].nuevos = nuevosCount;
+            if (nuevosIds.size > 0) {
+              ventasData[promFlat].nuevos = nuevosIds.size;
+              ventasData[promFlat].nuevosIds = nuevosIds;
             }
           }
         }
@@ -370,10 +374,12 @@ function tryRender() {
 
   // JDV totals
   let jCartera = 0, jCCC = 0, jCNC = 0, jMA = 0, jAA = 0, jNuevos = 0;
+  let jNuevosSet = new Set();
 
   for (const spv of spvOrder) {
     const proms = spvMap[spv];
     let sCartera = 0, sCCC = 0, sCNC = 0, sMA = 0, sAA = 0, sNuevos = 0;
+    let sNuevosSet = new Set();
 
     const promRows = [];
 
@@ -386,6 +392,13 @@ function tryRender() {
       const vKey = findMatch(pn, ventasKeys);
       const ccc = vKey ? ventasData[vKey].size : 0;
       const nuevos = vKey ? (ventasData[vKey].nuevos || 0) : 0;
+      
+      if (vKey && ventasData[vKey].nuevosIds) {
+        ventasData[vKey].nuevosIds.forEach(id => {
+          sNuevosSet.add(id);
+          jNuevosSet.add(id);
+        });
+      }
 
       const cnc = Math.max(cartera - ccc, 0);
       const avance = cartera > 0 ? (ccc / cartera * 100) : 0;
@@ -400,7 +413,6 @@ function tryRender() {
 
       sCartera += cartera; sCCC += ccc; sCNC += cnc;
       sMA += cccMA; sAA += cccMMAA;
-      sNuevos += nuevos;
 
       promRows.push({ canal: m.canal, promotor: m.promotor, cartera, ccc, cnc, avance, cccMA, cccMMAA, nuevos, media });
     }
@@ -408,6 +420,7 @@ function tryRender() {
     // Supervisor totals
     const sAvance = sCartera > 0 ? (sCCC / sCartera * 100) : 0;
     const sMedia  = dias > 0 ? Math.round(sCNC / dias) : sCNC;
+    sNuevos = sNuevosSet.size;
 
     // --- Supervisor header row ---
     const sRow = document.createElement('tr');
@@ -446,12 +459,13 @@ function tryRender() {
     }
 
     jCartera += sCartera; jCCC += sCCC; jCNC += sCNC;
-    jMA += sMA; jAA += sAA; jNuevos += sNuevos;
+    jMA += sMA; jAA += sAA;
   }
 
   // --- JDV total row ---
   const jAvance = jCartera > 0 ? (jCCC / jCartera * 100) : 0;
   const jMedia  = dias > 0 ? Math.round(jCNC / dias) : jCNC;
+  jNuevos = jNuevosSet.size;
 
   const jRow = document.createElement('tr');
   jRow.className = 'grand-row';
