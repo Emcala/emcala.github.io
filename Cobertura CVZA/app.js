@@ -3,8 +3,8 @@
 // ==========================================
 
 // === STATE ===
-let maestroData  = null;  // { promotorName: Set<clientId> }
-let ventasData   = null;  // { promotorName: Set<clientId> }  cerveza only
+let maestroData  = null;  // { promotorName: count }
+let ventasData   = null;  // { promotorName: { size: N } }
 let mesasData    = null;  // [ { promotor, supervisor, canal, codigo } ]
 let historicosData = null; // { promotorName: { cccMA, cccMMAA } }
 
@@ -18,6 +18,48 @@ const FERIADOS = [
   '2026-06-15','2026-06-20','2026-07-09','2026-08-17',
   '2026-10-12','2026-11-20','2026-12-08','2026-12-25'
 ];
+
+const MONTH_NAMES = [
+  'Enero','Febrero','Marzo','Abril','Mayo','Junio',
+  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
+];
+
+// ==========================================
+// MONTH SELECTOR
+// ==========================================
+const monthSelect = document.getElementById('monthSelect');
+
+function populateMonthSelector() {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-based
+
+  monthSelect.innerHTML = '';
+
+  // Show last 6 months + current month
+  for (let i = 6; i >= 0; i--) {
+    let m = currentMonth - i;
+    let y = currentYear;
+    if (m < 0) { m += 12; y--; }
+    const val = `${y}-${String(m + 1).padStart(2, '0')}`;
+    const label = `${MONTH_NAMES[m]} ${y}`;
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = label;
+    if (i === 0) opt.selected = true; // current month selected by default
+    monthSelect.appendChild(opt);
+  }
+}
+
+function getSelectedMonth() {
+  return monthSelect.value; // "YYYY-MM"
+}
+
+function isCurrentMonth(cMonth) {
+  const now = new Date();
+  const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  return cMonth === current;
+}
 
 // ==========================================
 // CSV PARSER  (comillas + separador variable)
@@ -124,6 +166,12 @@ async function loadMaestro(forceRefresh) {
 
     maestroData = data.cartera;
     
+    // DEBUG: ver qué trae el GAS de históricos
+    console.log('📊 HIST_DEBUG:' + JSON.stringify(data.histDebug));
+    console.log('📊 HIST_ERROR:' + JSON.stringify(data.histError));
+    const _sample = Object.entries(data.historicos || {}).slice(0, 3);
+    console.log('📊 HIST_SAMPLE:' + JSON.stringify(_sample));
+    
     if (data.historicos && Object.keys(data.historicos).length > 0) {
       historicosData = data.historicos;
       updateStatus('historicos', 'loaded', Object.keys(historicosData).length + ' PR');
@@ -143,22 +191,34 @@ async function loadMaestro(forceRefresh) {
 
 // ==========================================
 // LOAD AVANCE CCC (Desde Planificador)
+// Accepts optional cMonth parameter for month selection
 // ==========================================
-async function loadAvance() {
+async function loadAvance(selectedMonth) {
   updateStatus('ventas', 'loading');
   
   // Esperar a que las mesas estén cargadas para saber la lista de SPVs
   if (!mesasData) {
-    setTimeout(loadAvance, 500);
+    setTimeout(() => loadAvance(selectedMonth), 500);
     return;
   }
   
   try {
-    const now = new Date();
-    // Ajustar si es feriado o domingo se podría hacer, pero usando la fecha de hoy, 
-    // si el planificador guardó datos hoy, los traemos.
-    const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    const cMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const cMonth = selectedMonth || getSelectedMonth();
+    
+    // For the date parameter, use the last day of the selected month
+    // If it's the current month, use today's date
+    let dateStr;
+    if (isCurrentMonth(cMonth)) {
+      const now = new Date();
+      dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    } else {
+      // Last day of the selected month
+      const parts = cMonth.split('-');
+      const y = parseInt(parts[0]);
+      const m = parseInt(parts[1]);
+      const lastDay = new Date(y, m, 0).getDate();
+      dateStr = `${y}-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+    }
     
     // Lista única de supervisores de las mesas
     const spvs = [...new Set(mesasData.map(m => m.supervisor))];
@@ -177,11 +237,15 @@ async function loadAvance() {
           for (const prom in result.data) {
             const promFlat = norm(prom);
             if (!ventasData[promFlat]) {
-               ventasData[promFlat] = { size: 0 }; // Simulamos el comportamiento de Set.size para tryRender
+               ventasData[promFlat] = { size: 0, nuevos: 0 }; // Simulamos el comportamiento de Set.size para tryRender
             }
             const ccc = parseInt(result.data[prom]['acum-ccc']) || 0;
             if (ccc > 0) {
               ventasData[promFlat].size = ccc;
+            }
+            const nuevos = parseInt(result.data[prom]['clientes-nuevos']) || 0;
+            if (nuevos > 0) {
+              ventasData[promFlat].nuevos = nuevos;
             }
           }
         }
@@ -206,18 +270,37 @@ async function loadAvance() {
 
 // ==========================================
 // BUSINESS DAYS REMAINING
+// Parameterized: for past months returns 0
 // ==========================================
 function calcDiasRestantes() {
-  const now  = new Date();
-  const year = now.getFullYear();
-  const mon  = now.getMonth();
-  const last = new Date(year, mon + 1, 0).getDate();
+  const cMonth = getSelectedMonth();
+  const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  
+  // For past months (already closed), no remaining days
+  if (cMonth < currentMonthStr) return 0;
+  
+  // For future months, return all business days of that month
+  const parts = cMonth.split('-');
+  const year = parseInt(parts[0]);
+  const mon = parseInt(parts[1]) - 1; // 0-based
+  
+  let startDay, lastDay;
+  if (cMonth === currentMonthStr) {
+    // Current month: remaining days from tomorrow
+    startDay = now.getDate() + 1;
+    lastDay = new Date(year, mon + 1, 0).getDate();
+  } else {
+    // Future month: all days
+    startDay = 1;
+    lastDay = new Date(year, mon + 1, 0).getDate();
+  }
+  
   let dias = 0;
-
-  for (let d = now.getDate() + 1; d <= last; d++) {
-    const dt  = new Date(year, mon, d);
+  for (let d = startDay; d <= lastDay; d++) {
+    const dt = new Date(year, mon, d);
     const dow = dt.getDay(); // 0=Sun … 6=Sat
-    const ds  = `${year}-${String(mon + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const ds = `${year}-${String(mon + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
     if (FERIADOS.includes(ds) || dow === 0) continue;   // feriado o domingo
     dias += (dow === 6) ? 0.5 : 1;                      // sábado = 0.5
@@ -235,7 +318,6 @@ function avanceStyle(pct) {
   const hue = p < 50 ? p * 0.9 : 45 + (p - 50) * 1.7;
   const sat = p > 85 ? 55 : 65;
   const lgt = p > 85 ? 38 : (p < 40 ? 42 : 40);
-  const txtColor = p >= 48 && p <= 58 ? '#1a1a1a' : '#fff';
   return `hsl(${hue},${sat}%,${lgt}%)`;
 }
 
@@ -246,11 +328,17 @@ function tryRender() {
   if (!mesasData || !maestroData || !ventasData) return;
 
   const dias = calcDiasRestantes();
+  const cMonth = getSelectedMonth();
 
   // Show dias info
   const diasEl = document.getElementById('diasInfo');
   diasEl.style.display = 'block';
-  diasEl.innerHTML = `Días hábiles restantes del mes: <strong>${dias}</strong>`;
+  if (dias > 0) {
+    diasEl.innerHTML = `Días hábiles restantes del mes: <strong>${dias}</strong>`;
+  } else {
+    const parts = cMonth.split('-');
+    diasEl.innerHTML = `Cierre de <strong>${MONTH_NAMES[parseInt(parts[1]) - 1]} ${parts[0]}</strong> (mes cerrado)`;
+  }
 
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
@@ -271,11 +359,11 @@ function tryRender() {
   }
 
   // JDV totals
-  let jCartera = 0, jCCC = 0, jCNC = 0, jMA = 0, jAA = 0;
+  let jCartera = 0, jCCC = 0, jCNC = 0, jMA = 0, jAA = 0, jNuevos = 0;
 
   for (const spv of spvOrder) {
     const proms = spvMap[spv];
-    let sCartera = 0, sCCC = 0, sCNC = 0, sMA = 0, sAA = 0;
+    let sCartera = 0, sCCC = 0, sCNC = 0, sMA = 0, sAA = 0, sNuevos = 0;
 
     const promRows = [];
 
@@ -287,6 +375,7 @@ function tryRender() {
 
       const vKey = findMatch(pn, ventasKeys);
       const ccc = vKey ? ventasData[vKey].size : 0;
+      const nuevos = vKey ? (ventasData[vKey].nuevos || 0) : 0;
 
       const cnc = Math.max(cartera - ccc, 0);
       const avance = cartera > 0 ? (ccc / cartera * 100) : 0;
@@ -301,8 +390,9 @@ function tryRender() {
 
       sCartera += cartera; sCCC += ccc; sCNC += cnc;
       sMA += cccMA; sAA += cccMMAA;
+      sNuevos += nuevos;
 
-      promRows.push({ canal: m.canal, promotor: m.promotor, cartera, ccc, cnc, avance, cccMA, cccMMAA, media });
+      promRows.push({ canal: m.canal, promotor: m.promotor, cartera, ccc, cnc, avance, cccMA, cccMMAA, nuevos, media });
     }
 
     // Supervisor totals
@@ -311,40 +401,42 @@ function tryRender() {
 
     // --- Supervisor header row ---
     const sRow = document.createElement('tr');
-    sRow.className = 'row-supervisor';
+    sRow.className = 'sdv-row';
     sRow.innerHTML =
-      `<td>${spv}</td>` +
+      `<td class="name-col">${spv}</td>` +
       `<td>${sCartera.toLocaleString('es-AR')}</td>` +
       `<td>${sCCC.toLocaleString('es-AR')}</td>` +
       `<td>${sCNC.toLocaleString('es-AR')}</td>` +
       `<td class="progress-cell"><span>${sAvance.toFixed(2)}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.min(sAvance,100)}%; background:${avanceStyle(sAvance)};"></div></div></td>` +
       `<td>${sMA || ''}</td>` +
       `<td>${sAA || ''}</td>` +
+      `<td>${sNuevos || ''}</td>` +
       `<td>${sMedia.toLocaleString('es-AR')}</td>`;
     tbody.appendChild(sRow);
 
     // --- Promotor rows ---
     for (const p of promRows) {
       const pRow = document.createElement('tr');
-      pRow.className = 'row-promotor';
+      pRow.className = 'prom-row';
       
       const classMA = (p.cccMA > 0 && p.ccc >= p.cccMA) ? ' class="achieved"' : '';
       const classAA = (p.cccMMAA > 0 && p.ccc >= p.cccMMAA) ? ' class="achieved"' : '';
 
       pRow.innerHTML =
-        `<td>${p.promotor}</td>` +
+        `<td class="name-col">${p.promotor}</td>` +
         `<td>${p.cartera.toLocaleString('es-AR')}</td>` +
         `<td>${p.ccc.toLocaleString('es-AR')}</td>` +
         `<td>${p.cnc.toLocaleString('es-AR')}</td>` +
         `<td class="progress-cell"><span>${p.avance.toFixed(2)}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.min(p.avance,100)}%; background:${avanceStyle(p.avance)};"></div></div></td>` +
         `<td${classMA}>${p.cccMA || ''}</td>` +
         `<td${classAA}>${p.cccMMAA || ''}</td>` +
+        `<td>${p.nuevos || ''}</td>` +
         `<td>${p.media.toLocaleString('es-AR')}</td>`;
       tbody.appendChild(pRow);
     }
 
     jCartera += sCartera; jCCC += sCCC; jCNC += sCNC;
-    jMA += sMA; jAA += sAA;
+    jMA += sMA; jAA += sAA; jNuevos += sNuevos;
   }
 
   // --- JDV total row ---
@@ -352,21 +444,22 @@ function tryRender() {
   const jMedia  = dias > 0 ? Math.round(jCNC / dias) : jCNC;
 
   const jRow = document.createElement('tr');
-  jRow.className = 'row-jdv';
+  jRow.className = 'grand-row';
   jRow.innerHTML =
-    `<td>JDV</td>` +
+    `<td class="name-col">JDV</td>` +
     `<td>${jCartera.toLocaleString('es-AR')}</td>` +
     `<td>${jCCC.toLocaleString('es-AR')}</td>` +
     `<td>${jCNC.toLocaleString('es-AR')}</td>` +
     `<td class="progress-cell"><span>${jAvance.toFixed(2)}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.min(jAvance,100)}%; background:${avanceStyle(jAvance)};"></div></div></td>` +
     `<td>${jMA || ''}</td>` +
     `<td>${jAA || ''}</td>` +
+    `<td>${jNuevos || ''}</td>` +
     `<td>${jMedia.toLocaleString('es-AR')}</td>`;
   tbody.appendChild(jRow);
 
   // Show table
   document.getElementById('emptyState').style.display = 'none';
-  document.getElementById('tableScroll').style.display = 'block';
+  document.getElementById('tableWrap').style.display = 'flex';
 }
 
 // ==========================================
@@ -402,6 +495,20 @@ function showToast(msg) {
 }
 
 // ==========================================
+// MONTH CHANGE HANDLER
+// ==========================================
+monthSelect.addEventListener('change', async () => {
+  // Reset ventas data to re-fetch for the selected month
+  ventasData = null;
+  document.getElementById('tableWrap').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'flex';
+  
+  updateStatus('ventas', 'pending');
+  
+  await loadAvance(getSelectedMonth());
+});
+
+// ==========================================
 // REFRESH MANUAL  (fuerza datos frescos, ignora caché)
 // ==========================================
 async function refreshAll() {
@@ -416,8 +523,8 @@ async function refreshAll() {
   ventasData = null;
   mesasData = null;
   historicosData = null;
-  document.getElementById('tableScroll').style.display = 'none';
-  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('tableWrap').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'flex';
 
   updateStatus('maestro', 'pending');
   updateStatus('mesas', 'pending');
@@ -443,6 +550,8 @@ async function refreshAll() {
 // INIT
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+  populateMonthSelector();
+  
   loadMesas();
   loadMaestro();
   loadAvance();
