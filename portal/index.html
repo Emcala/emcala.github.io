@@ -141,6 +141,7 @@
     // FORMULARIOS
     form_planificacion: { href: 'https://emcala.github.io/planificador/promotor.html', label: 'PLANIFICACIÓN PR', col: 'formularios' },
     form_coaching: { href: 'https://forms.gle/ESfupnbcn3yyre7i6', label: 'COACHING AL PR', col: 'formularios' },
+    form_coaching_merch: { href: 'https://forms.gle/vQDcQ67GAYaKhdnh8', label: 'COACHING AL MERCH', col: 'formularios' },
     form_abm: { href: 'https://forms.gle/FNtBiYCfs1CXAQJe8', label: 'ABM 2026', col: 'formularios' },
     form_reparacion: { href: 'https://emcala.github.io/reparaciones/formulario-promotor.html', label: 'SOLICITUD REPARACIÓN EDF', col: 'formularios' },
 
@@ -152,7 +153,7 @@
     auditor: [
       'planificador', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'dashboard_ventas', 'ventas', 'zonas_merch', 
       'reparaciones', 'consulta_pi', 'retiro_edf', 
-      'form_planificacion', 'form_coaching', 'form_abm', 'form_reparacion', 
+      'form_planificacion', 'form_coaching', 'form_coaching_merch', 'form_abm', 'form_reparacion', 
       'cuentas'
     ],
     supervisor: [
@@ -186,6 +187,7 @@
       toolKeys = [...toolKeys];
       if (!toolKeys.includes('ejecucion')) toolKeys.push('ejecucion');
       if (!toolKeys.includes('zonas_merch')) toolKeys.push('zonas_merch');
+      if (!toolKeys.includes('form_coaching_merch')) toolKeys.push('form_coaching_merch');
     }
   
     let hasCapex = false;
