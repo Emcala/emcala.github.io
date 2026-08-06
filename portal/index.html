@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Portal Emcala</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { font-family:'Inter', sans-serif; background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:10px 20px; color:#fff; overflow-x:hidden; }
-    .header { text-align:center; margin-bottom:15px; animation:fadeInDown 0.8s ease; margin-top:5px; }
+    body { font-family:'Montserrat', 'Inter', sans-serif; background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:10px 20px; color:#fff; overflow-x:hidden; }
+    .header { text-align:center; margin-bottom:0px; animation:fadeInDown 0.8s ease; margin-top:5px; }
     
     #menuPrincipal { width: 100%; max-width: 1200px; display: flex; flex-direction: column; align-items: center; }
     
     .user-info { width: 100%; max-width: 300px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:6px; text-align:center; margin-bottom:12px; display:flex; flex-direction:column; gap:0px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     #labelRol { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; color:rgba(255,255,255,0.6); }
-    #labelNombre { font-family:'Bricolage Grotesque', sans-serif; font-size:14px; font-weight:700; color:#fff; }
+    #labelNombre { font-family:'Montserrat', sans-serif; font-size:14px; font-weight:700; color:#fff; }
     
     .columns-container {
       width: 100%;
@@ -35,7 +35,7 @@
     }
     
     .column-title {
-      font-family: 'Bricolage Grotesque', sans-serif;
+      font-family: 'Montserrat', sans-serif;
       font-size: 13px;
       font-weight: 700;
       text-align: center;
@@ -47,7 +47,7 @@
       padding-bottom: 6px;
     }
     
-    .link-btn { display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:10px; padding:12px 10px; color:#fff; text-decoration:none; font-family:'Bricolage Grotesque', sans-serif; font-size:13px; font-weight:600; letter-spacing:0.02em; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter:blur(10px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; line-height: 1.2; }
+    .link-btn { display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:10px; padding:12px 10px; color:#fff; text-decoration:none; font-family:'Montserrat', sans-serif; font-size:12px; font-weight:600; letter-spacing:0.02em; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter:blur(10px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; line-height: 1.2; text-shadow: 0px 1px 3px rgba(0,0,0,0.8), 0px -1px 1px rgba(255,255,255,0.2); }
     .link-btn:hover { background:rgba(255,255,255,0.18); border-color:rgba(255,255,255,0.3); transform:translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
     .link-btn:active { transform:scale(0.97) translateY(0); background:rgba(255,255,255,0.12); box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-color:rgba(255,255,255,0.4); }
     
@@ -75,7 +75,7 @@
 <body>
 
   <div class="header">
-    <img src="../logo.png" alt="Logo EMCALA" style="height: 156px; max-width: 90vw; mix-blend-mode: screen; opacity: 0.95; margin-bottom: 2px;">
+    <img src="../logo.png" alt="Logo EMCALA" style="height: 190px; max-width: 90vw; mix-blend-mode: screen; opacity: 0.95; margin-bottom: 2px;">
   </div>
   
   <div id="menuPrincipal" style="display:none;">
@@ -114,38 +114,38 @@
       isSplit: true,
       col: 'comercial',
       tools: [
-        { href: '../planificador/index.html', label: '📅 PLANIFICADOR' },
-        { href: '../planificador/vespertina.html', label: '💬 VESPERTINA' }
+        { href: '../planificador/index.html', label: 'PLANIFICADOR' },
+        { href: '../planificador/vespertina.html', label: 'VESPERTINA' }
       ]
     },
     cobertura_efectividad: { 
       isSplit: true, 
       col: 'comercial', 
       tools: [
-        { href: '../Cobertura CVZA/index.html', label: '📍 COBERTURA' },
-        { href: '../Efectividad/index.html', label: '⚡ EFECTIVIDAD' }
+        { href: '../Cobertura CVZA/index.html', label: 'COBERTURA' },
+        { href: '../Efectividad/index.html', label: 'EFECTIVIDAD' }
       ] 
     },
-    coaching_pr: { href: 'https://docs.google.com/spreadsheets/d/1bGxwhO2ITFuhtPr3xaOQvYlJ0wapXiIbh4rKi4Abt5E/edit?gid=817276593#gid=817276593', label: '🤝 DASHBOARD COACHING PR', col: 'comercial' },
-    ejecucion: { href: 'https://estandar-ejecucion-cmq.replit.app/login', label: '✅ ESTÁNDAR DE EJECUCIÓN', col: 'comercial' },
-    dashboard_ventas: { href: '../Dashboard Ventas/index.html', label: '📈 DASHBOARD VENTAS', col: 'comercial' },
-    potenciales_sdv: { href: 'https://suralnorpotenciaes.netlify.app/supervisor.html', label: '🎯 DASHBOARD POTENCIALES SDV', col: 'comercial' },
-    ventas: { href: 'https://emcala.github.io/analisis_anual/', label: '📊 ANÁLISIS ANUAL', col: 'comercial' },
-    zonas_merch: { href: '../plan_merchs/', label: '🗺️ ZONAS MERCH', col: 'comercial' },
+    coaching_pr: { href: 'https://docs.google.com/spreadsheets/d/1bGxwhO2ITFuhtPr3xaOQvYlJ0wapXiIbh4rKi4Abt5E/edit?gid=817276593#gid=817276593', label: 'DASHBOARD COACHING PR', col: 'comercial' },
+    ejecucion: { href: 'https://estandar-ejecucion-cmq.replit.app/login', label: 'ESTÁNDAR DE EJECUCIÓN', col: 'comercial' },
+    dashboard_ventas: { href: '../Dashboard Ventas/index.html', label: 'DASHBOARD VENTAS', col: 'comercial' },
+    potenciales_sdv: { href: 'https://suralnorpotenciaes.netlify.app/supervisor.html', label: 'DASHBOARD POTENCIALES SDV', col: 'comercial' },
+    ventas: { href: 'https://emcala.github.io/analisis_anual/', label: 'ANÁLISIS ANUAL', col: 'comercial' },
+    zonas_merch: { href: '../plan_merchs/', label: 'ZONAS MERCH', col: 'comercial' },
 
     // CAPEX
-    reparaciones: { href: 'https://emcala.github.io/reparaciones/', label: '⚙️ DASHBOARD REPARACIONES', col: 'capex' },
-    consulta_pi: { href: 'https://clientesenpisurcala.netlify.app/', label: '🔎 CONSULTA CLIENTE - PI', col: 'capex' },
-    retiro_edf: { href: 'https://docs.google.com/forms/d/e/1FAIpQLSfauNpQYINjCIjBiWIRx0JEu7pxlfXyIaikNn7ZP6czRarKhw/viewform', label: '🔄 INSTALACIÓN / RETIRO EDF', col: 'capex' },
+    reparaciones: { href: 'https://emcala.github.io/reparaciones/', label: 'DASHBOARD REPARACIONES', col: 'capex' },
+    consulta_pi: { href: 'https://clientesenpisurcala.netlify.app/', label: 'CONSULTA CLIENTE - PI', col: 'capex' },
+    retiro_edf: { href: 'https://docs.google.com/forms/d/e/1FAIpQLSfauNpQYINjCIjBiWIRx0JEu7pxlfXyIaikNn7ZP6czRarKhw/viewform', label: 'INSTALACIÓN / RETIRO EDF', col: 'capex' },
 
     // FORMULARIOS
-    form_planificacion: { href: 'https://emcala.github.io/planificador/promotor.html', label: '✍️ PLANIFICACIÓN PR', col: 'formularios' },
-    form_coaching: { href: 'https://forms.gle/ESfupnbcn3yyre7i6', label: '👥 COACHING AL PR', col: 'formularios' },
-    form_abm: { href: 'https://forms.gle/FNtBiYCfs1CXAQJe8', label: '📁 ABM 2026', col: 'formularios' },
-    form_reparacion: { href: 'https://emcala.github.io/reparaciones/formulario-promotor.html', label: '🛠️ SOLICITUD REPARACIÓN EDF', col: 'formularios' },
+    form_planificacion: { href: 'https://emcala.github.io/planificador/promotor.html', label: 'PLANIFICACIÓN PR', col: 'formularios' },
+    form_coaching: { href: 'https://forms.gle/ESfupnbcn3yyre7i6', label: 'COACHING AL PR', col: 'formularios' },
+    form_abm: { href: 'https://forms.gle/FNtBiYCfs1CXAQJe8', label: 'ABM 2026', col: 'formularios' },
+    form_reparacion: { href: 'https://emcala.github.io/reparaciones/formulario-promotor.html', label: 'SOLICITUD REPARACIÓN EDF', col: 'formularios' },
 
     // OTROS
-    cuentas: { href: '../portal/cuentas.html', label: '🔑 GESTIÓN DE CUENTAS', col: 'otros' }
+    cuentas: { href: '../portal/cuentas.html', label: 'GESTIÓN DE CUENTAS', col: 'otros' }
   };
   
   const MENU_POR_ROL = {
