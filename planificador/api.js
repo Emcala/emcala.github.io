@@ -80,7 +80,8 @@
         SPV_DATA[spv].forEach(prom => {
           if (volData[prom]) {
             const cMonth = window.getCommercialMonthAndStart(date).month;
-            const rowPayload = { date, spv, promotor: prom, cMonth };
+            const codigo = window.CODE_MAP && window.CODE_MAP[prom] ? window.CODE_MAP[prom] : prom;
+            const rowPayload = { date, spv, promotor: prom, codigo, cMonth };
             let hasChanges = false;
             const baseProm = baseline[prom] || {};
             planFields.forEach(f => {
@@ -203,13 +204,13 @@
         // Procesar datos del día
         const cloudData = {};
         const fetched = result.data || {};
-        for (let originalProm in fetched) {
-          let prom = originalProm;
+        for (let fetchedKey in fetched) {
+          let prom = (window.NAME_MAP && window.NAME_MAP[fetchedKey]) ? window.NAME_MAP[fetchedKey] : fetchedKey;
           // Parche de seguridad para problemas de codificación de la Ñ desde Google Sheets
           if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) {
             prom = 'MIÑO RENZO';
           }
-          cloudData[prom] = fetched[originalProm];
+          cloudData[prom] = fetched[fetchedKey];
         }
         
         // Inyectar objetivos mensuales si vienen en la respuesta

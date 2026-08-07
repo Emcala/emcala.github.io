@@ -34,6 +34,14 @@
           const result = await response.json();
           if (result.ok && result.mesas && Object.keys(result.mesas).length > 0) {
             SPV_DATA = result.mesas;
+            
+            // Mapas de traducción de código a nombre y viceversa
+            window.CODE_MAP = result.codigos || {}; 
+            window.NAME_MAP = {};
+            for (const promotor in window.CODE_MAP) {
+              window.NAME_MAP[window.CODE_MAP[promotor]] = promotor;
+            }
+            
             _mesasLoaded = true;
             console.log('Mesas cargadas del servidor:', Object.keys(SPV_DATA).length, 'supervisores');
             return true;
