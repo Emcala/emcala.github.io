@@ -101,18 +101,38 @@
       }
       if (payload.length === 0) return false;
       try {
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
+        let retries = 0;
+        let success = false;
+        let result = null;
+        
+        while (retries < 3 && !success) {
+          const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+          result = await response.json();
+          
+          if (result.status === 'error' && result.retryable) {
+            retries++;
+            if (!silent) console.log(`Servidor ocupado. Reintento ${retries}/3 en breve...`);
+            await new Promise(r => setTimeout(r, 1500 * retries + Math.random() * 1000));
+          } else {
+            success = true;
+          }
+        }
+
+        if (result && result.status === 'success') {
           // Actualizar la base de comparación para que el próximo guardado
           // solo mande lo que cambie a partir de ahora.
           window.currentCloudState = JSON.stringify(volData);
+          return true;
         }
-        return result.status === 'success';
+        
+        if (!silent && result && result.message) {
+          console.error('Error del servidor:', result.message);
+        }
+        return false;
       } catch (e) {
         if (!silent) console.error('Error guardando al servidor:', e);
         return false;
@@ -138,25 +158,49 @@
         if (!isAutoSync) {
           await saveToServer(true);
         }
-        // Sincronizar maestro de SKUs SOLO en carga inicial
-        if (isAutoSync) {
-          syncSkus(); // Non-blocking en auto-sync
-          const cMonthInit = window.getCommercialMonthAndStart(date).month;
-          syncTareas(cMonthInit); // Non-blocking: pre-cargar Plana de Tareas
-        }
 
-        // UN SOLO FETCH: traer TODOS los datos del día (sin filtrar por SPV)
+        // UN SOLO FETCH: init_bundle trae SKUs + Tareas + Datos del día en 1 sola respuesta
         const cMonth = window.getCommercialMonthAndStart(date).month;
-        const fetchUrl = `${SCRIPT_URL}?date=${date}&cMonth=${cMonth}&spv=ALL&_t=${Date.now()}`;
+        const fetchUrl = `${SCRIPT_URL}?req=init_bundle&date=${date}&cMonth=${cMonth}&spv=ALL&_t=${Date.now()}`;
         
         btn.innerHTML = '⏳ Descargando datos...';
         const response = await fetch(fetchUrl);
         const result = await response.json();
         
         if (result.status !== 'success') {
-          throw new Error(result.message || 'Error al sincronizar');
+          // Auto-retry para errores de lock (servidor ocupado)
+          if (result.retryable) {
+            btn.innerHTML = '⏳ Servidor ocupado, reintentando...';
+            await new Promise(r => setTimeout(r, 2000 + Math.random() * 1000));
+            const retryResp = await fetch(fetchUrl);
+            const retryResult = await retryResp.json();
+            if (retryResult.status !== 'success') {
+              throw new Error(retryResult.message || 'Error al sincronizar tras reintento');
+            }
+            Object.assign(result, retryResult);
+          } else {
+            throw new Error(result.message || 'Error al sincronizar');
+          }
         }
         
+        // Procesar SKUs del bundle
+        if (result.skus && result.skus.length > 0) {
+          skuMaster = result.skus;
+          console.log('SKU Master sincronizado (bundle):', skuMaster.length, 'items');
+        }
+        
+        // Procesar Tareas del bundle
+        if (result.tareas) {
+          const map = {};
+          for (const clienteId in result.tareas) {
+            map[clienteId] = new Set(result.tareas[clienteId]);
+          }
+          tareasMaster = map;
+          tareasSyncedMonth = cMonth;
+          console.log('Plana de Tareas sincronizada (bundle):', Object.keys(map).length, 'clientes');
+        }
+        
+        // Procesar datos del día
         const cloudData = {};
         const fetched = result.data || {};
         for (let originalProm in fetched) {

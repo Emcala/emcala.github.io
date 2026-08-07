@@ -244,44 +244,83 @@
       </div>`;
     container.innerHTML = html;
 
+    // Cola global de actualizaciones para la vespertina
+    let updateQueue = {};
+    let saveTimeout = null;
+    let isSaving = false;
+
+    function queueUpdate(prom, fecha, contactado, motivo) {
+      updateQueue[prom] = { promotor: prom, fecha, contactado, motivo };
+      marcarPendiente();
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(processVespertinaQueue, 2000); // 2 segundos de debounce global
+    }
+
+    async function processVespertinaQueue() {
+      if (Object.keys(updateQueue).length === 0) return;
+      if (isSaving) {
+        // Si ya está guardando, posponer
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(processVespertinaQueue, 1000);
+        return;
+      }
+      
+      const payload = Object.values(updateQueue);
+      // Limpiar cola inmediatamente para capturar nuevos cambios mientras se guarda
+      updateQueue = {};
+      isSaving = true;
+      
+      try {
+        let retries = 0;
+        let success = false;
+        let result = null;
+        
+        while (retries < 3 && !success) {
+          const resp = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ req: 'vespertina_update_batch', updates: payload })
+          });
+          result = await resp.json();
+          
+          if (result.status === 'error' && result.retryable) {
+            retries++;
+            console.log(`Servidor ocupado. Reintento ${retries}/3...`);
+            await new Promise(r => setTimeout(r, 1500 * retries + Math.random() * 1000));
+          } else {
+            success = true;
+          }
+        }
+        marcarGuardado(result && result.status === 'success');
+      } catch (e) {
+        console.error('Error guardando contacto:', e);
+        marcarGuardado(false);
+      } finally {
+        isSaving = false;
+        // Si entraron nuevos mientras guardábamos, procesar
+        if (Object.keys(updateQueue).length > 0) {
+          clearTimeout(saveTimeout);
+          saveTimeout = setTimeout(processVespertinaQueue, 1000);
+        }
+      }
+    }
+
     container.querySelectorAll('.chk-contacto').forEach(el => {
       el.addEventListener('change', e => {
-        marcarPendiente();
-        guardarContacto(e.target.dataset.prom, fecha, e.target.checked, getMotivo(e.target.dataset.prom));
+        queueUpdate(e.target.dataset.prom, fecha, e.target.checked, getMotivo(e.target.dataset.prom));
       });
     });
+    
     container.querySelectorAll('.txt-motivo').forEach(el => {
-      let timeout;
-      let yaMarcado = false; // evita marcar pendiente en cada tecla; solo una vez por tanda de escritura
       el.addEventListener('input', e => {
-        if (!yaMarcado) { marcarPendiente(); yaMarcado = true; }
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          yaMarcado = false; // se resetea acá; el fetch de abajo es el que hace el marcarGuardado()
-          const chk = container.querySelector(`.chk-contacto[data-prom="${e.target.dataset.prom}"]`);
-          guardarContacto(e.target.dataset.prom, fecha, chk ? chk.checked : false, e.target.value);
-        }, 600); // debounce para no pegarle al servidor en cada tecla
+        const chk = container.querySelector(`.chk-contacto[data-prom="${e.target.dataset.prom}"]`);
+        queueUpdate(e.target.dataset.prom, fecha, chk ? chk.checked : false, e.target.value);
       });
     });
 
     function getMotivo(prom) {
       const el = container.querySelector(`.txt-motivo[data-prom="${prom}"]`);
       return el ? el.value : '';
-    }
-  }
-
-  async function guardarContacto(promotor, fecha, contactado, motivo) {
-    try {
-      const resp = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ req: 'vespertina_update', fecha, promotor, contactado, motivo })
-      });
-      const result = await resp.json();
-      marcarGuardado(result.status === 'success');
-    } catch (e) {
-      console.error('Error guardando contacto:', e);
-      marcarGuardado(false);
     }
   }
 
@@ -516,13 +555,28 @@
         const alineacion = card.querySelector('.c3').checked;
         const notas = card.querySelector('.notas').value;
         try {
-          const resp = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ req: 'vespertina_jdv_update', fecha, spv: 'GENERAL', jdv: session.nombre, revision, analisis, alineacion, notas })
-          });
-          const result = await resp.json();
-          marcarGuardado(result.status === 'success');
+          let retries = 0;
+          let success = false;
+          let result = null;
+          const payload = { req: 'vespertina_jdv_update', fecha, spv: 'GENERAL', jdv: session.nombre, revision, analisis, alineacion, notas };
+          
+          while (retries < 3 && !success) {
+            const resp = await fetch(SCRIPT_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(payload)
+            });
+            result = await resp.json();
+            
+            if (result.status === 'error' && result.retryable) {
+              retries++;
+              console.log(`Servidor ocupado (JDV). Reintento ${retries}/3...`);
+              await new Promise(r => setTimeout(r, 1500 * retries + Math.random() * 1000));
+            } else {
+              success = true;
+            }
+          }
+          marcarGuardado(result && result.status === 'success');
         } catch (e) {
           console.error('Error guardando JDV:', e);
           marcarGuardado(false);
