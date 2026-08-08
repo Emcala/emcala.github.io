@@ -74,6 +74,7 @@
         date: h.indexOf('descripción período'),
         clientId: h.indexOf('cod. cliente'),
         promoter: h.indexOf('descripción vendedor'),
+        vendorCode: h.findIndex(x => x === 'vendedor'), // Código VEND del vendedor (columna exacta "Vendedor", no "Descripción Vendedor")
         sku: h.indexOf('código'),
         article: h.indexOf('artículos') !== -1 ? h.indexOf('artículos') + 2 : 18,
         brand: h.indexOf('marca') !== -1 ? h.indexOf('marca') + 1 : 20,
@@ -118,6 +119,10 @@
         const plannerDate = getPlannerDateFromCSVDate(csvDate);
         if (!plannerDate) continue;
         const promoter = cols[cm.promoter] ? cols[cm.promoter].trim().toUpperCase() : '';
+        const vendorCode = (cm.vendorCode !== -1 && cols[cm.vendorCode]) ? cols[cm.vendorCode].trim() : '';
+        // Agrupamos por CÓDIGO de vendedor cuando está disponible (es único y no cambia),
+        // y solo si no vino código caemos al nombre de texto (ambiguo si hay nombres repetidos).
+        const acumKey = vendorCode || promoter;
         const category = cols[cm.category] ? cols[cm.category].trim().toUpperCase() : '';
         const rawVolume = cols[cm.volume] ? cols[cm.volume].trim().replace(',', '.') : '0';
         const volume = parseFloat(rawVolume || 0);
@@ -129,8 +134,9 @@
         if (!allDatesSales[plannerDate]) {
           allDatesSales[plannerDate] = {};
         }
-        if (!allDatesSales[plannerDate][promoter]) {
-          allDatesSales[plannerDate][promoter] = {
+        if (!allDatesSales[plannerDate][acumKey]) {
+          allDatesSales[plannerDate][acumKey] = {
+            _vendorCode: vendorCode, _csvName: promoter,
             // Volúmenes (VOL) - GENERALES (Foco I y II, suma todo)
             cerveza: 0, nabs: 0, core: 0, value: 0, aboveCore: 0, balanced: 0, latones: 0, ungTop: 0, redbull: 0, aguas: 0, totalUng: 0,
             // Clientes únicos por segmento (CCC) - GENERALES
@@ -152,7 +158,7 @@
             cvClientsUngTop: new Set(), cvClientsEficiencia: new Set()
           };
         }
-        const pSales = allDatesSales[plannerDate][promoter];
+        const pSales = allDatesSales[plannerDate][acumKey];
         const csvSkuCode = cols[cm.sku] ? cols[cm.sku].trim() : '';
         // Ignorar envases vacos que no suman volumen real
         if (csvSkuCode === '2731' || csvSkuCode === '2776') {
@@ -355,27 +361,42 @@
         const daySales = allDatesSales[pDate];
         let dateMatches = 0;
         
-        for (const promoter in daySales) {
+        for (const acumKey in daySales) {
+          const pSales = daySales[acumKey];
+          const vendorCode = pSales._vendorCode;
+          const promoter = pSales._csvName; // nombre de texto tal cual vino en el CSV, para el fallback difuso
           let trackedPromoter = null;
-          const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
-          const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
-          const csvFlat = normalizeFlat(promoter);
-          if (csvFlat.length > 2) {
-            const csvParts = normalizeParts(promoter);
-            for (const spv in SPV_DATA) {
-              const match = SPV_DATA[spv].find(p => {
-                const pParts = normalizeParts(p);
-                const pFlat = normalizeFlat(p);
-                const pInCsv = pParts.every(part => csvParts.includes(part));
-                const csvInP = csvParts.every(part => pParts.includes(part));
-                const isFlatMatch = pFlat === csvFlat || csvFlat.includes(pFlat) || (csvFlat.length > 5 && pFlat.includes(csvFlat));
-                return pInCsv || csvInP || isFlatMatch;
-              });
-              if (match) { trackedPromoter = match; break; }
+
+          // 1) Match DIRECTO por código de Vendedor contra Mesas — exacto, sin ambigüedad.
+          if (vendorCode && window.NAME_MAP && window.NAME_MAP[vendorCode]) {
+            trackedPromoter = window.NAME_MAP[vendorCode];
+          }
+
+          // 2) Fallback: matching difuso por nombre (solo si no vino código o no está en Mesas).
+          if (!trackedPromoter) {
+            const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
+            const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
+            const csvFlat = normalizeFlat(promoter);
+            if (csvFlat.length > 2) {
+              const csvParts = normalizeParts(promoter);
+              for (const spv in SPV_DATA) {
+                const match = SPV_DATA[spv].find(p => {
+                  const pParts = normalizeParts(p);
+                  const pFlat = normalizeFlat(p);
+                  const pInCsv = pParts.every(part => csvParts.includes(part));
+                  const csvInP = csvParts.every(part => pParts.includes(part));
+                  const isFlatMatch = pFlat === csvFlat || csvFlat.includes(pFlat) || (csvFlat.length > 5 && pFlat.includes(csvFlat));
+                  return pInCsv || csvInP || isFlatMatch;
+                });
+                if (match) { trackedPromoter = match; break; }
+              }
+            }
+            if (trackedPromoter && vendorCode) {
+              console.warn(`⚠️ Vendedor "${promoter}" (código ${vendorCode}) no está en Mesas — se matcheó por nombre a "${trackedPromoter}". Revisar VEND en Mesas.`);
             }
           }
+
           if (!trackedPromoter) continue;
-          const pSales = daySales[promoter];
           const rCore = pSales.core > 0 ? parseFloat(pSales.core.toFixed(2)) : '';
           const rValue = pSales.value > 0 ? parseFloat(pSales.value.toFixed(2)) : '';
           const rAc = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : '';
