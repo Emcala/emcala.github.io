@@ -210,7 +210,10 @@
           if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) {
             prom = 'MIÑO RENZO';
           }
-          cloudData[prom] = fetched[fetchedKey];
+          // Fusionar en vez de sobreescribir: distintas claves del backend (código VEND
+          // para planificación/KPIs, nombre como fallback en Acumulados) pueden resolver
+          // al mismo promotor, y no queremos que una pise los campos que trajo la otra.
+          cloudData[prom] = Object.assign(cloudData[prom] || {}, fetched[fetchedKey]);
         }
         
         // Inyectar objetivos mensuales si vienen en la respuesta
