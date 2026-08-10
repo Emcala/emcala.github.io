@@ -101,10 +101,17 @@ function findMatch(target, keySet) {
   const nt = norm(target);
   if (!nt) return null;
   for (const k of keySet) { if (norm(k) === nt) return k; }
-  // Fallback: match by last name + first name initial
+  
   const tp = nt.split(' ');
+  const tpSorted = tp.slice().sort().join(' ');
+  
   for (const k of keySet) {
     const kp = norm(k).split(' ');
+    
+    // Match por palabras invertidas (ej. "RENZO MIÑO" == "MIÑO RENZO")
+    if (kp.slice().sort().join(' ') === tpSorted) return k;
+    
+    // Fallback original: match by last name + first name initial
     if (kp[0] === tp[0] && kp.length > 1 && tp.length > 1 && kp[1][0] === tp[1][0]) return k;
   }
   return null;
