@@ -443,36 +443,43 @@ async function calcular(){
 
   // 2. Mapear Vend -> Promotor/SDV
   const unmapped = [];
-  const clientesPorPromotor = {}; // promotor -> {clientes, supName}
+  const clientesPorVend = {}; // vend -> {clientes, promotor, supName}
   Object.keys(countByVend).forEach(vend => {
     const map = vendMap[vend];
     if (!map){ unmapped.push(vend); return; }
-    if (!clientesPorPromotor[map.promotor]){
-      clientesPorPromotor[map.promotor] = { clientes: 0, supName: map.supName };
+    if (!clientesPorVend[vend]){
+      clientesPorVend[vend] = { clientes: 0, promotor: map.promotor, supName: map.supName };
     }
-    clientesPorPromotor[map.promotor].clientes += countByVend[vend];
+    clientesPorVend[vend].clientes += countByVend[vend];
   });
 
   // if (unmapped.length){
   //   showWarn(`Códigos de Vend. sin mapear en Mesas (no se contaron): ${unmapped.join(', ')}`);
   // }
 
-  // 3. Unir con CCC (ventas) — union de promotores presentes en cualquiera de las dos fuentes
-  const promotoresAll = new Set([...Object.keys(clientesPorPromotor), ...Object.keys(ventas)]);
+  // 3. Unir con CCC (ventas) — union de VEND presentes en cualquiera de las dos fuentes
+  const vendsAll = new Set([...Object.keys(clientesPorVend), ...Object.keys(ventas)]);
 
-  // Para promotores que solo vinieron de ventas (sin match en visitas), intentar resolver su SDV
-  // buscando en vendMap por nombre de promotor.
-  const supByPromotorFallback = {};
-  Object.values(vendMap).forEach(m => { supByPromotorFallback[m.promotor] = m.supName; });
+  // Para VEND que solo vinieron de ventas (sin match en visitas), intentar resolver su SDV/Nombre
+  const supByVendFallback = {};
+  const promotorByVendFallback = {};
+  Object.keys(vendMap).forEach(v => { 
+    supByVendFallback[v] = vendMap[v].supName; 
+    promotorByVendFallback[v] = vendMap[v].promotor;
+  });
 
   const rows = [];
-  promotoresAll.forEach(prom => {
-    const clientesInfo = clientesPorPromotor[prom];
+  vendsAll.forEach(vend => {
+    const clientesInfo = clientesPorVend[vend];
     const clientes = clientesInfo ? clientesInfo.clientes : 0;
-    const supName = (clientesInfo && clientesInfo.supName) || supByPromotorFallback[prom] || 'SIN SDV';
-    const ccc = (ventas[prom] && ventas[prom]['bol-v']) ? Number(ventas[prom]['bol-v']) : 0;
+    const supName = (clientesInfo && clientesInfo.supName) || supByVendFallback[vend] || 'SIN SDV';
+    
+    // El promotorName a mostrar (si no hay fallback, mostramos el código VEND)
+    const promotorName = (clientesInfo && clientesInfo.promotor) || promotorByVendFallback[vend] || vend;
+    
+    const ccc = (ventas[vend] && ventas[vend]['bol-v']) ? Number(ventas[vend]['bol-v']) : 0;
     const efect = clientes > 0 ? (ccc / clientes * 100) : (ccc > 0 ? null : 0); // null = sin base para dividir pero con venta
-    rows.push({ promotor: prom, supName, clientes, ccc, efect });
+    rows.push({ promotor: promotorName, supName, clientes, ccc, efect });
   });
 
   renderTabla(rows);
