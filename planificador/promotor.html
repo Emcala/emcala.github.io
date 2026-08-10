@@ -229,12 +229,12 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
 
     const SPV_DATA = {
-      'AVILA EZEQUIEL': ['FERNANDEZ LUIS','THEILLET NICOLAS','JAIMES EZEQUIEL','MOURELLE ALFREDO','PEREYRA BRAIAN','SAN JUAN CARLOS','SANTILLAN SERGIO','TESEI ALEJANDRA','TORRES KARINA'],
-      'ARES PEDRO': ['GALLO JONATHAN','DIAZ VALERIA','FERREYRA LEONARDO','MIÑO RENZO','LOPEZ PABLO','SANCHEZ ROCIO'],
-      'ECEIZA KEVIN': ['DOMINGUEZ GONZALO','GEREZ JONATHAN','GONZALEZ ROBERTO','JOFRE LUCAS','GUARAZ JUAN','MENDOZA SERGIO','MUÑOZ PAULA','REGNER LEANDRO','SCORNAVACHE WALTER'],
+      'AVILA EZEQUIEL': ['JAIMES EZEQUIEL','MOURELLE ALFREDO','PEREYRA BRAIAN','REGNER LEANDRO','SAN JUAN CARLOS','SANTILLAN SERGIO','TESEI ALEJANDRA','THEILLET NICOLAS','TORRES KARINA'],
+      'ARES PEDRO': ['DIAZ VALERIA','FERNANDEZ LUIS','GALLO JONATHAN','LOPEZ PABLO','MIÑO RENZO','SANCHEZ ROCIO'],
+      'ECEIZA KEVIN': ['DOMINGUEZ GONZALO','GEREZ JONATHAN','GONZALEZ ROBERTO','GUARAZ JUAN','JOFRE LUCAS','MENDOZA SERGIO','MUÑOZ PAULA','MELA GONZALO','SCORNAVACHE WALTER'],
       'RIERA SALA DANIELA': ['ASCONA MATIAS','BENITEZ NAHUEL','CESPEDES ENZO','FERREYRA TOBIAS','FREDES CLAUDIA','GARCIA MAIRA','LEITES RODRIGO','LOPEZ ALEJANDRA','MORENO AGUSTINA'],
-      'BDR': ['ANDUAGA SANTIAGO','GOMEZ GUSTAVO','VEDIA ELIZABETH'],
-      'LEMOS PATRICIA': ['LEMOS PATRICIA']
+      'BDR': ['FERREYRA LEONARDO','GOMEZ GUSTAVO','VEDIA ELIZABETH'],
+      'MAYO': ['LEMOS PATRICIA']
     };
 
     const spvSelect = document.getElementById('spv-select');
@@ -270,7 +270,7 @@
 
     spvSelect.addEventListener('change', () => {
       const spv = spvSelect.value;
-      const isLemos = spv === 'LEMOS PATRICIA';
+      const isLemos = spv === 'MAYO' || spv === 'LEMOS PATRICIA';
       document.querySelector('.foco3').style.display = isLemos ? 'none' : '';
       document.querySelector('.foco4').style.display = isLemos ? 'none' : '';
       document.querySelector('.foco5').style.display = isLemos ? 'none' : '';
@@ -381,7 +381,7 @@
     }
 
     function checkForm() {
-      const isLemos = spvSelect.value === 'LEMOS PATRICIA';
+      const isLemos = spvSelect.value === 'MAYO' || spvSelect.value === 'LEMOS PATRICIA';
 
       if (!spvSelect.value || !promSelect.value || (!currentKpiData && !isLemos)) {
         btnSubmit.disabled = true;
@@ -427,7 +427,7 @@
     document.getElementById('bol-total').addEventListener('input', checkForm);
 
     btnSubmit.addEventListener('click', async () => {
-      const isLemos = spvSelect.value === 'LEMOS PATRICIA';
+      const isLemos = spvSelect.value === 'MAYO' || spvSelect.value === 'LEMOS PATRICIA';
       if (!currentKpiData && !isLemos) {
         alert('No hay KPIs definidos para hoy.'); return;
       }
