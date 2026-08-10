@@ -29,12 +29,28 @@
       const p = parseFloat(pVal || 0);
       const r = parseFloat(rVal || 0);
       let pct = 0;
-      if (p > 0) pct = Math.min(100, Math.round((r / p) * 100));
+      if (p > 0) {
+        let timeRatio = 1;
+        const isVolume = id.includes('-f1') || id.includes('-f2') || id.includes('-bol');
+        const dateInput = document.getElementById('date-input');
+        
+        if (isVolume && dateInput && dateInput.value && window.getDiasHabilesTotales && window.getDiasHabilesTranscurridos) {
+          const totales = window.getDiasHabilesTotales(dateInput.value);
+          const transcurridos = window.getDiasHabilesTranscurridos(dateInput.value);
+          timeRatio = transcurridos / totales;
+          if (timeRatio <= 0) timeRatio = 1; // Fallback por seguridad
+        }
+        
+        pct = Math.round(((r / p) / timeRatio) * 100);
+      }
+      
       const textEl = document.getElementById(`prog-${id}`);
       const barEl = document.getElementById(`bar-${id}`);
       if (textEl) textEl.textContent = pct + '%';
       if (barEl) {
-        barEl.style.width = pct + '%';
+        // Limitamos visualmente el ancho de la barra al 100% para que no se desborde, 
+        // pero mostramos el porcentaje real en el texto (ej. 142%)
+        barEl.style.width = Math.min(100, pct) + '%';
         // Lógica estricta estática: <50% Rojo, 50-89% Naranja, >=90% Verde Excel
         let bgColor;
         if (pct < 50) {
@@ -127,11 +143,17 @@
           <td id="tot-${spvId}-f2-up" class="tot-val f2-extra">0.00</td>
           <td id="tot-${spvId}-f2-rb" class="tot-val f2-extra">0.00</td>
           <td id="tot-${spvId}-f2-ag" class="tot-val f2-extra">0.00</td>
-          <td colspan="4" class="progress-cell"><span id="prog-${spvId}-k1">0%</span><div class="progress-bar-bg"><div id="bar-${spvId}-k1" class="progress-bar-fill" style="width:0%"></div></div></td>
-          <td colspan="4" class="progress-cell"><span id="prog-${spvId}-k2">0%</span><div class="progress-bar-bg"><div id="bar-${spvId}-k2" class="progress-bar-fill" style="width:0%"></div></div></td>
-          <td id="tot-${spvId}-bol-p" class="tot-val">0</td>
-          <td id="tot-${spvId}-bol-v" class="tot-val">0</td>
-          <td class="progress-cell"><span id="prog-${spvId}-bol">0%</span><div class="progress-bar-bg"><div id="bar-${spvId}-bol" class="progress-bar-fill" style="width:0%"></div></div></td>
+          ${spv === 'MAYO' ? `
+            <td colspan="4" style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            <td colspan="4" style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+            <td colspan="3" style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
+          ` : `
+            <td colspan="4" class="progress-cell"><span id="prog-${spvId}-k1">0%</span><div class="progress-bar-bg"><div id="bar-${spvId}-k1" class="progress-bar-fill" style="width:0%"></div></div></td>
+            <td colspan="4" class="progress-cell"><span id="prog-${spvId}-k2">0%</span><div class="progress-bar-bg"><div id="bar-${spvId}-k2" class="progress-bar-fill" style="width:0%"></div></div></td>
+            <td id="tot-${spvId}-bol-p" class="tot-val">0</td>
+            <td id="tot-${spvId}-bol-v" class="tot-val">0</td>
+            <td class="progress-cell"><span id="prog-${spvId}-bol">0%</span><div class="progress-bar-bg"><div id="bar-${spvId}-bol" class="progress-bar-fill" style="width:0%"></div></div></td>
+          `}
         `;
         promotores.forEach(p => {
           const tr = document.createElement('tr');

@@ -218,10 +218,14 @@
         
         // Inyectar objetivos mensuales si vienen en la respuesta
         if (result.objectives && Object.keys(result.objectives).length > 0) {
+          const objFields = ['obj-f1', 'obj-f2', 'obj-cv', 'obj-ac', 'obj-bc', 'obj-lt', 'obj-ung', 'obj-up', 'obj-rb', 'obj-ag'];
           for (const p in result.objectives) {
             if (!cloudData[p]) cloudData[p] = {};
-            if (result.objectives[p]['obj-f1'] !== undefined) cloudData[p]['obj-f1'] = result.objectives[p]['obj-f1'];
-            if (result.objectives[p]['obj-f2'] !== undefined) cloudData[p]['obj-f2'] = result.objectives[p]['obj-f2'];
+            for (const f of objFields) {
+              if (result.objectives[p][f] !== undefined) {
+                cloudData[p][f] = result.objectives[p][f];
+              }
+            }
           }
         }
         
