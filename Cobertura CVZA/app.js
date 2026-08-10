@@ -128,7 +128,8 @@ async function loadMesas() {
     mesasData = [];
     for (const spv in data.mesas) {
       for (const prom of data.mesas[spv]) {
-        mesasData.push({ promotor: prom, supervisor: spv, canal: 'Ventas', codigo: '' });
+        const codigo = (data.codigos && data.codigos[prom]) ? data.codigos[prom] : prom;
+        mesasData.push({ promotor: prom, supervisor: spv, canal: 'Ventas', codigo: codigo });
       }
     }
     updateStatus('mesas', 'loaded', Object.keys(data.mesas).length + ' SPV');
@@ -385,11 +386,17 @@ function tryRender() {
 
     for (const m of proms) {
       const pn = norm(m.promotor);
+      const pc = norm(m.codigo);
 
       const mKey = findMatch(pn, maestroKeys);
       const cartera = mKey ? maestroData[mKey] : 0;
 
-      const vKey = findMatch(pn, ventasKeys);
+      // Buscar por código VEND primero. Si no encuentra, intentar por nombre (para datos viejos no migrados)
+      let vKey = findMatch(pc, ventasKeys);
+      if (!vKey && pc !== pn) {
+        vKey = findMatch(pn, ventasKeys);
+      }
+
       const ccc = vKey ? ventasData[vKey].size : 0;
       const nuevos = vKey ? (ventasData[vKey].nuevos || 0) : 0;
       
@@ -405,7 +412,10 @@ function tryRender() {
 
       let cccMA = 0, cccMMAA = 0;
       if (histKeys) {
-        const hKey = findMatch(pn, histKeys);
+        let hKey = findMatch(pc, histKeys);
+        if (!hKey && pc !== pn) {
+          hKey = findMatch(pn, histKeys);
+        }
         if (hKey) { cccMA = historicosData[hKey].cccMA; cccMMAA = historicosData[hKey].cccMMAA; }
       }
 
@@ -414,8 +424,11 @@ function tryRender() {
       sCartera += cartera; sCCC += ccc; sCNC += cnc;
       sMA += cccMA; sAA += cccMMAA;
 
-      promRows.push({ canal: m.canal, promotor: m.promotor, cartera, ccc, cnc, avance, cccMA, cccMMAA, nuevos, media });
+      promRows.push({ canal: m.canal, promotor: m.promotor, codigo: m.codigo || '', cartera, ccc, cnc, avance, cccMA, cccMMAA, nuevos, media });
     }
+
+    // Ordenar los promotores por su código VEND numéricamente/alfabéticamente
+    promRows.sort((a, b) => String(a.codigo).localeCompare(String(b.codigo)));
 
     // Supervisor totals
     const sAvance = sCartera > 0 ? (sCCC / sCartera * 100) : 0;
@@ -433,7 +446,7 @@ function tryRender() {
       `<td class="progress-cell"><span>${sAvance.toFixed(2)}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.min(sAvance,100)}%; background:${avanceStyle(sAvance)};"></div></div></td>` +
       `<td>${sMA || ''}</td>` +
       `<td>${sAA || ''}</td>` +
-      `<td>${sNuevos || ''}</td>` +
+      `<td class="col-nuevos">${sNuevos || ''}</td>` +
       `<td>${sMedia.toLocaleString('es-AR')}</td>`;
     tbody.appendChild(sRow);
 
@@ -445,15 +458,18 @@ function tryRender() {
       const classMA = (p.cccMA > 0 && p.ccc >= p.cccMA) ? ' class="achieved"' : '';
       const classAA = (p.cccMMAA > 0 && p.ccc >= p.cccMMAA) ? ' class="achieved"' : '';
 
+      // Format: [2015] MELA GONZALO
+      const displayName = p.codigo ? `[${p.codigo}] ${p.promotor}` : p.promotor;
+
       pRow.innerHTML =
-        `<td class="name-col">${p.promotor}</td>` +
+        `<td class="name-col">${displayName}</td>` +
         `<td>${p.cartera.toLocaleString('es-AR')}</td>` +
         `<td>${p.ccc.toLocaleString('es-AR')}</td>` +
         `<td>${p.cnc.toLocaleString('es-AR')}</td>` +
         `<td class="progress-cell"><span>${p.avance.toFixed(2)}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.min(p.avance,100)}%; background:${avanceStyle(p.avance)};"></div></div></td>` +
         `<td${classMA}>${p.cccMA || ''}</td>` +
         `<td${classAA}>${p.cccMMAA || ''}</td>` +
-        `<td>${p.nuevos || ''}</td>` +
+        `<td class="col-nuevos">${p.nuevos || ''}</td>` +
         `<td>${p.media.toLocaleString('es-AR')}</td>`;
       tbody.appendChild(pRow);
     }
@@ -477,7 +493,7 @@ function tryRender() {
     `<td class="progress-cell"><span>${jAvance.toFixed(2)}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.min(jAvance,100)}%; background:${avanceStyle(jAvance)};"></div></div></td>` +
     `<td>${jMA || ''}</td>` +
     `<td>${jAA || ''}</td>` +
-    `<td>${jNuevos || ''}</td>` +
+    `<td class="col-nuevos">${jNuevos || ''}</td>` +
     `<td>${jMedia.toLocaleString('es-AR')}</td>`;
   tbody.appendChild(jRow);
 
@@ -582,4 +598,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btn = document.getElementById('btnRefresh');
   if (btn) btn.addEventListener('click', refreshAll);
+
+  const btnToggle = document.getElementById('btnToggleNuevos');
+  if (btnToggle) {
+    btnToggle.addEventListener('click', () => {
+      document.body.classList.toggle('hide-nuevos');
+      const icon = btnToggle.querySelector('i');
+      if (document.body.classList.contains('hide-nuevos')) {
+        icon.className = 'fa-solid fa-eye';
+        btnToggle.title = "Mostrar Clientes Nuevos";
+      } else {
+        icon.className = 'fa-solid fa-eye-slash';
+        btnToggle.title = "Ocultar Clientes Nuevos";
+      }
+    });
+  }
 });
