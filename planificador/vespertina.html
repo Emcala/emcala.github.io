@@ -86,6 +86,7 @@
 <div class="hdr">
   <h1>EMCALA <span>| Vespertina</span></h1>
   <div class="hdr-right">
+    <button class="btn-refresh" id="btn-generar" onclick="generarVespertinaManual()" style="background: #10b981; display: none;" title="Generar planillas para el día seleccionado">▶ Generar Planillas</button>
     <button class="btn-refresh" onclick="cargar()" title="Traer ventas actualizadas">🔄 Sincronizar</button>
     <span id="save-indicator" style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.75); display:none;"></span>
     <input type="date" id="date-input">
@@ -140,6 +141,34 @@
 
   function normalize(s) {
     return String(s||'').normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim();
+  }
+
+  if (isSupervisor || (session && session.rol.toLowerCase() === 'jdv')) {
+    document.getElementById('btn-generar').style.display = 'inline-block';
+  }
+
+  async function generarVespertinaManual() {
+    const fecha = dateInput.value;
+    if (!fecha) return;
+
+    const btn = document.getElementById('btn-generar');
+    btn.disabled = true;
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = '⏳ Generando...';
+
+    try {
+      const resp = await fetch(`${SCRIPT_URL}?req=generar_vespertina_manual&date=${fecha}`);
+      const result = await resp.json();
+      if (result.status !== 'success') throw new Error(result.message || 'Error al generar');
+      
+      // Recargar la tabla con los datos nuevos
+      await cargar();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = oldHtml;
+    }
   }
 
   async function cargar() {
