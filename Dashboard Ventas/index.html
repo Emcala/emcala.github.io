@@ -137,7 +137,7 @@
   .table-container { max-height: 380px; overflow: auto; }
   table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: .8rem; }
   thead th {
-    padding: 8px 6px;
+    padding: 10px 4px;
     text-align: center;
     font-size: .7rem;
     text-transform: uppercase;
@@ -145,9 +145,9 @@
     z-index: 10;
     border: 1px solid #111;
   }
-  thead tr:nth-child(2) th { top: 31px; }
-  td { padding: 4px 4px; border: 1px solid #111; text-align: center !important; font-variant-numeric: tabular-nums; font-size: .75rem; color: #111; }
-  td:first-child { text-align: left !important; position: sticky; left: 0; z-index: 5; background: #fff; font-weight: 700; font-size: .75rem; color: #111; }
+  thead tr:nth-child(2) th { top: 34px; font-size: .6rem; padding: 6px 2px; }
+  td { padding: 6px 2px; border: 1px solid #111; text-align: center !important; font-variant-numeric: tabular-nums; font-size: .75rem; color: #111; }
+  td:first-child { text-align: left !important; position: sticky; left: 0; z-index: 5; background: #fff; font-weight: 700; font-size: .75rem; color: #111; white-space: nowrap; padding-left: 8px; padding-right: 8px; }
   
   tr.spv-header td { background: var(--navy-2); color: #fff; cursor: pointer; text-align: left; z-index: 6; }
   tr.spv-header:hover td { filter: brightness(1.1); }
@@ -217,7 +217,7 @@
       <table>
         <thead>
           <tr>
-            <th rowspan="2" style="background:#fff; color:#000; min-width:200px; text-align: left; padding-left: 12px; z-index: 15;">SUPERVISOR / PROMOTOR<br><span style="font-size:0.65rem;font-weight:400;color:var(--text-dim);text-transform:none;">(Clic en fila para ver gráfico)</span></th>
+            <th rowspan="2" style="background:#fff; color:#000; text-align: left; padding-left: 8px; padding-right: 8px; z-index: 15; min-width: 130px;">SUPERVISOR / PROMOTOR<br><span style="font-size:0.65rem;font-weight:400;color:var(--text-dim);text-transform:none;">(Clic en fila para gráfico)</span></th>
             <th colspan="3" class="bg-blue">FOCO I (TOTAL CVZA)</th>
             <th colspan="3" class="bg-yellow">CORE+VALUE</th>
             <th colspan="3" class="bg-green">ABOVE CORE</th>
@@ -230,20 +230,20 @@
             <!-- CVZA Total -->
             <th class="bg-red">OBJETIVO</th><th class="bg-red">ACUMULADO</th><th class="bg-red">AVANCE</th>
             <!-- CV -->
-            <th class="bg-yellow">OBJ.</th><th class="bg-yellow">ACUM.</th><th class="bg-yellow">AVANCE</th>
+            <th class="bg-yellow">OBJETIVO</th><th class="bg-yellow">ACUMULADO</th><th class="bg-yellow">AVANCE</th>
             <!-- AC -->
-            <th class="bg-green">OBJ.</th><th class="bg-green">ACUM.</th><th class="bg-green">AVANCE</th>
+            <th class="bg-green">OBJETIVO</th><th class="bg-green">ACUMULADO</th><th class="bg-green">AVANCE</th>
             
             <!-- NABS Total -->
             <th class="bg-blue-dark">OBJETIVO</th><th class="bg-blue-dark">ACUMULADO</th><th class="bg-blue-dark">AVANCE</th>
             <!-- UNG TOP -->
-            <th class="bg-pink">OBJ.</th><th class="bg-pink">ACUM.</th><th class="bg-pink">AVANCE</th>
+            <th class="bg-pink">OBJETIVO</th><th class="bg-pink">ACUMULADO</th><th class="bg-pink">AVANCE</th>
             <!-- AGUAS -->
-            <th class="bg-lightblue">OBJ.</th><th class="bg-lightblue">ACUM.</th><th class="bg-lightblue">AVANCE</th>
+            <th class="bg-lightblue">OBJETIVO</th><th class="bg-lightblue">ACUMULADO</th><th class="bg-lightblue">AVANCE</th>
           </tr>
         </thead>
         <tbody id="dash-tbody">
-          <tr><td colspan="19" class="loading">Conectando con la nube…</td></tr>
+          <tr><td colspan="31" class="loading">Conectando con la nube…</td></tr>
         </tbody>
         <tfoot id="dash-tfoot"></tfoot>
       </table>
@@ -413,14 +413,15 @@ function renderKpis() {
   `;
 }
 
-function kpiCard(label, real, plan, p) {
-  const barCol = plan > 0 ? colorFor(p) : '#94a3b8';
-  const pTxt = plan > 0 ? `${p}% cumplido` : 'Sin objetivo definido';
+function kpiCard(label, real, plan, pEfectividad) {
+  const pAbsoluto = plan > 0 ? Math.round((real / plan) * 100) : 0;
+  const barCol = plan > 0 ? colorFor(pEfectividad) : '#94a3b8';
+  const pTxt = plan > 0 ? `<b style="color:${barCol}">${pAbsoluto}% de avance</b> <span style="opacity:0.8; margin-left:6px;">(Efectividad: ${pEfectividad}%)</span>` : 'Sin objetivo definido';
   return `
     <div class="kpi-card">
       <div class="label">${label}</div>
-      <div class="value">${real.toFixed(2)} <span style="font-size:.9rem;color:var(--text-dim);font-weight:400">/ ${plan.toFixed(2)}</span></div>
-      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100, p)}%;background:${barCol}"></div></div>
+      <div class="value">${format(real)} <span style="font-size:.9rem;color:var(--text-dim);font-weight:400">/ ${format(plan)}</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100, pAbsoluto)}%;background:${barCol}"></div></div>
       <div style="font-size:.75rem;color:var(--text-dim);margin-top:4px">${pTxt}</div>
     </div>`;
 }
@@ -495,7 +496,7 @@ function renderDashboard() {
 
       const promIdStr = prom.replace(/\s+/g, '');
       promRowsHtml += `<tr class="mesa-row spv-${spv.replace(/\s+/g, '')}" id="row-PROM-${promIdStr}" onclick="seleccionarProm(event, '${prom}')" style="display:none">
-        <td style="padding-left:24px">▶ ${prom}</td>
+        <td style="padding-left:12px">${prom}</td>
         ${cell(pF1, d.f1Real, dashData.diasInfo)}
         ${cell(pCV, d.cv, dashData.diasInfo)}
         ${cell(pAC, d.ac, dashData.diasInfo)}
@@ -508,7 +509,7 @@ function renderDashboard() {
 
     const spvIdStr = spv.replace(/\s+/g, '');
     html += `<tr class="spv-header" id="row-SPV-${spvIdStr}" onclick="toggleSpv(event, '${spv}')">
-      <td>▼ ${spv}</td>
+      <td>${spv}</td>
       ${cell(sF1Plan, sF1Real, dashData.diasInfo)}
       ${cell(sCVPlan, sCVReal, dashData.diasInfo)}
       ${cell(sACPlan, sACReal, dashData.diasInfo)}
@@ -538,7 +539,7 @@ function renderDashboard() {
     }
   }
 
-  tbody.innerHTML = html || '<tr><td colspan="19" class="loading">Sin datos para el mes seleccionado.</td></tr>';
+  tbody.innerHTML = html || '<tr><td colspan="31" class="loading">Sin datos para el mes seleccionado.</td></tr>';
 }
 
 window.toggleSpv = function (event, spvName) {
@@ -607,26 +608,49 @@ function renderEvolucionCharts() {
     porFecha[r.date].ag += (r.ag || 0);
   });
 
+  const porFechaPrev = {};
+  if (dashData.rawDailyPrev) {
+    dashData.rawDailyPrev.forEach(r => {
+      if (entidadSeleccionada.tipo === 'SPV' && r.spv !== entidadSeleccionada.id) return;
+      if (entidadSeleccionada.tipo === 'PROM' && r.prom !== entidadSeleccionada.id) return;
+      
+      const day = r.date.slice(8, 10);
+      if (!porFechaPrev[day]) porFechaPrev[day] = { f1: 0, f2: 0 };
+      porFechaPrev[day].f1 += (r.f1Real || 0);
+      porFechaPrev[day].f2 += (r.f2Real || 0);
+    });
+  }
+
   // 3. Crear serie acumulada
   const fechas = Object.keys(porFecha).sort();
   const labels = [];
   const dataAcumF1 = [], dataAcumF2 = [];
+  const dataPrevF1 = [], dataPrevF2 = [];
   const dataObjF1 = [], dataObjF2 = [];
   const dataAcumCV = [], dataAcumAC = [];
   const dataAcumUP = [], dataAcumAG = [];
 
   let acumF1 = 0, acumF2 = 0;
+  let acumPrevF1 = 0, acumPrevF2 = 0;
   let acumCV = 0, acumAC = 0;
   let acumUP = 0, acumAG = 0;
   
   fechas.forEach(f => {
-    labels.push(f.slice(8, 10) + '/' + f.slice(5, 7));
+    const day = f.slice(8, 10);
+    labels.push(day + '/' + f.slice(5, 7));
     acumF1 += porFecha[f].f1; acumF2 += porFecha[f].f2;
     acumCV += porFecha[f].cv; acumAC += porFecha[f].ac;
     acumUP += porFecha[f].up; acumAG += porFecha[f].ag;
+
+    if (porFechaPrev[day]) {
+      acumPrevF1 += porFechaPrev[day].f1;
+      acumPrevF2 += porFechaPrev[day].f2;
+    }
     
     dataAcumF1.push(+acumF1.toFixed(2));
     dataAcumF2.push(+acumF2.toFixed(2));
+    dataPrevF1.push(+acumPrevF1.toFixed(2));
+    dataPrevF2.push(+acumPrevF2.toFixed(2));
     dataObjF1.push(+objF1.toFixed(2));
     dataObjF2.push(+objF2.toFixed(2));
     dataAcumCV.push(+acumCV.toFixed(2));
@@ -635,7 +659,7 @@ function renderEvolucionCharts() {
     dataAcumAG.push(+acumAG.toFixed(2));
   });
 
-  const createChart = (chartInstance, ctx, labels, dataObj, dataAcum, label1, label2, dataSub1, labelSub1, colorSub1, dataSub2, labelSub2, colorSub2) => {
+  const createChart = (chartInstance, ctx, labels, dataObj, dataAcum, dataPrev, label1, label2, dataSub1, labelSub1, colorSub1, dataSub2, labelSub2, colorSub2) => {
     if (chartInstance) chartInstance.destroy();
     
     const datasets = [
@@ -660,6 +684,19 @@ function renderEvolucionCharts() {
         borderWidth: 3 
       }
     ];
+
+    if (dataPrev && dataPrev.length > 0) {
+      datasets.push({
+        label: 'Mes Anterior',
+        data: dataPrev,
+        borderColor: '#9ca3af',
+        backgroundColor: 'transparent',
+        borderDash: [3, 3],
+        tension: 0.25,
+        pointRadius: 0,
+        borderWidth: 2
+      });
+    }
 
     if (dataSub1 && labelSub1) {
       datasets.push({
@@ -708,8 +745,8 @@ function renderEvolucionCharts() {
     });
   };
 
-  evoChartF1 = createChart(evoChartF1, ctxF1, labels, dataObjF1, dataAcumF1, 'Objetivo F1', 'Acumulado F1', dataAcumCV, 'Core+Value', '#eab308', dataAcumAC, 'Above Core', '#22c55e');
-  evoChartF2 = createChart(evoChartF2, ctxF2, labels, dataObjF2, dataAcumF2, 'Objetivo F2', 'Acumulado F2', dataAcumUP, 'UNG Top', '#ec4899', dataAcumAG, 'Aguas', '#0ea5e9');
+  evoChartF1 = createChart(evoChartF1, ctxF1, labels, dataObjF1, dataAcumF1, dataPrevF1, 'Objetivo F1', 'Acumulado F1', dataAcumCV, 'Core+Value', '#eab308', dataAcumAC, 'Above Core', '#22c55e');
+  evoChartF2 = createChart(evoChartF2, ctxF2, labels, dataObjF2, dataAcumF2, dataPrevF2, 'Objetivo F2', 'Acumulado F2', dataAcumUP, 'UNG Top', '#ec4899', dataAcumAG, 'Aguas', '#0ea5e9');
 }
 document.getElementById('btn-refresh').addEventListener('click', cargarDashboard);
 document.getElementById('month-input').addEventListener('change', cargarDashboard);
