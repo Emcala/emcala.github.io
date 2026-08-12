@@ -210,194 +210,317 @@
         btn.disabled = false;
       }
     });
-    // Event listener para botón de Importar CSV
-    const btnImportCsv = document.getElementById('btn-import-csv');
-    const csvFileInput = document.getElementById('csv-file-input');
-    btnImportCsv.addEventListener('click', () => {
-      csvFileInput.click();
-    });
-    csvFileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const origText = btnImportCsv.innerHTML;
-      btnImportCsv.innerHTML = '⏳ Sincronizando SKUs...';
-      btnImportCsv.disabled = true;
-      // Sincronizar SKUs antes de procesar el archivo elegido
-      await syncSkus();
-      // Sincronizar Plana de Tareas (del mes actual) — necesaria para validar CV
-      btnImportCsv.innerHTML = '⏳ Sincronizando Plana de Tareas...';
-      const cMonthActual = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
-      const okTareas = await syncTareas(cMonthActual);
-      if (!okTareas) {
-        const continuar = confirm('No se pudo cargar la Plana de Tareas.\nLa validación de CV puede salir en 0 para todos los promotores.\n\n¿Querés continuar igual con la importación?');
-        if (!continuar) {
-          btnImportCsv.innerHTML = origText;
-          btnImportCsv.disabled = false;
-          csvFileInput.value = '';
-          return;
-        }
-      }
-      btnImportCsv.innerHTML = '⏳ Procesando CSV...';
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        // Usar setTimeout para permitir que la UI se renderice antes de bloquear el hilo
-        setTimeout(() => {
-          try {
-            parseCSVAndApply(evt.target.result);
-          } catch (error) {
-            console.error("Error procesando CSV:", error);
-            alert("Hubo un error procesando el archivo CSV: " + error.message);
-          } finally {
-            csvFileInput.value = ''; // Reset
-            btnImportCsv.innerHTML = origText;
-            btnImportCsv.disabled = false;
-          }
-        }, 50);
-      };
-      reader.readAsText(file);
-    });
-    const btnImportSkus = document.getElementById('btn-import-skus');
-    const csvSkusInput = document.getElementById('csv-skus-input');
-    btnImportSkus.addEventListener('click', () => {
-      csvSkusInput.click();
-    });
-    csvSkusInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async (evt) => {
-        const text = evt.target.result;
-        csvSkusInput.value = ''; // Reset
-        const lines = text.split('\n');
-        if (lines.length < 2) { alert('CSV vacío o sin datos'); return; }
-        // Detectar separador
-        const firstLine = lines[0];
-        const separator = firstLine.includes(';') ? ';' : ',';
-        // Autodetectar columnas
-        const headers = firstLine.split(separator).map(s => s.trim().toLowerCase());
-        let idxId = headers.findIndex(h => h.includes('sku') || h.includes('código') || h.includes('codigo') || h.includes('id') || h.includes('material'));
-        let idxShort = headers.findIndex(h => h.includes('short') || h.includes('corta') || (h.includes('desc') && !h.includes('full') && !h.includes('larga')));
-        let idxFull = headers.findIndex(h => h.includes('full') || h.includes('larga') || h.includes('desc'));
-        // Validación estricta
-        if (idxId === -1 || (idxShort === -1 && idxFull === -1)) {
-          alert('❌ Error: El archivo CSV no tiene el formato correcto para SKUs.\n\nDebe contener encabezados en la primera fila como "Código" o "SKU" y "Descripción".');
-          return;
-        }
-        // Fallbacks por si solo hay un tipo de descripción
-        if (idxShort === -1) idxShort = idxFull;
-        if (idxFull === -1) idxFull = idxShort;
-        const skus = [];
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
-          const cols = line.split(separator).map(s => s.trim());
-          // Asegurar que la fila tiene suficientes columnas
-          if (cols.length > Math.max(idxId, idxShort, idxFull) && cols[idxId]) {
-            skus.push({ id: cols[idxId], s: cols[idxShort] || '', f: cols[idxFull] || '' });
-          }
-        }
-        if (skus.length === 0) { alert('No se encontraron SKUs en el CSV.'); return; }
-        const origText = btnImportSkus.innerHTML;
-        btnImportSkus.innerHTML = '⏳ Subiendo...';
-        btnImportSkus.disabled = true;
-        try {
-          const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ req: 'upload_skus', skus: skus })
-          });
-          const result = await response.json();
-          if (result.status === 'success') {
-            alert('¡Maestro de SKUs actualizado correctamente en la nube!\nTodos los usuarios verán los nuevos SKUs en su próxima sincronización.');
-            await syncSkus(); // Sincronizar en memoria tras la subida exitosa
-            document.getElementById('btn-sync').click(); // Auto sync
-          } else {
-            alert('Hubo un problema: ' + result.message);
-          }
-        } catch(err) {
-          console.error(err);
-          alert('Error de conexión al subir SKUs: ' + err.message + '\n\nRevisa si actualizaste la SCRIPT_URL correctamente en el código HTML.');
-        }
-        btnImportSkus.innerHTML = origText;
-        btnImportSkus.disabled = false;
-      };
-      reader.readAsText(file);
-    });
-    const btnImportTareas = document.getElementById('btn-import-tareas');
-    const csvTareasInput = document.getElementById('csv-tareas-input');
-    btnImportTareas.addEventListener('click', () => {
-      csvTareasInput.click();
-    });
-    csvTareasInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async (evt) => {
-        const text = evt.target.result;
-        csvTareasInput.value = ''; // Reset
-        // Quitar BOM si viene (Excel suele agregarlo)
-        const cleanText = text.replace(/^\uFEFF/, '');
-        const lines = cleanText.split('\n');
-        if (lines.length < 2) { alert('CSV vacío o sin datos'); return; }
-        // Detectar separador (la bajada de tareas suele venir con ';')
-        const firstLine = lines[0];
-        const separator = firstLine.includes(';') ? ';' : ',';
-        // Autodetectar columnas: solo necesitamos cliente_id y TAREA, el resto se ignora
-        const headers = firstLine.split(separator).map(s => s.trim().toLowerCase());
-        const idxCliente = headers.findIndex(h => h.includes('cliente_id') || h === 'cliente' || h.includes('cod') && h.includes('cliente'));
-        const idxTarea = headers.findIndex(h => h.includes('tarea'));
-        if (idxCliente === -1 || idxTarea === -1) {
-          alert('❌ Error: El archivo CSV no tiene el formato correcto para la Plana de Tareas.\n\nDebe contener columnas "cliente_id" y "TAREA".');
-          return;
-        }
-        // Agrupar por cliente, deduplicando tareas repetidas (una fila por día/tarea en el archivo original)
-        const tareasPorCliente = {};
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
-          const cols = line.split(separator);
-          if (cols.length <= Math.max(idxCliente, idxTarea)) continue;
-          const clienteId = (cols[idxCliente] || '').trim();
-          const tarea = (cols[idxTarea] || '').trim();
-          if (!clienteId || !tarea) continue;
-          if (!tareasPorCliente[clienteId]) tareasPorCliente[clienteId] = new Set();
-          tareasPorCliente[clienteId].add(tarea);
-        }
-        const clientesConTarea = Object.keys(tareasPorCliente);
-        if (clientesConTarea.length === 0) { alert('No se encontraron tareas asignadas en el CSV.'); return; }
-        // Convertir Sets a arrays para poder enviarlos como JSON
-        const tareasPayload = {};
-        let totalTareas = 0;
-        clientesConTarea.forEach(cid => { 
-          const arr = Array.from(tareasPorCliente[cid]);
-          tareasPayload[cid] = arr;
-          totalTareas += arr.length;
-        });
+    // Botón único de importación (Auto-detect)
+    const btnImportAuto = document.getElementById('btn-import-auto');
+    const autoFileInput = document.getElementById('auto-file-input');
+    
+    if (btnImportAuto && autoFileInput) {
+      btnImportAuto.addEventListener('click', () => {
+        autoFileInput.click();
+      });
+      
+      autoFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const origText = btnImportAuto.innerHTML;
+        const ext = file.name.split('.').pop().toLowerCase();
+        
+        // --- 1. PROCESAMIENTO DE EXCEL (OBJETIVOS PAS) ---
+        if (ext === 'xlsx' || ext === 'xls') {
+          btnImportAuto.innerHTML = '⏳ Procesando Excel de Objetivos...';
+          btnImportAuto.disabled = true;
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            try {
+              const data = new Uint8Array(evt.target.result);
+              const workbook = XLSX.read(data, {type: 'array'});
+              let promotoresFound = 0;
+              const allPromoters = [];
+              for (let spv in SPV_DATA) {
+                allPromoters.push(...SPV_DATA[spv]);
+              }
+              const resetProms = {};
+              let monthStr = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
+              let monthObjs = {};
 
-        const cMonth = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
-        const origText = btnImportTareas.innerHTML;
-        btnImportTareas.innerHTML = '⏳ Subiendo...';
-        btnImportTareas.disabled = true;
-        try {
-          const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ req: 'upload_tareas', month: cMonth, tareas: tareasPayload })
-          });
-          const result = await response.json();
-          if (result.status === 'success') {
-            alert(`¡Plana de Tareas de ${cMonth} actualizada correctamente en la nube!\n(${totalTareas} tareas asignadas en ${clientesConTarea.length} clientes)`);
-            await syncTareas(cMonth, true); // Forzar refresco inmediato en esta sesión
-          } else {
-            alert('Hubo un problema: ' + result.message);
-          }
-        } catch(err) {
-          console.error(err);
-          alert('Error de conexión al subir la Plana de Tareas: ' + err.message);
+              workbook.SheetNames.forEach(sheetName => {
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
+                let currentCategory = '';
+                for (let i = 0; i < json.length; i++) {
+                  const row = json[i];
+                  if (!row || row.length === 0) continue;
+                  const colA = String(row[0] || '').trim();
+                  const colD = String(row[3] || '').trim();
+                  const colG = parseFloat(row[6]) || 0; // Columna G es índice 6 (Objetivos)
+                  
+                  if (colA !== '') {
+                    currentCategory = colA.toUpperCase();
+                  }
+
+                  // Normalización robusta para matching de promotores
+                  const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
+                  const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
+                  
+                  const colDUpper = colD.toUpperCase();
+                  const colDFlat = normalizeFlat(colD);
+                  const colDParts = normalizeParts(colD);
+
+                  let matchedProm = null;
+                  if (colDFlat.length > 2 && colDUpper !== 'TOTAL' && colDUpper !== 'FOCO') {
+                    // Detectar si la fila contiene el nombre de algún promotor conocido en la Columna D
+                    matchedProm = allPromoters.find(p => {
+                      const pFlat = normalizeFlat(p);
+                      const pParts = normalizeParts(p);
+                      const pInCol = pParts.every(part => colDParts.includes(part));
+                      const colInP = colDParts.every(part => pParts.includes(part));
+                      const isFlatMatch = colDFlat.includes(pFlat) || pFlat === colDFlat || (colDFlat.length > 5 && pFlat.includes(colDFlat));
+                      return pInCol || colInP || isFlatMatch;
+                    });
+                  }
+
+                  if (matchedProm && !colDUpper.includes('TOTAL') && !colDUpper.includes('FOCO')) {
+                    if (!volData[matchedProm]) volData[matchedProm] = {};
+                    if (!resetProms[matchedProm]) {
+                      volData[matchedProm]['obj-cv'] = 0;
+                      volData[matchedProm]['obj-ac'] = 0;
+                      volData[matchedProm]['obj-up'] = 0;
+                      volData[matchedProm]['obj-rb'] = 0;
+                      volData[matchedProm]['obj-ag'] = 0;
+                      resetProms[matchedProm] = true;
+                      promotoresFound++;
+                    }
+
+                    if (currentCategory.includes('CORE VALUE') || currentCategory.includes('CORE+VALUE')) {
+                      volData[matchedProm]['obj-cv'] += colG;
+                    } else if (currentCategory.includes('ABOVE CORE')) {
+                      volData[matchedProm]['obj-ac'] += colG;
+                    } else if (currentCategory.includes('UNG TOP')) {
+                      volData[matchedProm]['obj-up'] += colG;
+                    } else if (currentCategory.includes('RED BULL') || currentCategory.includes('REDBULL')) {
+                      volData[matchedProm]['obj-rb'] += colG;
+                    } else if (currentCategory.includes('AGUAS')) {
+                      volData[matchedProm]['obj-ag'] += colG;
+                    }
+                  }
+                }
+              });
+
+              for (const p in volData) {
+                if (resetProms[p]) {
+                  monthObjs[p] = {
+                    'obj-cv': volData[p]['obj-cv'],
+                    'obj-ac': volData[p]['obj-ac'],
+                    'obj-up': volData[p]['obj-up'],
+                    'obj-rb': volData[p]['obj-rb'],
+                    'obj-ag': volData[p]['obj-ag']
+                  };
+                }
+              }
+              
+              renderTables(); 
+              
+              fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ req: 'upload_objectives', month: monthStr, objectives: monthObjs })
+              }).then(res => res.json()).then(res => {
+                 if (res.status === 'success') {
+                    alert(`✅ Excel de objetivos procesado. Se actualizaron ${promotoresFound} promotores y se guardaron los objetivos globales en la nube.`);
+                 } else {
+                    alert(`⚠️ Se cargaron los objetivos localmente, pero hubo un error subiendo a la nube: ` + res.message);
+                 }
+              }).catch(e => {
+                 alert(`⚠️ Se cargaron los objetivos localmente, pero hubo un error de conexión subiendo a la nube.`);
+              });
+            } catch (error) {
+              console.error(error);
+              alert('❌ Ocurrió un error al procesar el archivo Excel. Asegúrate de subir el archivo correcto de objetivos.');
+            } finally {
+              btnImportAuto.innerHTML = origText;
+              btnImportAuto.disabled = false;
+              autoFileInput.value = '';
+            }
+          };
+          reader.readAsArrayBuffer(file);
+          return; 
         }
-        btnImportTareas.innerHTML = origText;
-        btnImportTareas.disabled = false;
-      };
-      reader.readAsText(file);
-    });
+        
+        // --- 2. PROCESAMIENTO DE CSV (AUTO-DETECCION) ---
+        if (ext === 'csv') {
+          btnImportAuto.innerHTML = '⏳ Detectando archivo...';
+          btnImportAuto.disabled = true;
+          
+          const reader = new FileReader();
+          reader.onload = async (evt) => {
+            const text = evt.target.result;
+            autoFileInput.value = ''; // Reset
+            
+            // Limpiar BOM
+            const cleanText = text.replace(/^\uFEFF/, '');
+            const lines = cleanText.split('\n');
+            if (lines.length < 2) { 
+              alert('CSV vacío o sin datos'); 
+              btnImportAuto.innerHTML = origText;
+              btnImportAuto.disabled = false;
+              return; 
+            }
+            
+            const firstLine = lines[0];
+            const separator = firstLine.includes(';') ? ';' : ',';
+            const headers = firstLine.split(separator).map(s => s.trim().toLowerCase());
+            
+            // --- DETECCION SKUs ---
+            const idxIdSKU = headers.findIndex(h => h.includes('sku') || h.includes('código') || h.includes('codigo') || h.includes('id') || h.includes('material'));
+            const idxShortSKU = headers.findIndex(h => h.includes('short') || h.includes('corta') || (h.includes('desc') && !h.includes('full') && !h.includes('larga')));
+            const idxFullSKU = headers.findIndex(h => h.includes('full') || h.includes('larga') || h.includes('desc'));
+            
+            const isSkus = (idxIdSKU !== -1 && (idxShortSKU !== -1 || idxFullSKU !== -1) && !headers.some(h => h.includes('cliente_id') || h.includes('periodos')));
+            
+            // --- DETECCION TAREAS ---
+            const idxClienteTarea = headers.findIndex(h => h.includes('cliente_id') || h === 'cliente' || h.includes('cod') && h.includes('cliente'));
+            const idxTarea = headers.findIndex(h => h.includes('tarea'));
+            const isTareas = (idxClienteTarea !== -1 && idxTarea !== -1 && !headers.some(h => h.includes('periodos')));
+            
+            // --- DETECCION VENTAS ---
+            // Periodos	Cod. Período	Descripción Período	Clientes	Cod. Cliente
+            const hasPeriodos = headers.some(h => h.includes('periodo') || h.includes('período'));
+            const hasCodPeriodo = headers.some(h => h.includes('cod') && (h.includes('periodo') || h.includes('período')));
+            const hasClientes = headers.some(h => h.includes('clientes') || h.includes('cliente'));
+            const isVentas = hasPeriodos && hasCodPeriodo && hasClientes;
+            
+            // -- LOGICA VENTAS --
+            if (isVentas || (!isSkus && !isTareas)) {
+              btnImportAuto.innerHTML = '⏳ Sincronizando SKUs y Tareas...';
+              
+              await syncSkus();
+              const cMonthActual = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
+              const okTareas = await syncTareas(cMonthActual);
+              if (!okTareas) {
+                const continuar = confirm('No se pudo cargar la Plana de Tareas.\nLa validación de CV puede salir en 0 para todos los promotores.\n\n¿Querés continuar igual con la importación de ventas?');
+                if (!continuar) {
+                  btnImportAuto.innerHTML = origText;
+                  btnImportAuto.disabled = false;
+                  return;
+                }
+              }
+              
+              btnImportAuto.innerHTML = '⏳ Procesando CSV de Ventas...';
+              setTimeout(() => {
+                try {
+                  parseCSVAndApply(evt.target.result);
+                } catch (error) {
+                  console.error("Error procesando Ventas CSV:", error);
+                  alert("Hubo un error procesando el archivo CSV de Ventas: " + error.message);
+                } finally {
+                  btnImportAuto.innerHTML = origText;
+                  btnImportAuto.disabled = false;
+                }
+              }, 50);
+              return;
+            }
+            
+            // -- LOGICA TAREAS --
+            if (isTareas) {
+              btnImportAuto.innerHTML = '⏳ Procesando Plana de Tareas...';
+              const tareasPorCliente = {};
+              for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const cols = line.split(separator);
+                if (cols.length <= Math.max(idxClienteTarea, idxTarea)) continue;
+                const clienteId = (cols[idxClienteTarea] || '').trim();
+                const tarea = (cols[idxTarea] || '').trim();
+                if (!clienteId || !tarea) continue;
+                if (!tareasPorCliente[clienteId]) tareasPorCliente[clienteId] = new Set();
+                tareasPorCliente[clienteId].add(tarea);
+              }
+              const clientesConTarea = Object.keys(tareasPorCliente);
+              if (clientesConTarea.length === 0) { 
+                alert('No se encontraron tareas asignadas en el CSV.'); 
+                btnImportAuto.innerHTML = origText;
+                btnImportAuto.disabled = false;
+                return; 
+              }
+              
+              const tareasPayload = {};
+              let totalTareas = 0;
+              clientesConTarea.forEach(cid => { 
+                const arr = Array.from(tareasPorCliente[cid]);
+                tareasPayload[cid] = arr;
+                totalTareas += arr.length;
+              });
+
+              const cMonth = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
+              try {
+                const response = await fetch(SCRIPT_URL, {
+                  method: 'POST',
+                  body: JSON.stringify({ req: 'upload_tareas', month: cMonth, tareas: tareasPayload })
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                  alert(`¡Plana de Tareas de ${cMonth} actualizada correctamente en la nube!\n(${totalTareas} tareas asignadas en ${clientesConTarea.length} clientes)`);
+                  await syncTareas(cMonth, true); 
+                } else {
+                  alert('Hubo un problema: ' + result.message);
+                }
+              } catch(err) {
+                console.error(err);
+                alert('Error de conexión al subir la Plana de Tareas: ' + err.message);
+              }
+              btnImportAuto.innerHTML = origText;
+              btnImportAuto.disabled = false;
+              return;
+            }
+            
+            // -- LOGICA SKUS --
+            if (isSkus) {
+              btnImportAuto.innerHTML = '⏳ Procesando SKUs...';
+              let idxS = idxShortSKU !== -1 ? idxShortSKU : idxFullSKU;
+              let idxF = idxFullSKU !== -1 ? idxFullSKU : idxShortSKU;
+              
+              const skus = [];
+              for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const cols = line.split(separator).map(s => s.trim());
+                if (cols.length > Math.max(idxIdSKU, idxS, idxF) && cols[idxIdSKU]) {
+                  skus.push({ id: cols[idxIdSKU], s: cols[idxS] || '', f: cols[idxF] || '' });
+                }
+              }
+              if (skus.length === 0) { 
+                alert('No se encontraron SKUs en el CSV.'); 
+                btnImportAuto.innerHTML = origText;
+                btnImportAuto.disabled = false;
+                return; 
+              }
+              
+              try {
+                const response = await fetch(SCRIPT_URL, {
+                  method: 'POST',
+                  body: JSON.stringify({ req: 'upload_skus', skus: skus })
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                  alert('¡Maestro de SKUs actualizado correctamente en la nube!\nTodos los usuarios verán los nuevos SKUs en su próxima sincronización.');
+                  await syncSkus(); 
+                  document.getElementById('btn-sync').click();
+                } else {
+                  alert('Hubo un problema: ' + result.message);
+                }
+              } catch(err) {
+                console.error(err);
+                alert('Error de conexión al subir SKUs: ' + err.message);
+              }
+              btnImportAuto.innerHTML = origText;
+              btnImportAuto.disabled = false;
+              return;
+            }
+          };
+          reader.readAsText(file);
+        }
+      });
+    }
+    
     document.getElementById('btn-clear').addEventListener('click', async () => {
       if (confirm('¿Seguro que deseas borrar TODA la planificación del día actual (sin afectar las ventas reales)?')) {
         const planFields = ['f1-p', 'f2-p', 'k1-met', 'k1-tar', 'k1-p', 'k2-met', 'k2-tar', 'k2-p', 'bol-p'];
@@ -407,179 +530,12 @@
           });
         }
         renderTables();
-        // Ejecutar guardado silencioso para asegurar que la nube quede limpia de planificación también
         await saveToServer(true);
       }
     });
-    // btn-save ha sido eliminado por redundante. El guardado se maneja mediante api.js saveToServer().
+
     document.getElementById('btn-sync').addEventListener('click', async (e) => {
       await performSync(false);
-    });
-    // Lógica para carga de archivo Excel de Objetivos
-    const btnImportObj = document.getElementById('btn-import-obj');
-    const objFileInput = document.getElementById('obj-file-input');
-    btnImportObj.addEventListener('click', () => {
-      objFileInput.click();
-    });
-    objFileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const origText = btnImportObj.innerHTML;
-      btnImportObj.innerHTML = '⏳ Procesando Excel...';
-      btnImportObj.disabled = true;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const data = new Uint8Array(evt.target.result);
-          const workbook = XLSX.read(data, {type: 'array'});
-          let promotoresFound = 0;
-          const allPromoters = [];
-          for (let spv in SPV_DATA) {
-            allPromoters.push(...SPV_DATA[spv]);
-          }
-          const resetProms = {};
-          workbook.SheetNames.forEach(sheetName => {
-            const worksheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
-            let currentCategory = '';
-            for (let i = 0; i < json.length; i++) {
-              const row = json[i];
-              if (!row || row.length === 0) continue;
-              const colA = String(row[0] || '').trim();
-              const colD = String(row[3] || '').trim();
-              const colG = parseFloat(row[6]) || 0; // Columna G es índice 6 (Objetivos)
-              
-              if (colA !== '') {
-                currentCategory = colA.toUpperCase();
-              }
-
-              // Normalización robusta para matching de promotores
-              const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
-              const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
-              
-              const colDUpper = colD.toUpperCase();
-              const colDFlat = normalizeFlat(colD);
-              const colDParts = normalizeParts(colD);
-
-              let matchedProm = null;
-              if (colDFlat.length > 2 && colDUpper !== 'TOTAL' && colDUpper !== 'FOCO') {
-                // Detectar si la fila contiene el nombre de algún promotor conocido en la Columna D
-                matchedProm = allPromoters.find(p => {
-                  const pFlat = normalizeFlat(p);
-                  const pParts = normalizeParts(p);
-                  const pInCol = pParts.every(part => colDParts.includes(part));
-                  const colInP = colDParts.every(part => pParts.includes(part));
-                  const isFlatMatch = colDFlat.includes(pFlat) || pFlat === colDFlat || (colDFlat.length > 5 && pFlat.includes(colDFlat));
-                  return pInCol || colInP || isFlatMatch;
-                });
-              }
-
-              if (matchedProm && !colDUpper.includes('TOTAL') && !colDUpper.includes('FOCO')) {
-                if (!volData[matchedProm]) volData[matchedProm] = {};
-                // Si es la primera vez que vemos este promotor en este parseo, inicializamos en 0
-                if (!resetProms[matchedProm]) {
-                  volData[matchedProm]['obj-f1'] = 0;
-                  volData[matchedProm]['obj-f2'] = 0;
-                  volData[matchedProm]['obj-cv'] = 0;
-                  volData[matchedProm]['obj-ac'] = 0;
-                  volData[matchedProm]['obj-bc'] = 0;
-                  volData[matchedProm]['obj-lt'] = 0;
-                  volData[matchedProm]['obj-ung'] = 0;
-                  volData[matchedProm]['obj-up'] = 0;
-                  volData[matchedProm]['obj-rb'] = 0;
-                  volData[matchedProm]['obj-ag'] = 0;
-                  volData[matchedProm]['has-total-f1'] = false;
-                  volData[matchedProm]['_seenCategories'] = new Set();
-                  resetProms[matchedProm] = true;
-                }
-                if (currentCategory.includes('TOTAL CERVEZAS') || currentCategory.includes('TOTAL CERVEZA')) {
-                  volData[matchedProm]['obj-f1'] = parseFloat(colG.toFixed(2));
-                  volData[matchedProm]['has-total-f1'] = true;
-                } else if (currentCategory.includes('CORE + VALUE') || currentCategory.includes('CORE+VALUE') || currentCategory.includes('CORE Y VALUE') || currentCategory.includes('1 – CZA CORE')) {
-                  if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
-                    volData[matchedProm]['_seenCategories'].add(currentCategory);
-                    volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
-                  }
-                  volData[matchedProm]['obj-cv'] = parseFloat(((volData[matchedProm]['obj-cv'] || 0) + colG).toFixed(2));
-                } else if (currentCategory.includes('ABOVE CORE') || currentCategory.includes('2 – CZA ABOVE CORE')) {
-                  if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
-                    volData[matchedProm]['_seenCategories'].add(currentCategory);
-                    volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
-                  }
-                  volData[matchedProm]['obj-ac'] = parseFloat(((volData[matchedProm]['obj-ac'] || 0) + colG).toFixed(2));
-                } else if (currentCategory.includes('CORE') || currentCategory.includes('VALUE')) {
-                  if (!volData[matchedProm]['has-total-f1'] && !volData[matchedProm]['_seenCategories'].has(currentCategory)) {
-                     const hasAgrupada = volData[matchedProm]['_seenCategories'].has('1A - CZA CORE + VALUE') || Array.from(volData[matchedProm]['_seenCategories']).some(c => c.includes('CORE + VALUE') || c.includes('CORE+VALUE'));
-                     if (!hasAgrupada) {
-                       volData[matchedProm]['_seenCategories'].add(currentCategory);
-                       volData[matchedProm]['obj-f1'] = parseFloat((volData[matchedProm]['obj-f1'] + colG).toFixed(2));
-                     }
-                  }
-                  volData[matchedProm]['obj-cv'] = parseFloat(((volData[matchedProm]['obj-cv'] || 0) + colG).toFixed(2));
-                } else if (currentCategory.includes('BALANCED')) {
-                  volData[matchedProm]['obj-bc'] = parseFloat(((volData[matchedProm]['obj-bc'] || 0) + colG).toFixed(2));
-                } else if (currentCategory.includes('LATONES')) {
-                  volData[matchedProm]['obj-lt'] = parseFloat(((volData[matchedProm]['obj-lt'] || 0) + colG).toFixed(2));
-                } else if (currentCategory.includes('TOTAL UNG 2026') || currentCategory.includes('TOTAL UNG') || currentCategory.includes('FOCO 3')) {
-                  volData[matchedProm]['obj-f2'] = parseFloat(colG.toFixed(2));
-                  volData[matchedProm]['obj-ung'] = parseFloat(colG.toFixed(2));
-                } else if (currentCategory.includes('4A - UNG TOP') || currentCategory.includes('UNG TOP') || currentCategory === 'UNG') {
-                  volData[matchedProm]['obj-up'] = parseFloat(((volData[matchedProm]['obj-up'] || 0) + colG).toFixed(2));
-                } else if (currentCategory.includes('4B - AGUAS') || currentCategory.includes('AGUAS')) {
-                  volData[matchedProm]['obj-ag'] = parseFloat(((volData[matchedProm]['obj-ag'] || 0) + colG).toFixed(2));
-                } else if (currentCategory.includes('RED BULL') || currentCategory.includes('REDBULL')) {
-                  volData[matchedProm]['obj-rb'] = parseFloat(((volData[matchedProm]['obj-rb'] || 0) + colG).toFixed(2));
-                }
-                promotoresFound++;
-              }
-            }
-          });
-          // Guardar globalmente los objetivos del mes en la nube (sin localStorage)
-          const monthStr = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
-          let monthObjs = {};
-          for (let p in volData) {
-            if (volData[p]['obj-f1'] !== undefined || volData[p]['obj-f2'] !== undefined) {
-              monthObjs[p] = {
-                'obj-f1': volData[p]['obj-f1'],
-                'obj-f2': volData[p]['obj-f2'],
-                'obj-cv': volData[p]['obj-cv'],
-                'obj-ac': volData[p]['obj-ac'],
-                'obj-bc': volData[p]['obj-bc'],
-                'obj-lt': volData[p]['obj-lt'],
-                'obj-ung': volData[p]['obj-ung'],
-                'obj-up': volData[p]['obj-up'],
-                'obj-rb': volData[p]['obj-rb'],
-                'obj-ag': volData[p]['obj-ag']
-              };
-            }
-          }
-          
-          // Render para reflejar cambios en memoria
-          renderTables(); 
-          
-          // Subir los objetivos a la nueva pestaña global
-          fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ req: 'upload_objectives', month: monthStr, objectives: monthObjs })
-          }).then(res => res.json()).then(res => {
-             if (res.status === 'success') {
-                alert(`✅ Excel de objetivos procesado. Se actualizaron ${promotoresFound} promotores y se guardaron los objetivos globales en la nube.`);
-             } else {
-                alert(`⚠️ Se cargaron los objetivos localmente, pero hubo un error subiendo a la nube: ` + res.message);
-             }
-          }).catch(e => {
-             alert(`⚠️ Se cargaron los objetivos localmente, pero hubo un error de conexión subiendo a la nube.`);
-          });
-        } catch (error) {
-          console.error(error);
-          alert('❌ Ocurrió un error al procesar el archivo Excel. Asegúrate de subir el archivo correcto de objetivos.');
-        } finally {
-          btnImportObj.innerHTML = origText;
-          btnImportObj.disabled = false;
-          objFileInput.value = '';
-        }
-      };
-      reader.readAsArrayBuffer(file);
     });
 
     // Flujo Inicial Nube-First
@@ -588,9 +544,23 @@
       plannerContainer.innerHTML = '<div style="text-align:center; padding:50px; font-size:1.2rem; color:#64748b;">⏳ Conectando con la nube...</div>';
     }
     
-    // AUTO-SINCRONIZACIÓN AL CARGAR LA PÁGINA
     setTimeout(async () => {
-      await fetchMesasFromServer();
+      let mesasOk = await fetchMesasFromServer();
+      if (!mesasOk || Object.keys(SPV_DATA).length === 0) {
+        // Reintentar una vez más tras 3 segundos
+        console.warn('Mesas no cargaron a la primera. Reintentando en 3s...');
+        await new Promise(r => setTimeout(r, 3000));
+        mesasOk = await fetchMesasFromServer();
+      }
+      if (!mesasOk || Object.keys(SPV_DATA).length === 0) {
+        const btn = document.getElementById('btn-sync');
+        if (btn) { btn.innerHTML = '❌ Error al cargar mesas'; btn.style.color = '#ef4444'; }
+        if (plannerContainer) {
+            plannerContainer.innerHTML = '<div style="text-align:center; padding:50px; font-size:1.2rem; color:#ef4444;">❌ No se pudieron cargar las mesas de promotores. Verificá tu conexión o recargá la página.</div>';
+        }
+        alert('No se pudieron cargar las mesas de promotores.\nVerificá tu conexión a internet e intentá recargar la página.');
+        return;
+      }
       applyRoleFilter(); 
       await performSync(true);
     }, 300);
