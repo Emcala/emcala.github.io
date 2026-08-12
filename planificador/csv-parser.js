@@ -144,14 +144,7 @@
             clientsBalanced: new Set(), clientsNabs: new Set(), clientsAll: new Set(),
             // Transacciones por segmento (TBD) - GENERALES (Set de 'clientId_skuCode')
             txTotalCerveza: new Set(), txCore: new Set(), txValue: new Set(), txAboveCore: new Set(), txLatones: new Set(), txBalanced: new Set(), txNabs: new Set(), txAll: new Set(),
-            // === VALIDADOS (solo SKUs del maestro) - Para Foco III y IV (KPIs) ===
-            // VOL validado
-            vCerveza: 0, vNabs: 0, vCore: 0, vValue: 0, vAboveCore: 0, vBalanced: 0, vLatones: 0, vUngTop: 0, vAguas: 0, vTotalUng: 0,
-            // CCC validado
-            vCccCerveza: new Set(), vCccCore: new Set(), vCccValue: new Set(), vCccAboveCore: new Set(), vCccLatones: new Set(),
-            vCccBalanced: new Set(), vCccNabs: new Set(),
-            // TBD validado (Set de 'clientId_skuCode')
-            vTxCerveza: new Set(), vTxCore: new Set(), vTxValue: new Set(), vTxAboveCore: new Set(), vTxLatones: new Set(), vTxBalanced: new Set(), vTxNabs: new Set(),
+
             // Clientes únicos con venta de SKU de validación de tarea (CV)
             cvClientsCerveza: new Set(), cvClientsCore: new Set(), cvClientsValue: new Set(), cvClientsAboveCore: new Set(), cvClientsLatones: new Set(),
             cvClientsBalanced: new Set(), cvClientsNabs: new Set(), cvClientsAguas: new Set(),
@@ -221,24 +214,7 @@
         } else if (category === 'AGUAS ECO' || category === 'AGUAS') {
           isAguas = true;
         }
-        // 2) SI ESTÁ EN EL MAESTRO (VALIDADO), ACUMULAR VOL/CCC/TBD VALIDADOS (solo SKU) para KPIs
-        if (skuData && csvSkuCode) {
-          const tbdKey = clientId + '_' + csvSkuCode;
-          if (isCerveza) {
-            pSales.vCerveza += volume;
-            if (clientId) pSales.vCccCerveza.add(clientId);
-            if (clientId && csvSkuCode) pSales.vTxCerveza.add(tbdKey);
-          }
-          if (isCore) { pSales.vCore += volume; if (clientId) pSales.vCccCore.add(clientId); if (clientId && csvSkuCode) pSales.vTxCore.add(tbdKey); }
-          if (isValue) { pSales.vValue += volume; if (clientId) pSales.vCccValue.add(clientId); if (clientId && csvSkuCode) pSales.vTxValue.add(tbdKey); }
-          if (isAboveCore) { pSales.vAboveCore += volume; if (clientId) pSales.vCccAboveCore.add(clientId); if (clientId && csvSkuCode) pSales.vTxAboveCore.add(tbdKey); }
-          if (isBalanced) { pSales.vBalanced += volume; if (clientId) pSales.vCccBalanced.add(clientId); if (clientId && csvSkuCode) pSales.vTxBalanced.add(tbdKey); }
-          if (isLatones) { pSales.vLatones += volume; if (clientId) pSales.vCccLatones.add(clientId); if (clientId && csvSkuCode) pSales.vTxLatones.add(tbdKey); }
-          if (isNabs) { pSales.vNabs += volume; if (clientId) pSales.vCccNabs.add(clientId); if (clientId && csvSkuCode) pSales.vTxNabs.add(tbdKey); }
-          if (isUngTop) pSales.vUngTop += volume;
-          if (isAguas) pSales.vAguas += volume;
-          if (isGaseosa) pSales.vTotalUng += volume;
-        }
+
         // 3) VALIDACIÓN CV (Creación de Valor a nivel de segmento)
         // El cliente cumple el CV de un segmento si compró un SKU de ese segmento 
         // Y tenía asignada al menos una tarea correspondiente a ese mismo segmento.

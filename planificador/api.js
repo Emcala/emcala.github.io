@@ -101,43 +101,71 @@
         });
       }
       if (payload.length === 0) return false;
-      try {
-        let retries = 0;
-        let success = false;
-        let result = null;
-        
-        while (retries < 3 && !success) {
+      const MAX_RETRIES = 3;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
           const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
           });
-          result = await response.json();
+          
+          // Si el servidor devolvió un HTTP error (404, 500, etc.), reintentar
+          if (!response.ok) {
+            console.warn(`saveToServer: HTTP ${response.status}. Intento ${attempt + 1}/${MAX_RETRIES}`);
+            if (attempt < MAX_RETRIES - 1) {
+              await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
+              continue;
+            }
+            if (!silent) console.error('saveToServer: servidor respondió con HTTP', response.status);
+            return false;
+          }
+          
+          let result;
+          try {
+            result = await response.json();
+          } catch (parseErr) {
+            // Respuesta no-JSON (HTML de error de Google, etc.) — reintentar
+            console.warn(`saveToServer: respuesta no-JSON. Intento ${attempt + 1}/${MAX_RETRIES}`);
+            if (attempt < MAX_RETRIES - 1) {
+              await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
+              continue;
+            }
+            if (!silent) console.error('saveToServer: respuesta no-JSON tras agotar reintentos');
+            return false;
+          }
           
           if (result.status === 'error' && result.retryable) {
-            retries++;
-            if (!silent) console.log(`Servidor ocupado. Reintento ${retries}/3 en breve...`);
-            await new Promise(r => setTimeout(r, 1500 * retries + Math.random() * 1000));
-          } else {
-            success = true;
+            if (!silent) console.log(`Servidor ocupado. Reintento ${attempt + 1}/${MAX_RETRIES} en breve...`);
+            if (attempt < MAX_RETRIES - 1) {
+              await new Promise(r => setTimeout(r, 1500 * (attempt + 1) + Math.random() * 1000));
+              continue;
+            }
+            return false;
           }
+          
+          if (result.status === 'success') {
+            window.currentCloudState = JSON.stringify(volData);
+            return true;
+          }
+          
+          if (!silent && result.message) {
+            console.error('Error del servidor:', result.message);
+          }
+          return false;
+          
+        } catch (e) {
+          // Error de red (offline, DNS, timeout, etc.) — reintentar
+          console.warn(`saveToServer: error de red. Intento ${attempt + 1}/${MAX_RETRIES}`, e.message);
+          if (attempt < MAX_RETRIES - 1) {
+            await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
+            continue;
+          }
+          if (!silent) console.error('saveToServer: sin conexión tras agotar reintentos');
+          return false;
         }
-
-        if (result && result.status === 'success') {
-          // Actualizar la base de comparación para que el próximo guardado
-          // solo mande lo que cambie a partir de ahora.
-          window.currentCloudState = JSON.stringify(volData);
-          return true;
-        }
-        
-        if (!silent && result && result.message) {
-          console.error('Error del servidor:', result.message);
-        }
-        return false;
-      } catch (e) {
-        if (!silent) console.error('Error guardando al servidor:', e);
-        return false;
       }
+      return false;
     }
 
     async function performSync(isAutoSync = false) {
@@ -164,24 +192,57 @@
         const cMonth = window.getCommercialMonthAndStart(date).month;
         const fetchUrl = `${SCRIPT_URL}?req=init_bundle&date=${date}&cMonth=${cMonth}&spv=ALL&_t=${Date.now()}`;
         
-        btn.innerHTML = '⏳ Descargando datos...';
-        const response = await fetch(fetchUrl);
-        const result = await response.json();
-        
-        if (result.status !== 'success') {
-          // Auto-retry para errores de lock (servidor ocupado)
-          if (result.retryable) {
-            btn.innerHTML = '⏳ Servidor ocupado, reintentando...';
-            await new Promise(r => setTimeout(r, 2000 + Math.random() * 1000));
-            const retryResp = await fetch(fetchUrl);
-            const retryResult = await retryResp.json();
-            if (retryResult.status !== 'success') {
-              throw new Error(retryResult.message || 'Error al sincronizar tras reintento');
+        const SYNC_MAX_RETRIES = 3;
+        let result = null;
+        for (let attempt = 0; attempt < SYNC_MAX_RETRIES; attempt++) {
+          try {
+            btn.innerHTML = attempt === 0 ? '⏳ Descargando datos...' : `⏳ Reintentando (${attempt + 1}/${SYNC_MAX_RETRIES})...`;
+            const response = await fetch(fetchUrl);
+            
+            if (!response.ok) {
+              console.warn(`performSync: HTTP ${response.status}. Intento ${attempt + 1}/${SYNC_MAX_RETRIES}`);
+              if (attempt < SYNC_MAX_RETRIES - 1) {
+                await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
+                continue;
+              }
+              throw new Error(`Servidor respondió con HTTP ${response.status}`);
             }
-            Object.assign(result, retryResult);
-          } else {
+            
+            try {
+              result = await response.json();
+            } catch (parseErr) {
+              console.warn(`performSync: respuesta no-JSON. Intento ${attempt + 1}/${SYNC_MAX_RETRIES}`);
+              if (attempt < SYNC_MAX_RETRIES - 1) {
+                await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
+                continue;
+              }
+              throw new Error('El servidor devolvió una respuesta inválida (no-JSON)');
+            }
+            
+            if (result.status === 'success') break; // Éxito, salir del loop
+            
+            if (result.retryable) {
+              btn.innerHTML = '⏳ Servidor ocupado, reintentando...';
+              if (attempt < SYNC_MAX_RETRIES - 1) {
+                await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
+                continue;
+              }
+              throw new Error(result.message || 'Servidor ocupado tras agotar reintentos');
+            }
+            
             throw new Error(result.message || 'Error al sincronizar');
+            
+          } catch (fetchErr) {
+            if (attempt < SYNC_MAX_RETRIES - 1 && !fetchErr.message.includes('Error al sincronizar')) {
+              console.warn(`performSync: error de red. Intento ${attempt + 1}/${SYNC_MAX_RETRIES}`, fetchErr.message);
+              await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
+              continue;
+            }
+            throw fetchErr; // Último intento o error no-retriable, dejar que el catch exterior lo maneje
           }
+        }
+        if (!result || result.status !== 'success') {
+          throw new Error('No se pudo sincronizar tras múltiples intentos');
         }
         
         // Procesar SKUs del bundle
