@@ -545,15 +545,22 @@
     }
     
     setTimeout(async () => {
+      // 1. Feedback visual INMEDIATO para evitar la "grilla estática"
+      const btn = document.getElementById('btn-sync');
+      const dateEl = document.getElementById('date-input');
+      const origBtnText = btn ? btn.innerHTML : '';
+      if (btn) { btn.innerHTML = '⏳ Conectando...'; btn.disabled = true; }
+      if (dateEl) dateEl.disabled = true;
+
       let mesasOk = await fetchMesasFromServer();
       if (!mesasOk || Object.keys(SPV_DATA).length === 0) {
         // Reintentar una vez más tras 3 segundos
         console.warn('Mesas no cargaron a la primera. Reintentando en 3s...');
+        if (btn) btn.innerHTML = '⏳ Reintentando...';
         await new Promise(r => setTimeout(r, 3000));
         mesasOk = await fetchMesasFromServer();
       }
       if (!mesasOk || Object.keys(SPV_DATA).length === 0) {
-        const btn = document.getElementById('btn-sync');
         if (btn) { btn.innerHTML = '❌ Error al cargar mesas'; btn.style.color = '#ef4444'; }
         if (plannerContainer) {
             plannerContainer.innerHTML = '<div style="text-align:center; padding:50px; font-size:1.2rem; color:#ef4444;">❌ No se pudieron cargar las mesas de promotores. Verificá tu conexión o recargá la página.</div>';
@@ -561,6 +568,10 @@
         alert('No se pudieron cargar las mesas de promotores.\nVerificá tu conexión a internet e intentá recargar la página.');
         return;
       }
+      
+      // 2. Restaurar botón temporalmente antes de pasárselo a performSync
+      if (btn) btn.innerHTML = origBtnText;
+      
       applyRoleFilter(); 
       await performSync(true);
     }, 300);
