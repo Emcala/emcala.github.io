@@ -188,9 +188,17 @@
           await saveToServer(true);
         }
 
-        // UN SOLO FETCH: init_bundle trae SKUs + Tareas + Datos del día en 1 sola respuesta
+        // UN SOLO FETCH: init_bundle trae SKUs + Tareas + Datos del día en 1 sola respuesta.
+        // Se chequea en memoria (no localStorage — este sistema es cloud-first a propósito,
+        // ver comentario al inicio del archivo) si ya tenemos SKUs cargados y Tareas del
+        // mismo mes comercial, para no repedirlos en cada cambio de fecha.
         const cMonth = window.getCommercialMonthAndStart(date).month;
-        const fetchUrl = `${SCRIPT_URL}?req=init_bundle&date=${date}&cMonth=${cMonth}&spv=ALL&_t=${Date.now()}`;
+        const hasSkus = Array.isArray(skuMaster) && skuMaster.length > 0;
+        const hasTareas = tareasSyncedMonth === cMonth && !!tareasMaster;
+        const fetchUrl = `${SCRIPT_URL}?req=init_bundle&date=${date}&cMonth=${cMonth}&spv=ALL`
+          + (hasSkus ? '&skipSkus=1' : '')
+          + (hasTareas ? '&skipTareas=1' : '')
+          + `&_t=${Date.now()}`;
         
         const SYNC_MAX_RETRIES = 3;
         let result = null;
