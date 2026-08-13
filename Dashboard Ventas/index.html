@@ -300,10 +300,39 @@ async function cargarDashboard() {
 
   try {
     const url = `${SCRIPT_URL}?req=dashboard&cMonth=${cMonth}&spv=${encodeURIComponent(spv)}`;
-    const res = await fetch(url);
-    dashData = await res.json();
-    if (dashData.status !== 'success') {
-      document.getElementById('dash-tbody').innerHTML = `<tr><td colspan="19" class="loading">Error: ${dashData.message}</td></tr>`;
+    
+    const MAX_RETRIES = 3;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          document.getElementById('dash-tbody').innerHTML = `<tr><td colspan="31" class="loading">⏳ Reintentando conexión (${attempt + 1}/${MAX_RETRIES})...</td></tr>`;
+        }
+        const res = await fetch(url);
+        if (!res.ok) {
+          if (attempt < MAX_RETRIES - 1) {
+            await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
+            continue;
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
+        try {
+          dashData = await res.json();
+        } catch (parseErr) {
+          if (attempt < MAX_RETRIES - 1) {
+            await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
+            continue;
+          }
+          throw new Error('Respuesta inválida del servidor (HTML en lugar de JSON)');
+        }
+        break; // Éxito
+      } catch (e) {
+        if (attempt === MAX_RETRIES - 1) throw e;
+        await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
+      }
+    }
+
+    if (!dashData || dashData.status !== 'success') {
+      document.getElementById('dash-tbody').innerHTML = `<tr><td colspan="31" class="loading">Error: ${dashData ? dashData.message : 'No se pudo conectar'}</td></tr>`;
       return;
     }
     
@@ -416,7 +445,7 @@ function renderKpis() {
 function kpiCard(label, real, plan, pEfectividad) {
   const pAbsoluto = plan > 0 ? Math.round((real / plan) * 100) : 0;
   const barCol = plan > 0 ? colorFor(pEfectividad) : '#94a3b8';
-  const pTxt = plan > 0 ? `<b style="color:${barCol}">${pAbsoluto}% de avance</b> <span style="opacity:0.8; margin-left:6px;">(Efectividad: ${pEfectividad}%)</span>` : 'Sin objetivo definido';
+  const pTxt = plan > 0 ? `<b style="color:${barCol}">${pAbsoluto}% de avance REAL</b> <span style="opacity:0.8; margin-left:6px;">(Efectivo: ${pEfectividad}%)</span>` : 'Sin objetivo definido';
   return `
     <div class="kpi-card">
       <div class="label">${label}</div>
