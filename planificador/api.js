@@ -101,7 +101,7 @@
         });
       }
       if (payload.length === 0) return false;
-      const MAX_RETRIES = 3;
+      const MAX_RETRIES = 5;
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
           const response = await fetch(SCRIPT_URL, {
@@ -200,7 +200,7 @@
           + (hasTareas ? '&skipTareas=1' : '')
           + `&_t=${Date.now()}`;
         
-        const SYNC_MAX_RETRIES = 3;
+        const SYNC_MAX_RETRIES = 6;
         let result = null;
         for (let attempt = 0; attempt < SYNC_MAX_RETRIES; attempt++) {
           try {
