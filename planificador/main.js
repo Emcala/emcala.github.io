@@ -543,7 +543,17 @@
     if (plannerContainer) {
       plannerContainer.innerHTML = '<div style="text-align:center; padding:50px; font-size:1.2rem; color:#64748b;">⏳ Conectando con la nube...</div>';
     }
-    
+
+    // Deshabilitar el botón YA (no recién dentro del setTimeout de abajo) para que un
+    // clic manual justo al cargar la página no dispare un segundo performSync en paralelo
+    // al auto-sync inicial — eso es lo que generaba el 404 intermitente contra Apps Script.
+    (function lockSyncButtonUntilInitialSync() {
+      const btn = document.getElementById('btn-sync');
+      const dateEl = document.getElementById('date-input');
+      if (btn) btn.disabled = true;
+      if (dateEl) dateEl.disabled = true;
+    })();
+
     setTimeout(async () => {
       // 1. Feedback visual INMEDIATO para evitar la "grilla estática"
       const btn = document.getElementById('btn-sync');
