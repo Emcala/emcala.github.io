@@ -25,6 +25,25 @@ const MONTH_NAMES = [
 ];
 
 // ==========================================
+// FETCH CON REINTENTOS
+// Apps Script a veces devuelve 404/HTML en vez del JSON esperado bajo
+// carga (mismo fenómeno ya visto en el planificador) — reintenta antes
+// de darse por vencido, en vez de fallar al primer intento.
+// ==========================================
+async function fetchJsonRetry(url, options, maxRetries = 4) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const r = await fetch(url, options);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.json();
+    } catch (e) {
+      if (attempt === maxRetries - 1) throw e;
+      await new Promise(res => setTimeout(res, 1500 * (attempt + 1) + Math.random() * 1000));
+    }
+  }
+}
+
+// ==========================================
 // MONTH SELECTOR
 // ==========================================
 const monthSelect = document.getElementById('monthSelect');
@@ -123,13 +142,11 @@ function findMatch(target, keySet) {
 async function loadMesas() {
   updateStatus('mesas', 'loading');
   try {
-    const r = await fetch(MESAS_AUTH_URL, {
+    const data = await fetchJsonRetry(MESAS_AUTH_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'getMesas' })
     });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
     if (!data.ok || !data.mesas) throw new Error('Formato inválido');
     
     mesasData = [];
@@ -160,15 +177,12 @@ async function loadMaestro(forceRefresh) {
       return;
     }
 
-    const r = await fetch(MAESTRO_SCRIPT_URL, {
+    const data = await fetchJsonRetry(MAESTRO_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'getCartera', forceRefresh: !!forceRefresh }),
       // text/plain avoids CORS preflight issues with GAS
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
-    
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
     
     if (!data.ok) throw new Error(data.error || 'Error desconocido');
 
@@ -234,12 +248,16 @@ async function loadAvance(selectedMonth) {
     ventasData = {};
     let totalCcc = 0;
     
-    // Consultar el endpoint del planificador en paralelo para cada SPV
-    const promises = spvs.map(async (spv) => {
+    // Consultar el endpoint del planificador para cada SPV, con un pequeño
+    // escalonamiento entre pedidos (en vez de dispararlos todos en el mismo
+    // instante) para no generar una ráfaga de N pedidos simultáneos contra
+    // el mismo Apps Script que usa el planificador matinal.
+    const promises = spvs.map(async (spv, idx) => {
+      await new Promise(res => setTimeout(res, idx * 200 + Math.random() * 150));
       try {
-        const response = await fetch(`${PLANIFICADOR_URL}?date=${dateStr}&cMonth=${cMonth}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`);
-        const result = await response.json();
-        
+        const result = await fetchJsonRetry(
+          `${PLANIFICADOR_URL}?date=${dateStr}&cMonth=${cMonth}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`
+        );
         if (result.status === 'success' && result.data) {
           // El planificador devuelve los datos acumulados bajo result.data[promotor]
           for (const prom in result.data) {
