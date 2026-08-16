@@ -231,8 +231,12 @@ async function loadAvance(selectedMonth) {
     // If it's the current month, use today's date
     let dateStr;
     if (isCurrentMonth(cMonth)) {
-      const now = new Date();
-      dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+      let date = new Date();
+      const formatD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      do {
+        date.setDate(date.getDate() + 1);
+      } while (date.getDay() === 0 || FERIADOS.includes(formatD(date)));
+      dateStr = formatD(date);
     } else {
       // Last day of the selected month
       const parts = cMonth.split('-');
@@ -483,8 +487,8 @@ function tryRender() {
       const classMA = (p.cccMA > 0 && p.ccc >= p.cccMA) ? ' class="achieved"' : '';
       const classAA = (p.cccMMAA > 0 && p.ccc >= p.cccMMAA) ? ' class="achieved"' : '';
 
-      // Format: [2015] MELA GONZALO
-      const displayName = p.codigo ? `[${p.codigo}] ${p.promotor}` : p.promotor;
+      // Format: MELA GONZALO
+      const displayName = p.promotor;
 
       pRow.innerHTML =
         `<td class="name-col">${displayName}</td>` +
@@ -624,18 +628,5 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('btnRefresh');
   if (btn) btn.addEventListener('click', refreshAll);
 
-  const btnToggle = document.getElementById('btnToggleNuevos');
-  if (btnToggle) {
-    btnToggle.addEventListener('click', () => {
-      document.body.classList.toggle('hide-nuevos');
-      const icon = btnToggle.querySelector('i');
-      if (document.body.classList.contains('hide-nuevos')) {
-        icon.className = 'fa-solid fa-eye';
-        btnToggle.title = "Mostrar Clientes Nuevos";
-      } else {
-        icon.className = 'fa-solid fa-eye-slash';
-        btnToggle.title = "Ocultar Clientes Nuevos";
-      }
-    });
-  }
+
 });
