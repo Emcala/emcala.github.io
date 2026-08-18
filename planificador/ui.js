@@ -30,18 +30,7 @@
       const r = parseFloat(rVal || 0);
       let pct = 0;
       if (p > 0) {
-        let timeRatio = 1;
-        const isVolume = id.includes('-f1') || id.includes('-f2') || id.includes('-bol');
-        const dateInput = document.getElementById('date-input');
-        
-        if (isVolume && dateInput && dateInput.value && window.getDiasHabilesTotales && window.getDiasHabilesTranscurridos) {
-          const totales = window.getDiasHabilesTotales(dateInput.value);
-          const transcurridos = window.getDiasHabilesTranscurridos(dateInput.value);
-          timeRatio = transcurridos / totales;
-          if (timeRatio <= 0) timeRatio = 1; // Fallback por seguridad
-        }
-        
-        pct = Math.round(((r / p) / timeRatio) * 100);
+        pct = Math.round((r / p) * 100);
       }
       
       const textEl = document.getElementById(`prog-${id}`);
