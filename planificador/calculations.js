@@ -117,17 +117,22 @@
             let tar = String(d[kf.tarField] || '').toUpperCase();
             
             if (!met || !tar) {
-              if (kf.valField === 'k1-v') {
-                const elMet = document.getElementById('spv-kpi1-met');
-                const elTar = document.getElementById('spv-kpi1-tar');
-                met = (elMet && elMet.value) ? elMet.value.toUpperCase() : 'CV';
-                tar = (elTar && elTar.value) ? elTar.value.toUpperCase() : 'ABOVE CORE';
-              } else if (kf.valField === 'k2-v') {
-                const elMet = document.getElementById('spv-kpi2-met');
-                const elTar = document.getElementById('spv-kpi2-tar');
-                met = (elMet && elMet.value) ? elMet.value.toUpperCase() : 'CV';
-                tar = (elTar && elTar.value) ? elTar.value.toUpperCase() : 'NABS';
-              }
+              // Sin métrica/tarea en la fila del promotor: se usa la del
+              // dropdown "Métricas y Focos" del SPV si tiene algo cargado.
+              const elMet = document.getElementById(kf.valField === 'k1-v' ? 'spv-kpi1-met' : 'spv-kpi2-met');
+              const elTar = document.getElementById(kf.valField === 'k1-v' ? 'spv-kpi1-tar' : 'spv-kpi2-tar');
+              met = (elMet && elMet.value) ? elMet.value.toUpperCase() : '';
+              tar = (elTar && elTar.value) ? elTar.value.toUpperCase() : '';
+            }
+            
+            // Sin nada elegido en ningún lado (ni fila ni dropdown): 0 real,
+            // sin caer en un default oculto (antes usaba CV/ABOVE CORE y
+            // CV/NABS por las dudas, sin avisar).
+            if (!met || !tar) {
+              d[kf.valField] = 0;
+              const input = document.querySelector(`input[data-prom="${prom}"][data-field="${kf.valField}"]`);
+              if (input) input.value = 0;
+              continue;
             }
             
             let kpiVal = null;
@@ -182,6 +187,13 @@
               // Actualizar el input en el DOM si existe
               const input = document.querySelector(`input[data-prom="${prom}"][data-field="${kf.valField}"]`);
               if (input) input.value = computed;
+            } else {
+              // met/tar estaban seteados pero no matchean ninguna combinación
+              // conocida, o el campo de datos correspondiente está vacío: 0,
+              // no dejar colgado un valor de un cálculo anterior.
+              d[kf.valField] = 0;
+              const input = document.querySelector(`input[data-prom="${prom}"][data-field="${kf.valField}"]`);
+              if (input) input.value = 0;
             }
           }
         });
@@ -230,7 +242,7 @@
             const k1P = parseFloat(volData[p]['k1-p'] || 0);
             const k1V = parseFloat(volData[p]['k1-v'] || 0);
             if (k1P > 0) {
-              const pct = Math.min(100, Math.round((k1V / k1P) * 100));
+              const pct = Math.round((k1V / k1P) * 100);
               k1Pcts.push(pct);
               grandK1Pcts.push(pct);
             }
@@ -238,7 +250,7 @@
             const k2P = parseFloat(volData[p]['k2-p'] || 0);
             const k2V = parseFloat(volData[p]['k2-v'] || 0);
             if (k2P > 0) {
-              const pct = Math.min(100, Math.round((k2V / k2P) * 100));
+              const pct = Math.round((k2V / k2P) * 100);
               k2Pcts.push(pct);
               grandK2Pcts.push(pct);
             }
@@ -349,3 +361,45 @@
       }
       return diasRestantes > 0 ? diasRestantes : 1;
     }
+
+    window.getDiasHabilesTotales = function(dateStr) {
+      if (!dateStr) return 1;
+      const commInfo = window.getCommercialMonthAndStart(dateStr);
+      const startD = new Date(commInfo.start + 'T00:00:00');
+      const endD = new Date(commInfo.last + 'T00:00:00');
+      
+      let dias = 0;
+      let d = new Date(startD);
+      const formatD = (dt) => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+      
+      while (d <= endD) {
+        const dateFmt = formatD(d);
+        if (d.getDay() !== 0 && !feriados.includes(dateFmt)) {
+          if (d.getDay() === 6) dias += 0.5;
+          else dias += 1;
+        }
+        d.setDate(d.getDate() + 1);
+      }
+      return dias > 0 ? dias : 1;
+    };
+
+    window.getDiasHabilesTranscurridos = function(dateStr) {
+      if (!dateStr) return 1;
+      const commInfo = window.getCommercialMonthAndStart(dateStr);
+      const startD = new Date(commInfo.start + 'T00:00:00');
+      const today = new Date(dateStr + 'T00:00:00');
+      
+      let dias = 0;
+      let d = new Date(startD);
+      const formatD = (dt) => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+      
+      while (d < today) {
+        const dateFmt = formatD(d);
+        if (d.getDay() !== 0 && !feriados.includes(dateFmt)) {
+          if (d.getDay() === 6) dias += 0.5;
+          else dias += 1;
+        }
+        d.setDate(d.getDate() + 1);
+      }
+      return dias > 0 ? dias : 1;
+    };
