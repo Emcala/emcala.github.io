@@ -353,16 +353,12 @@ function calcDiasRestantes() {
 }
 
 // ==========================================
-// AVANCE COLOR  (HSL gradient red→green)
+// AVANCE COLOR  (Igual que Efectividad)
 // ==========================================
 function avanceStyle(pct) {
-  // Clamp 0-100
-  const p = Math.max(0, Math.min(pct, 100));
-  // Map to hue: 0% → 0° (red), 50% → 45° (orange/yellow), 100% → 130° (green)
-  const hue = p < 50 ? p * 0.9 : 45 + (p - 50) * 1.7;
-  const sat = p > 85 ? 55 : 65;
-  const lgt = p > 85 ? 38 : (p < 40 ? 42 : 40);
-  return `hsl(${hue},${sat}%,${lgt}%)`;
+  if (pct < 50) return '#ef4444'; // Rojo
+  if (pct < 90) return '#f59e0b'; // Naranja/Ambar
+  return '#107c41'; // Verde Excel
 }
 
 // ==========================================
@@ -628,5 +624,76 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('btnRefresh');
   if (btn) btn.addEventListener('click', refreshAll);
 
+  const btnCopy = document.getElementById('btn-copy-img');
+  if (btnCopy) {
+    btnCopy.addEventListener('click', async () => {
+      const orig = btnCopy.innerHTML;
+      btnCopy.innerHTML = '⏳ Capturando...';
+      btnCopy.disabled = true;
+      try {
+        const toolbar = document.querySelector('.hdr');
+        let toolbarWasVisible = false;
+        if (toolbar) {
+          toolbarWasVisible = toolbar.style.display !== 'none';
+          toolbar.style.display = 'none';
+        }
+        await new Promise(r => setTimeout(r, 80));
 
+        const captureEl = document.querySelector('.table-wrap');
+        const origOverflow = captureEl.style.overflow;
+        const origMaxHeight = captureEl.style.maxHeight;
+        captureEl.style.overflow = 'visible';
+        captureEl.style.maxHeight = 'none';
+
+        const canvas = await html2canvas(captureEl, {
+          backgroundColor: null,
+          scale: 2,
+          logging: false,
+          useCORS: true
+        });
+
+        captureEl.style.overflow = origOverflow;
+        captureEl.style.maxHeight = origMaxHeight;
+
+        if (toolbar && toolbarWasVisible) {
+          toolbar.style.display = '';
+        }
+
+        canvas.toBlob(async (blob) => {
+          try {
+            const dateStr = new Date().toLocaleDateString('es-AR');
+            const timeStr = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+            const titleText = `COBERTURA CVZA · ${dateStr} · ${timeStr}`;
+            const textBlob = new Blob([titleText], { type: 'text/plain' });
+            
+            await navigator.clipboard.write([
+              new ClipboardItem({
+                [blob.type]: blob,
+                'text/plain': textBlob
+              })
+            ]);
+            btnCopy.innerHTML = '<i class="fa-solid fa-check"></i> ¡Copiado!';
+          } catch (err) {
+            const link = document.createElement('a');
+            link.download = `Cobertura_CVZA.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            btnCopy.innerHTML = '<i class="fa-solid fa-download"></i> ¡Descargado!';
+          }
+          
+          setTimeout(() => {
+            btnCopy.innerHTML = orig;
+            btnCopy.disabled = false;
+          }, 2000);
+        }, "image/png");
+      } catch (e) {
+        console.error(e);
+        btnCopy.innerHTML = '<i class="fa-solid fa-xmark"></i> Error';
+        setTimeout(() => {
+          btnCopy.innerHTML = orig;
+          btnCopy.disabled = false;
+        }, 2000);
+      }
+    });
+  }
 });

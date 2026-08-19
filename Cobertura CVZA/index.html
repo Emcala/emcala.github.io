@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="../emcala-auth.js"></script>
 </head>
 <body>
 
@@ -43,9 +45,9 @@
 
   <div class="hdr-left">
     <button class="btn btn-green" id="btnRefresh"><i class="fa-solid fa-rotate"></i> Actualizar Datos</button>
+    <button class="btn btn-outline" id="btn-copy-img" style="margin-left: 8px;"><i class="fa-solid fa-camera"></i> Copiar Foto</button>
 
-
-    <!-- User Badge -->
+    <!-- Navegación -->
     <div id="userBadgeContainer"></div>
   </div>
 </div>
@@ -90,7 +92,7 @@
 <script src="../emcala-auth.js"></script>
 <script src="app.js"></script>
 <script>
-  if (typeof EmcalaAuth !== 'undefined' && EmcalaAuth.renderUserBadge) {
+  if (typeof EmcalaAuth !== 'undefined') {
     EmcalaAuth.renderUserBadge('userBadgeContainer');
   }
 </script>
