@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal EMCALA · Dashboard de Ventas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="../emcala-auth.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&display=swap');
   :root {
@@ -69,8 +72,13 @@
     font-size: .85rem;
     font-weight: 600;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
   .controls button:hover { background: #2563eb; }
+  .btn-outline { background: rgba(255,255,255,0.06) !important; border: 1px solid rgba(255,255,255,0.25) !important; }
+  .btn-outline:hover { background: rgba(255,255,255,0.16) !important; }
 
   main { padding: 12px 20px 20px; max-width: 1400px; margin: 0 auto; }
 
@@ -177,14 +185,21 @@
 <body>
 
 <header>
-  <div>
-    <h1>📊 Dashboard de Ventas · Portal EMCALA</h1>
-    <div class="sub">Objetivo vs Acumulado del Mes — Vista Consolidada</div>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <img src="../logo.png" alt="EMCALA" style="height:44px; mix-blend-mode: screen; opacity: 0.95;">
+    <div style="width:1.5px; height:38px; background:rgba(255,255,255,0.25);"></div>
+    <div style="display:flex; flex-direction:column; justify-content:center; gap:4px;">
+      <h1 style="font-size:1.15rem; font-weight:700; color:white; margin:0; line-height:1;">Dashboard de Ventas</h1>
+      <div class="sub" style="margin:0; line-height:1;">Objetivo vs Acumulado del Mes — Vista Consolidada</div>
+    </div>
   </div>
-  <div class="controls">
+  <div class="controls" style="display:flex; align-items:center; gap:8px;">
     <input type="month" id="month-input">
     <select id="spv-select"><option value="ALL">Todos los SPV</option></select>
-    <button id="btn-refresh">Actualizar</button>
+    <button id="btn-refresh"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+    <button id="btn-copy-img" class="btn-outline"><i class="fa-solid fa-camera"></i> Copiar Foto</button>
+    
+    <div id="userBadgeContainer"></div>
   </div>
 </header>
 
@@ -783,6 +798,103 @@ document.getElementById('spv-select').addEventListener('change', cargarDashboard
 
 document.getElementById('month-input').value = getCurrentMonth();
 cargarDashboard();
+
+// ==============================
+// COPIAR FOTO
+// ==============================
+document.getElementById('btn-copy-img').addEventListener('click', async () => {
+  const btnCopy = document.getElementById('btn-copy-img');
+  const orig = btnCopy.innerHTML;
+  btnCopy.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Capturando...';
+  btnCopy.disabled = true;
+  try {
+    const toolbar = document.querySelector('header');
+    let toolbarWasVisible = false;
+    if (toolbar) {
+      toolbarWasVisible = toolbar.style.display !== 'none';
+      toolbar.style.display = 'none';
+    }
+    await new Promise(r => setTimeout(r, 80));
+
+    const captureEl = document.querySelector('main') || document.body;
+    
+    // Quitar padding temporalmente para evitar bordes azules sobrantes
+    const origPadding = captureEl.style.padding;
+    captureEl.style.padding = '0';
+
+    // Asegurar que la tabla entera se capture si tiene scroll
+    const tableContainer = document.querySelector('.table-container');
+    let origTableMaxHeight = '';
+    let origTableOverflow = '';
+    if (tableContainer) {
+      origTableMaxHeight = tableContainer.style.maxHeight;
+      origTableOverflow = tableContainer.style.overflow;
+      tableContainer.style.maxHeight = 'none';
+      tableContainer.style.overflow = 'visible';
+    }
+    
+    // Configurar color de fondo transparente
+    const canvas = await html2canvas(captureEl, {
+      backgroundColor: null,
+      scale: 2,
+      logging: false,
+      useCORS: true
+    });
+
+    // Restaurar estilos
+    captureEl.style.padding = origPadding;
+    if (tableContainer) {
+      tableContainer.style.maxHeight = origTableMaxHeight;
+      tableContainer.style.overflow = origTableOverflow;
+    }
+
+    if (toolbar && toolbarWasVisible) {
+      toolbar.style.display = '';
+    }
+
+    canvas.toBlob(async (blob) => {
+      try {
+        const monthVal = document.getElementById('month-input').value;
+        const spvVal = document.getElementById('spv-select').options[document.getElementById('spv-select').selectedIndex].text;
+        const dateStr = monthVal ? monthVal.split('-').reverse().join('/') : new Date().toLocaleDateString('es-AR');
+        const timeStr = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        const titleText = `DASHBOARD VENTAS · ${spvVal} · ${dateStr} · ${timeStr}`;
+        const textBlob = new Blob([titleText], { type: 'text/plain' });
+        
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            [blob.type]: blob,
+            'text/plain': textBlob
+          })
+        ]);
+        btnCopy.innerHTML = '<i class="fa-solid fa-check"></i> ¡Copiado!';
+      } catch (err) {
+        const link = document.createElement('a');
+        link.download = `Dashboard_Ventas.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+        btnCopy.innerHTML = '<i class="fa-solid fa-download"></i> ¡Descargado!';
+      }
+      
+      setTimeout(() => {
+        btnCopy.innerHTML = orig;
+        btnCopy.disabled = false;
+      }, 2000);
+    }, "image/png");
+  } catch (e) {
+    console.error(e);
+    btnCopy.innerHTML = '<i class="fa-solid fa-xmark"></i> Error';
+    setTimeout(() => {
+      btnCopy.innerHTML = orig;
+      btnCopy.disabled = false;
+    }, 2000);
+  }
+});
+</script>
+<script>
+  if (typeof EmcalaAuth !== 'undefined') {
+    EmcalaAuth.renderUserBadge('userBadgeContainer');
+  }
 </script>
 </body>
 </html>
