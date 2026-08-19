@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Efectividad de Cobertura · EMCALA</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="../emcala-auth.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&family=Barlow:wght@400;600;700&display=swap');
@@ -49,19 +51,20 @@
     width:100%;max-width:550px;margin:0 auto;overflow:auto;flex:1;min-height:0;display:flex;flex-direction:column;}
 
   table{width:100%;flex:1;border-collapse:separate;border-spacing:0;text-align:center;}
-  thead th{background:var(--acc);color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;padding:6px 4px;
+  thead th{background:var(--acc);color:#fff;font-size:12px;font-weight:800;text-transform:uppercase;padding:5px 3px;
     position:sticky;top:0;z-index:5;border-bottom:2px solid rgba(0,0,0,0.2);}
-  thead th:first-child, thead th:nth-child(2){text-align:left;padding-left:10px;}
+  thead th:first-child, thead th:nth-child(2){text-align:left;padding-left:8px;}
 
-  td{padding:2px 4px;font-size:11.5px;border-bottom:1px solid #eef1f5;}
-  td.name-col{text-align:left;padding-left:10px;font-weight:600;color:#334155;}
+  td{padding:1px 2px;font-size:14px;font-weight:600;letter-spacing:-0.015em;border-bottom:1px solid #eef1f5;}
+  td.name-col{text-align:left;padding-left:8px;font-weight:700;color:#334155;font-size:13px;letter-spacing:-0.01em;}
   tr.prom-row td:not(.pct-cell){background:#fff;}
   tr.prom-row:hover td:not(.pct-cell){background:#f8fafc;}
 
-  tr.sdv-row td{background:var(--acc);color:#fff;font-weight:800;font-size:12px;padding:4px;text-transform:uppercase;}
-  tr.sdv-row td.name-col{padding-left:10px;}
+  tr.sdv-row td{background:var(--acc);color:#fff;font-weight:800;font-size:14.5px;letter-spacing:-0.015em;padding:3px 2px;text-transform:uppercase;}
+  tr.sdv-row td.name-col{padding-left:8px;font-size:13.5px;letter-spacing:-0.01em;}
 
-  tr.grand-row td{background:#0B2559;color:#fff;font-weight:800;font-size:12.5px;padding:6px;text-transform:uppercase;}
+  tr.grand-row td{background:#0B2559;color:#fff;font-weight:800;font-size:15px;letter-spacing:-0.015em;padding:4px 3px;text-transform:uppercase;}
+  tr.grand-row td.name-col{font-size:14px;letter-spacing:-0.01em;}
 
   .progress-cell {
     position: relative;
@@ -106,9 +109,53 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 1px rgba(0, 0, 0, 1);
   }
 
-  .empty-state{flex:1;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.85);
-    font-size:15px;font-weight:600;text-align:center;max-width:520px;margin:40px auto;line-height:1.5;}
+  .empty-state-steps {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 20px;
+    margin: 60px auto; max-width: 900px; padding: 20px;
+  }
+  .step-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 30px 20px 24px;
+    width: 240px;
+    text-align: center;
+    position: relative;
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
+  }
+  .step-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .step-num {
+    position: absolute;
+    top: -16px; left: 50%; transform: translateX(-50%);
+    width: 32px; height: 32px; background: #eab308; color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 15px; box-shadow: 0 4px 10px rgba(234, 179, 8, 0.3);
+  }
+  .step-icon {
+    font-size: 34px; color: #60a5fa; margin-bottom: 16px;
+  }
+  .step-card:nth-child(3) .step-icon { color: #facc15; }
+  .step-card:nth-child(5) .step-icon { color: #4ade80; }
+  
+  .step-text {
+    font-size: 13.5px; color: rgba(255, 255, 255, 0.85); font-weight: 500; line-height: 1.5;
+  }
+  .step-text strong {
+    color: #fff; font-weight: 700; display: block; margin-top: 4px; font-size: 14.5px;
+  }
+  .step-arrow {
+    color: rgba(255, 255, 255, 0.2); font-size: 24px;
+  }
 
+  @media (max-width:768px){
+    .empty-state-steps { flex-direction: column; gap: 30px; margin: 40px auto; }
+    .step-arrow { transform: rotate(90deg); }
+  }
   @media (max-width:640px){
     .hdr{padding:8px 12px;}
     .brand strong{font-size:16px;}
@@ -132,7 +179,10 @@
     <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none;">
     <span class="file-label" id="file-label">Ningún archivo cargado</span>
     <button class="btn btn-green" id="btn-calc"><i class="fa-solid fa-rotate"></i> Calcular</button>
+    <button class="btn btn-outline" id="btn-copy-img"><i class="fa-solid fa-camera"></i> Copiar Foto</button>
     <button class="btn btn-outline" id="btn-cloud" style="display:none;"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar en la nube</button>
+    
+    <div id="userBadgeContainer"></div>
   </div>
 </div>
 
@@ -140,8 +190,24 @@
 <div id="warn-banner"></div>
 
 <div class="container">
-  <div id="empty-state" class="empty-state">
-    Cargá el archivo Excel de <strong>Clientes a Visitar</strong> y elegí la fecha para calcular la efectividad del día.
+  <div id="empty-state" class="empty-state-steps">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-icon"><i class="fa-solid fa-cloud-arrow-down"></i></div>
+      <div class="step-text">Descargá de CHESS la base <strong>Personalización de visitas</strong></div>
+    </div>
+    <div class="step-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-icon"><i class="fa-solid fa-file-excel"></i></div>
+      <div class="step-text">Subila usando el botón superior <strong>Cargar clientes a visitar</strong></div>
+    </div>
+    <div class="step-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-icon"><i class="fa-solid fa-calendar-check"></i></div>
+      <div class="step-text">Elegí el día deseado para <strong>Calcular la efectividad</strong></div>
+    </div>
   </div>
   <div class="table-wrap" id="table-wrap" style="display:none;">
     <table>
@@ -596,6 +662,85 @@ async function init() {
 }
 
 init();
+
+// ==============================
+// COPIAR FOTO
+// ==============================
+document.getElementById('btn-copy-img').addEventListener('click', async () => {
+  const btnCopy = document.getElementById('btn-copy-img');
+  const orig = btnCopy.innerHTML;
+  btnCopy.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Capturando...';
+  btnCopy.disabled = true;
+  try {
+    const toolbar = document.querySelector('.hdr');
+    let toolbarWasVisible = false;
+    if (toolbar) {
+      toolbarWasVisible = toolbar.style.display !== 'none';
+      toolbar.style.display = 'none';
+    }
+    await new Promise(r => setTimeout(r, 80));
+
+    const captureEl = document.querySelector('.table-wrap');
+    const origOverflow = captureEl.style.overflow;
+    const origMaxHeight = captureEl.style.maxHeight;
+    captureEl.style.overflow = 'visible';
+    captureEl.style.maxHeight = 'none';
+
+    const canvas = await html2canvas(captureEl, {
+      backgroundColor: null,
+      scale: 2,
+      logging: false,
+      useCORS: true
+    });
+
+    captureEl.style.overflow = origOverflow;
+    captureEl.style.maxHeight = origMaxHeight;
+
+    if (toolbar && toolbarWasVisible) {
+      toolbar.style.display = '';
+    }
+
+    canvas.toBlob(async (blob) => {
+      try {
+        const dateStr = dateInput.value ? dateInput.value.split('-').reverse().join('/') : new Date().toLocaleDateString('es-AR');
+        const timeStr = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        const titleText = `EFECTIVIDAD COBERTURA · ${dateStr} · ${timeStr}`;
+        const textBlob = new Blob([titleText], { type: 'text/plain' });
+        
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            [blob.type]: blob,
+            'text/plain': textBlob
+          })
+        ]);
+        btnCopy.innerHTML = '<i class="fa-solid fa-check"></i> ¡Copiado!';
+      } catch (err) {
+        const link = document.createElement('a');
+        link.download = `Efectividad_Cobertura.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+        btnCopy.innerHTML = '<i class="fa-solid fa-download"></i> ¡Descargado!';
+      }
+      
+      setTimeout(() => {
+        btnCopy.innerHTML = orig;
+        btnCopy.disabled = false;
+      }, 2000);
+    }, "image/png");
+  } catch (e) {
+    console.error(e);
+    btnCopy.innerHTML = '<i class="fa-solid fa-xmark"></i> Error';
+    setTimeout(() => {
+      btnCopy.innerHTML = orig;
+      btnCopy.disabled = false;
+    }, 2000);
+  }
+});
+</script>
+<script>
+  if (typeof EmcalaAuth !== 'undefined') {
+    EmcalaAuth.renderUserBadge('userBadgeContainer');
+  }
 </script>
 </body>
 </html>
