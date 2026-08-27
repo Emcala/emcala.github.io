@@ -1,8 +1,8 @@
-﻿function initMap(){
+function initMap(){
   if(leafMap)return;
   leafMap=L.map('map',{scrollWheelZoom:!L.Browser.mobile,dragging:!L.Browser.mobile,tap:false}).setView([-34.45,-58.70],11);
   if(L.Browser.mobile){leafMap.on('touchstart',function(e){if(e.originalEvent.touches.length>=2)leafMap.dragging.enable();else leafMap.dragging.disable();});leafMap.on('touchend',function(){leafMap.dragging.disable();});}
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19}).addTo(leafMap);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',maxZoom:19}).addTo(leafMap);
   L.control.scale({imperial:false,position:'bottomleft'}).addTo(leafMap);
   if(typeof L.Control!=='undefined'&&L.Control.Measure&&currentRole==='trade')L.control.measure({position:'topleft',primaryLengthUnit:'kilometers',secondaryLengthUnit:'meters',activeColor:'#0EA5E9',completedColor:'#0F2A4A'}).addTo(leafMap);
   if(L.Browser.mobile)document.getElementById('mapHintMain').style.display='block';

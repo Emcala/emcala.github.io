@@ -415,7 +415,7 @@ function openModal(r){
   switchModalTab('detalle');
   if(currentRole==='tecnico')setTimeout(()=>geoTecnico(),300);
   document.getElementById('modalOverlay').classList.add('show');
-  if(hasGeo){setTimeout(()=>{if(modalLeaf){modalLeaf.remove();modalLeaf=null;}modalLeaf=L.map('modalMap',{zoomControl:true,attributionControl:false,dragging:!L.Browser.mobile,scrollWheelZoom:false}).setView([lat,lng],15);modalLeaf.on('focus',()=>modalLeaf.dragging.enable());if(L.Browser.mobile)modalLeaf.addHandler('touchZoom',L.TouchZoom);L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(modalLeaf);L.circleMarker([lat,lng],{radius:8,fillColor:'#1E88E5',color:'white',weight:2.5,fillOpacity:1}).addTo(modalLeaf);},60);}
+  if(hasGeo){setTimeout(()=>{if(modalLeaf){modalLeaf.remove();modalLeaf=null;}modalLeaf=L.map('modalMap',{zoomControl:true,attributionControl:false,dragging:!L.Browser.mobile,scrollWheelZoom:false}).setView([lat,lng],15);modalLeaf.on('focus',()=>modalLeaf.dragging.enable());if(L.Browser.mobile)modalLeaf.addHandler('touchZoom',L.TouchZoom);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(modalLeaf);L.circleMarker([lat,lng],{radius:8,fillColor:'#1E88E5',color:'white',weight:2.5,fillOpacity:1}).addTo(modalLeaf);},60);}
 }
 
 function toggleMultiFilter(id){const dropdown=document.getElementById(id+'Dropdown');document.querySelectorAll('.multi-filter-dropdown.open').forEach(d=>{if(d.id!==id+'Dropdown')d.classList.remove('open');});dropdown.classList.toggle('open');}
