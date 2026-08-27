@@ -268,6 +268,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
 .tecnico-task-detalle{font-size:10px;opacity:0.65;margin-top:4px;line-height:1.4}
 .loc-separator{padding:6px 16px 4px;font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:#F8FAFC;border-bottom:1px solid var(--border);border-top:1px solid var(--border);margin-top:4px}
 .notif-item.activo-hoy{box-shadow:0 0 0 3px #16A34A !important}
+.notif-item.activo-pendientes{box-shadow:0 0 0 3px #D97706 !important}
 @media(max-width:900px){
   .main{grid-template-columns:1fr;padding:12px;gap:12px}
   .table-scroll{max-height:350px}

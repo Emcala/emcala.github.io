@@ -82,7 +82,7 @@ function renderTablaFiltros(){
     if(filtHasta&&r.ts&&r.ts.slice(0,10)>filtHasta)return false;
     return true;
   });
-  const priLabels={'1':'⚠️ P1','2':'⚠️ P2','3':'P3','4':'P4','5':'P5','':'—'};
+  const priLabels={'1':'P1','2':'P2','3':'P3','4':'P4','5':'P5','':'—'};
   const tbody=document.getElementById('tablaBody');
   if(!tbody)return;
   tbody.innerHTML=data.map(r=>{
@@ -153,11 +153,30 @@ function exportarExcel(){
   const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='emcala_registros_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
 }
+let filtroHoyActivo=false;
+let filtroPendientesActivo=false;
+
+function filtrarPendientes(){
+  if(currentRole!=='tecnico')return;
+  filtroPendientesActivo=!filtroPendientesActivo;
+  const btn=document.getElementById('notifBtnPendientes');
+  if(filtroPendientesActivo){
+    if(filtroHoyActivo){filtroHoyActivo=false;const b=document.getElementById('notifBtnHoy');if(b)b.classList.remove('activo-hoy');}
+    ['mfFrecuencia','mfPrioridad'].forEach(id=>{const dd=document.getElementById(id+'Dropdown');if(dd)dd.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);});
+    if(btn)btn.classList.add('activo-pendientes');
+    applyFilters(true);
+  }else{
+    if(btn)btn.classList.remove('activo-pendientes');
+    applyFilters(false);
+  }
+}
+
 function filtrarDiaHoy(){
   if(currentRole!=='tecnico')return;
   const dia=new Date().getDay(),freqs=FREQ_DIA[dia]||[];if(!freqs.length)return;
   filtroHoyActivo=!filtroHoyActivo;const btn=document.getElementById('notifBtnHoy');
   if(filtroHoyActivo){
+    if(filtroPendientesActivo){filtroPendientesActivo=false;const b=document.getElementById('notifBtnPendientes');if(b)b.classList.remove('activo-pendientes');}
     ['mfFrecuencia','mfPrioridad'].forEach(id=>{const dd=document.getElementById(id+'Dropdown');if(dd)dd.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);});
     const ddFrec=document.getElementById('mfFrecuenciaDropdown');if(ddFrec)ddFrec.querySelectorAll('input[type=checkbox]').forEach(cb=>{if(freqs.includes(cb.value.toUpperCase()))cb.checked=true;});
     // Ya no forzamos que sea solo prioridad 1 o 2, para que vea todas las visitas del dia
@@ -291,6 +310,7 @@ function applyFilters(ordenInteligente){
 
 function clearFilters(){
   filtroHoyActivo=false;const btn=document.getElementById('notifBtnHoy');if(btn)btn.classList.remove('activo-hoy');
+  filtroPendientesActivo=false;const btnP=document.getElementById('notifBtnPendientes');if(btnP)btnP.classList.remove('activo-pendientes');
   ['filterDesde','filterHasta','filterBusqueda'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   ['mfPromotor','mfLocalidad','mfEstado','mfPrioridad','mfFrecuencia'].forEach(id=>{const dd=document.getElementById(id+'Dropdown');if(dd)dd.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);updateMultiFilterLabel(id,id==='mfEstado'?'Activos':'Todas');});
   applyFilters();
@@ -331,7 +351,7 @@ function buildRegItem(r,onclickAttr){
   const priA=getPrioridadAprobada(r.ot,r.cliente),priS=getPrioridadSugerida(r.ot,r.cliente),priShow=priA||priS;
   const isAlta=(priShow==='1'||priShow==='2');
   const faltaPrioridad=!priA && !priS;
-  const priBadge=priShow?`<span style="margin-left:4px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:${priA?'#0F2A4A':'#E2E8F0'};color:${priA?'white':'#64748B'}">${isAlta?'⚠️ ':''} P${priShow}${!priA?' (sugerida)':''}</span>`:'';
+  const priBadge=priShow?`<span style="margin-left:4px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:${priA?'#0F2A4A':'#E2E8F0'};color:${priA?'white':'#64748B'}">P${priShow}${!priA?' (sugerida)':''}</span>`:'';
   
   const msgCount=(chatData&&chatData[r.ot])?chatData[r.ot].length:0;
   const chatBadge=msgCount>0?`<span style="margin-left:6px;font-size:11px;font-weight:700;cursor:help;padding:3px 7px;border-radius:6px;background:#4338CA;color:white;display:inline-flex;align-items:center;gap:4px;vertical-align:middle;" title="${msgCount} mensaje${msgCount>1?'s':''}"><i class="fa-solid fa-comment-dots"></i> ${msgCount}</span>`:'';
@@ -382,11 +402,11 @@ function openModal(r){
   }else if(currentRole==='supervisor'){
     const tLat=seg?fixCoord(seg.tec_lat):'',tLng=seg?fixCoord(seg.tec_lng):'';
     const valSup=priS||priA;
-    segHTML=`<div class="modal-sec">📋 Seguimiento</div><div class="seguimiento-section"><div class="seg-title">⭐ Sugerir prioridad</div>${seg&&seg.comentario?`<div class="seg-last"><strong>${em.icon} ${em.label}</strong><br>"${escapeHTML(seg.comentario)}"${seg.fecha?`<span class="seg-ts">${escapeHTML(seg.tecnico)} · ${seg.fecha}</span>`:''}</div>`:''} ${tLat&&tLng?`<div class="seg-last"><i class="fa-solid fa-location-dot"></i> <a href="https://www.google.com/maps/search/?api=1&query=${tLat},${tLng}" target="_blank" style="color:var(--blue);font-weight:600;">Ver ubicación del técnico</a></div>`:''}<div class="seg-form"><label>Prioridad sugerida ${priA?`<span style="color:var(--success)">· Aprobada: P${priA} por ${escapeHTML(seg.aprobado_por)}</span>`:''}</label><select data-mid="segPriSug"><option value="">Sin prioridad</option><option value="1" ${valSup=='1'?'selected':''}>⚠️ P1 — REPAGO</option><option value="2" ${valSup=='2'?'selected':''}>⚠️ P2 — EJECUCIÓN</option><option value="3" ${valSup=='3'?'selected':''}>P3 — PTC SUGERIDO</option><option value="4" ${valSup=='4'?'selected':''}>P4</option><option value="5" ${valSup=='5'?'selected':''}>P5</option></select><button class="btn-guardar" data-mid="btnGuardar" onclick="guardarSeguimiento('${escapeHTML(r.cliente)}','${escapeHTML(r.nombre)}','${escapeHTML(r.ot)}','supervisor')">💾 Guardar prioridad</button><div class="save-ok" data-mid="saveOk">✅ Guardado correctamente</div></div></div>`;
+    segHTML=`<div class="modal-sec">📋 Seguimiento</div><div class="seguimiento-section"><div class="seg-title">⭐ Sugerir prioridad</div>${seg&&seg.comentario?`<div class="seg-last"><strong>${em.icon} ${em.label}</strong><br>"${escapeHTML(seg.comentario)}"${seg.fecha?`<span class="seg-ts">${escapeHTML(seg.tecnico)} · ${seg.fecha}</span>`:''}</div>`:''} ${tLat&&tLng?`<div class="seg-last"><i class="fa-solid fa-location-dot"></i> <a href="https://www.google.com/maps/search/?api=1&query=${tLat},${tLng}" target="_blank" style="color:var(--blue);font-weight:600;">Ver ubicación del técnico</a></div>`:''}<div class="seg-form"><label>Prioridad sugerida ${priA?`<span style="color:var(--success)">· Aprobada: P${priA} por ${escapeHTML(seg.aprobado_por)}</span>`:''}</label><select data-mid="segPriSug"><option value="">Sin prioridad</option><option value="1" ${valSup=='1'?'selected':''}>P1 — REPAGO</option><option value="2" ${valSup=='2'?'selected':''}>P2 — EJECUCIÓN</option><option value="3" ${valSup=='3'?'selected':''}>P3 — PTC SUGERIDO</option><option value="4" ${valSup=='4'?'selected':''}>P4</option><option value="5" ${valSup=='5'?'selected':''}>P5</option></select><button class="btn-guardar" data-mid="btnGuardar" onclick="guardarSeguimiento('${escapeHTML(r.cliente)}','${escapeHTML(r.nombre)}','${escapeHTML(r.ot)}','supervisor')">💾 Guardar prioridad</button><div class="save-ok" data-mid="saveOk">✅ Guardado correctamente</div></div></div>`;
   }else if(currentRole==='trade'){
     const tLat=seg?fixCoord(seg.tec_lat):'',tLng=seg?fixCoord(seg.tec_lng):'';
     const valTrade=priA||priS;
-    segHTML=`<div class="modal-sec">✅ Aprobación de prioridad</div><div class="seguimiento-section" style="background:#F5F3FF;border-color:#DDD6FE;"><div class="seg-title" style="color:#7C3AED;">🔐 Trade Marketing</div>${priS?`<div class="seg-last">Prioridad sugerida: <strong>P${priS}</strong></div>`:'<div class="seg-last" style="color:var(--muted)">Sin prioridad sugerida aún.</div>'}${seg&&seg.comentario?`<div class="seg-last"><strong>${em.icon} ${em.label}</strong><br>"${escapeHTML(seg.comentario)}"</div>`:''}${tLat&&tLng?`<div class="seg-last"><i class="fa-solid fa-location-dot"></i> <a href="https://www.google.com/maps/search/?api=1&query=${tLat},${tLng}" target="_blank" style="color:#7C3AED;font-weight:600;">Ver ubicación del técnico</a></div>`:''}<div class="seg-form"><label>Aprobar prioridad</label><select data-mid="segPriApr" style="border-color:#DDD6FE;"><option value="">Sin prioridad</option><option value="1" ${valTrade=='1'?'selected':''}>⚠️ P1 — REPAGO</option><option value="2" ${valTrade=='2'?'selected':''}>⚠️ P2 — EJECUCIÓN</option><option value="3" ${valTrade=='3'?'selected':''}>P3 — PTC SUGERIDO</option><option value="4" ${valTrade=='4'?'selected':''}>P4</option><option value="5" ${valTrade=='5'?'selected':''}>P5</option></select><button class="btn-guardar" data-mid="btnGuardar" style="background:#7C3AED;" onclick="guardarSeguimiento('${escapeHTML(r.cliente)}','${escapeHTML(r.nombre)}','${escapeHTML(r.ot)}','trade')">✅ Aprobar prioridad</button><div class="save-ok" data-mid="saveOk">✅ Aprobado correctamente</div></div></div><div class="modal-sec" style="margin-top:12px;">🚨 Forzar cierre de OT</div><div class="seguimiento-section" style="background:#FEF2F2;border-color:#FECACA;"><div class="seg-title" style="color:#DC2626;">Archivar manualmente</div><div class="seg-form"><label style="color:#DC2626;">Estado de cierre</label><select data-mid="segEstadoTrade" style="border-color:#FECACA;"><option value="resuelto">✅ Resuelto (Forzado)</option><option value="retiro">📦 Retiro (Forzado)</option><option value="retiro-sin-reparacion">📦 Retiro · Sin reparación (Forzado)</option><option value="cliente-cerrado">🔴 Cliente Cerrado</option></select><label style="color:#DC2626;">Comentario / Motivo</label><textarea data-mid="segComentarioTrade" placeholder="Ej: Se cancela la orden porque..." style="border-color:#FECACA;min-height:60px;margin-bottom:8px;"></textarea><button class="btn-guardar" style="background:#DC2626;" onclick="guardarSeguimiento('${escapeHTML(r.cliente)}','${escapeHTML(r.nombre)}','${escapeHTML(r.ot)}','trade-cerrar')">🔒 Cerrar y enviar a Historial</button></div></div>`;
+    segHTML=`<div class="modal-sec">✅ Aprobación de prioridad</div><div class="seguimiento-section" style="background:#F5F3FF;border-color:#DDD6FE;"><div class="seg-title" style="color:#7C3AED;">🔐 Trade Marketing</div>${priS?`<div class="seg-last">Prioridad sugerida: <strong>P${priS}</strong></div>`:'<div class="seg-last" style="color:var(--muted)">Sin prioridad sugerida aún.</div>'}${seg&&seg.comentario?`<div class="seg-last"><strong>${em.icon} ${em.label}</strong><br>"${escapeHTML(seg.comentario)}"</div>`:''}${tLat&&tLng?`<div class="seg-last"><i class="fa-solid fa-location-dot"></i> <a href="https://www.google.com/maps/search/?api=1&query=${tLat},${tLng}" target="_blank" style="color:#7C3AED;font-weight:600;">Ver ubicación del técnico</a></div>`:''}<div class="seg-form"><label>Aprobar prioridad</label><select data-mid="segPriApr" style="border-color:#DDD6FE;"><option value="">Sin prioridad</option><option value="1" ${valTrade=='1'?'selected':''}>P1 — REPAGO</option><option value="2" ${valTrade=='2'?'selected':''}>P2 — EJECUCIÓN</option><option value="3" ${valTrade=='3'?'selected':''}>P3 — PTC SUGERIDO</option><option value="4" ${valTrade=='4'?'selected':''}>P4</option><option value="5" ${valTrade=='5'?'selected':''}>P5</option></select><button class="btn-guardar" data-mid="btnGuardar" style="background:#7C3AED;" onclick="guardarSeguimiento('${escapeHTML(r.cliente)}','${escapeHTML(r.nombre)}','${escapeHTML(r.ot)}','trade')">✅ Aprobar prioridad</button><div class="save-ok" data-mid="saveOk">✅ Aprobado correctamente</div></div></div><div class="modal-sec" style="margin-top:12px;">🚨 Forzar cierre de OT</div><div class="seguimiento-section" style="background:#FEF2F2;border-color:#FECACA;"><div class="seg-title" style="color:#DC2626;">Archivar manualmente</div><div class="seg-form"><label style="color:#DC2626;">Estado de cierre</label><select data-mid="segEstadoTrade" style="border-color:#FECACA;"><option value="resuelto">✅ Resuelto (Forzado)</option><option value="retiro">📦 Retiro (Forzado)</option><option value="retiro-sin-reparacion">📦 Retiro · Sin reparación (Forzado)</option><option value="cliente-cerrado">🔴 Cliente Cerrado</option></select><label style="color:#DC2626;">Comentario / Motivo</label><textarea data-mid="segComentarioTrade" placeholder="Ej: Se cancela la orden porque..." style="border-color:#FECACA;min-height:60px;margin-bottom:8px;"></textarea><button class="btn-guardar" style="background:#DC2626;" onclick="guardarSeguimiento('${escapeHTML(r.cliente)}','${escapeHTML(r.nombre)}','${escapeHTML(r.ot)}','trade-cerrar')">🔒 Cerrar y enviar a Historial</button></div></div>`;
   }
 
   const fotoDirectUrl = getDirectImageUrl(r.foto);

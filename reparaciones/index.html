@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0F2A4A">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>EMCALA -Panel de Gestión-</title>
+<title>REPARACIONES -Panel de Gestion-</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -161,7 +161,7 @@
         <span class="notif-icon">🚨</span>
         <div class="notif-text"><span class="notif-count" id="notifPrioridadAlta">0</span><span class="notif-label" id="notifBtnLabel">OTs activas (Con prioridad)</span></div>
       </div>
-      <div class="notif-item notif-yellow">
+      <div class="notif-item notif-yellow" id="notifBtnPendientes" onclick="filtrarPendientes()" style="cursor:pointer;transition:transform 0.1s,box-shadow 0.1s;" onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 4px 16px rgba(217,119,6,0.25)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
         <span class="notif-icon">⏳</span>
         <div class="notif-text"><span class="notif-count" id="notifSinPrioridad">0</span><span class="notif-label">Sin prioridad asignada</span></div>
       </div>
