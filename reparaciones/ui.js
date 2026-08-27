@@ -273,7 +273,6 @@ function applyFilters(ordenInteligente){
 
 
     if(prioridadesSeleccionadas.length>0){const priA=getPrioridadAprobada(r.ot,r.cliente),priS=getPrioridadSugerida(r.ot,r.cliente),priActual=priA||priS||'sin-prioridad';if(!prioridadesSeleccionadas.includes(priActual))return false;}
-    if(currentRole==='tecnico'&&!getPrioridadAprobada(r.ot,r.cliente))return false;
     if((desde||hasta)&&r.ts){const d=new Date(r.ts);if(desde&&d<new Date(desde))return false;if(hasta&&d>new Date(hasta+'T23:59:59'))return false;}
     return true;
   });
