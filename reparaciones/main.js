@@ -66,4 +66,4 @@ function getDirectImageUrl(url){if(!url)return '';if(url.startsWith('data:')||!u
 
 const FREQ_DIA={0:[],1:['LU','LUJU'],2:['MA','MAVI'],3:['MI','MISA'],4:['JU','LUJU'],5:['MAVI','VI'],6:['SA','MISA']};
 const DIA_LABEL=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-let filtroHoyActivo=false;
+
