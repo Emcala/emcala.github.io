@@ -26,16 +26,23 @@ function parseCSV(txt) {
   const H = lines[0].split(';').map(h => h.trim());
   const ix = n => H.indexOf(n);
   const iS=ix('Sector de Supervisión');
+  const iCodS=ix('Código Sector de Supervisión');
   let iS2 = H.findIndex(h => {
     const l = h.toLowerCase();
+    if (l.includes('código') || l.includes('codigo')) return false;
     return l.includes('sector de venta') || l.includes('descripcion vendedor') || l === 'vendedor' || l === 'promotor';
   });
-        iUN=ix('Unidad de Negocio'),    iA=ix('Año'), iM=ix('Mes'),
+  const iCodS2 = H.findIndex(h => {
+    const l = h.toLowerCase();
+    return (l.includes('código') || l.includes('codigo')) && (l.includes('sector de venta') || l.includes('vendedor') || l.includes('promotor'));
+  });
+  const iUN=ix('Unidad de Negocio'),    iA=ix('Año'), iM=ix('Mes'),
         iHL=ix('Cantidad Total en HL'), iB=ix('Cantidad Total en Bultos'),
         iC=ix('Código Cliente'),        iP=ix('Código Producto'),
         iD=ix('Días Visita'),           iCA=ix('Canal Ajustado'),
         iCAL=ix('Calibre'),              iPROD=ix('Producto'),
-        iMAR=ix('Marca'),             iCLI_N=ix('Cliente');
+        iMAR=ix('Marca'),             iCLI_N=ix('Cliente'),
+        iRET=ix('Retornable'),        iNET=ix('Importe Neto');
   let iFECHA=H.findIndex(h => h.toLowerCase() === 'fecha');
   if (iFECHA === -1) iFECHA = ix('Fecha'); // fallback if strict matching fails
 
@@ -62,11 +69,18 @@ function parseCSV(txt) {
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
     const p = lines[i].split(';');
-    const sdv = (p[iS]||'').trim().toUpperCase();
+    let sdv = (p[iS]||'').trim().toUpperCase();
+    sdv = sdv.replace(/\bSDVAS?\b/g, '').replace(/\bSDVS?\b/g, '').replace(/\bSUPERVISOR(?:ES)?\b/g, '').trim();
+    const codS = iCodS !== -1 ? (p[iCodS]||'').trim().toUpperCase() : '';
     const sdv2 = (p[iS2]||'').trim().toUpperCase();
+    const codS2 = iCodS2 !== -1 ? (p[iCodS2]||'').trim().toUpperCase() : '';
     const un = (p[iUN]||'').trim(); if (!un) continue;
-    rows.push({
-      sdv, sdv2, un,
+      let marca = (p[iMAR]||'').trim();
+      if (marca.toUpperCase() === 'PEPSI BLACK') marca = 'PEPSI';
+      if (marca.toUpperCase() === 'STILL' || marca.toUpperCase() === 'H2O' || marca.toUpperCase() === 'H2OH') marca = 'H2Oh';
+      
+      rows.push({
+      sdv, codS, sdv2, codS2, un,
       yr:  (p[iA] ||'').trim(),
       mes: (p[iM] ? p[iM].trim().charAt(0).toUpperCase() + p[iM].trim().slice(1).toLowerCase() : ''),
       hl:  parseFloat((p[iHL]||'').replace(/\./g, '').replace(',','.')) || 0,
@@ -77,9 +91,11 @@ function parseCSV(txt) {
       canal:(p[iCA]  ||'').trim(),
       calibre:(p[iCAL]||'').trim(),
       prod2:(p[iPROD]||'').trim(),
-      marca:(p[iMAR]||'').trim(),
+      marca: marca,
       cliN:(p[iCLI_N]||'').trim(),
       fecha: iFECHA !== -1 ? parseDateStr(p[iFECHA]) : '',
+      retornable: iRET !== -1 ? (p[iRET]||'').trim() : '',
+      importeNeto: iNET !== -1 ? parseFloat((p[iNET]||'').replace(/\./g, '').replace(',','.')) || 0 : 0,
     });
   }
   return rows;
@@ -98,15 +114,28 @@ function makePromoFilter(pg) {
   if (ap.size === 0) return null;
   const allOn = SEGS.every(seg => seg.promos.every(p => ap.has(seg.key+'|'+p)));
   if (allOn) return () => true;
-  const filters = [];
+  
+  const activeSdv2 = new Set();
+  const flexSet = new Set();
   SEGS.forEach(seg => {
-    const activeP = seg.promos.filter(p => ap.has(seg.key+'|'+p));
-    if (!activeP.length) return;
-    const pSet = new Set(activeP);
-    filters.push(r => pSet.has(r.sdv2));
+    seg.promos.forEach(p => {
+      if (ap.has(seg.key+'|'+p)) {
+        activeSdv2.add(p);
+        flexSet.add(p.split(' ').sort().join(' '));
+      }
+    });
   });
-  if (!filters.length) return null;
-  return r => filters.some(fn => fn(r));
+  
+  return r => {
+    if (activeSdv2.has(r.sdv2)) return true;
+    if (!r.sdv2) return false;
+    
+    // Caching the sorted string on the row object for O(1) repeated checks
+    if (!r._sdv2_norm) r._sdv2_norm = r.sdv2.split(' ').sort().join(' ');
+    if (flexSet.has(r._sdv2_norm)) return true;
+    
+    return false;
+  };
 }
 
 function getCartera(pg) {
@@ -143,20 +172,24 @@ function getCartera(pg) {
   if (pf) {
     for (let i = 0; i < DATA.length; i++) {
       const r = DATA[i];
-      if (pf(r) && r.cli) uniqueClients.add(r.cli);
+      if (pf(r) && r.cli && r.un === ST[pg].un) uniqueClients.add(r.cli);
     }
   }
   return uniqueClients.size;
 }
 
 function canalFilter(r, canal) {
+  const promotoresAres = ['DIAZ VALERIA', 'FERNANDEZ LUIS', 'GALLO JONATHAN', 'LOPEZ PABLO', 'RENZO MIÑO', 'SANCHEZ ROCIO'];
+  const esPromotorAres = promotoresAres.some(n => r.sdv2.includes(n));
+  const isAres = r.sdv.includes('ARES') || r.sdv.includes('SDVAS') || r.codS.includes('ARES') || r.codS.includes('SDVAS') || r.sdv2.includes('ARES') || r.sdv2.includes('SDVAS') || r.codS2.includes('ARES') || r.codS2.includes('SDVAS') || esPromotorAres;
+
   switch(canal) {
     case 'TODOS':  return r.canal !== 'NO';
     case 'KT':     return r.canal === 'K+T';
-    case 'AS':     return r.canal === 'AS'  && r.sdv === 'ARES PEDRO';
-    case 'KTAS':   return r.canal === 'AS'  && r.sdv !== 'ARES PEDRO';
-    case 'REF':    return r.canal === 'REF' && r.sdv === 'LEMOS MAY';
-    case 'KTREF':  return r.canal === 'REF' && r.sdv !== 'LEMOS MAY';
+    case 'AS':     return r.canal === 'AS'  && isAres;
+    case 'KTAS':   return r.canal === 'AS'  && !isAres;
+    case 'REF':    return r.canal === 'REF' && r.sdv.includes('LEMOS');
+    case 'KTREF':  return r.canal === 'REF' && !r.sdv.includes('LEMOS');
     case 'MAYO_C': return r.canal === 'MAYO';
     default: return true;
   }
@@ -166,11 +199,15 @@ function canalFilter(r, canal) {
 function getRows(yr, pg, extra) {
   const pf = makePromoFilter(pg);
   if (!pf) return [];
+  const un = ST[pg].un;
+  const is2026 = (yr == 2026);
+  const allowedMonths = window.GLOBAL_ALLOWED_MONTHS;
+  
   return DATA.filter(r => {
-    if (r.yr != yr || r.un !== ST[pg].un) return false;
+    if (r.yr != yr || r.un !== un) return false;
+    if (is2026 && allowedMonths && !allowedMonths.has(r.mes)) return false;
     if (!pf(r)) return false;
     if (extra && !extra(r)) return false;
-    if (r.yr == 2026 && window.GLOBAL_ALLOWED_MONTHS && !window.GLOBAL_ALLOWED_MONTHS.has(r.mes)) return false;
     return true;
   });
 }

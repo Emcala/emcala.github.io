@@ -10,12 +10,15 @@ async function fetchConfigData() {
     const headersMesas = dataMesas[0] || [];
     const iPromo = headersMesas.findIndex(c => String(c).trim().toUpperCase() === 'PROMOTOR');
     const iSup = headersMesas.findIndex(c => String(c).trim().toUpperCase() === 'SUPERVISOR');
+    // Preferir la columna "Nombre SDV" (columna C) que tiene los nombres legibles de los supervisores
+    let iNomSDV = headersMesas.findIndex(c => String(c).trim().toUpperCase().includes('NOMBRE'));
+    if (iNomSDV === -1) iNomSDV = iSup; // fallback a SUPERVISOR si no existe
     
     let supMap = {};
     for (let i = 1; i < dataMesas.length; i++) {
       const r = dataMesas[i];
       const promo = r[iPromo] ? String(r[iPromo]).trim().toUpperCase() : '';
-      const sup = r[iSup] ? String(r[iSup]).trim().toUpperCase() : '';
+      const sup = r[iNomSDV] ? String(r[iNomSDV]).trim().toUpperCase() : '';
       if (!promo || !sup) continue;
       if (!supMap[sup]) supMap[sup] = [];
       if (!supMap[sup].includes(promo)) supMap[sup].push(promo);

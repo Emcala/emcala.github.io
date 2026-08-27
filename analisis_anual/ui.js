@@ -1,4 +1,4 @@
-document.getElementById('folder-input').addEventListener('change', e => {
+﻿document.getElementById('folder-input').addEventListener('change', e => {
   const files = [...e.target.files].filter(f => f.name.toLowerCase().endsWith('.csv'));
   if (!files.length) return;
   let loaded = 0;
@@ -555,11 +555,11 @@ function render3() {
   const extra = r => canalFilter(r, canal);
   const cLbl  = {TODOS:'Todos',KT:'K+T',AS:'AS',KTAS:'K+T/AS',REF:'REF',KTREF:'K+T/REF',MAYO_C:'MAYO'}[canal]||canal;
 
-  ['ld3a','ld3b','ld3c'].forEach(id => { const e=document.getElementById(id); if(e) e.style.background=col; });
-  document.getElementById('t3-hl').textContent     = `Volumen ${vl} · Canal: ${cLbl}`;
-  document.getElementById('t3-ytd-hl').textContent  = `${vl} · YTD vs LYTD`;
-  document.getElementById('t3-comp-hl').textContent = `${vl} · Comparativa`;
+  document.getElementById('t3-hl').textContent     = `Volumen ${vl} · Por Canal (2026)`;
+  document.getElementById('t3-ytd-hl').textContent  = `${vl} · YTD vs LYTD · Canal: ${cLbl}`;
+  document.getElementById('t3-comp-hl').textContent = `${vl} · Comparativa · Canal: ${cLbl}`;
 
+  // --- KPIs + right panel: use selected canal tab filter ---
   const s25 = summarizeRows(getRows(2025, 3, extra), r => volOf(r, 3));
   const s26 = summarizeRows(getRows(2026, 3, extra), r => volOf(r, 3));
   const d25v = s25.vol, d26v = s26.vol;
@@ -575,14 +575,65 @@ function render3() {
   setKPI('k3-0', `${vl} YTD`,       ytd26, pct(ytd26,ytd25), ' '+vl);
   setKPI('k3-1', `CCC ${last}`,      d26c[last], pct(d26c[last],d25c[last]));
   setKPI('k3-2', `SKU/PDV ${last}`,  sku26, pct(sku26,sku25), '', 2);
-  setKPI('k3-3', `TBD ${last}`,      d26b[last], pct(d26b[last],d25b[last]));
 
-  makeMonthly('c3-hl',  d25v, d26v, col);
-  makeMonthly('c3-ccc', d25c, d26c, col);
-  makeMonthly('c3-bd',  d25b, d26b, col);
-  makeYTD('c3-ytd-hl', d25v, d26v, m26, col);
+  // --- Left panel: 4 bars per mesa (always 2026) ---
+  const MESAS = [
+    { name: 'K+T',  color: '#4361EE', filter: r => canalFilter(r, 'KT') },
+    { name: 'AS',   color: '#F72585', filter: r => canalFilter(r, 'AS') },
+    { name: 'REF',  color: '#4CC9F0', filter: r => canalFilter(r, 'REF') },
+    { name: 'MAYO', color: '#F8961E', filter: r => canalFilter(r, 'MAYO_C') },
+  ];
+
+  const chHL26 = [], chCCC26 = [], chBD26 = [];
+  const ytd25DataHL = [], ytd26DataHL = [], ytd25DataBD = [], ytd26DataBD = [];
+  const statsByMesa = {};
+  
+  const r25 = getRows(2025, 3, extra);
+  const r26 = getRows(2026, 3, extra);
+
+  MESAS.forEach(mesa => {
+    const f25 = r25.filter(mesa.filter);
+    const f26 = r26.filter(mesa.filter);
+    
+    const s25 = summarizeRows(f25, r => volOf(r, 3));
+    const s26 = summarizeRows(f26, r => volOf(r, 3));
+    
+    statsByMesa[mesa.name] = { s25, s26 };
+
+    chHL26.push({  name: mesa.name, color: mesa.color, data: s26.vol });
+    chCCC26.push({ name: mesa.name, color: mesa.color, data: s26.ccc });
+    chBD26.push({  name: mesa.name, color: mesa.color, data: s26.bd });
+    
+    const v25_hl = m26.reduce((a,m)=>a+(s25.vol[m]||0),0);
+    const v26_hl = m26.reduce((a,m)=>a+(s26.vol[m]||0),0);
+    if (v25_hl > 0 || v26_hl > 0) {
+      ytd25DataHL.push({ name: mesa.name, color: mesa.color, value: v25_hl });
+      ytd26DataHL.push({ name: mesa.name, color: mesa.color, value: v26_hl });
+    }
+    
+    const v25_bd = m26.reduce((a,m)=>a+(s25.bd[m]||0),0);
+    const v26_bd = m26.reduce((a,m)=>a+(s26.bd[m]||0),0);
+    if (v25_bd > 0 || v26_bd > 0) {
+      ytd25DataBD.push({ name: mesa.name, color: mesa.color, value: v25_bd });
+      ytd26DataBD.push({ name: mesa.name, color: mesa.color, value: v26_bd });
+    }
+  });
+
+  setKPI('k3-3', `TBD ${last}`,      d26b[last], pct(d26b[last], d25b[last]));
+  setKPI('k3-4', `TBD AS`,           statsByMesa['AS'].s26.bd[last], pct(statsByMesa['AS'].s26.bd[last], statsByMesa['AS'].s25.bd[last]));
+  setKPI('k3-5', `TBD K+T`,          statsByMesa['K+T'].s26.bd[last], pct(statsByMesa['K+T'].s26.bd[last], statsByMesa['K+T'].s25.bd[last]));
+  setKPI('k3-6', `TBD REF`,          statsByMesa['REF'].s26.bd[last], pct(statsByMesa['REF'].s26.bd[last], statsByMesa['REF'].s25.bd[last]));
+  setKPI('k3-7', `TBD MAYO`,         statsByMesa['MAYO'].s26.bd[last], pct(statsByMesa['MAYO'].s26.bd[last], statsByMesa['MAYO'].s25.bd[last]));
+
+  makeMonthlyByCanal('c3-hl',  chHL26);
+  makeMonthlyByCanal('c3-ccc', chCCC26);
+  makeMonthlyByCanal('c3-bd',  chBD26);
+
+  // --- Right panel: stacked YTD instead of simple bar ---
+  makeYTDStackedByCanal('c3-ytd-hl', ytd25DataHL, ytd26DataHL);
   makeCNC('c3-cnc',    d26c, m26, col, 3);
-  makeYTD('c3-ytd-bd', d25b, d26b, m26, col);
+  makeYTDStackedByCanal('c3-ytd-bd', ytd25DataBD, ytd26DataBD);
+  
   makeComp('c3-comp-hl',  d26v, d25v, last, prev, col);
   makeComp('c3-comp-ccc', d26c, d25c, last, prev, col);
   makeComp('c3-comp-bd',  d26b, d25b, last, prev, col);
@@ -777,6 +828,22 @@ function getMarca(prod) {
   if (prod.startsWith('STELLA'))       return 'STELLA';
   if (prod.startsWith('ANDES'))        return 'ANDES';
   return null;
+}
+
+// Deriva marca UNG del nombre de producto (fallback cuando r.marca está vacío)
+function getMarcaUNG(r) {
+  if (r.marca) return r.marca;
+  if (!r.prod2) return null;
+  const p = r.prod2.toUpperCase();
+  if (p.startsWith('PEPSI'))           return 'PEPSI';
+  if (p.startsWith('7UP') || p.startsWith('7 UP') || p.startsWith('7-UP')) return '7UP';
+  if (p.startsWith('MIRINDA'))         return 'MIRINDA';
+  if (p.startsWith('PASO DE LOS TOROS') || p.startsWith('PASO DLT') || p.startsWith('PDTOROS') || p.startsWith('PDT')) return 'PASO DE LOS TOROS';
+  if (p.startsWith('GATORADE'))        return 'GATORADE';
+  if (p.startsWith('RED BULL'))        return 'RED BULL';
+  if (p.startsWith('ROCKSTAR'))        return 'ROCKSTAR';
+  if (p.startsWith('H2O') || p.startsWith('STILL')) return 'H2Oh';
+  return r.marca || null;
 }
 
 function getCalibre(cal) {
@@ -984,7 +1051,7 @@ function getNABSMarca(prod) {
   if (prod.startsWith('RED BULL') || prod.startsWith('RB ')) return 'RED BULL';
   if (prod.startsWith('ROCKSTAR'))            return 'ROCKSTAR';
   if (prod.startsWith('MIRINDA'))             return 'MIRINDA';
-  if (prod.startsWith('H2OH') || prod.startsWith('H2Oh')) return 'H2Oh';
+  if (prod.startsWith('H2OH') || prod.startsWith('H2Oh') || prod.startsWith('STILL') || prod.startsWith('H2O')) return 'H2Oh';
   if (prod.startsWith('DEL VALLE') || prod.startsWith('JUGO DEL VALLE')) return 'DEL VALLE JUGOS';
   return null;
 }
@@ -1896,23 +1963,59 @@ const LOGOS = {
   'QUILMES': 'img/Quilmes_Logo.svg',
   '1890': 'img/1890_logo.png',
 
-  // UNG
-  'PEPSI': 'img/pepsi-logo.png',
-  '7UP': 'img/7up_logo.svg',
-  'MIRINDA': 'img/Mirinda_brand_logo.png',
-  'PASO DE LOS TOROS': 'img/paso_de_los_toros_logo.jpg',
-  'GATORADE': 'img/Gatorade_logo_before_2009.png',
-  'RED BULL': 'img/red-bull-vertical-logo.png',
-  'ROCKSTAR': 'img/rockstar_logo.jpg',
-  'H2OH!': 'img/h2oh_logo.png'
+  // UNG — use embedded base64 data URLs for guaranteed rendering
+  'PEPSI':            (typeof LOGOS_UNG_DATA !== 'undefined' && LOGOS_UNG_DATA['PEPSI'])            || 'img/pepsi-logo.png',
+  '7UP':              (typeof LOGOS_UNG_DATA !== 'undefined' && LOGOS_UNG_DATA['7UP'])              || 'img/7up_logo.svg',
+  'MIRINDA':          (typeof LOGOS_UNG_DATA !== 'undefined' && LOGOS_UNG_DATA['MIRINDA'])          || 'img/Mirinda_brand_logo.png',
+  'PASO DE LOS TOROS':(typeof LOGOS_UNG_DATA !== 'undefined' && LOGOS_UNG_DATA['PASO DE LOS TOROS'])|| 'img/paso_de_los_toros_logo.jpg',
+  'GATORADE':         (typeof LOGOS_UNG_DATA !== 'undefined' && LOGOS_UNG_DATA['GATORADE'])         || 'img/Gatorade_logo_before_2009.png',
+  'RED BULL':         (typeof LOGOS_UNG_DATA !== 'undefined' && LOGOS_UNG_DATA['RED BULL'])         || 'img/red-bull-vertical-logo.png',
+  'ROCKSTAR':         (typeof LOGOS_UNG_DATA !== 'undefined' && LOGOS_UNG_DATA['ROCKSTAR'])         || 'img/rockstar_logo.jpg',
+  'H2OH!':            (typeof LOGOS_UNG_DATA !== 'undefined' && LOGOS_UNG_DATA['H2OH!'])            || 'img/h2oh_logo.png'
 };
 
-// Preload all logos so they are in browser cache when ECharts renders them
-(function preloadLogos() {
-  Object.values(LOGOS).forEach(src => {
-    const img = new Image();
-    img.src = src;
+// Track which logos loaded successfully (src → usable image src, possibly data URL for SVGs)
+const LOGO_READY = {};
+
+// Preload all logos; data URLs go straight to LOGO_READY, file paths get loaded
+const _logosReadyPromise = (function preloadLogos() {
+  const promises = Object.entries(LOGOS).map(([key, src]) => {
+    // Data URLs are already embedded — add directly, no loading needed
+    if (src.startsWith('data:')) {
+      LOGO_READY[key] = src;
+      return Promise.resolve();
+    }
+    // SVGs: try XHR to convert to base64, but fall back to direct path if CORS blocks it
+    if (src.toLowerCase().endsWith('.svg')) {
+      return new Promise(resolve => {
+        try {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', src, true);
+          xhr.onload = () => {
+            if (xhr.status === 200 || xhr.status === 0) {
+              LOGO_READY[key] = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xhr.responseText)));
+            } else {
+              LOGO_READY[key] = src; // fallback: use path directly
+            }
+            resolve();
+          };
+          xhr.onerror = () => { LOGO_READY[key] = src; resolve(); }; // CORS on file:// — use path directly
+          xhr.send();
+        } catch(e) {
+          LOGO_READY[key] = src; // any error — use path directly
+          resolve();
+        }
+      });
+    }
+    // Regular images — verify they load
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => { LOGO_READY[key] = src; resolve(); };
+      img.onerror = () => resolve(); // do not populate LOGO_READY so ECharts uses text fallback
+      img.src = src;
+    });
   });
+  return Promise.all(promises);
 })();
 
 function render8() {
@@ -1941,8 +2044,8 @@ function render8() {
     rows26 = DATA.filter(r => r.yr == yr26 && r.un === ST[8].un && getMarca(r.prod2) && checkMonth(r));
     rows25 = DATA.filter(r => r.yr == yr25 && r.un === ST[8].un && getMarca(r.prod2) && checkMonth(r));
   } else {
-    rows26 = DATA.filter(r => r.yr == yr26 && r.un !== 'CERVEZAS CMQ' && r.marca && checkMonth(r));
-    rows25 = DATA.filter(r => r.yr == yr25 && r.un !== 'CERVEZAS CMQ' && r.marca && checkMonth(r));
+    rows26 = DATA.filter(r => r.yr == yr26 && r.un !== 'CERVEZAS CMQ' && getMarcaUNG(r) && checkMonth(r));
+    rows25 = DATA.filter(r => r.yr == yr25 && r.un !== 'CERVEZAS CMQ' && getMarcaUNG(r) && checkMonth(r));
   }
 
   const mesesConDatos = MESES.filter(m => rows26.some(r => r.mes === m && r.hl > 0));
@@ -1956,7 +2059,7 @@ function render8() {
   
   rows26.forEach(r => {
     if (monthsYTD.includes(r.mes) && r.hl > 0) {
-      const m = isCerv ? getMarca(r.prod2) : r.marca;
+      const m = isCerv ? getMarca(r.prod2) : getMarcaUNG(r);
       const nm = m.trim().toUpperCase();
       if (!vol26ByMarca[nm]) vol26ByMarca[nm] = 0;
       vol26ByMarca[nm] += r.hl;
@@ -1965,7 +2068,7 @@ function render8() {
   
   rows25.forEach(r => {
     if (monthsYTD.includes(r.mes) && r.hl > 0) {
-      const m = isCerv ? getMarca(r.prod2) : r.marca;
+      const m = isCerv ? getMarca(r.prod2) : getMarcaUNG(r);
       const nm = m.trim().toUpperCase();
       if (!vol25ByMarca[nm]) vol25ByMarca[nm] = 0;
       vol25ByMarca[nm] += r.hl;
@@ -1995,8 +2098,9 @@ function render8() {
     
     allKeys.forEach(k => {
        let matches = false;
-       if (bucket === '7UP' && (k === '7UP' || k === '7 UP')) matches = true;
-       else if (bucket === 'H2OH!' && k.startsWith('H2')) matches = true;
+       if (bucket === '7UP' && (k === '7UP' || k === '7 UP' || k === '7-UP' || k === '7 UP FREE')) matches = true;
+       else if (bucket === 'PASO DE LOS TOROS' && (k === 'PASO DE LOS TOROS' || k === 'PASO DLT' || k === 'PDTOROS' || k === 'PDT')) matches = true;
+        else if (bucket === 'H2OH!' && (k.startsWith('H2') || k === 'STILL')) matches = true;
        else if (k === bucket) matches = true;
        
        if (matches) {
@@ -2012,7 +2116,7 @@ function render8() {
     const isUp = diff >= 0;
     const diffCls = isUp ? 'up' : 'dn';
     const diffSign = isUp ? '+' : '';
-    const logoUrl = LOGOS[bucket] || '';
+    const logoUrl = LOGO_READY[bucket] || '';
     
     const pct = v25 > 0 ? ((v26 - v25) / v25 * 100) : null;
     const pctStr = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%' : '';
@@ -2059,6 +2163,8 @@ function render8() {
   }
   
   // --- CHARTS LOGIC ---
+  // Wait for logos to be loaded so LOGO_READY is populated before building richConfig
+  _logosReadyPromise.then(() => {
   const prev = MESES[MESES.indexOf(last) - 1] || null;
   const moNames = { last26: `${last.slice(0,3)} 26`, prev26: prev ? `${prev.slice(0,3)} 26` : '', last25: `${last.slice(0,3)} 25` };
   
@@ -2074,13 +2180,14 @@ function render8() {
   });
   
   const processRow = (r, isYr26) => {
-    let rawMarca = isCerv ? getMarca(r.prod2) : r.marca;
+    let rawMarca = isCerv ? getMarca(r.prod2) : getMarcaUNG(r);
     if (!rawMarca) return;
     rawMarca = rawMarca.trim().toUpperCase();
     
     let bucket = rawMarca;
-    if (bucket === '7UP' || bucket === '7 UP') bucket = '7UP';
-    else if (bucket.startsWith('H2')) bucket = 'H2OH!';
+    if (bucket === '7UP' || bucket === '7 UP' || bucket === '7-UP' || bucket === '7 UP FREE') bucket = '7UP';
+    else if (bucket === 'PASO DE LOS TOROS' || bucket === 'PASO DLT' || bucket === 'PDTOROS' || bucket === 'PDT') bucket = 'PASO DE LOS TOROS';
+    else if (bucket.startsWith('H2') || bucket === 'STILL') bucket = 'H2OH!';
     
     if (!metrics[bucket]) return;
     
@@ -2117,24 +2224,27 @@ function render8() {
     cccPrev26.push(metrics[bucket].cccPrev.size);
     cccLast25.push(metrics[bucket].ccc25.size);
     
-    const logo = LOGOS[bucket];
+    const logo = LOGO_READY[bucket];
     const rk = 'rk_' + bucket.replace(/[^a-zA-Z0-9_]/g, '');
     if (logo) {
       let logoHeight = 45;
+      let logoWidth = 65;
       if (bucket === 'STELLA' || bucket === 'ANDES' || bucket === 'MICHELOB') {
-        logoHeight = 65; // Un poco más grandes pero no tanto para que no pisen el gráfico
+        logoHeight = 65; 
+      } else if (bucket === 'BUDWEISER') {
+        logoHeight = 40;
+        logoWidth = 85; 
       }
-      richConfig[rk] = { height: logoHeight, width: 65, align: 'center', verticalAlign: 'middle', backgroundColor: { image: logo } };
+      richConfig[rk] = { height: logoHeight, width: logoWidth, align: 'center', verticalAlign: 'middle', backgroundColor: { image: logo } };
     } else {
       richConfig[rk] = { color: '#1e293b', fontSize: 20, fontWeight: 'bold', fontFamily: 'Barlow Condensed' };
     }
   });
-
   if (window._chartVol8) window._chartVol8.dispose();
   if (window._chartCcc8) window._chartCcc8.dispose();
   
-  window._chartVol8 = echarts.init(document.getElementById('marcas-chart-vol'));
-  window._chartCcc8 = echarts.init(document.getElementById('marcas-chart-ccc'));
+  window._chartVol8 = echarts.init(document.getElementById('marcas-chart-vol'), null, {renderer:'canvas', devicePixelRatio: 2});
+  window._chartCcc8 = echarts.init(document.getElementById('marcas-chart-ccc'), null, {renderer:'canvas', devicePixelRatio: 2});
   
   const commonOptions = {
     animation: false,
@@ -2145,9 +2255,10 @@ function render8() {
       type: 'category',
       data: chartBrands,
       axisLabel: {
+        interval: 0,
         formatter: function(value) { 
           const rk = 'rk_' + value.replace(/[^a-zA-Z0-9_]/g, '');
-          return LOGOS[value] ? '{' + rk + '| }' : '{' + rk + '|' + value + '}'; 
+          return LOGO_READY[value] ? '{' + rk + '| }' : '{' + rk + '|' + value + '}'; 
         },
         rich: richConfig,
         margin: 20
@@ -2216,20 +2327,9 @@ function render8() {
     return s;
   };
   
-  // Wait for all logo images to be loaded before rendering charts
-  const imgPromises = Object.values(LOGOS).map(src => {
-    return new Promise(resolve => {
-      const img = new Image();
-      img.onload = resolve;
-      img.onerror = resolve; // resolve even on error so we don't block
-      img.src = src;
-    });
-  });
-
-  Promise.all(imgPromises).then(() => {
-    window._chartVol8.setOption({ ...commonOptions, series: getSeries(volLast26, volPrev26, volLast25) });
-    window._chartCcc8.setOption({ ...commonOptions, series: getSeries(cccLast26, cccPrev26, cccLast25) });
-  });
+  window._chartVol8.setOption({ ...commonOptions, series: getSeries(volLast26, volPrev26, volLast25) });
+  window._chartCcc8.setOption({ ...commonOptions, series: getSeries(cccLast26, cccPrev26, cccLast25) });
+  }); // end _logosReadyPromise.then
 }
 
 /* MARCAS CAROUSEL LOGIC */

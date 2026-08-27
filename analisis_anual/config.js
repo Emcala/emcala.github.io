@@ -7,12 +7,12 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto'
 const LABS  = MESES.map(m => m.slice(0,3).toUpperCase());
 
 const UN_LIST = [
-  {key:'CERVEZAS CMQ',         label:'Cervezas CMQ',         color:'#f97316'},
-  {key:'UNG',                  label:'UNG',                  color:'#a855f7'},
-  {key:'AGUAS ECO',            label:'Aguas Eco',            color:'#14b8a6'},
-  {key:'ADYACENCIAS',          label:'Adyacencias',          color:'#8b5cf6'},
-  {key:'VINO',                 label:'Vino',                 color:'#dc2626'},
-  {key:'MARKETPLACE ALIMENTOS',label:'Marketplace',          color:'#16a34a'},
+  {key:'CERVEZAS CMQ',         label:'Cervezas CMQ',         color:'#ea580c'},
+  {key:'UNG',                  label:'UNG',                  color:'#9333ea'},
+  {key:'AGUAS ECO',            label:'Aguas Eco',            color:'#0d9488'},
+  {key:'ADYACENCIAS',          label:'Adyacencias',          color:'#7c3aed'},
+  {key:'VINO',                 label:'Vino',                 color:'#b91c1c'},
+  {key:'MARKETPLACE ALIMENTOS',label:'Marketplace',          color:'#15803d'},
 ];
 
 // Dynamic Config
