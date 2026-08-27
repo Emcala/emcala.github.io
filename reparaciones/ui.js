@@ -326,7 +326,7 @@ function buildRegItem(r,onclickAttr){
       }
     }
   }
-  const reinBadge = esReincidencia ? `<span style="margin-left:4px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:#DC2626;color:white;animation:pulse 2s infinite;">⚠️ REINCIDENCIA</span>` : '';
+  const reinBadge = esReincidencia ? `<span style="margin-left:4px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:#DC2626;color:white;animation:pulse 2s infinite;">REINCIDENCIA</span>` : '';
 
   const priA=getPrioridadAprobada(r.ot,r.cliente),priS=getPrioridadSugerida(r.ot,r.cliente),priShow=priA||priS;
   const isAlta=(priShow==='1'||priShow==='2');
