@@ -114,7 +114,7 @@
         const line = lines[i].trim();
         if (!line) continue;
         const cols = line.split(';');
-        if (cols.length <= cm.invoices) continue; // Ignorar filas rotas
+        if (cols.length < 5) continue; // Ignorar filas rotas (muy cortas)
         const csvDate = cols[cm.date] ? cols[cm.date].trim() : '';
         const plannerDate = getPlannerDateFromCSVDate(csvDate);
         if (!plannerDate) continue;
@@ -322,7 +322,19 @@
         totalLinesProcessed++;
       }
       if (totalLinesProcessed === 0) {
-        alert('No se encontraron transacciones de Cerveza o Nabs en el CSV.');
+        // Collect debug info from the first line
+        let debugInfo = "Debug: ";
+        if (lines.length > 1) {
+            const firstDataLine = lines[1].trim();
+            const cols = firstDataLine.split(';');
+            debugInfo += `Cols length: ${cols.length}. cm.invoices: ${cm.invoices}. `;
+            if (cols.length > cm.date) {
+                const csvDate = cols[cm.date] ? cols[cm.date].trim() : '';
+                const plannerDate = getPlannerDateFromCSVDate(csvDate);
+                debugInfo += `Raw date: ${csvDate}, parsed: ${plannerDate}. `;
+            }
+        }
+        alert('No se encontraron transacciones de Cerveza o Nabs en el CSV.\n\n' + debugInfo);
         return;
       }
       let processedDatesCount = 0;
