@@ -28,18 +28,40 @@
     let tareasSyncedMonth = null;
 
     async function syncTareas(cMonth, forceRefresh) {
-      if (tareasSyncedMonth === cMonth && tareasMaster && !forceRefresh) return true;
+      const cleanReqMonth = cMonth.replace('-fallback', '');
+      if (tareasSyncedMonth === cleanReqMonth && tareasMaster && !forceRefresh) return true;
       try {
-        const response = await fetch(`${SCRIPT_URL}?req=tareas&cMonth=${encodeURIComponent(cMonth)}`);
+        const response = await fetch(`${SCRIPT_URL}?req=tareas&cMonth=${encodeURIComponent(cleanReqMonth)}`);
         const result = await response.json();
         if (result.status === 'success' && result.tareas) {
-          const map = {};
+          let map = {};
+          let keysCount = 0;
           for (const clienteId in result.tareas) {
+            let cleanId = String(clienteId).replace(/^["']+|["']+$/g, '');
+            if (cleanId.length === 14 && cleanId.startsWith('18')) cleanId = cleanId.slice(8);
+            cleanId = cleanId.replace(/^0+/, '');
+            
+            map[cleanId] = new Set(result.tareas[clienteId]);
             map[clienteId] = new Set(result.tareas[clienteId]);
+            keysCount++;
           }
+          
+          // FALLBACK: Si no hay tareas para este mes, buscar el mes anterior (ej. arranca el mes y no subieron plana)
+          if (keysCount === 0 && !cMonth.includes('-fallback')) {
+            const [y, m] = cMonth.split('-');
+            let prevM = parseInt(m, 10) - 1;
+            let prevY = parseInt(y, 10);
+            if (prevM === 0) { prevM = 12; prevY--; }
+            const prevMonthStr = `${prevY}-${String(prevM).padStart(2, '0')}`;
+            console.warn(`No hay tareas para ${cMonth}. Haciendo fallback a ${prevMonthStr}...`);
+            // LLamada recursiva pero con flag de fallback en el mes para evitar loop infinito
+            return await syncTareas(`${prevMonthStr}-fallback`, forceRefresh);
+          }
+
           tareasMaster = map;
-          tareasSyncedMonth = cMonth;
-          console.log('Plana de Tareas sincronizada para', cMonth, ':', Object.keys(map).length, 'clientes');
+          // Guardar bajo el nombre original solicitado, aunque hayamos traído el fallback, así no repite requests
+          tareasSyncedMonth = cMonth.replace('-fallback', ''); 
+          console.log('Plana de Tareas sincronizada para', tareasSyncedMonth, ':', Object.keys(map).length, 'clientes');
           return true;
         }
       } catch (e) {
