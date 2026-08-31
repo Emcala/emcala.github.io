@@ -20,7 +20,9 @@
       if (parts.length !== 3) return null;
       const day = parseInt(parts[0], 10);
       const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-      const monthIdx = months.indexOf(parts[1].toLowerCase());
+      let monthStr = parts[1].toLowerCase();
+      if (monthStr === 'sept') monthStr = 'sep'; // Fix for 'sept' variation
+      const monthIdx = months.indexOf(monthStr);
       if (monthIdx === -1) return null;
       const year = 2000 + parseInt(parts[2], 10);
       return new Date(year, monthIdx, day);
