@@ -370,14 +370,14 @@
             const headers = firstLine.split(separator).map(s => s.trim().toLowerCase());
             
             // --- DETECCION SKUs ---
-            const idxIdSKU = headers.findIndex(h => h.includes('sku') || h.includes('código') || h.includes('codigo') || h.includes('id') || h.includes('material'));
+            const idxIdSKU = headers.findIndex(h => h.includes('sku') || h === 'código' || h === 'codigo' || h === 'id' || h.includes('material'));
             const idxShortSKU = headers.findIndex(h => h.includes('short') || h.includes('corta') || (h.includes('desc') && !h.includes('full') && !h.includes('larga')));
             const idxFullSKU = headers.findIndex(h => h.includes('full') || h.includes('larga') || h.includes('desc'));
             
             const isSkus = (idxIdSKU !== -1 && (idxShortSKU !== -1 || idxFullSKU !== -1) && !headers.some(h => h.includes('cliente_id') || h.includes('periodos')));
             
             // --- DETECCION TAREAS ---
-            const idxClienteTarea = headers.findIndex(h => h.includes('cliente_id') || h === 'cliente' || h.includes('cod') && h.includes('cliente'));
+            const idxClienteTarea = headers.findIndex(h => h.includes('cliente_id') || h === 'cliente' || (h.includes('cod') && h.includes('cliente')) || h.includes('clienteid'));
             const idxTarea = headers.findIndex(h => h.includes('tarea'));
             const isTareas = (idxClienteTarea !== -1 && idxTarea !== -1 && !headers.some(h => h.includes('periodos')));
             
@@ -385,11 +385,20 @@
             // Periodos	Cod. Período	Descripción Período	Clientes	Cod. Cliente
             const hasPeriodos = headers.some(h => h.includes('periodo') || h.includes('período'));
             const hasCodPeriodo = headers.some(h => h.includes('cod') && (h.includes('periodo') || h.includes('período')));
-            const hasClientes = headers.some(h => h.includes('clientes') || h.includes('cliente'));
+            const hasClientes = headers.some(h => h === 'clientes' || h === 'cliente' || (h.includes('cliente') && !h.includes('cliente_id') && !h.includes('clienteid')));
             const isVentas = hasPeriodos && hasCodPeriodo && hasClientes;
             
+            console.log('📋 Detección de archivo:', { isVentas, isTareas, isSkus, headers: headers.slice(0, 8) });
+
+            if (!isVentas && !isTareas && !isSkus) {
+              alert('⚠️ No se pudo determinar el tipo de archivo CSV.\n\nAsegurate de subir uno de estos formatos:\n• CSV de Ventas (con columnas Periodos, Cod. Período, etc.)\n• CSV de Tareas (con columnas cliente_id, tarea)\n• CSV de SKUs (con columnas sku/código, descripción)');
+              btnImportAuto.innerHTML = origText;
+              btnImportAuto.disabled = false;
+              return;
+            }
+            
             // -- LOGICA VENTAS --
-            if (isVentas || (!isSkus && !isTareas)) {
+            if (isVentas) {
               btnImportAuto.innerHTML = '⏳ Sincronizando SKUs y Tareas...';
               
               await syncSkus();
