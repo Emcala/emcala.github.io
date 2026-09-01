@@ -40,6 +40,39 @@
         
         kpiMenu.classList.remove('active'); // Close menu after applying
       });
+      
+      // Botón Archivar CCC Histórico
+      const btnArchivar = document.getElementById('btn-archivar-ccc');
+      if (btnArchivar) {
+        btnArchivar.style.display = 'inline-block';
+        btnArchivar.addEventListener('click', async () => {
+          const cMonth = typeof window.getCommercialMonthAndStart === 'function' && window.currentDateObj 
+             ? window.getCommercialMonthAndStart(window.currentDateObj).cMonth
+             : document.getElementById('date-input').value.substring(0, 7);
+             
+          if (!confirm(`¿Estás seguro que querés archivar en el Histórico los CCC de Cerveza del mes comercial ${cMonth}?`)) {
+            return;
+          }
+          
+          btnArchivar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Archivando...';
+          btnArchivar.disabled = true;
+          
+          try {
+            const res = await fetch(`${SCRIPT_URL}?req=archivarHistorico&cMonth=${encodeURIComponent(cMonth)}`);
+            const data = await res.json();
+            if (data.status === 'success') {
+              alert(`¡Éxito! ${data.message}`);
+            } else {
+              alert('Error: ' + data.message);
+            }
+          } catch (e) {
+            alert('Error de red al intentar archivar: ' + e.message);
+          } finally {
+            btnArchivar.innerHTML = '<i class="fa-solid fa-box-archive"></i> Archivar CCC';
+            btnArchivar.disabled = false;
+          }
+        });
+      }
     }
     const tbody = document.getElementById('tbody-main');
     let volData = {};
