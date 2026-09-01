@@ -257,12 +257,16 @@ async function loadAvance(selectedMonth) {
     // For the date parameter, use the last day of the selected month
     // If it's the current month, use today's date
     let dateStr;
-    if (isCurrentMonth(cMonth)) {
+    const isCurrent = isCurrentMonth(cMonth);
+    if (isCurrent) {
+      // Para el mes actual, queremos consultar la fecha de PLANIFICACION (hoy),
+      // no la fecha de entrega (mañana).
       let date = new Date();
       const formatD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      do {
-        date.setDate(date.getDate() + 1);
-      } while (date.getDay() === 0 || FERIADOS.includes(formatD(date)));
+      // Si hoy es domingo o feriado, retrocedemos al último día hábil
+      while (date.getDay() === 0 || FERIADOS.includes(formatD(date))) {
+        date.setDate(date.getDate() - 1);
+      }
       dateStr = formatD(date);
     } else {
       // Last day of the selected month
@@ -300,23 +304,25 @@ async function loadAvance(selectedMonth) {
             if (ccc > 0) {
               ventasData[promFlat].size = ccc;
             }
-            
             // "Clientes Nuevos" is a list of IDs (e.g. "9052, 12266" or just 9052)
-            let nuevosIds = new Set();
-            const rawNuevos = result.data[prom]['clientes-nuevos'];
-            if (rawNuevos !== undefined && rawNuevos !== null && rawNuevos !== "") {
-              if (typeof rawNuevos === 'string') {
-                rawNuevos.split(',').forEach(x => {
-                  const id = x.trim();
-                  if (id) nuevosIds.add(id);
-                });
-              } else if (typeof rawNuevos === 'number') {
-                nuevosIds.add(String(rawNuevos));
+            // Solo lo mostramos si estamos mirando el mes actual (pedido del usuario)
+            if (isCurrent) {
+              let nuevosIds = new Set();
+              const rawNuevos = result.data[prom]['clientes-nuevos'];
+              if (rawNuevos !== undefined && rawNuevos !== null && rawNuevos !== "") {
+                if (typeof rawNuevos === 'string') {
+                  rawNuevos.split(',').forEach(x => {
+                    const id = x.trim();
+                    if (id) nuevosIds.add(id);
+                  });
+                } else if (typeof rawNuevos === 'number') {
+                  nuevosIds.add(String(rawNuevos));
+                }
               }
-            }
-            if (nuevosIds.size > 0) {
-              ventasData[promFlat].nuevos = nuevosIds.size;
-              ventasData[promFlat].nuevosIds = nuevosIds;
+              if (nuevosIds.size > 0) {
+                ventasData[promFlat].nuevos = nuevosIds.size;
+                ventasData[promFlat].nuevosIds = nuevosIds;
+              }
             }
           }
         }
