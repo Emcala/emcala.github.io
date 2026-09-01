@@ -48,14 +48,27 @@ async function fetchJsonRetry(url, options, maxRetries = 4) {
 // ==========================================
 const monthSelect = document.getElementById('monthSelect');
 
+// Calcula el mes comercial actual: el mes al que pertenece la entrega de
+// la venta de hoy (siguiente día hábil).  Misma lógica que el Planificador.
+function getCommercialMonthNow() {
+  const now = new Date();
+  const formatD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  let delivery = new Date(now);
+  do {
+    delivery.setDate(delivery.getDate() + 1);
+  } while (delivery.getDay() === 0 || FERIADOS.includes(formatD(delivery)));
+  return `${delivery.getFullYear()}-${String(delivery.getMonth()+1).padStart(2,'0')}`;
+}
+
 function populateMonthSelector() {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth(); // 0-based
+  const commercialMonth = getCommercialMonthNow();
 
   monthSelect.innerHTML = '';
 
-  // Show last 6 months + current month
+  // Show last 6 months + current calendar month
   for (let i = 6; i >= 0; i--) {
     let m = currentMonth - i;
     let y = currentYear;
@@ -65,9 +78,25 @@ function populateMonthSelector() {
     const opt = document.createElement('option');
     opt.value = val;
     opt.textContent = label;
-    if (i === 0) opt.selected = true; // current month selected by default
     monthSelect.appendChild(opt);
   }
+
+  // Si el mes comercial está adelantado respecto al calendario
+  // (ej: 31 de agosto → entrega 1 de sept → comercial = septiembre),
+  // agregarlo al selector para que el usuario pueda elegirlo.
+  const calendarMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  if (commercialMonth > calendarMonth) {
+    const parts = commercialMonth.split('-');
+    const cm = parseInt(parts[1]) - 1;
+    const cy = parseInt(parts[0]);
+    const opt = document.createElement('option');
+    opt.value = commercialMonth;
+    opt.textContent = `${MONTH_NAMES[cm]} ${cy}`;
+    monthSelect.appendChild(opt);
+  }
+
+  // Seleccionar el mes comercial actual por defecto
+  monthSelect.value = commercialMonth;
 }
 
 function getSelectedMonth() {
@@ -75,9 +104,7 @@ function getSelectedMonth() {
 }
 
 function isCurrentMonth(cMonth) {
-  const now = new Date();
-  const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  return cMonth === current;
+  return cMonth === getCommercialMonthNow();
 }
 
 // ==========================================
@@ -318,24 +345,30 @@ async function loadAvance(selectedMonth) {
 // ==========================================
 function calcDiasRestantes() {
   const cMonth = getSelectedMonth();
-  const now = new Date();
-  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const commercialMonth = getCommercialMonthNow();
   
-  // For past months (already closed), no remaining days
-  if (cMonth < currentMonthStr) return 0;
+  // Meses pasados (ya cerrados): sin días restantes
+  if (cMonth < commercialMonth) return 0;
   
-  // For future months, return all business days of that month
   const parts = cMonth.split('-');
   const year = parseInt(parts[0]);
   const mon = parseInt(parts[1]) - 1; // 0-based
   
   let startDay, lastDay;
-  if (cMonth === currentMonthStr) {
-    // Current month: remaining days from tomorrow
-    startDay = now.getDate() + 1;
+  if (cMonth === commercialMonth) {
+    // Mes comercial actual: días restantes desde mañana
+    const now = new Date();
+    if (now.getMonth() === mon) {
+      // Caso normal: mes calendario == mes comercial
+      startDay = now.getDate() + 1;
+    } else {
+      // Caso borde: todavía en mes calendario anterior (ej: 31/8 → comercial Sep)
+      // La venta de hoy ya contó; los días restantes son todos los del nuevo mes.
+      startDay = 1;
+    }
     lastDay = new Date(year, mon + 1, 0).getDate();
   } else {
-    // Future month: all days
+    // Mes futuro: todos los días
     startDay = 1;
     lastDay = new Date(year, mon + 1, 0).getDate();
   }
