@@ -426,6 +426,16 @@ function tryRender() {
   const ventasKeys  = new Set(Object.keys(ventasData));
   const histKeys    = historicosData ? new Set(Object.keys(historicosData)) : null;
 
+  // Get selected month and year for MA / MMAA dynamic calculation
+  const selParts = getSelectedMonth().split('-');
+  const selYear = parseInt(selParts[0], 10);
+  const selMonthIdx = parseInt(selParts[1], 10) - 1; // 0-based
+
+  const maMonthIdx = selMonthIdx === 0 ? 11 : selMonthIdx - 1;
+  const maYear = selMonthIdx === 0 ? selYear - 1 : selYear;
+  const aaMonthIdx = selMonthIdx;
+  const aaYear = selYear - 1;
+
   // Group by supervisor (preserve mesas.csv order)
   const spvOrder = [];
   const spvMap   = {};
@@ -480,7 +490,17 @@ function tryRender() {
         if (!hKey && pc !== pn) {
           hKey = findMatch(pn, histKeys);
         }
-        if (hKey) { cccMA = historicosData[hKey].cccMA; cccMMAA = historicosData[hKey].cccMMAA; }
+        if (hKey) {
+          const hd = historicosData[hKey];
+          // Backward compatibility check for old cache
+          if (hd.cccMA !== undefined) {
+            cccMA = hd.cccMA;
+            cccMMAA = hd.cccMMAA;
+          } else {
+            if (hd[maYear] && hd[maYear][maMonthIdx]) cccMA = hd[maYear][maMonthIdx];
+            if (hd[aaYear] && hd[aaYear][aaMonthIdx]) cccMMAA = hd[aaYear][aaMonthIdx];
+          }
+        }
       }
 
       const media = dias > 0 ? Math.round(cnc / dias) : cnc;
