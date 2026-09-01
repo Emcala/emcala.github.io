@@ -497,8 +497,8 @@ function tryRender() {
             cccMA = hd.cccMA;
             cccMMAA = hd.cccMMAA;
           } else {
-            if (hd[maYear] && hd[maYear][maMonthIdx]) cccMA = hd[maYear][maMonthIdx];
-            if (hd[aaYear] && hd[aaYear][aaMonthIdx]) cccMMAA = hd[aaYear][aaMonthIdx];
+            if (hd[maYear] && hd[maYear][maMonthIdx] !== undefined) cccMA = hd[maYear][maMonthIdx];
+            if (hd[aaYear] && hd[aaYear][aaMonthIdx] !== undefined) cccMMAA = hd[aaYear][aaMonthIdx];
           }
         }
       }
