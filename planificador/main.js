@@ -320,6 +320,7 @@
                       volData[matchedProm]['obj-up'] = 0;
                       volData[matchedProm]['obj-rb'] = 0;
                       volData[matchedProm]['obj-ag'] = 0;
+                      volData[matchedProm]['obj-f2'] = 0;
                       resetProms[matchedProm] = true;
                       promotoresFound++;
                     }
@@ -334,6 +335,8 @@
                       volData[matchedProm]['obj-rb'] += colG;
                     } else if (currentCategory.includes('AGUAS')) {
                       volData[matchedProm]['obj-ag'] += colG;
+                    } else if (currentCategory.includes('TOTAL UNG 2026') || currentCategory.includes('TOTAL UNG')) {
+                      volData[matchedProm]['obj-f2'] += colG;
                     }
                   }
                 }
@@ -341,12 +344,16 @@
 
               for (const p in volData) {
                 if (resetProms[p]) {
+                  const cv = volData[p]['obj-cv'] || 0;
+                  const ac = volData[p]['obj-ac'] || 0;
                   monthObjs[p] = {
-                    'obj-cv': volData[p]['obj-cv'],
-                    'obj-ac': volData[p]['obj-ac'],
-                    'obj-up': volData[p]['obj-up'],
-                    'obj-rb': volData[p]['obj-rb'],
-                    'obj-ag': volData[p]['obj-ag']
+                    'obj-f1': cv + ac,
+                    'obj-f2': volData[p]['obj-f2'] || 0,
+                    'obj-cv': cv,
+                    'obj-ac': ac,
+                    'obj-up': volData[p]['obj-up'] || 0,
+                    'obj-rb': volData[p]['obj-rb'] || 0,
+                    'obj-ag': volData[p]['obj-ag'] || 0
                   };
                 }
               }
