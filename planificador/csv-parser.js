@@ -73,12 +73,12 @@
       }
       const h = lines[0].split(';').map(s => s.trim().toLowerCase());
       const cm = {
-        date: h.indexOf('descripción período'),
+        date: h.indexOf('descripción período') !== -1 ? h.indexOf('descripción período') : h.indexOf('descripcion periodo'),
         clientId: h.indexOf('cod. cliente'),
-        promoter: h.indexOf('descripción vendedor'),
+        promoter: h.indexOf('descripción vendedor') !== -1 ? h.indexOf('descripción vendedor') : h.indexOf('descripcion vendedor'),
         vendorCode: h.findIndex(x => x === 'vendedor'), // Código VEND del vendedor (columna exacta "Vendedor", no "Descripción Vendedor")
-        sku: h.indexOf('código'),
-        article: h.indexOf('artículos') !== -1 ? h.indexOf('artículos') + 2 : 18,
+        sku: h.indexOf('código') !== -1 ? h.indexOf('código') : h.indexOf('codigo'),
+        article: h.indexOf('artículos') !== -1 ? h.indexOf('artículos') + 2 : (h.indexOf('articulos') !== -1 ? h.indexOf('articulos') + 2 : 18),
         brand: h.indexOf('marca') !== -1 ? h.indexOf('marca') + 1 : 20,
         calibreDesc: h.indexOf('calibre') !== -1 ? h.indexOf('calibre') + 1 : 23,
         division: h.indexOf('división') !== -1 ? h.indexOf('división') : h.indexOf('division'),
@@ -387,20 +387,35 @@
           }
 
           if (!trackedPromoter) continue;
-          const rCore = pSales.core > 0 ? parseFloat(pSales.core.toFixed(2)) : '';
-          const rValue = pSales.value > 0 ? parseFloat(pSales.value.toFixed(2)) : '';
-          const rAc = pSales.aboveCore > 0 ? parseFloat(pSales.aboveCore.toFixed(2)) : '';
-          const rUng = pSales.totalUng > 0 ? parseFloat(pSales.totalUng.toFixed(2)) : '';
-          const rAg = pSales.aguas > 0 ? parseFloat(pSales.aguas.toFixed(2)) : '';
-          const rNabs = pSales.nabs > 0 ? parseFloat(pSales.nabs.toFixed(2)) : '';
-          const coreValueSum = (parseFloat(rCore)||0) + (parseFloat(rValue)||0);
-          const f1TotalSum = parseFloat((coreValueSum + (parseFloat(rAc)||0)).toFixed(2));
-          const f2TotalSum = parseFloat((parseFloat(rNabs)||0).toFixed(2));
+          // Sumas exactas sin recortar negativos ni doble redondeo
+          const coreSum = pSales.core || 0;
+          const valueSum = pSales.value || 0;
+          const acSum = pSales.aboveCore || 0;
+          const bcSum = pSales.balanced || 0;
+          const ltSum = pSales.latones || 0;
+          const ungSum = pSales.totalUng || 0;
+          const agSum = pSales.aguas || 0;
+          const upSum = pSales.ungTop || 0;
+          const rbSum = pSales.redbull || 0;
+          const nabsSum = pSales.nabs || 0;
+          
+          const coreValueSum = coreSum + valueSum;
+          const f1TotalSum = coreValueSum + acSum;
+          const f2TotalSum = nabsSum;
+
           const spvName = Object.keys(SPV_DATA).find(s => SPV_DATA[s].includes(trackedPromoter));
           payload.push({
             date: pDate, spv: spvName, promotor: trackedPromoter, cMonth,
-            'f1-v': f1TotalSum || '', 'f1-cv': parseFloat(coreValueSum.toFixed(2)) || '', 'f1-ac': rAc, 'f1-bc': pSales.balanced > 0 ? parseFloat(pSales.balanced.toFixed(2)) : '', 'f1-lt': pSales.latones > 0 ? parseFloat(pSales.latones.toFixed(2)) : '',
-            'f2-v': f2TotalSum || '', 'f2-ung': rUng, 'f2-up': pSales.ungTop > 0 ? parseFloat(pSales.ungTop.toFixed(2)) : '', 'f2-rb': pSales.redbull > 0 ? parseFloat(pSales.redbull.toFixed(2)) : '', 'f2-ag': rAg,
+            'f1-v': f1TotalSum !== 0 ? parseFloat(f1TotalSum.toFixed(2)) : '', 
+            'f1-cv': coreValueSum !== 0 ? parseFloat(coreValueSum.toFixed(2)) : '', 
+            'f1-ac': acSum !== 0 ? parseFloat(acSum.toFixed(2)) : '', 
+            'f1-bc': bcSum !== 0 ? parseFloat(bcSum.toFixed(2)) : '', 
+            'f1-lt': ltSum !== 0 ? parseFloat(ltSum.toFixed(2)) : '',
+            'f2-v': f2TotalSum !== 0 ? parseFloat(f2TotalSum.toFixed(2)) : '', 
+            'f2-ung': ungSum !== 0 ? parseFloat(ungSum.toFixed(2)) : '', 
+            'f2-up': upSum !== 0 ? parseFloat(upSum.toFixed(2)) : '', 
+            'f2-rb': rbSum !== 0 ? parseFloat(rbSum.toFixed(2)) : '', 
+            'f2-ag': agSum !== 0 ? parseFloat(agSum.toFixed(2)) : '',
             'bol-v': pSales.clientsAll.size || '',
             'ccc-ids-cerveza': Array.from(pSales.clientsTotalCerveza).join(','), 'ccc-cerveza': pSales.clientsTotalCerveza.size, 'ccc-core': pSales.clientsCore.size, 'ccc-value': pSales.clientsValue.size, 'ccc-abovecore': pSales.clientsAboveCore.size, 'ccc-latones': pSales.clientsLatones.size, 'ccc-balanced': pSales.clientsBalanced.size, 'ccc-nabs': pSales.clientsNabs.size,
             'tbd-cerveza': pSales.txTotalCerveza.size, 'tbd-core': pSales.txCore.size, 'tbd-value': pSales.txValue.size, 'tbd-abovecore': pSales.txAboveCore.size, 'tbd-latones': pSales.txLatones.size, 'tbd-balanced': pSales.txBalanced.size, 'tbd-nabs': pSales.txNabs.size,
