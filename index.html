@@ -44,17 +44,6 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
 // GS URL for Auth
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQ_cArrrXQ8Z1e07cpTYm62TfLkMo0vbrmWRMrWcP7XUfNeE7gqLz81aSmPQfc7tm82g/exec'; 
 
-// Local dev bypass check
-function checkLocalDevBypass() {
-  if (window.location.protocol === 'file:') {
-    const s = localStorage.getItem('user_session');
-    if (s) {
-      window.location.href = './portal/index.html';
-      return true;
-    }
-  }
-  return false;
-}
 
 async function doLoginHub() {
   const u = document.getElementById('user').value.trim().toUpperCase();
@@ -67,13 +56,6 @@ async function doLoginHub() {
     return;
   }
 
-  // --- LOCAL DEV BYPASS ---
-  if (window.location.protocol === 'file:') {
-    EmcalaAuth.createSession({ usuario: u, rol: 'auditor', nombre: u + ' (DEV)', promotores: '', userHash: 'dev_hash' });
-    window.location.href = './portal/index.html';
-    return;
-  }
-  // ------------------------
 
   btn.textContent = 'Verificando...'; 
   btn.disabled = true;
@@ -128,8 +110,6 @@ async function doLoginHub() {
 
 // Si entra a esta página pero ya está logueado de antes, lo mandamos directo al portal
 window.onload = () => {
-  if (checkLocalDevBypass()) return;
-  
   const s = localStorage.getItem('user_session');
   if (s) {
     window.location.href = './portal/index.html';
