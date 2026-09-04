@@ -73,6 +73,15 @@ const DataService = {
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const json = await res.json();
             
+            if (json.status === 'error') {
+                if (json.message && json.message.toLowerCase().includes('no autorizado')) {
+                    alert('Tu sesión ha expirado o es inválida. Por favor, vuelve a iniciar sesión.');
+                    if (window.EmcalaAuth) window.EmcalaAuth.logout();
+                    return false;
+                }
+                throw new Error(json.message);
+            }
+
             // Procesamos la lista única de clientes para deducir promotores y merchs
             if (json.clientes) {
                 this.processRawClients(json.clientes);
