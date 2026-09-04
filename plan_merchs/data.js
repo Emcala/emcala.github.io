@@ -47,12 +47,41 @@ function parseCoordinate(coordStr) {
 const DataService = {
     data: { promotores: [], merchandisers: [], clientes: [] },
 
+    _getAuthParams() {
+        try {
+            const raw = JSON.parse(localStorage.getItem('user_session') || '{}');
+            return {
+                usuario: raw.usuario || '',
+                userHash: raw.userHash || '',
+                sessionToken: raw._h || '',
+                rol: raw.rol || ''
+            };
+        } catch(e) { return {}; }
+    },
+
     async loadFromAPI(url) {
         try {
-            const res = await fetch(url + '?action=all');
+            const auth = this._getAuthParams();
+            const params = new URLSearchParams({
+                action: 'all',
+                usuario: auth.usuario,
+                userHash: auth.userHash,
+                sessionToken: auth.sessionToken,
+                rol: auth.rol
+            });
+            const res = await fetch(`${url}?${params.toString()}`);
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const json = await res.json();
             
+            if (json.status === 'error') {
+                if (json.message && json.message.toLowerCase().includes('no autorizado')) {
+                    alert('Tu sesión ha expirado o es inválida. Por favor, vuelve a iniciar sesión.');
+                    if (window.EmcalaAuth) window.EmcalaAuth.logout();
+                    return false;
+                }
+                throw new Error(json.message);
+            }
+
             // Procesamos la lista única de clientes para deducir promotores y merchs
             if (json.clientes) {
                 this.processRawClients(json.clientes);
@@ -195,6 +224,13 @@ const DataService = {
         try {
             const params = new URLSearchParams();
             params.append('action', action);
+            
+            const auth = this._getAuthParams();
+            params.append('usuario', auth.usuario);
+            params.append('userHash', auth.userHash);
+            params.append('sessionToken', auth.sessionToken);
+            params.append('rol', auth.rol);
+
             for (const key in dataObj) {
                 params.append(key, dataObj[key]);
             }
@@ -235,6 +271,12 @@ const DataService = {
             params.append('codigos', codigos.join('|||'));
             params.append('nombres', nombres.join('|||'));
             
+            const auth = this._getAuthParams();
+            params.append('usuario', auth.usuario);
+            params.append('userHash', auth.userHash);
+            params.append('sessionToken', auth.sessionToken);
+            params.append('rol', auth.rol);
+
             // Adjuntamos solo los campos que vienen en changes
             for (const key in changes) {
                 params.append(key, changes[key]);
