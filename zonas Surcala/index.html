@@ -3,29 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="EMCALA - Mapa interactivo de zonas de Promotores, Merchandisers y Clientes">
-    <title>EMCALA - Mapa de Zonas</title>
+    <meta name="description" content="SURCALA - Mapa interactivo de zonas de Supervisores, Promotores y Clientes">
+    <title>SURCALA - Mapa de Clientes</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin="" />
+    <!-- Preconnect to CDNs to speed up TLS handshakes -->
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://api.mapbox.com">
 
-    <!-- Turf.js for GeoSpatial operations (Convex Hull) -->
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
 
+    <!-- MapLibre GL JS -->
+    <link href="https://unpkg.com/maplibre-gl@4.1.3/dist/maplibre-gl.css" rel="stylesheet" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" rel="stylesheet" />
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=6">
-    <!-- FontAwesome -->
-    <script src="../emcala-auth.js?v=2"></script>
+    <!-- App Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Auth Module -->
+    <script defer src="../emcala-auth.js"></script>
+
+    <!-- MapLibre GL JS -->
+    <script defer src="https://unpkg.com/maplibre-gl@4.1.3/dist/maplibre-gl.js"></script>
+    
+    <!-- Mapbox Draw & Turf.js -->
+    <script defer src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
+    <script defer src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+    <!-- App JS -->
+    <script defer src="data.js"></script>
+    <script defer src="map.js"></script>
+    <script defer src="ui.js"></script>
+    <script defer src="app.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -39,19 +53,19 @@
                     <i class="fas fa-map-marked-alt"></i>
                 </div>
                 <div class="brand-text">
-                    <h1>EMCALA</h1>
-                    <span class="brand-subtitle">Mapa de Zonas</span>
+                    <h1>SURCALA</h1>
+                    <span class="brand-subtitle">Mapa de Clientes</span>
                 </div>
             </div>
         </div>
         <div class="header-right">
             <div class="header-stats" id="header-stats">
-                <div class="stat-badge" id="stat-promotores" title="Promotores">
-                    <i class="fas fa-user-tie"></i>
+                <div class="stat-badge" id="stat-supervisores" title="Supervisores">
+                    <i class="fas fa-user-shield"></i>
                     <span>0</span>
                 </div>
-                <div class="stat-badge" id="stat-merchs" title="Merchandisers">
-                    <i class="fas fa-user-tag"></i>
+                <div class="stat-badge" id="stat-promotores" title="Promotores">
+                    <i class="fas fa-user-tie"></i>
                     <span>0</span>
                 </div>
                 <div class="stat-badge" id="stat-clientes" title="Clientes">
@@ -96,12 +110,12 @@
             <div class="tab-content active" id="tab-filters">
                 <div class="filter-section">
                     <div class="section-header">
-                        <h3><i class="fas fa-sitemap"></i> Merchandisers</h3>
-                        <button class="link-btn" id="toggle-all-merchs">Desmarcar Todos</button>
+                        <h3><i class="fas fa-sitemap"></i> Organización</h3>
+                        <button class="link-btn" id="toggle-all-tree">Desmarcar Todos</button>
                     </div>
-                    <div id="merchs-tree" class="tree-list">
+                    <div id="tree-filters-list" class="tree-list">
                         <div class="loading-placeholder">
-                            <i class="fas fa-spinner fa-spin"></i> Cargando...
+                            <i class="fas fa-spinner fa-spin"></i> Cargando jerarquía...
                         </div>
                     </div>
                 </div>
@@ -110,17 +124,13 @@
 
             <!-- Tab: Clients List -->
             <div class="tab-content" id="tab-clients">
-                <div class="search-container" style="position: relative;">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="search-clients" placeholder="Buscar cliente, promotor, frec..." autocomplete="off">
-                        <button class="clear-search" id="clear-search" title="Limpiar">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div id="search-suggestions" class="search-suggestions" style="display:none;"></div>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-clients" placeholder="Buscar cliente...">
+                    <button class="clear-search" id="clear-search" title="Limpiar">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <button id="btn-new-client" class="btn primary-btn" style="width: 100%; margin-bottom: 10px;"><i class="fas fa-plus"></i> Nuevo Cliente</button>
                 <div class="client-count" id="client-count">0 clientes</div>
                 <div id="clients-list" class="clients-list">
                     <div class="loading-placeholder">
@@ -133,34 +143,45 @@
             <div class="tab-content" id="tab-print">
                 <div class="print-intro">
                     <i class="fas fa-info-circle"></i>
-                    <p>Filtrá por Promotor, Merch y/o Frecuencia para generar un listado de clientes tipo planilla.</p>
+                    <p>Filtrá por Supervisor, Promotor y/o Localidad para generar un listado de clientes tipo planilla.</p>
                 </div>
 
-                <div class="filter-section">
-                    <div class="section-header">
-                        <h3><i class="fas fa-user-tie"></i> Promotor</h3>
-                    </div>
-                    <select id="print-promotor" class="select-input">
-                        <option value="">-- Todos los promotores --</option>
-                    </select>
+                <div id="print-map-selection-banner" class="print-intro hidden" style="background-color: rgba(56, 135, 190, 0.1); border-left: 4px solid #3887be; border-radius: 8px;">
+                    <i class="fas fa-draw-polygon" style="color: #3887be;"></i>
+                    <p style="margin: 0; padding-bottom: 8px;"><strong>Modo: Selección en Mapa</strong></p>
+                    <p style="font-size: 12px; margin-bottom: 12px;">Se están mostrando únicamente los clientes seleccionados con la herramienta de recuadro.</p>
+                    <button id="btn-clear-map-selection" class="btn-secondary" style="width: 100%; justify-content: center; font-size: 12px; padding: 6px;">
+                        <i class="fas fa-times"></i> Cancelar selección
+                    </button>
                 </div>
 
-                <div class="filter-section">
-                    <div class="section-header">
-                        <h3><i class="fas fa-user-tag"></i> Merchandiser</h3>
+                <div id="print-dropdown-filters">
+                    <div class="filter-section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-user-shield"></i> Supervisor</h3>
+                        </div>
+                        <select id="print-supervisor" class="select-input">
+                            <option value="">-- Todos los supervisores --</option>
+                        </select>
                     </div>
-                    <select id="print-merch" class="select-input">
-                        <option value="">-- Todos los merchandisers --</option>
-                    </select>
-                </div>
 
-                <div class="filter-section">
-                    <div class="section-header">
-                        <h3><i class="fas fa-calendar-alt"></i> Frecuencia</h3>
+                    <div class="filter-section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-user-tie"></i> Promotor</h3>
+                        </div>
+                        <select id="print-promotor" class="select-input">
+                            <option value="">-- Todos los promotores --</option>
+                        </select>
                     </div>
-                    <select id="print-frecuencia" class="select-input">
-                        <option value="">-- Todas las frecuencias --</option>
-                    </select>
+
+                    <div class="filter-section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-map-pin"></i> Localidad</h3>
+                        </div>
+                        <select id="print-localidad" class="select-input">
+                            <option value="">-- Todas las localidades --</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="print-preview" id="print-preview">
@@ -171,11 +192,11 @@
                 </div>
 
                 <div class="print-actions">
-                    <button class="btn primary-btn" id="btn-print" style="width: 100%; margin-top: 15px;">
-                        <i class="fas fa-print"></i> Imprimir Planilla
+                    <button class="btn-primary" id="btn-print">
+                        <i class="fas fa-print"></i> Imprimir
                     </button>
                     <button class="btn-secondary" id="btn-export-csv" style="width:100%; margin-top: 8px; justify-content: center;">
-                        <i class="fas fa-file-csv"></i> Exportar CSV
+                        <i class="fas fa-file-excel"></i> Exportar a Excel (CSV)
                     </button>
                 </div>
             </div>
@@ -183,8 +204,18 @@
 
         <!-- Map Container -->
         <main id="map-container">
+            <!-- Floating Map Search -->
+            <div id="map-search-widget" class="map-search-widget hidden">
+                <div class="map-search-input-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="map-search-input" placeholder="Buscar cliente por nombre o código..." autocomplete="off">
+                    <button class="clear-search" id="map-search-clear" title="Cerrar"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="map-search-results" class="map-search-results"></div>
+            </div>
+
             <div id="map"></div>
-            
+
             <!-- Loading Overlay -->
             <div id="map-loading" class="map-loading">
                 <div class="loading-content">
@@ -192,177 +223,35 @@
                     <p>Cargando mapa...</p>
                 </div>
             </div>
-            
-            <div class="map-controls">
-                <!-- Capas Base -->
-                <div class="layer-control">
-                    <select id="map-style-select" class="layer-select" title="Estilo de Mapa">
-                        <!-- Opciones generadas en map.js -->
-                    </select>
-                </div>
-                <!-- Vista General -->
-                <button id="btn-fit-bounds" class="icon-btn float-btn" title="Centrar mapa en zonas">
-                    <i class="fas fa-expand"></i>
-                </button>
-            </div>
-
-            <!-- Bulk Actions Bar -->
-            <div class="bulk-actions-bar" id="bulk-actions-bar" style="display:none;">
-                <div style="flex:1;">
-                    <span id="bulk-count">0</span> clientes seleccionados
-                </div>
-                <div style="display:flex; gap:8px;">
-                    <button id="btn-bulk-edit" class="btn" title="Edición Masiva" style="background:var(--accent-primary); color:white; border:none; padding:4px 8px; border-radius:4px;">
-                        <i class="fas fa-edit"></i> Editar
-                    </button>
-                    <button id="btn-bulk-clear" class="btn" title="Limpiar Selección" style="color:var(--text-muted); background:none; border:none; padding:4px;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
         </main>
-    </div>
-
-    <!-- Client Edit/Add Modal -->
-    <div class="modal-overlay" id="client-modal" style="z-index: 2000; display: none;">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h2 id="client-modal-title"><i class="fas fa-user-edit"></i> Nuevo Cliente</h2>
-                <button type="button" class="modal-close" id="client-modal-close-top">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="client-form">
-                    <input type="hidden" id="client-original-codigo">
-                    <input type="hidden" id="client-original-nombre">
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Código / ID</label>
-                            <input type="text" id="client-codigo" class="config-input">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Razón Social / Nombre *</label>
-                            <input type="text" id="client-nombre" class="config-input" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label>Dirección</label>
-                        <input type="text" id="client-direccion" class="config-input">
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Latitud *</label>
-                            <input type="text" id="client-lat" class="config-input" required>
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Longitud *</label>
-                            <input type="text" id="client-lng" class="config-input" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Promotor</label>
-                            <input type="text" id="client-promotor" class="config-input">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Merch</label>
-                            <input type="text" id="client-merch" class="config-input">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Frecuencia</label>
-                            <input type="text" id="client-frecuencia" class="config-input">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Prioridad (Nro)</label>
-                            <input type="text" id="client-prioridad" class="config-input" placeholder="Ej: 1, 2...">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Teléfono</label>
-                            <input type="text" id="client-telefono" class="config-input">
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label>Notas</label>
-                        <textarea id="client-notas" class="config-input" rows="2" style="width:100%; resize:vertical; background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm); padding:10px;"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn secondary-btn" id="client-modal-close">Cancelar</button>
-                <button type="submit" form="client-form" class="btn primary-btn" id="client-modal-save">Guardar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bulk Edit Modal -->
-    <div id="bulk-edit-modal" class="modal-overlay" style="display:none; z-index: 2001;">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <h3><i class="fas fa-layer-group"></i> Edición Masiva</h3>
-                <button id="bulk-modal-close" class="modal-close"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <p style="margin-top:0; font-size:13px; color:var(--text-muted); line-height:1.4;">
-                    Se actualizarán <strong id="bulk-edit-count">0</strong> clientes seleccionados. <br>
-                    <span style="color:var(--warning);">¡Los campos que dejes vacíos NO se modificarán!</span>
-                </p>
-                
-                <form id="bulk-edit-form">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Promotor</label>
-                            <input type="text" id="bulk-promotor" class="config-input" placeholder="(sin cambios)">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Merchandiser</label>
-                            <input type="text" id="bulk-merch" class="config-input" placeholder="(sin cambios)">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Frecuencia</label>
-                            <input type="text" id="bulk-frecuencia" class="config-input" placeholder="(sin cambios)">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Prioridad</label>
-                            <input type="text" id="bulk-prioridad" class="config-input" placeholder="(sin cambios)">
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label>Notas</label>
-                        <textarea id="bulk-notas" class="config-input" rows="2" placeholder="(sin cambios)" style="width:100%; resize:vertical; background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm); padding:10px;"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn secondary-btn" id="bulk-modal-cancel">Cancelar</button>
-                <button type="button" class="btn primary-btn" id="bulk-modal-save"><i class="fas fa-save"></i> Aplicar a Todos</button>
-            </div>
-        </div>
     </div>
 
     <!-- Config Modal -->
     <div id="config-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h2><i class="fas fa-cog"></i> Configuración Visual</h2>
+                <h2><i class="fas fa-cog"></i> Configuración</h2>
                 <button class="modal-close" id="modal-close">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
-                
+                <div class="config-section">
+                    <h3>Colores de Frecuencias</h3>
+                    <div class="input-group" style="display:flex; justify-content:space-between; align-items:center;">
+                        <label for="color-luju">LU-JU</label>
+                        <input type="color" id="color-luju" value="#818cf8" style="cursor:pointer; width:40px; height:30px; border:none; padding:0;">
+                    </div>
+                    <div class="input-group" style="display:flex; justify-content:space-between; align-items:center;">
+                        <label for="color-mavi">MA-VI</label>
+                        <input type="color" id="color-mavi" value="#34d399" style="cursor:pointer; width:40px; height:30px; border:none; padding:0;">
+                    </div>
+                    <div class="input-group" style="display:flex; justify-content:space-between; align-items:center;">
+                        <label for="color-misa">MI-SA</label>
+                        <input type="color" id="color-misa" value="#fbbf24" style="cursor:pointer; width:40px; height:30px; border:none; padding:0;">
+                    </div>
+                </div>
+
                 <div class="config-section">
                     <h3>Mapa</h3>
                     <div class="input-group">
@@ -380,32 +269,16 @@
                 </div>
 
                 <div class="config-section">
-                    <h3>Personalización</h3>
-                    <p class="config-help">Elegí el estilo del marcador para los clientes en el mapa.</p>
-                    <div class="input-group">
-                        <label>Icono de Clientes</label>
-                        <select id="config-client-icon" class="config-input">
-                            <option value="number">Prioridad (Números)</option>
-                            <option value="fas fa-store">Tienda</option>
-                            <option value="fas fa-shopping-cart">Carrito</option>
-                            <option value="fas fa-box">Caja</option>
-                            <option value="fas fa-building">Edificio</option>
-                            <option value="fas fa-coffee">Café</option>
-                            <option value="fas fa-star">Estrella</option>
-                            <option value="fas fa-map-marker-alt">Pin</option>
-                        </select>
-                    </div>
-                    
-                    <h3 style="margin-top:20px;">Colores de Merchandisers</h3>
-                    <div id="config-merchs-colors" style="display:flex; flex-direction:column; gap:8px; margin-top:10px; max-height:200px; overflow-y:auto; padding-right:10px;">
-                        <!-- Merchs colors will be injected here -->
-                    </div>
+                    <h3>Datos</h3>
+                    <p class="config-help">
+                        Esta aplicación usa datos embebidos desde la planilla de clientes geolocalizados.
+                        Para actualizar los datos, contactá al administrador.
+                    </p>
                 </div>
-
-
             </div>
             <div class="modal-footer">
-                <button class="btn-primary" id="save-config" style="margin-left: auto;">
+                <div></div>
+                <button class="btn-primary" id="save-config">
                     <i class="fas fa-save"></i> Guardar
                 </button>
             </div>
@@ -415,127 +288,28 @@
     <!-- Print Template (hidden, used for printing) -->
     <div id="print-template" class="print-only">
         <div class="print-header-report">
-            <h1>EMCALA - Listado de Clientes</h1>
+            <h1>SURCALA - Listado de Clientes</h1>
             <p class="print-date" id="print-date"></p>
         </div>
         <div class="print-filters-info" id="print-filters-info"></div>
         <table class="print-table" id="print-table">
             <thead>
                 <tr>
-                    <th class="col-nro">Nro</th>
+                    <th class="col-nro">Código</th>
                     <th class="col-razon">Razón Social</th>
                     <th class="col-dir">Dirección</th>
-                    <th class="col-freq">Frec.</th>
-                    <th class="col-prio">Prioridad</th>
+                    <th class="col-loc">Localidad</th>
+                    <th class="col-zona">Zona</th>
+                    <th class="col-vend">Vendedor</th>
                     <th class="col-prom">Promotor</th>
-                    <th class="col-vta">Vta Prom</th>
-                    <th class="col-edfs">EDFs</th>
+                    <th class="col-sup">Supervisor</th>
                 </tr>
             </thead>
             <tbody id="print-table-body"></tbody>
         </table>
         <div class="print-footer">
-            <p>Generado desde EMCALA Mapa de Zonas</p>
+            <p>Generado desde SURCALA Mapa de Clientes</p>
         </div>
     </div>
-
-    <!-- Client Edit/Add Modal -->
-    <div class="modal-overlay" id="client-modal" style="z-index: 2000; display: none;">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h2 id="client-modal-title"><i class="fas fa-user-edit"></i> Nuevo Cliente</h2>
-                <button type="button" class="modal-close" id="client-modal-close-top">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="client-form">
-                    <input type="hidden" id="client-original-codigo">
-                    <input type="hidden" id="client-original-nombre">
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Código / ID</label>
-                            <input type="text" id="client-codigo" class="config-input">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Razón Social / Nombre *</label>
-                            <input type="text" id="client-nombre" class="config-input" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label>Dirección</label>
-                        <input type="text" id="client-direccion" class="config-input">
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Latitud *</label>
-                            <input type="text" id="client-lat" class="config-input" required>
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Longitud *</label>
-                            <input type="text" id="client-lng" class="config-input" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Promotor</label>
-                            <input type="text" id="client-promotor" class="config-input">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Merch</label>
-                            <input type="text" id="client-merch" class="config-input">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Frecuencia</label>
-                            <input type="text" id="client-frecuencia" class="config-input">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Prioridad (Nro)</label>
-                            <input type="text" id="client-prioridad" class="config-input" placeholder="Ej: 1, 2...">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>Teléfono</label>
-                            <input type="text" id="client-telefono" class="config-input">
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label>Notas</label>
-                        <textarea id="client-notas" class="config-input" rows="2" style="width:100%; resize:vertical; background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm); padding:10px;"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn secondary-btn" id="client-modal-close">Cancelar</button>
-                <button type="submit" form="client-form" class="btn primary-btn" id="client-modal-save">Guardar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Global Loader -->
-    <div id="global-loader" class="modal-overlay" style="z-index: 9999; display: none;">
-        <div style="color: white; font-size: 24px; text-align: center;">
-            <i class="fas fa-spinner fa-spin" style="font-size: 48px; margin-bottom: 20px;"></i>
-            <div id="global-loader-text">Guardando cambios...</div>
-        </div>
-    </div>
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-
-    <!-- App JS -->
-    <script src="data.js?v=6"></script>
-    <script src="map.js?v=4"></script>
-    <script src="ui.js?v=8"></script>
-    <script src="app.js"></script>
 </body>
 </html>
