@@ -315,6 +315,7 @@
                   if (matchedProm && !colDUpper.includes('TOTAL') && !colDUpper.includes('FOCO')) {
                     if (!volData[matchedProm]) volData[matchedProm] = {};
                     if (!resetProms[matchedProm]) {
+                      volData[matchedProm]['obj-f1'] = 0;
                       volData[matchedProm]['obj-cv'] = 0;
                       volData[matchedProm]['obj-ac'] = 0;
                       volData[matchedProm]['obj-up'] = 0;
@@ -325,7 +326,10 @@
                       promotoresFound++;
                     }
 
-                    if (currentCategory.includes('CORE VALUE') || currentCategory.includes('CORE+VALUE')) {
+                    // FOCO 1: VF TOTAL CERVEZAS viene directo del Excel (ya no se suma core+value + above core)
+                    if (currentCategory.includes('VF TOTAL CERVEZAS') || currentCategory.includes('TOTAL CERVEZAS')) {
+                      volData[matchedProm]['obj-f1'] += colG;
+                    } else if (currentCategory.includes('CORE VALUE') || currentCategory.includes('CORE+VALUE')) {
                       volData[matchedProm]['obj-cv'] += colG;
                     } else if (currentCategory.includes('ABOVE CORE')) {
                       volData[matchedProm]['obj-ac'] += colG;
@@ -333,10 +337,10 @@
                       volData[matchedProm]['obj-up'] += colG;
                     } else if (currentCategory.includes('RED BULL') || currentCategory.includes('REDBULL')) {
                       volData[matchedProm]['obj-rb'] += colG;
+                    } else if (currentCategory.includes('TOTAL UNG 2026') || currentCategory.includes('TOTAL UNG') || currentCategory.includes('TOTAL NABS')) {
+                      volData[matchedProm]['obj-f2'] += colG;
                     } else if (currentCategory.includes('AGUAS')) {
                       volData[matchedProm]['obj-ag'] += colG;
-                    } else if (currentCategory.includes('TOTAL UNG 2026') || currentCategory.includes('TOTAL UNG')) {
-                      volData[matchedProm]['obj-f2'] += colG;
                     }
                   }
                 }
@@ -346,8 +350,12 @@
                 if (resetProms[p]) {
                   const cv = volData[p]['obj-cv'] || 0;
                   const ac = volData[p]['obj-ac'] || 0;
+                  const f1Direct = volData[p]['obj-f1'] || 0;
+                  // Si viene VF TOTAL CERVEZAS directo del Excel, usar ese valor.
+                  // Si no, fallback a la suma de core+value + above core (formato viejo).
+                  const f1Final = f1Direct > 0 ? f1Direct : (cv + ac);
                   monthObjs[p] = {
-                    'obj-f1': cv + ac,
+                    'obj-f1': f1Final,
                     'obj-f2': volData[p]['obj-f2'] || 0,
                     'obj-cv': cv,
                     'obj-ac': ac,
