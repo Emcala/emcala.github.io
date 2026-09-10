@@ -206,10 +206,33 @@ async function loadVentas(dateStr){
     if (result.status !== 'success') throw new Error(result.message || 'Error al traer ventas');
     const ventas = {};
     const fetched = result.data || {};
+    
+    // Crear un mapa inverso para buscar por nombre en caso de que el planificador devuelva nombres
+    const nameToVend = {};
+    if (typeof vendMap !== 'undefined') {
+      for (const v in vendMap) {
+        nameToVend[vendMap[v].promotor] = v;
+      }
+    }
+
     for (let originalProm in fetched){
       let prom = originalProm;
       if (prom.includes('RENZO') && (prom.includes('MI') || prom.includes('MINO'))) prom = 'MIÑO RENZO';
-      ventas[normName(prom)] = fetched[originalProm];
+      
+      let key = normVend(prom);
+      
+      // Si la clave devuelta no es un código VEND conocido, tal vez es un nombre viejo
+      if (typeof vendMap !== 'undefined' && !vendMap[key]) {
+        const nName = normName(prom);
+        if (nameToVend[nName]) {
+          key = nameToVend[nName]; // Resolvió a código VEND correcto
+        } else {
+          // Es un fantasma (ej. GOMEZ GUSTAVO que ya no está en Mesas) -> Ignorar
+          continue; 
+        }
+      }
+      
+      ventas[key] = fetched[originalProm];
     }
     return ventas;
   }catch(e){
