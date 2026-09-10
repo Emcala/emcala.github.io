@@ -462,7 +462,11 @@ function tryRender() {
       const pn = norm(m.promotor);
       const pc = norm(m.codigo);
 
-      const mKey = findMatch(pn, maestroKeys);
+      // Buscar por código VEND primero. Si no encuentra, intentar por nombre (para datos viejos no migrados)
+      let mKey = findMatch(pc, maestroKeys);
+      if (!mKey && pc !== pn) {
+        mKey = findMatch(pn, maestroKeys);
+      }
       const cartera = mKey ? maestroData[mKey] : 0;
 
       // Buscar por código VEND primero. Si no encuentra, intentar por nombre (para datos viejos no migrados)
