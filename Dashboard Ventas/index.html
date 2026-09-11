@@ -144,6 +144,9 @@
   }
   .table-container { max-height: 380px; overflow: auto; }
   table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .col-cv, .col-ung { display: none !important; }
+  table.show-cv .col-cv { display: table-cell !important; }
+  table.show-ung .col-ung { display: table-cell !important; }
   thead th {
     padding: 10px 4px;
     text-align: center;
@@ -231,30 +234,30 @@
 
   <div class="table-card">
     <div class="table-container">
-      <table>
+      <table id="dash-table">
         <thead>
           <tr>
             <th rowspan="2" style="background:#fff; color:#000; text-align: left; padding-left: 8px; padding-right: 8px; z-index: 15; min-width: 130px;">SUPERVISOR / PROMOTOR<br><span style="font-size:0.65rem;font-weight:400;color:var(--text-dim);text-transform:none;">(Clic en fila para gráfico)</span></th>
-            <th colspan="3" class="bg-blue">FOCO I (TOTAL CVZA)</th>
-            <th colspan="3" class="bg-yellow">CORE+VALUE</th>
+            <th colspan="3" class="bg-blue" style="cursor:pointer" onclick="document.getElementById('dash-table').classList.toggle('show-cv')">FOCO I (TOTAL CVZA) 🖱️</th>
+            <th colspan="3" class="bg-yellow col-cv">CORE+VALUE</th>
             <th colspan="3" class="bg-green">ABOVE CORE</th>
             
-            <th colspan="3" class="bg-blue">FOCO II (TOTAL NABS)</th>
-            <th colspan="3" class="bg-pink">UNG TOP</th>
+            <th colspan="3" class="bg-blue" style="cursor:pointer" onclick="document.getElementById('dash-table').classList.toggle('show-ung')">FOCO II (TOTAL NABS) 🖱️</th>
+            <th colspan="3" class="bg-pink col-ung">UNG TOP</th>
             <th colspan="3" class="bg-lightblue">AGUAS</th>
           </tr>
           <tr>
             <!-- CVZA Total -->
             <th class="bg-red">OBJETIVO</th><th class="bg-red">ACUMULADO</th><th class="bg-red">AVANCE</th>
             <!-- CV -->
-            <th class="bg-yellow">OBJETIVO</th><th class="bg-yellow">ACUMULADO</th><th class="bg-yellow">AVANCE</th>
+            <th class="bg-yellow col-cv">OBJETIVO</th><th class="bg-yellow col-cv">ACUMULADO</th><th class="bg-yellow col-cv">AVANCE</th>
             <!-- AC -->
             <th class="bg-green">OBJETIVO</th><th class="bg-green">ACUMULADO</th><th class="bg-green">AVANCE</th>
             
             <!-- NABS Total -->
             <th class="bg-blue-dark">OBJETIVO</th><th class="bg-blue-dark">ACUMULADO</th><th class="bg-blue-dark">AVANCE</th>
             <!-- UNG TOP -->
-            <th class="bg-pink">OBJETIVO</th><th class="bg-pink">ACUMULADO</th><th class="bg-pink">AVANCE</th>
+            <th class="bg-pink col-ung">OBJETIVO</th><th class="bg-pink col-ung">ACUMULADO</th><th class="bg-pink col-ung">AVANCE</th>
             <!-- AGUAS -->
             <th class="bg-lightblue">OBJETIVO</th><th class="bg-lightblue">ACUMULADO</th><th class="bg-lightblue">AVANCE</th>
           </tr>
@@ -301,14 +304,16 @@ function format(num) {
   return parseFloat(num || 0).toFixed(2);
 }
 
-function cell(obj, real, diasInfo) {
-  const p = pct(real, obj, diasInfo);
-  if (!obj || obj <= 0) {
-    return `<td>${format(obj)}</td><td>${format(real)}</td><td class="progress-cell"><span>-</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:0%;background:#94a3b8"></div></div></td>`;
+function cell(obj, real, diasInfo, extraClass = '') {
+    const cAttr = extraClass ? ` class="${extraClass}"` : '';
+    const pcAttr = extraClass ? ` class="progress-cell ${extraClass}"` : ` class="progress-cell"`;
+    const p = pct(real, obj, diasInfo);
+    if (!obj || obj <= 0) {
+      return `<td${cAttr}>${format(obj)}</td><td${cAttr}>${format(real)}</td><td${pcAttr}><span>-</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:0%;background:#94a3b8"></div></div></td>`;
+    }
+    const barCol = colorFor(p);
+    return `<td${cAttr}>${format(obj)}</td><td${cAttr}>${format(real)}</td><td${pcAttr}><span>${p}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.min(100, p)}%;background:${barCol}"></div></div></td>`;
   }
-  const barCol = colorFor(p);
-  return `<td>${format(obj)}</td><td>${format(real)}</td><td class="progress-cell"><span>${p}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.min(100, p)}%;background:${barCol}"></div></div></td>`;
-}
 
 async function cargarDashboard() {
   const cMonth = document.getElementById('month-input').value || getCurrentMonth();
@@ -544,11 +549,11 @@ function renderDashboard() {
       promRowsHtml += `<tr class="mesa-row spv-${spv.replace(/\s+/g, '')}" id="row-PROM-${promIdStr}" onclick="seleccionarProm(event, '${prom}')" style="display:none">
         <td style="padding-left:12px">${prom}</td>
         ${cell(pF1, d.f1Real, dashData.diasInfo)}
-        ${cell(pCV, d.cv, dashData.diasInfo)}
+        ${cell(pCV, d.cv, dashData.diasInfo, 'col-cv')}
         ${cell(pAC, d.ac, dashData.diasInfo)}
         
         ${cell(pF2, d.f2Real, dashData.diasInfo)}
-        ${cell(pUP, d.up, dashData.diasInfo)}
+        ${cell(pUP, d.up, dashData.diasInfo, 'col-ung')}
         ${cell(pAG, d.ag, dashData.diasInfo)}
       </tr>`;
     });
@@ -557,11 +562,11 @@ function renderDashboard() {
     html += `<tr class="spv-header" id="row-SPV-${spvIdStr}" onclick="toggleSpv(event, '${spv}')">
       <td>${spv}</td>
       ${cell(sF1Plan, sF1Real, dashData.diasInfo)}
-      ${cell(sCVPlan, sCVReal, dashData.diasInfo)}
+      ${cell(sCVPlan, sCVReal, dashData.diasInfo, 'col-cv')}
       ${cell(sACPlan, sACReal, dashData.diasInfo)}
       
       ${cell(sF2Plan, sF2Real, dashData.diasInfo)}
-      ${cell(sUPPlan, sUPReal, dashData.diasInfo)}
+      ${cell(sUPPlan, sUPReal, dashData.diasInfo, 'col-ung')}
       ${cell(sAGPlan, sAGReal, dashData.diasInfo)}
     </tr>`;
     html += promRowsHtml;
@@ -575,11 +580,11 @@ function renderDashboard() {
       tfoot.innerHTML = `<tr class="totales-row" id="row-TOTAL" onclick="seleccionarEntidad('TOTAL', 'TOTAL')">
         <td>TOTALES</td>
         ${cell(tF1Plan, tF1Real, dashData.diasInfo)}
-        ${cell(tCVPlan, tCVReal, dashData.diasInfo)}
+        ${cell(tCVPlan, tCVReal, dashData.diasInfo, 'col-cv')}
         ${cell(tACPlan, tACReal, dashData.diasInfo)}
         
         ${cell(tF2Plan, tF2Real, dashData.diasInfo)}
-        ${cell(tUPPlan, tUPReal, dashData.diasInfo)}
+        ${cell(tUPPlan, tUPReal, dashData.diasInfo, 'col-ung')}
         ${cell(tAGPlan, tAGReal, dashData.diasInfo)}
       </tr>`;
     }
