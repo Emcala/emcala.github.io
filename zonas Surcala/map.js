@@ -506,6 +506,11 @@ const MapManager = {
                         const colorProp = cb.checked ? 'FrecuenciaColor' : 'SupervisorColor';
                         this.map.setPaintProperty('clients-points', 'circle-color', ['get', colorProp]);
                     }
+                    if (this.map && this.map.getLayer('promoter-zones-fill')) {
+                        const zoneColorProp = cb.checked ? 'FrecuenciaColor' : 'PromotorColor';
+                        this.map.setPaintProperty('promoter-zones-fill', 'fill-color', ['get', zoneColorProp]);
+                        this.map.setPaintProperty('promoter-zones-line', 'line-color', ['get', zoneColorProp]);
+                    }
                 } else if (t.id === 'show-promoter-zones') {
                     if (this.map && this.map.getLayer('promoter-zones-fill')) {
                         const visibility = cb.checked ? 'visible' : 'none';
@@ -593,20 +598,34 @@ const MapManager = {
         const promoterFeatures = [];
         DataService.data.promotores.forEach(prom => {
             const promClients = DataService.getClientsByPromotor(prom.ID).filter(c => !isNaN(c.Latitud) && !isNaN(c.Longitud));
-            if (promClients.length >= 3) {
-                const points = turf.featureCollection(promClients.map(c => turf.point([c.Longitud, c.Latitud])));
-                try {
-                    const hull = turf.convex(points);
-                    if (hull) {
-                        hull.properties = {
-                            PromotorID: prom.ID,
-                            PromotorName: prom.Nombre,
-                            PromotorColor: prom.Color
-                        };
-                        promoterFeatures.push(hull);
+            
+            // Agrupar por frecuencia
+            const freqGroups = {};
+            promClients.forEach(c => {
+                const freq = c.FrecuenciaGrupo || 'Sin Frecuencia';
+                if (!freqGroups[freq]) freqGroups[freq] = [];
+                freqGroups[freq].push(c);
+            });
+
+            for (const [freq, clientsInFreq] of Object.entries(freqGroups)) {
+                if (clientsInFreq.length >= 3) {
+                    const points = turf.featureCollection(clientsInFreq.map(c => turf.point([c.Longitud, c.Latitud])));
+                    try {
+                        const hull = turf.convex(points);
+                        if (hull) {
+                            hull.properties = {
+                                PromotorID: prom.ID,
+                                PromotorName: prom.Nombre,
+                                PromotorColor: prom.Color,
+                                FrecuenciaGrupo: freq,
+                                FrecuenciaColor: clientsInFreq[0].FrecuenciaColor,
+                                PromFreqID: prom.ID + '_' + freq
+                            };
+                            promoterFeatures.push(hull);
+                        }
+                    } catch (e) {
+                        console.warn('Could not generate convex hull for promotor', prom.ID, 'freq', freq, e);
                     }
-                } catch (e) {
-                    console.warn('Could not generate convex hull for promotor', prom.ID, e);
                 }
             }
         });
@@ -676,10 +695,10 @@ const MapManager = {
         }
 
         const idsArray = Array.from(visibleClientIds);
-        const activePromotorIDs = new Set();
+        const activePromFreqIDs = new Set();
         idsArray.forEach(id => {
             const c = DataService.data.clientes.find(cli => cli.ID == id);
-            if (c) activePromotorIDs.add(c.PromotorID);
+            if (c) activePromFreqIDs.add(c.PromotorID + '_' + (c.FrecuenciaGrupo || 'Sin Frecuencia'));
         });
         
         if (idsArray.length === 0) {
@@ -690,11 +709,11 @@ const MapManager = {
         }
 
         if (this.map.getLayer('promoter-zones-fill')) {
-            if (activePromotorIDs.size === 0) {
-                this.map.setFilter('promoter-zones-fill', ['==', 'PromotorID', 'NONE']);
-                this.map.setFilter('promoter-zones-line', ['==', 'PromotorID', 'NONE']);
+            if (activePromFreqIDs.size === 0) {
+                this.map.setFilter('promoter-zones-fill', ['==', 'PromFreqID', 'NONE']);
+                this.map.setFilter('promoter-zones-line', ['==', 'PromFreqID', 'NONE']);
             } else {
-                const promFilter = ['in', 'PromotorID', ...Array.from(activePromotorIDs)];
+                const promFilter = ['in', 'PromFreqID', ...Array.from(activePromFreqIDs)];
                 this.map.setFilter('promoter-zones-fill', promFilter);
                 this.map.setFilter('promoter-zones-line', promFilter);
             }
