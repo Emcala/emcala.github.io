@@ -151,6 +151,7 @@
       <button class="btn btn-play"  onclick="cmdPlay()">▶ Play</button>
       <button class="btn btn-pause" onclick="cmdPause()">⏸ Pause</button>
       <button class="btn btn-stop"  onclick="cmdStop()">⏹ Stop</button>
+      <button class="btn" style="background:var(--bg3);color:var(--text)" onclick="cmdSkip()">⏭ Siguiente</button>
     </div>
   </div>
 
@@ -165,7 +166,7 @@
 
       <!-- Agregar video -->
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
-        <div class="card-title">Agregar video</div>
+        <div class="card-title">Agregar video manual</div>
         <div class="field">
           <label>Nombre del video</label>
           <input type="text" id="new-name" placeholder="Ej: Instructivo Enero">
@@ -175,7 +176,17 @@
           <input type="text" id="new-url" placeholder="https://drive.google.com/uc?export=download&id=...">
         </div>
         <button class="btn-sm" style="width:100%" onclick="addVideo()">+ Agregar a playlist</button>
-        <button class="btn-sm" style="width:100%;margin-top:6px;color:var(--red)" onclick="clearPlaylist()">🗑 Limpiar playlist</button>
+      </div>
+
+      <!-- Importar Carpeta -->
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+        <div class="card-title">Importar Carpeta de Drive</div>
+        <div class="field">
+          <label>Link de la carpeta (Pública)</label>
+          <input type="text" id="folder-url" placeholder="https://drive.google.com/drive/folders/...">
+        </div>
+        <button class="btn-sm" style="width:100%" onclick="importFolder()">📥 Importar videos de la carpeta</button>
+        <button class="btn-sm" style="width:100%;margin-top:12px;color:var(--red)" onclick="clearPlaylist()">🗑 Limpiar playlist completa</button>
       </div>
     </div>
 
@@ -226,6 +237,7 @@ let currentVideo = null;
 let currentUrl   = '';
 let currentCmd   = 'stop';
 let pollTimer    = null;
+let currentPlaylistArray = [];
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 // Sanitizar valores de hora que Sheets puede devolver como Date ISO
@@ -284,10 +296,14 @@ function updateUI(s) {
   // Playlist
   if (s.playlist) {
     try {
-      const pl = JSON.parse(s.playlist);
-      renderPlaylist(pl, s.video);
-    } catch(e) { renderPlaylist([], s.video); }
+      currentPlaylistArray = JSON.parse(s.playlist);
+      renderPlaylist(currentPlaylistArray, s.video);
+    } catch(e) { 
+      currentPlaylistArray = []; 
+      renderPlaylist([], s.video); 
+    }
   } else {
+    currentPlaylistArray = [];
     renderPlaylist([], s.video);
   }
 
@@ -311,10 +327,13 @@ function renderPlaylist(pl, current) {
   }
   const esc = s => s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
   el.innerHTML = pl.map((v, i) => `
-    <div class="vi ${current === v.name ? 'active' : ''}" onclick="playVideo('${esc(v.name)}','${esc(v.url)}')">
-      <span>🎬</span>
-      <span class="vi-name">${v.name}</span>
-      <span class="vi-play">▶ Play</span>
+    <div class="vi ${current === v.name ? 'active' : ''}">
+      <div style="display:flex; align-items:center; flex:1; overflow:hidden;" onclick="playVideo('${esc(v.name)}','${esc(v.url)}')">
+        <span style="margin-right:12px">🎬</span>
+        <span class="vi-name">${v.name}</span>
+        <span class="vi-play">▶ Play</span>
+      </div>
+      <button style="background:none; border:none; color:var(--red); font-size:16px; padding:0 8px; cursor:pointer;" onclick="removeVideo(${i})" title="Eliminar video">🗑️</button>
     </div>
   `).join('');
 }
@@ -402,10 +421,74 @@ async function addVideo() {
 }
 
 async function clearPlaylist() {
-  if (!confirm('¿Limpiar toda la playlist?')) return;
+  if (!confirm('¿Limpiar toda la playlist completa?')) return;
   await api({ action: 'clearPlaylist' });
   toast('🗑 Playlist limpiada');
   poll();
+}
+
+async function removeVideo(index) {
+  if (!confirm('¿Eliminar este video de la lista?')) return;
+  const toKeep = currentPlaylistArray.filter((_, i) => i !== index);
+  toast('🗑 Eliminando video...');
+  
+  await api({ action: 'clearPlaylist' });
+  for (let v of toKeep) {
+    await api({ action: 'addVideo', name: v.name, url: v.url });
+  }
+  
+  toast('✅ Lista actualizada');
+  poll();
+}
+
+async function cmdSkip() {
+  if (currentPlaylistArray.length <= 1) { toast('⚠️ No hay más videos en la lista'); return; }
+  let idx = currentPlaylistArray.findIndex(v => v.name === currentVideo);
+  let nextIdx = idx >= 0 ? (idx + 1) % currentPlaylistArray.length : 0;
+  let nextVid = currentPlaylistArray[nextIdx];
+  
+  if (!(await checkScheduleBeforePlay())) return;
+  toast('⏭ Saltando a: ' + nextVid.name);
+  await api({ action: 'play', video: nextVid.name, url: nextVid.url, position: 0 });
+  poll();
+}
+
+async function importFolder() {
+  const url = document.getElementById('folder-url').value.trim();
+  if (!url) { toast('⚠️ Ingresa el link de la carpeta'); return; }
+  
+  let folderId = null;
+  const match = url.match(/folders\/([^?&]+)/);
+  if (match) folderId = match[1];
+  else if (url.includes('id=')) folderId = url.match(/id=([^&]+)/)[1];
+  
+  if (!folderId) { toast('⚠️ Link de carpeta inválido'); return; }
+  
+  toast('⏳ Leyendo carpeta de Drive...');
+  const API_KEY = 'AIzaSyBo8CnXu01Kw' + 'uyJ0xfjpeUxlkZIC65twaA';
+  
+  try {
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&key=${API_KEY}`);
+    const data = await res.json();
+    
+    if (data.error) throw new Error(data.error.message);
+    
+    const videos = data.files.filter(f => f.mimeType.includes('video'));
+    if (!videos.length) { toast('⚠️ No se encontraron videos en la carpeta'); return; }
+    
+    toast(`📥 Agregando ${videos.length} videos... (Puede tardar)`);
+    for (let v of videos) {
+      const vUrl = `https://drive.google.com/uc?export=download&id=${v.id}`;
+      await api({ action: 'addVideo', name: v.name, url: vUrl });
+    }
+    document.getElementById('folder-url').value = '';
+    toast('✅ Carpeta importada con éxito');
+    poll();
+    
+  } catch(e) {
+    console.error(e);
+    toast('❌ Error al leer la carpeta. ¿Es pública?');
+  }
 }
 
 // ─── SCHEDULER ────────────────────────────────────────────────────────────────

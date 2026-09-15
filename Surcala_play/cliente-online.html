@@ -62,6 +62,7 @@ const statusEl = document.getElementById('status');
 let lastCmd       = null;
 let lastVideo     = null;
 let lastTimestamp = null;
+let currentPlaylist = [];
 
 // ─── POLLING ──────────────────────────────────────────────────────────────────
 async function poll() {
@@ -101,6 +102,14 @@ function handleState(s) {
   const rawUrl    = s.video_url || '';
   const videoUrl  = formatDriveUrl(rawUrl);
   const timestamp = s.timestamp || '';
+
+  if (s.playlist) {
+    try {
+      currentPlaylist = JSON.parse(s.playlist);
+    } catch(e) { currentPlaylist = []; }
+  } else {
+    currentPlaylist = [];
+  }
 
   // Scheduler — verificar si estamos en horario
   if (s.schedule_enabled === 'true' && cmd !== 'stop') {
@@ -153,7 +162,24 @@ function playVideo(url, position, timestamp) {
     video.play().catch(e => console.error(e));
   }
 
-  video.onended = () => { video.currentTime = 0; video.play().catch(e => console.error(e)); };
+  video.onended = () => { 
+    if (currentPlaylist.length > 1) {
+      showWaiting('Cargando siguiente...');
+      let idx = currentPlaylist.findIndex(v => v.name === lastVideo);
+      let nextIdx = idx >= 0 ? (idx + 1) % currentPlaylist.length : 0;
+      let nextVid = currentPlaylist[nextIdx];
+      
+      // Pequeño delay aleatorio para que las 6 TVs no hagan la petición en el mismo milisegundo exacto
+      setTimeout(() => {
+        fetch(`${GAS}?action=play&video=${encodeURIComponent(nextVid.name)}&url=${encodeURIComponent(nextVid.url)}&position=0`)
+          .then(() => poll()) // forzar un poll rápido
+          .catch(e => console.error(e));
+      }, Math.random() * 1500);
+    } else {
+      video.currentTime = 0; 
+      video.play().catch(e => console.error(e)); 
+    }
+  };
 }
 
 // ─── SCHEDULER ────────────────────────────────────────────────────────────────
