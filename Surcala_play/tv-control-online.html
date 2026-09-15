@@ -174,6 +174,9 @@
         <div class="field">
           <label>Link directo de Google Drive</label>
           <input type="text" id="new-url" placeholder="https://drive.google.com/uc?export=download&id=...">
+          <label style="display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer">
+            <input type="checkbox" id="new-is-image"> Es una foto/imagen
+          </label>
         </div>
         <button class="btn-sm" style="width:100%" onclick="addVideo()">+ Agregar a playlist</button>
       </div>
@@ -326,16 +329,18 @@ function renderPlaylist(pl, current) {
     return;
   }
   const esc = s => s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-  el.innerHTML = pl.map((v, i) => `
+  el.innerHTML = pl.map((v, i) => {
+    const isImg = v.url.includes('type=image');
+    return `
     <div class="vi ${current === v.name ? 'active' : ''}">
       <div style="display:flex; align-items:center; flex:1; overflow:hidden;" onclick="playVideo('${esc(v.name)}','${esc(v.url)}')">
-        <span style="margin-right:12px">🎬</span>
+        <span style="margin-right:12px">${isImg ? '🖼️' : '🎬'}</span>
         <span class="vi-name">${v.name}</span>
         <span class="vi-play">▶ Play</span>
       </div>
       <button style="background:none; border:none; color:var(--red); font-size:16px; padding:0 8px; cursor:pointer;" onclick="removeVideo(${i})" title="Eliminar video">🗑️</button>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function updateSchedStatus(s) {
@@ -411,12 +416,17 @@ async function cmdStop() {
 // ─── PLAYLIST ─────────────────────────────────────────────────────────────────
 async function addVideo() {
   const name = document.getElementById('new-name').value.trim();
-  const url  = document.getElementById('new-url').value.trim();
+  let url    = document.getElementById('new-url').value.trim();
   if (!name || !url) { toast('⚠️ Completá nombre y URL'); return; }
+  
+  const isImage = document.getElementById('new-is-image').checked;
+  if (isImage && !url.includes('type=image')) url += '&type=image';
+  
   await api({ action: 'addVideo', name, url });
   document.getElementById('new-name').value = '';
   document.getElementById('new-url').value  = '';
-  toast('✅ Video agregado');
+  document.getElementById('new-is-image').checked = false;
+  toast('✅ Elemento agregado');
   poll();
 }
 
@@ -473,13 +483,14 @@ async function importFolder() {
     
     if (data.error) throw new Error(data.error.message);
     
-    const videos = data.files.filter(f => f.mimeType.includes('video'));
-    if (!videos.length) { toast('⚠️ No se encontraron videos en la carpeta'); return; }
+    const mediaFiles = data.files.filter(f => f.mimeType.includes('video') || f.mimeType.includes('image'));
+    if (!mediaFiles.length) { toast('⚠️ No se encontraron videos ni imágenes en la carpeta'); return; }
     
-    toast(`📥 Agregando ${videos.length} videos... (Puede tardar)`);
-    for (let v of videos) {
-      const vUrl = `https://drive.google.com/uc?export=download&id=${v.id}`;
-      await api({ action: 'addVideo', name: v.name, url: vUrl });
+    toast(`📥 Agregando ${mediaFiles.length} elementos... (Puede tardar)`);
+    for (let f of mediaFiles) {
+      const isImg = f.mimeType.includes('image');
+      const vUrl = `https://drive.google.com/uc?export=download&id=${f.id}${isImg ? '&type=image' : ''}`;
+      await api({ action: 'addVideo', name: f.name, url: vUrl });
     }
     document.getElementById('folder-url').value = '';
     toast('✅ Carpeta importada con éxito');
