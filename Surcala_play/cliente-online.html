@@ -16,7 +16,7 @@
     background: linear-gradient(145deg, #0B2559 0%, #1B5FA8 60%, #0D3880 100%);
     color: rgba(255,255,255,0.7);
   }
-  .logo  { font-size: 72px; margin-bottom: 24px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2)); }
+  .logo  { height: 100px; max-width: 80%; margin-bottom: 24px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2)); object-fit: contain; }
   .title { font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 12px; letter-spacing: -0.04em; }
   .sub   { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
   .dot   { width: 12px; height: 12px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 10px #4ade80; animation: pulse 1.5s infinite; }
@@ -39,7 +39,7 @@
 <body>
 
 <div id="waiting">
-  <div class="logo">📺</div>
+  <img src="../logo.png" alt="Surcala Logo" class="logo">
   <div class="title">SURCALA TV</div>
   <div class="sub"><div class="dot"></div> <span id="status">Conectando...</span></div>
 </div>
@@ -167,8 +167,11 @@ function isInSchedule(s) {
   const [sh, sm] = parseTime(s.schedule_start).split(':').map(Number);
   const [eh, em] = parseTime(s.schedule_end).split(':').map(Number);
   const nowMin   = now.getHours() * 60 + now.getMinutes();
+  const startMin = sh * 60 + sm;
+  const endMin   = eh * 60 + em;
+  const inTime   = startMin <= endMin ? (nowMin >= startMin && nowMin <= endMin) : (nowMin >= startMin || nowMin <= endMin);
   const dayIdx   = now.getDay() === 0 ? 6 : now.getDay() - 1;
-  return days.includes(dayIdx) && nowMin >= (sh*60+sm) && nowMin <= (eh*60+em);
+  return days.includes(dayIdx) && inTime;
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
