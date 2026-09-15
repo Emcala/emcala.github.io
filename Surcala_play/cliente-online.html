@@ -16,7 +16,7 @@
     background: linear-gradient(145deg, #0B2559 0%, #1B5FA8 60%, #0D3880 100%);
     color: rgba(255,255,255,0.7);
   }
-  .logo  { height: 100px; max-width: 80%; margin-bottom: 24px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2)); object-fit: contain; }
+  .logo  { width: 490px; max-width: 90vw; height: auto; margin-bottom: 12px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2)); mix-blend-mode: screen; opacity: 0.95; object-fit: contain; }
   .title { font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 12px; letter-spacing: -0.04em; }
   .sub   { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
   .dot   { width: 12px; height: 12px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 10px #4ade80; animation: pulse 1.5s infinite; }
@@ -135,6 +135,12 @@ function playVideo(url, position, timestamp) {
 
   showPlayer();
 
+  video.onerror = () => {
+    if (!video.getAttribute('src')) return;
+    console.error("Error cargando video:", video.error);
+    showWaiting('Error de carga. Verifica el link o los permisos de Drive.');
+  };
+
   if (video.src !== url) {
     video.src = url;
     video.load();
@@ -176,7 +182,14 @@ function isInSchedule(s) {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function showPlayer()        { waiting.style.display = 'none';  player.style.display = 'block'; }
-function showWaiting(msg)    { player.style.display  = 'none';  waiting.style.display = 'flex'; statusEl.textContent = msg || 'En espera...'; video.src = ''; }
+function showWaiting(msg)    { 
+  player.style.display  = 'none';  
+  waiting.style.display = 'flex'; 
+  statusEl.textContent = msg || 'En espera...'; 
+  video.pause();
+  video.removeAttribute('src'); 
+  video.load(); 
+}
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 poll();

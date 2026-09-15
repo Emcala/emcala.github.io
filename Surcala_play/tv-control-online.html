@@ -223,6 +223,7 @@
 const GAS = 'https://script.google.com/macros/s/AKfycbxPMqp9zShQhVk9G117Fl_fWBBiOrRSpZWHKO1F2B139mwQJg47l197JWx9SZ7U9-Zs/exec';
 
 let currentVideo = null;
+let currentUrl   = '';
 let currentCmd   = 'stop';
 let pollTimer    = null;
 
@@ -271,6 +272,7 @@ function setOnline(ok) {
 function updateUI(s) {
   currentCmd   = s.cmd   || 'stop';
   currentVideo = s.video || null;
+  currentUrl   = s.video_url || '';
 
   document.getElementById('now-name').textContent = s.video || 'Sin video';
   document.getElementById('now-sub').textContent  = s.cmd === 'play' ? 'Reproduciendo' : s.cmd === 'pause' ? 'Pausado' : '—';
@@ -370,7 +372,7 @@ async function playVideo(name, url) {
 async function cmdPlay() {
   if (!currentVideo) { toast('⚠️ Seleccioná un video de la playlist'); return; }
   if (!(await checkScheduleBeforePlay())) return;
-  await api({ action: 'play', video: currentVideo, url: '', position: 0 });
+  await api({ action: 'play', video: currentVideo, url: currentUrl, position: 0 });
   toast('▶ Play');
   poll();
 }
