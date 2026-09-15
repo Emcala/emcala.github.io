@@ -469,7 +469,8 @@ const MapManager = {
         // Toggle rows
         const toggles = [
             { id: 'show-clients', icon: 'fa-store', label: 'Clientes', default: true },
-            { id: 'color-freq', icon: 'fa-palette', label: 'Días de Visita', default: false }
+            { id: 'color-freq', icon: 'fa-palette', label: 'Días de Visita', default: false },
+            { id: 'show-promoter-zones', icon: 'fa-vector-square', label: 'Zonas de Promotores', default: false }
         ];
 
         toggles.forEach(t => {
@@ -505,6 +506,12 @@ const MapManager = {
                         const colorProp = cb.checked ? 'FrecuenciaColor' : 'SupervisorColor';
                         this.map.setPaintProperty('clients-points', 'circle-color', ['get', colorProp]);
                     }
+                } else if (t.id === 'show-promoter-zones') {
+                    if (this.map && this.map.getLayer('promoter-zones-fill')) {
+                        const visibility = cb.checked ? 'visible' : 'none';
+                        this.map.setLayoutProperty('promoter-zones-fill', 'visibility', visibility);
+                        this.map.setLayoutProperty('promoter-zones-line', 'visibility', visibility);
+                    }
                 }
             };
             
@@ -525,10 +532,10 @@ const MapManager = {
 
     clearAll() {
         if (!this.map || !this.isLoaded) return;
-        const layers = ['clients-points'];
+        const layers = ['clients-points', 'promoter-zones-line', 'promoter-zones-fill'];
         layers.forEach(l => { if (this.map.getLayer(l)) this.map.removeLayer(l); });
         
-        const sources = ['clients'];
+        const sources = ['clients', 'promoter-zones'];
         sources.forEach(s => { if (this.map.getSource(s)) this.map.removeSource(s); });
     },
 
@@ -579,12 +586,61 @@ const MapManager = {
 
 
 
-        // --- Add Source & Layer ---
+        // --- Add Source & Layer for Clients ---
         this.map.addSource('clients', { type: 'geojson', data: { type: 'FeatureCollection', features: clientFeatures }});
 
+        // --- Calculate Promoter Zones using Turf.js ---
+        const promoterFeatures = [];
+        DataService.data.promotores.forEach(prom => {
+            const promClients = DataService.getClientsByPromotor(prom.ID).filter(c => !isNaN(c.Latitud) && !isNaN(c.Longitud));
+            if (promClients.length >= 3) {
+                const points = turf.featureCollection(promClients.map(c => turf.point([c.Longitud, c.Latitud])));
+                try {
+                    const hull = turf.convex(points);
+                    if (hull) {
+                        hull.properties = {
+                            PromotorID: prom.ID,
+                            PromotorName: prom.Nombre,
+                            PromotorColor: prom.Color
+                        };
+                        promoterFeatures.push(hull);
+                    }
+                } catch (e) {
+                    console.warn('Could not generate convex hull for promotor', prom.ID, e);
+                }
+            }
+        });
 
+        // --- Add Source & Layers for Promoter Zones ---
+        this.map.addSource('promoter-zones', { type: 'geojson', data: { type: 'FeatureCollection', features: promoterFeatures }});
 
+        const showZonesInput = document.getElementById('floating-show-promoter-zones');
+        const showZones = showZonesInput ? showZonesInput.checked : false;
+        const initialVisibility = showZones ? 'visible' : 'none';
 
+        this.map.addLayer({
+            id: 'promoter-zones-fill',
+            type: 'fill',
+            source: 'promoter-zones',
+            layout: { visibility: initialVisibility },
+            paint: {
+                'fill-color': ['get', 'PromotorColor'],
+                'fill-opacity': 0.2
+            }
+        });
+
+        this.map.addLayer({
+            id: 'promoter-zones-line',
+            type: 'line',
+            source: 'promoter-zones',
+            layout: { visibility: initialVisibility },
+            paint: {
+                'line-color': ['get', 'PromotorColor'],
+                'line-width': 2,
+                'line-dasharray': [2, 2],
+                'line-opacity': 0.8
+            }
+        });
 
         this.map.addLayer({
             id: 'clients-points',
@@ -615,18 +671,33 @@ const MapManager = {
         
         if (!globalShowClients) {
             this.map.setLayoutProperty('clients-points', 'visibility', 'none');
-            return;
+        } else {
+            this.map.setLayoutProperty('clients-points', 'visibility', 'visible');
         }
 
-        this.map.setLayoutProperty('clients-points', 'visibility', 'visible');
-
         const idsArray = Array.from(visibleClientIds);
+        const activePromotorIDs = new Set();
+        idsArray.forEach(id => {
+            const c = DataService.data.clientes.find(cli => cli.ID == id);
+            if (c) activePromotorIDs.add(c.PromotorID);
+        });
         
         if (idsArray.length === 0) {
             this.map.setFilter('clients-points', ['==', 'ID', 'NONE']);
         } else {
             const filter = ['in', 'ID', ...idsArray];
             this.map.setFilter('clients-points', filter);
+        }
+
+        if (this.map.getLayer('promoter-zones-fill')) {
+            if (activePromotorIDs.size === 0) {
+                this.map.setFilter('promoter-zones-fill', ['==', 'PromotorID', 'NONE']);
+                this.map.setFilter('promoter-zones-line', ['==', 'PromotorID', 'NONE']);
+            } else {
+                const promFilter = ['in', 'PromotorID', ...Array.from(activePromotorIDs)];
+                this.map.setFilter('promoter-zones-fill', promFilter);
+                this.map.setFilter('promoter-zones-line', promFilter);
+            }
         }
     },
 
