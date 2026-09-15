@@ -27,15 +27,32 @@ function parseCSV(txt) {
   const ix = n => H.indexOf(n);
   const iS=ix('Sector de Supervisión');
   const iCodS=ix('Código Sector de Supervisión');
+  // Nombre del Promotor (Sdv2)
   let iS2 = H.findIndex(h => {
     const l = h.toLowerCase();
-    if (l.includes('código') || l.includes('codigo')) return false;
-    return l.includes('sector de venta') || l.includes('descripcion vendedor') || l === 'vendedor' || l === 'promotor';
+    return l.includes('descripción vendedor') || l.includes('descripcion vendedor') || l.includes('promotor');
   });
-  const iCodS2 = H.findIndex(h => {
+
+  // Código VEND del Promotor (CodS2)
+  let iCodS2 = H.findIndex(h => {
     const l = h.toLowerCase();
-    return (l.includes('código') || l.includes('codigo')) && (l.includes('sector de venta') || l.includes('vendedor') || l.includes('promotor'));
+    return l === 'vendedor' || l === 'cod. vendedor' || l === 'cód. vendedor' || l === 'cód.vendedor' || l === 'cod vendedor';
   });
+
+  // Fallbacks históricos en caso de formatos muy viejos
+  if (iS2 === -1) {
+    iS2 = H.findIndex(h => {
+      const l = h.toLowerCase();
+      if (l.includes('código') || l.includes('codigo')) return false;
+      return l.includes('sector de venta') || l === 'vendedor';
+    });
+  }
+  if (iCodS2 === -1) {
+    iCodS2 = H.findIndex(h => {
+      const l = h.toLowerCase();
+      return (l.includes('código') || l.includes('codigo')) && (l.includes('sector de venta') || l.includes('vendedor'));
+    });
+  }
   const iUN=ix('Unidad de Negocio'),    iA=ix('Año'), iM=ix('Mes'),
         iHL=ix('Cantidad Total en HL'), iB=ix('Cantidad Total en Bultos'),
         iC=ix('Código Cliente'),        iP=ix('Código Producto'),
@@ -75,11 +92,11 @@ function parseCSV(txt) {
     const sdv2 = (p[iS2]||'').trim().toUpperCase();
     const codS2 = iCodS2 !== -1 ? (p[iCodS2]||'').trim().toUpperCase() : '';
     const un = (p[iUN]||'').trim(); if (!un) continue;
-      let marca = (p[iMAR]||'').trim();
-      if (marca.toUpperCase() === 'PEPSI BLACK') marca = 'PEPSI';
-      if (marca.toUpperCase() === 'STILL' || marca.toUpperCase() === 'H2O' || marca.toUpperCase() === 'H2OH') marca = 'H2Oh';
-      
-      rows.push({
+    let marca = (p[iMAR]||'').trim();
+    if (marca.toUpperCase() === 'PEPSI BLACK') marca = 'PEPSI';
+    if (marca.toUpperCase() === 'STILL' || marca.toUpperCase() === 'H2O' || marca.toUpperCase() === 'H2OH') marca = 'H2Oh';
+    
+    rows.push({
       sdv, codS, sdv2, codS2, un,
       yr:  (p[iA] ||'').trim(),
       mes: (p[iM] ? p[iM].trim().charAt(0).toUpperCase() + p[iM].trim().slice(1).toLowerCase() : ''),
@@ -112,25 +129,34 @@ function unColor(pg)  { return UN_LIST.find(u => u.key === ST[pg].un)?.color || 
 function makePromoFilter(pg) {
   const ap = ST[pg].activePromos;
   if (ap.size === 0) return null;
-  const allOn = SEGS.every(seg => seg.promos.every(p => ap.has(seg.key+'|'+p)));
-  if (allOn) return () => true;
   
+  // Siempre construir el set de códigos VEND válidos desde Mesas
+  const activeVends = new Set();
   const activeSdv2 = new Set();
   const flexSet = new Set();
+  
   SEGS.forEach(seg => {
     seg.promos.forEach(p => {
       if (ap.has(seg.key+'|'+p)) {
         activeSdv2.add(p);
         flexSet.add(p.split(' ').sort().join(' '));
+        if (window.NAME_TO_VEND && window.NAME_TO_VEND[p]) {
+            activeVends.add(window.NAME_TO_VEND[p]);
+        }
       }
     });
   });
   
+  if (activeVends.size === 0 && activeSdv2.size === 0) return () => true; // safety
+  
   return r => {
+    const normalizedVend = (r.codS2 && !isNaN(parseInt(r.codS2, 10))) ? String(parseInt(r.codS2, 10)) : (r.codS2 || '');
+    if (normalizedVend !== '') {
+        return activeVends.has(normalizedVend);
+    }
+    // Fallback: Si el CSV NO tiene código VEND cargado en esta fila, filtramos por nombre (como antes)
     if (activeSdv2.has(r.sdv2)) return true;
     if (!r.sdv2) return false;
-    
-    // Caching the sorted string on the row object for O(1) repeated checks
     if (!r._sdv2_norm) r._sdv2_norm = r.sdv2.split(' ').sort().join(' ');
     if (flexSet.has(r._sdv2_norm)) return true;
     
@@ -179,17 +205,19 @@ function getCartera(pg) {
 }
 
 function canalFilter(r, canal) {
-  const promotoresAres = ['DIAZ VALERIA', 'FERNANDEZ LUIS', 'GALLO JONATHAN', 'LOPEZ PABLO', 'RENZO MIÑO', 'SANCHEZ ROCIO'];
-  const esPromotorAres = promotoresAres.some(n => r.sdv2.includes(n));
-  const isAres = r.sdv.includes('ARES') || r.sdv.includes('SDVAS') || r.codS.includes('ARES') || r.codS.includes('SDVAS') || r.sdv2.includes('ARES') || r.sdv2.includes('SDVAS') || r.codS2.includes('ARES') || r.codS2.includes('SDVAS') || esPromotorAres;
+  // Normalizar el Código Sector de Venta del CSV (columna F)
+  const normalizedVend = (r.codS2 && !isNaN(parseInt(r.codS2, 10))) ? String(parseInt(r.codS2, 10)) : (r.codS2 || '');
+
+  // Obtener el canal asignado en Mesas para este código VEND
+  const mesaCanal = (window.VEND_TO_CANAL && window.VEND_TO_CANAL[normalizedVend]) || '';
 
   switch(canal) {
     case 'TODOS':  return r.canal !== 'NO';
     case 'KT':     return r.canal === 'K+T';
-    case 'AS':     return r.canal === 'AS'  && isAres;
-    case 'KTAS':   return r.canal === 'AS'  && !isAres;
-    case 'REF':    return r.canal === 'REF' && r.sdv.includes('LEMOS');
-    case 'KTREF':  return r.canal === 'REF' && !r.sdv.includes('LEMOS');
+    case 'AS':     return r.canal === 'AS'  && mesaCanal === 'AS';
+    case 'KTAS':   return r.canal === 'AS'  && mesaCanal !== 'AS';
+    case 'REF':    return r.canal === 'REF' && mesaCanal === 'REF';
+    case 'KTREF':  return r.canal === 'REF' && mesaCanal !== 'REF';
     case 'MAYO_C': return r.canal === 'MAYO';
     default: return true;
   }

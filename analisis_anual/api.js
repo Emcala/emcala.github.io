@@ -10,16 +10,43 @@ async function fetchConfigData() {
     const headersMesas = dataMesas[0] || [];
     const iPromo = headersMesas.findIndex(c => String(c).trim().toUpperCase() === 'PROMOTOR');
     const iSup = headersMesas.findIndex(c => String(c).trim().toUpperCase() === 'SUPERVISOR');
+    const iVend = headersMesas.findIndex(c => String(c).trim().toUpperCase() === 'VEND.');
+    
     // Preferir la columna "Nombre SDV" (columna C) que tiene los nombres legibles de los supervisores
     let iNomSDV = headersMesas.findIndex(c => String(c).trim().toUpperCase().includes('NOMBRE'));
     if (iNomSDV === -1) iNomSDV = iSup; // fallback a SUPERVISOR si no existe
     
     let supMap = {};
+    window.NAME_TO_VEND = {};    // promotor → código VEND
+    window.VEND_TO_CANAL = {};   // código VEND → canal (AS, REF, K+T, MAYO, etc.)
+    
+    const iCanal = headersMesas.findIndex(c => String(c).trim().toUpperCase() === 'CANAL');
+    
     for (let i = 1; i < dataMesas.length; i++) {
       const r = dataMesas[i];
       const promo = r[iPromo] ? String(r[iPromo]).trim().toUpperCase() : '';
       const sup = r[iNomSDV] ? String(r[iNomSDV]).trim().toUpperCase() : '';
+      
+      let vend = '';
+      if (iVend >= 0 && r[iVend] !== null && r[iVend] !== undefined) {
+          const vStr = String(r[iVend]).trim();
+          vend = isNaN(parseInt(vStr, 10)) ? vStr : String(parseInt(vStr, 10));
+      }
+      
+      let canal = '';
+      if (iCanal >= 0 && r[iCanal]) {
+          canal = String(r[iCanal]).trim().toUpperCase();
+      }
+
       if (!promo || !sup) continue;
+      
+      if (vend) {
+          window.NAME_TO_VEND[promo] = vend;
+          if (canal) {
+              window.VEND_TO_CANAL[vend] = canal;
+          }
+      }
+      
       if (!supMap[sup]) supMap[sup] = [];
       if (!supMap[sup].includes(promo)) supMap[sup].push(promo);
     }
