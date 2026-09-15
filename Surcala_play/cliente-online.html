@@ -45,14 +45,10 @@
 </div>
 
 <div id="player">
-  <video id="video" autoplay playsinline></video>
+  <video id="video" autoplay playsinline muted></video>
 </div>
 
-<div id="interaction-overlay" onclick="startPlayback()">
-  <div class="overlay-icon">👆</div>
-  <h2>Toca la pantalla para iniciar</h2>
-  <p style="color:#64748b; margin-top:10px;">Tu navegador requiere interacción para activar el video y el audio.</p>
-</div>
+
 
 <script>
 const GAS          = 'https://script.google.com/macros/s/AKfycbxPMqp9zShQhVk9G117Fl_fWBBiOrRSpZWHKO1F2B139mwQJg47l197JWx9SZ7U9-Zs/exec';
@@ -139,30 +135,19 @@ function playVideo(url, position, timestamp) {
 
   showPlayer();
 
-  const handlePlayError = (err) => {
-    if (err.name === 'NotAllowedError') {
-      document.getElementById('interaction-overlay').style.display = 'flex';
-    }
-  };
-
   if (video.src !== url) {
     video.src = url;
     video.load();
     video.addEventListener('loadedmetadata', () => {
       video.currentTime = realPos;
-      video.play().catch(handlePlayError);
+      video.play().catch(e => console.error(e));
     }, { once: true });
   } else {
     video.currentTime = realPos;
-    video.play().catch(handlePlayError);
+    video.play().catch(e => console.error(e));
   }
 
-  video.onended = () => { video.currentTime = 0; video.play().catch(handlePlayError); };
-}
-
-function startPlayback() {
-  document.getElementById('interaction-overlay').style.display = 'none';
-  video.play().catch(e => console.error(e));
+  video.onended = () => { video.currentTime = 0; video.play().catch(e => console.error(e)); };
 }
 
 // ─── SCHEDULER ────────────────────────────────────────────────────────────────
