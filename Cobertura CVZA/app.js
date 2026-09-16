@@ -4,9 +4,12 @@
 
 // === STATE ===
 let maestroData  = null;  // { promotorName: count }
-let ventasData   = null;  // { promotorName: { size: N } }
+let ventasData   = null;  // { promotorName: { total: N, segmentos: {...}, marcas: {...}, nuevos: N } }
 let mesasData    = null;  // [ { promotor, supervisor, canal, codigo } ]
 let historicosData = null; // { promotorName: { cccMA, cccMMAA } }
+
+let currentTabType = 'total'; // 'total' | 'segmento' | 'marca'
+let currentTabKey = 'total';  // 'total' | 'corevalue' | 'q1890' | etc.
 
 const MAESTRO_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwL5ivpzRjy7Q83PcHZWRjWEqyFnNzDY9OlEBUjIeGPgOTl13zkUzJ3SjKt52Jya3NgMA/exec';
 const MESAS_AUTH_URL = 'https://script.google.com/macros/s/AKfycbwQ_cArrrXQ8Z1e07cpTYm62TfLkMo0vbrmWRMrWcP7XUfNeE7gqLz81aSmPQfc7tm82g/exec';
@@ -283,57 +286,38 @@ async function loadAvance(selectedMonth) {
     ventasData = {};
     let totalCcc = 0;
     
-    // Consultar el endpoint del planificador para cada SPV, con un pequeño
-    // escalonamiento entre pedidos (en vez de dispararlos todos en el mismo
-    // instante) para no generar una ráfaga de N pedidos simultáneos contra
-    // el mismo Apps Script que usa el planificador matinal.
-    const promises = spvs.map(async (spv, idx) => {
-      await new Promise(res => setTimeout(res, idx * 200 + Math.random() * 150));
-      try {
-        const result = await fetchJsonRetry(
-          `${PLANIFICADOR_URL}?date=${dateStr}&cMonth=${cMonth}&spv=${encodeURIComponent(spv)}&_t=${Date.now()}`
-        );
-        if (result.status === 'success' && result.data) {
-          // El planificador devuelve los datos acumulados bajo result.data[promotor]
-          for (const prom in result.data) {
-            const promFlat = norm(prom);
-            if (!ventasData[promFlat]) {
-               ventasData[promFlat] = { size: 0, nuevos: 0 }; // Simulamos el comportamiento de Set.size para tryRender
-            }
-            const ccc = parseInt(result.data[prom]['acum-ccc']) || 0;
-            if (ccc > 0) {
-              ventasData[promFlat].size = ccc;
-            }
-            // "Clientes Nuevos" is a list of IDs (e.g. "9052, 12266" or just 9052)
-            // Solo lo mostramos si estamos mirando el mes actual (pedido del usuario)
-            if (isCurrent) {
-              let nuevosIds = new Set();
-              const rawNuevos = result.data[prom]['clientes-nuevos'];
-              if (rawNuevos !== undefined && rawNuevos !== null && rawNuevos !== "") {
-                if (typeof rawNuevos === 'string') {
-                  rawNuevos.split(',').forEach(x => {
-                    const id = x.trim();
-                    if (id) nuevosIds.add(id);
-                  });
-                } else if (typeof rawNuevos === 'number') {
-                  nuevosIds.add(String(rawNuevos));
-                }
-              }
-              if (nuevosIds.size > 0) {
-                ventasData[promFlat].nuevos = nuevosIds.size;
-                ventasData[promFlat].nuevosIds = nuevosIds;
-              }
-            }
-          }
+    // Llamada unificada al backend de Cobertura
+    const url = `${PLANIFICADOR_URL}?req=cobertura&cMonth=${cMonth}&_t=${Date.now()}`;
+    const result = await fetchJsonRetry(url);
+    
+    if (result.status === 'success' && result.promotores) {
+      for (const prom in result.promotores) {
+        const promFlat = norm(prom);
+        const pData = result.promotores[prom];
+        ventasData[promFlat] = {
+           total: pData.ccc || 0,
+           segmentos: pData.segmentos || {},
+           marcas: pData.marcas || {},
+           nuevos: 0
+        };
+        
+        if (isCurrent && pData.nuevos) {
+           let nuevosIds = new Set();
+           const rawNuevos = pData.nuevos;
+           if (typeof rawNuevos === 'string') {
+              rawNuevos.split(',').forEach(x => { const id = x.trim(); if (id) nuevosIds.add(id); });
+           } else if (typeof rawNuevos === 'number') {
+              nuevosIds.add(String(rawNuevos));
+           }
+           if (nuevosIds.size > 0) {
+              ventasData[promFlat].nuevos = nuevosIds.size;
+              ventasData[promFlat].nuevosIds = nuevosIds;
+           }
         }
-      } catch (e) {
-        console.warn(`No se pudieron obtener ventas de ${spv}`, e);
       }
-    });
+    }
     
-    await Promise.all(promises);
-    
-    totalCcc = Object.values(ventasData).reduce((sum, prom) => sum + (prom.size || 0), 0);
+    totalCcc = Object.values(ventasData).reduce((sum, prom) => sum + (prom.total || 0), 0);
     
     updateStatus('ventas', 'loaded', totalCcc + ' CCC');
     showToast('✅ Avance CCC descargado');
@@ -475,8 +459,19 @@ function tryRender() {
         vKey = findMatch(pn, ventasKeys);
       }
 
-      const ccc = vKey ? ventasData[vKey].size : 0;
-      const nuevos = vKey ? (ventasData[vKey].nuevos || 0) : 0;
+      let ccc = 0;
+      let nuevos = 0;
+      if (vKey) {
+        const vd = ventasData[vKey];
+        nuevos = vd.nuevos || 0;
+        if (currentTabType === 'total') {
+           ccc = vd.total || 0;
+        } else if (currentTabType === 'segmento') {
+           ccc = vd.segmentos[currentTabKey] || 0;
+        } else if (currentTabType === 'marca') {
+           ccc = vd.marcas[currentTabKey] || 0;
+        }
+      }
       
       if (vKey && ventasData[vKey].nuevosIds) {
         ventasData[vKey].nuevosIds.forEach(id => {
@@ -489,7 +484,8 @@ function tryRender() {
       const avance = cartera > 0 ? (ccc / cartera * 100) : 0;
 
       let cccMA = 0, cccMMAA = 0;
-      if (histKeys) {
+      // Ocultar históricos si el filtro no es "Todos", temporalmente hasta soportarlo
+      if (histKeys && currentTabType === 'total') {
         let hKey = findMatch(pc, histKeys);
         if (!hKey && pc !== pn) {
           hKey = findMatch(pn, histKeys);
@@ -634,6 +630,22 @@ monthSelect.addEventListener('change', async () => {
   updateStatus('ventas', 'pending');
   
   await loadAvance(getSelectedMonth());
+});
+
+// ==========================================
+// TABS & FILTERING
+// ==========================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    const target = e.currentTarget;
+    target.classList.add('active');
+    
+    currentTabType = target.getAttribute('data-type');
+    currentTabKey = target.getAttribute('data-key');
+    
+    tryRender();
+  });
 });
 
 // ==========================================
