@@ -503,7 +503,7 @@ const MapManager = {
                     if (window.UI) UI.applyClientFilters();
                 } else if (t.id === 'color-freq') {
                     if (this.map && this.map.getLayer('clients-points')) {
-                        const colorProp = cb.checked ? 'FrecuenciaColor' : 'SupervisorColor';
+                        const colorProp = cb.checked ? 'FrecuenciaColor' : 'PromotorColor';
                         this.map.setPaintProperty('clients-points', 'circle-color', ['get', colorProp]);
                     }
                     if (this.map && this.map.getLayer('promoter-zones-fill')) {
@@ -668,7 +668,7 @@ const MapManager = {
             layout: { visibility: 'visible' },
             paint: {
                 'circle-radius': 6,
-                'circle-color': ['get', 'SupervisorColor'],
+                'circle-color': ['get', 'PromotorColor'],
                 'circle-opacity': 1.0
             }
         });
