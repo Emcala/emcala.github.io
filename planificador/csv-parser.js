@@ -76,7 +76,7 @@
         date: h.indexOf('descripción período') !== -1 ? h.indexOf('descripción período') : h.indexOf('descripcion periodo'),
         clientId: h.indexOf('cod. cliente'),
         promoter: h.indexOf('descripción vendedor') !== -1 ? h.indexOf('descripción vendedor') : h.indexOf('descripcion vendedor'),
-        vendorCode: h.findIndex(x => x === 'vendedor'), // Código VEND del vendedor (columna exacta "Vendedor", no "Descripción Vendedor")
+        vendorCode: h.findIndex(x => x === 'vendedor' || x === 'cod. vendedor' || x === 'cód. vendedor' || x === 'cód.vendedor' || x === 'cod vendedor'), // Código VEND del vendedor
         sku: h.indexOf('código') !== -1 ? h.indexOf('código') : h.indexOf('codigo'),
         article: h.indexOf('artículos') !== -1 ? h.indexOf('artículos') + 2 : (h.indexOf('articulos') !== -1 ? h.indexOf('articulos') + 2 : 18),
         brand: h.indexOf('marca') !== -1 ? h.indexOf('marca') + 1 : 20,
@@ -144,6 +144,11 @@
             // Clientes únicos por segmento (CCC) - GENERALES
             clientsTotalCerveza: new Set(), clientsCore: new Set(), clientsValue: new Set(), clientsAboveCore: new Set(), clientsLatones: new Set(),
             clientsBalanced: new Set(), clientsNabs: new Set(), clientsAll: new Set(),
+            // CCC por Marca y Mix de Segmentos explícitos (Cobertura CVZA)
+            cliBrahma: new Set(), cliBudweiser: new Set(), cliQuilmes: new Set(), cliQuilmes1890: new Set(),
+            cliAndes: new Set(), cliMichelob: new Set(), cliStella: new Set(), cliCorona: new Set(), cliPatagonia: new Set(),
+            cliCero: new Set(), cliStellaPureGold: new Set(),
+            cliMixCoreValue: new Set(), cliMixAboveCore: new Set(), cliMixBalanced: new Set(),
             // Transacciones por segmento (TBD) - GENERALES (Set de 'clientId_skuCode')
             txTotalCerveza: new Set(), txCore: new Set(), txValue: new Set(), txAboveCore: new Set(), txLatones: new Set(), txBalanced: new Set(), txNabs: new Set(), txAll: new Set(),
 
@@ -190,7 +195,8 @@
           const isQuilmes1890 = (brand === 'QUILMES 1890' || brand === '1890' || articleName.includes('1890'));
           const isBajoCero = (brand.includes('BAJO CERO') || articleName.includes('BAJO CERO'));
           const isStellaPureGold = (brand.includes('STELLA') && articleName.includes('PURE GOLD'));
-          isBalanced = (articleName.includes('0.0') || articleName.includes('SIN ALCOHOL') || articleName.includes('MICHELOB') || brand.includes('MICHELOB') || isStellaPureGold);
+          const is00 = (articleName.includes('0.0') || articleName.includes('SIN ALCOHOL'));
+          isBalanced = (is00 || articleName.includes('MICHELOB') || brand.includes('MICHELOB') || isStellaPureGold);
           const isAndes = brand.includes('ANDES');
           const isMichelob = brand.includes('MICHELOB');
           const isStella = brand.includes('STELLA');
@@ -198,6 +204,7 @@
           const isCorona = brand.includes('CORONA');
           const isGoose = brand.includes('GOOSE');
           const isTemple = brand.includes('TEMPLE');
+          
           if (isAndes || isMichelob || isStella || isPatagonia || isCorona || isGoose || isTemple) {
             isAboveCore = true;
           } else {
@@ -209,6 +216,29 @@
           }
           if (calibreDesc === '710 CC LATAS' || articleName.includes('LATON 710')) {
             isLatones = true;
+          }
+
+          // Carga de sets para Cobertura CVZA
+          if (clientId) {
+            const bBrahma = brand.includes('BRAHMA');
+            const bBud = brand.includes('BUDWEISER') || brand.includes('BUD');
+            const bQuilmes = brand.includes('QUILMES') && !isQuilmes1890 && !isBajoCero;
+            
+            if (isQuilmes1890) pSales.cliQuilmes1890.add(clientId);
+            if (bBrahma) pSales.cliBrahma.add(clientId);
+            if (bBud) pSales.cliBudweiser.add(clientId);
+            if (bQuilmes) pSales.cliQuilmes.add(clientId);
+            if (isAndes) pSales.cliAndes.add(clientId);
+            if (isMichelob) pSales.cliMichelob.add(clientId);
+            if (isStella) pSales.cliStella.add(clientId);
+            if (isCorona) pSales.cliCorona.add(clientId);
+            if (isPatagonia) pSales.cliPatagonia.add(clientId);
+            if (is00) pSales.cliCero.add(clientId);
+            if (isStellaPureGold) pSales.cliStellaPureGold.add(clientId);
+
+            if (isQuilmes1890 || bBrahma || bBud || bQuilmes) pSales.cliMixCoreValue.add(clientId);
+            if (isAndes || isMichelob || isStella || isCorona || isPatagonia) pSales.cliMixAboveCore.add(clientId);
+            if (isMichelob || is00 || isStellaPureGold) pSales.cliMixBalanced.add(clientId);
           }
         } else if (category === 'UNG' || category === 'NABS') {
           isNabs = true;
@@ -358,8 +388,9 @@
           let trackedPromoter = null;
 
           // 1) Match DIRECTO por código de Vendedor contra Mesas — exacto, sin ambigüedad.
-          if (vendorCode && window.NAME_MAP && window.NAME_MAP[vendorCode]) {
-            trackedPromoter = window.NAME_MAP[vendorCode];
+          let normVendorCode = vendorCode ? parseInt(vendorCode, 10).toString() : '';
+          if (normVendorCode && window.NAME_MAP && window.NAME_MAP[normVendorCode]) {
+            trackedPromoter = window.NAME_MAP[normVendorCode];
           }
 
           // 2) Fallback: matching difuso por nombre (solo si no vino código o no está en Mesas).
@@ -418,6 +449,10 @@
             'f2-ag': agSum !== 0 ? parseFloat(agSum.toFixed(2)) : '',
             'bol-v': pSales.clientsAll.size || '',
             'ccc-ids-cerveza': Array.from(pSales.clientsTotalCerveza).join(','), 'ccc-cerveza': pSales.clientsTotalCerveza.size, 'ccc-core': pSales.clientsCore.size, 'ccc-value': pSales.clientsValue.size, 'ccc-abovecore': pSales.clientsAboveCore.size, 'ccc-latones': pSales.clientsLatones.size, 'ccc-balanced': pSales.clientsBalanced.size, 'ccc-nabs': pSales.clientsNabs.size,
+            'ccc-ids-corevalue': Array.from(pSales.cliMixCoreValue).join(','), 'ccc-ids-abovecore': Array.from(pSales.cliMixAboveCore).join(','), 'ccc-ids-balanced': Array.from(pSales.cliMixBalanced).join(','),
+            'ccc-ids-q1890': Array.from(pSales.cliQuilmes1890).join(','), 'ccc-ids-brahma': Array.from(pSales.cliBrahma).join(','), 'ccc-ids-bud': Array.from(pSales.cliBudweiser).join(','), 'ccc-ids-quilmes': Array.from(pSales.cliQuilmes).join(','),
+            'ccc-ids-andes': Array.from(pSales.cliAndes).join(','), 'ccc-ids-michelob': Array.from(pSales.cliMichelob).join(','), 'ccc-ids-stella': Array.from(pSales.cliStella).join(','), 'ccc-ids-corona': Array.from(pSales.cliCorona).join(','), 'ccc-ids-patagonia': Array.from(pSales.cliPatagonia).join(','),
+            'ccc-ids-cero': Array.from(pSales.cliCero).join(','), 'ccc-ids-stellapg': Array.from(pSales.cliStellaPureGold).join(','),
             'tbd-cerveza': pSales.txTotalCerveza.size, 'tbd-core': pSales.txCore.size, 'tbd-value': pSales.txValue.size, 'tbd-abovecore': pSales.txAboveCore.size, 'tbd-latones': pSales.txLatones.size, 'tbd-balanced': pSales.txBalanced.size, 'tbd-nabs': pSales.txNabs.size,
             'cv-cerveza': pSales.cvClientsCerveza.size, 'cv-core': pSales.cvClientsCore.size, 'cv-value': pSales.cvClientsValue.size, 'cv-abovecore': pSales.cvClientsAboveCore.size, 'cv-latones': pSales.cvClientsLatones.size, 'cv-balanced': pSales.cvClientsBalanced.size, 'cv-nabs': pSales.cvClientsNabs.size, 'cv-aguas': pSales.cvClientsAguas.size, 'cv-ungtop': pSales.cvClientsUngTop.size, 'cv-eficiencia': pSales.cvClientsEficiencia.size
           });
