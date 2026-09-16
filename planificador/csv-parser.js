@@ -215,7 +215,7 @@
               isCore = true; // Todo lo que no sea Above Core o Value, cae en Core (incluye Quilmes, Brahma, Bud, etc.)
             }
           }
-          if (calibreDesc === '710 CC LATAS' || articleName.includes('LATON 710')) {
+          if (calibreDesc.includes('710') || articleName.includes('LATON') || articleName.includes('710')) {
             isLatones = true;
           }
 
@@ -280,7 +280,7 @@
                const tCore = tUpper.includes('QUILMES') || tUpper.includes('BRAHMA') || tUpper.includes('BUDWEISER');
                const tValue = tUpper.includes('1890') || tUpper.includes('BAJO CERO');
                const tBalanced = tUpper.includes('MICHELOB') || (tUpper.includes('STELLA') && tUpper.includes('PURE GOLD')) || tUpper.includes('SIN ALCOHOL');
-               const tLatones = tUpper.includes('LATON') || tUpper.includes('LATONES');
+               const tLatones = tUpper.includes('LATON') || tUpper.includes('LATONES') || tUpper.includes('710');
                const tNabs = tUpper.includes('UNG') || tUpper.includes('NABS') || tUpper.includes('GATORADE') || tUpper.includes('RED BULL') || tUpper.includes('ROCKSTAR');
                
                const tCerveza = tAbove || tCore || tValue || tBalanced || tUpper.includes('CERVEZA') || tUpper.includes('CZA');
