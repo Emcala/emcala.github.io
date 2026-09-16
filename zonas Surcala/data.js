@@ -14,7 +14,15 @@ const SUPERVISOR_PALETTE = [
 ];
 
 function generateColor(index) {
-    return PALETTE[index % PALETTE.length];
+    // Generate distinct colors for all using HSL and the Golden Ratio
+    // This ensures no two colors are identical (which happened with the previous 15-color palette limit)
+    const goldenRatioConjugate = 0.618033988749895;
+    let h = (index * goldenRatioConjugate) % 1;
+    h = Math.floor(h * 360);
+    // Vary saturation and lightness slightly to add more contrast between adjacent indices
+    let s = 65 + (index % 4) * 10; // 65% to 95%
+    let l = 45 + (index % 3) * 10; // 45% to 65%
+    return `hsl(${h}, ${s}%, ${l}%)`;
 }
 
 function parseCoordinate(coordStr) {
