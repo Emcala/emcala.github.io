@@ -149,6 +149,7 @@
             cliAndes: new Set(), cliMichelob: new Set(), cliStella: new Set(), cliCorona: new Set(), cliPatagonia: new Set(),
             cliCero: new Set(), cliStellaPureGold: new Set(),
             cliMixCoreValue: new Set(), cliMixAboveCore: new Set(), cliMixBalanced: new Set(),
+            cliMixValue: new Set(), cliMixCore: new Set(), cliMixCorePlus: new Set(), cliMixPremium: new Set(), cliMixSuperPremium: new Set(),
             // Transacciones por segmento (TBD) - GENERALES (Set de 'clientId_skuCode')
             txTotalCerveza: new Set(), txCore: new Set(), txValue: new Set(), txAboveCore: new Set(), txLatones: new Set(), txBalanced: new Set(), txNabs: new Set(), txAll: new Set(),
 
@@ -230,12 +231,20 @@
             if (bQuilmes) pSales.cliQuilmes.add(clientId);
             if (isAndes) pSales.cliAndes.add(clientId);
             if (isMichelob) pSales.cliMichelob.add(clientId);
-            if (isStella) pSales.cliStella.add(clientId);
+            if (isStella && !isStellaPureGold) pSales.cliStella.add(clientId);
             if (isCorona) pSales.cliCorona.add(clientId);
             if (isPatagonia) pSales.cliPatagonia.add(clientId);
             if (is00) pSales.cliCero.add(clientId);
             if (isStellaPureGold) pSales.cliStellaPureGold.add(clientId);
 
+            // Sub-segmentos puros
+            if (isQuilmes1890) pSales.cliMixValue.add(clientId);
+            if (bBrahma || bBud || bQuilmes) pSales.cliMixCore.add(clientId);
+            if (isAndes || isMichelob) pSales.cliMixCorePlus.add(clientId);
+            if (isStella && !isStellaPureGold) pSales.cliMixPremium.add(clientId);
+            if (isCorona || isPatagonia) pSales.cliMixSuperPremium.add(clientId);
+
+            // Segmentos agregados
             if (isQuilmes1890 || bBrahma || bBud || bQuilmes) pSales.cliMixCoreValue.add(clientId);
             if (isAndes || isMichelob || isStella || isCorona || isPatagonia) pSales.cliMixAboveCore.add(clientId);
             if (isMichelob || is00 || isStellaPureGold) pSales.cliMixBalanced.add(clientId);
@@ -453,6 +462,7 @@
             'ccc-ids-q1890': Array.from(pSales.cliQuilmes1890).join(','), 'ccc-ids-brahma': Array.from(pSales.cliBrahma).join(','), 'ccc-ids-bud': Array.from(pSales.cliBudweiser).join(','), 'ccc-ids-quilmes': Array.from(pSales.cliQuilmes).join(','),
             'ccc-ids-andes': Array.from(pSales.cliAndes).join(','), 'ccc-ids-michelob': Array.from(pSales.cliMichelob).join(','), 'ccc-ids-stella': Array.from(pSales.cliStella).join(','), 'ccc-ids-corona': Array.from(pSales.cliCorona).join(','), 'ccc-ids-patagonia': Array.from(pSales.cliPatagonia).join(','),
             'ccc-ids-cero': Array.from(pSales.cliCero).join(','), 'ccc-ids-stellapg': Array.from(pSales.cliStellaPureGold).join(','),
+            'ccc-ids-value': Array.from(pSales.cliMixValue).join(','), 'ccc-ids-core': Array.from(pSales.cliMixCore).join(','), 'ccc-ids-coreplus': Array.from(pSales.cliMixCorePlus).join(','), 'ccc-ids-premium': Array.from(pSales.cliMixPremium).join(','), 'ccc-ids-superpremium': Array.from(pSales.cliMixSuperPremium).join(','),
             'tbd-cerveza': pSales.txTotalCerveza.size, 'tbd-core': pSales.txCore.size, 'tbd-value': pSales.txValue.size, 'tbd-abovecore': pSales.txAboveCore.size, 'tbd-latones': pSales.txLatones.size, 'tbd-balanced': pSales.txBalanced.size, 'tbd-nabs': pSales.txNabs.size,
             'cv-cerveza': pSales.cvClientsCerveza.size, 'cv-core': pSales.cvClientsCore.size, 'cv-value': pSales.cvClientsValue.size, 'cv-abovecore': pSales.cvClientsAboveCore.size, 'cv-latones': pSales.cvClientsLatones.size, 'cv-balanced': pSales.cvClientsBalanced.size, 'cv-nabs': pSales.cvClientsNabs.size, 'cv-aguas': pSales.cvClientsAguas.size, 'cv-ungtop': pSales.cvClientsUngTop.size, 'cv-eficiencia': pSales.cvClientsEficiencia.size
           });
