@@ -62,6 +62,14 @@ const UI = {
         clearBtn.onclick = () => { searchInput.value = ''; clearBtn.classList.remove('visible'); this.filterClients(''); };
         // Tree Toggle all
         document.getElementById('toggle-all-tree').onclick = (e) => this.toggleAllTree(e.target);
+        // Tree Group Mode
+        const groupModeSelect = document.getElementById('tree-group-mode');
+        if (groupModeSelect) {
+            groupModeSelect.onchange = () => {
+                this.renderTreeFilters();
+                this.applyTreeFilters();
+            };
+        }
         // Config
         document.getElementById('btn-config').onclick = () => document.getElementById('config-modal').classList.add('active');
         document.getElementById('modal-close').onclick = () => document.getElementById('config-modal').classList.remove('active');
@@ -139,71 +147,151 @@ const UI = {
         // Initialize active clients with all clients
         this.activeClients = new Set(clientes.map(c => c.ID));
 
+        const groupModeSelect = document.getElementById('tree-group-mode');
+        const mode = groupModeSelect ? groupModeSelect.value : 'supervisor';
+
         let html = '';
         
-        supervisores.forEach(sup => {
-            const supPromotores = promotores.filter(p => p.SupervisorID === sup.ID);
-            const supClientes = clientes.filter(c => c.SupervisorID === sup.ID);
-            if (supClientes.length === 0) return;
-
-            html += `
-            <div class="tree-node level-1">
-                <div class="tree-header">
-                    <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
-                    <div class="tree-checkbox-wrap">
-                        <input type="checkbox" class="tree-checkbox" data-level="sup" value="${sup.ID}" checked>
-                    </div>
-                    <div class="tree-color" style="background:${sup.Color}"></div>
-                    <div class="tree-name">${sup.Nombre}</div>
-                    <div class="tree-count">${supClientes.length}</div>
-                </div>
-                <div class="tree-children">
-            `;
-
-            supPromotores.forEach(prom => {
-                const promClientes = supClientes.filter(c => c.PromotorID === prom.ID);
-                if (promClientes.length === 0) return;
-
-                // Group by Frecuencia
-                const freqGroups = {};
-                promClientes.forEach(c => {
-                    const f = c.FrecuenciaGrupo;
-                    if(!freqGroups[f]) freqGroups[f] = { clients: [], color: c.FrecuenciaColor, name: c.Frecuencia || f };
-                    freqGroups[f].clients.push(c);
-                });
+        if (mode === 'supervisor') {
+            supervisores.forEach(sup => {
+                const supPromotores = promotores.filter(p => p.SupervisorID === sup.ID);
+                const supClientes = clientes.filter(c => c.SupervisorID === sup.ID);
+                if (supClientes.length === 0) return;
 
                 html += `
-                <div class="tree-node level-2">
+                <div class="tree-node level-1">
                     <div class="tree-header">
                         <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
                         <div class="tree-checkbox-wrap">
-                            <input type="checkbox" class="tree-checkbox" data-level="prom" value="${prom.ID}" checked>
+                            <input type="checkbox" class="tree-checkbox" data-level="sup" value="${sup.ID}" checked>
                         </div>
-                        <div class="tree-color" style="background:${prom.Color}"></div>
-                        <div class="tree-name">${prom.Nombre}</div>
-                        <div class="tree-count">${promClientes.length}</div>
+                        <div class="tree-color" style="background:${sup.Color}"></div>
+                        <div class="tree-name">${sup.Nombre}</div>
+                        <div class="tree-count">${supClientes.length}</div>
                     </div>
                     <div class="tree-children">
                 `;
 
-                for (const [freq, groupData] of Object.entries(freqGroups)) {
+                supPromotores.forEach(prom => {
+                    const promClientes = supClientes.filter(c => c.PromotorID === prom.ID);
+                    if (promClientes.length === 0) return;
+
+                    // Group by Frecuencia
+                    const freqGroups = {};
+                    promClientes.forEach(c => {
+                        const f = c.FrecuenciaGrupo;
+                        if(!freqGroups[f]) freqGroups[f] = { clients: [], color: c.FrecuenciaColor, name: c.Frecuencia || f };
+                        freqGroups[f].clients.push(c);
+                    });
+
                     html += `
-                    <div class="tree-node level-3">
+                    <div class="tree-node level-2">
                         <div class="tree-header">
                             <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
                             <div class="tree-checkbox-wrap">
-                                <input type="checkbox" class="tree-checkbox" data-level="freq" value="${prom.ID}-${freq}" checked>
+                                <input type="checkbox" class="tree-checkbox" data-level="prom" value="${prom.ID}" checked>
                             </div>
-                            <div class="tree-color" style="background:${groupData.color}"></div>
-                            <div class="tree-name">${freq}</div>
-                            <div class="tree-count">${groupData.clients.length}</div>
+                            <div class="tree-color" style="background:${prom.Color}"></div>
+                            <div class="tree-name">${prom.Nombre}</div>
+                            <div class="tree-count">${promClientes.length}</div>
                         </div>
                         <div class="tree-children">
                     `;
 
-                    groupData.clients.forEach(c => {
+                    for (const [freq, groupData] of Object.entries(freqGroups)) {
                         html += `
-                        <div class="tree-node empty level-4">
+                        <div class="tree-node level-3">
+                            <div class="tree-header">
+                                <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
+                                <div class="tree-checkbox-wrap">
+                                    <input type="checkbox" class="tree-checkbox" data-level="freq" value="${prom.ID}-${freq}" checked>
+                                </div>
+                                <div class="tree-color" style="background:${groupData.color}"></div>
+                                <div class="tree-name">${freq}</div>
+                                <div class="tree-count">${groupData.clients.length}</div>
+                            </div>
+                            <div class="tree-children">
+                        `;
+
+                        groupData.clients.forEach(c => {
+                            html += `
+                            <div class="tree-node empty level-4">
+                                <div class="tree-header">
+                                    <div class="tree-toggle"></div>
+                                    <div class="tree-checkbox-wrap">
+                                        <input type="checkbox" class="tree-checkbox" data-level="cli" value="${c.ID}" checked>
+                                    </div>
+                                    <div class="tree-name">#${c.Codigo || c.ID} - ${c.Nombre}</div>
+                                </div>
+                            </div>
+                            `;
+                        });
+
+                        html += `</div></div>`; // End Freq
+                    }
+
+                    html += `</div></div>`; // End Promotor
+                });
+
+                html += `</div></div>`; // End Supervisor
+            });
+        } else if (mode === 'frecuencia') {
+            const freqGroups = {};
+            clientes.forEach(c => {
+                const f = c.FrecuenciaGrupo || 'Sin Frecuencia';
+                if (!freqGroups[f]) freqGroups[f] = { clients: [], color: c.FrecuenciaColor, name: f };
+                freqGroups[f].clients.push(c);
+            });
+
+            for (const [freq, groupData] of Object.entries(freqGroups)) {
+                if (groupData.clients.length === 0) continue;
+
+                html += `
+                <div class="tree-node level-1">
+                    <div class="tree-header">
+                        <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
+                        <div class="tree-checkbox-wrap">
+                            <input type="checkbox" class="tree-checkbox" data-level="freq-top" value="${freq}" checked>
+                        </div>
+                        <div class="tree-color" style="background:${groupData.color}"></div>
+                        <div class="tree-name">${freq}</div>
+                        <div class="tree-count">${groupData.clients.length}</div>
+                    </div>
+                    <div class="tree-children">
+                `;
+
+                const promGroups = {};
+                groupData.clients.forEach(c => {
+                    const p = c.PromotorID;
+                    const prom = DataService.getPromotor(p);
+                    if (!promGroups[p]) promGroups[p] = { 
+                        clients: [], 
+                        color: prom ? prom.Color : '#666', 
+                        name: prom ? prom.Nombre : 'Sin Promotor' 
+                    };
+                    promGroups[p].clients.push(c);
+                });
+
+                for (const [promId, promData] of Object.entries(promGroups)) {
+                    if (promData.clients.length === 0) continue;
+
+                    html += `
+                    <div class="tree-node level-2">
+                        <div class="tree-header">
+                            <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
+                            <div class="tree-checkbox-wrap">
+                                <input type="checkbox" class="tree-checkbox" data-level="prom-sub" value="${promId}-${freq}" checked>
+                            </div>
+                            <div class="tree-color" style="background:${promData.color}"></div>
+                            <div class="tree-name">${promData.name}</div>
+                            <div class="tree-count">${promData.clients.length}</div>
+                        </div>
+                        <div class="tree-children">
+                    `;
+
+                    promData.clients.forEach(c => {
+                        html += `
+                        <div class="tree-node empty level-3">
                             <div class="tree-header">
                                 <div class="tree-toggle"></div>
                                 <div class="tree-checkbox-wrap">
@@ -215,14 +303,12 @@ const UI = {
                         `;
                     });
 
-                    html += `</div></div>`; // End Freq
+                    html += `</div></div>`; // End Promotor
                 }
 
-                html += `</div></div>`; // End Promotor
-            });
-
-            html += `</div></div>`; // End Supervisor
-        });
+                html += `</div></div>`; // End Frecuencia
+            }
+        }
 
         treeList.innerHTML = html;
         this.bindTreeEvents();
