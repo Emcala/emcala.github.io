@@ -72,45 +72,82 @@ select#monthSelect{
 /* User badge container */
 #userBadgeContainer{margin-left:8px;}
 
-/* ---- TABS (Filtros) ---- */
-.tabs-container {
+/* ---- NAVIGATION MENUS (Premium Dropdowns) ---- */
+.hdr-center {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 14px 0 14px;
+  align-items: center;
+  gap: 12px;
 }
-.tab-group {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-.tab-group::-webkit-scrollbar { height: 4px; }
-.tab-group::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
 
-.tab-btn {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.7);
+.nav-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.85);
   padding: 6px 14px;
-  border-radius: 16px;
+  border-radius: 12px;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
   font-family: 'Bricolage Grotesque', sans-serif;
 }
-.tab-btn:hover {
-  background: rgba(255,255,255,0.15);
-  color: #fff;
+.nav-btn:hover { background: rgba(255,255,255,0.15); color: #fff; transform: translateY(-1px); }
+.nav-btn.active { background: #fff; color: #1B5FA8; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
+
+.dropdown { position: relative; display: inline-block; }
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: rgba(11, 37, 89, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  min-width: 200px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+  list-style: none;
+  padding: 8px 0;
 }
-.tab-btn.active {
-  background: #fff;
-  color: var(--acc);
-  border-color: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+.dropdown:hover > .dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+
+.dropdown-menu li { position: relative; }
+.dropdown-menu a {
+  display: block;
+  padding: 10px 16px;
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s;
 }
+.dropdown-menu a:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.dropdown-menu a.active { background: rgba(255,255,255,0.15); color: #4ade80; }
+
+/* Submenus */
+.dropdown-submenu > .dropdown-menu {
+  top: -8px;
+  left: 100%;
+  margin-top: 0;
+  margin-left: 4px;
+}
+.dropdown-submenu:hover > .dropdown-menu { opacity: 1; visibility: visible; transform: translateX(0); }
+
+/* Brand grid specifically for marcas to save space */
+.brand-grid {
+  min-width: 280px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 8px;
+  gap: 4px;
+}
+.brand-grid a { padding: 8px 12px; border-radius: 8px; }
 
 /* ---- DIAS INFO ---- */
 .dias-info{text-align:center;font-size:12px;color:rgba(255,255,255,0.6);margin:10px 0;}
@@ -189,7 +226,35 @@ td.achieved{background:#dcfce7 !important;color:#166534;font-weight:700;border-b
   transform:translateY(80px);opacity:0;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);
   z-index:2000;max-width:360px;
 }
-.toast.show{transform:translateY(0);opacity:1;}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Main Loading Toast */
+.loading-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  color: #1B5FA8;
+  padding: 12px 24px;
+  border-radius: 30px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 9999;
+}
+.loading-toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
 
 /* ---- ANIMATIONS ---- */
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}

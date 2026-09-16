@@ -23,23 +23,54 @@
     <select id="monthSelect"></select>
   </div>
 
-  <!-- BADGES AL MEDIO -->
-  <div class="hdr-center">
-    <div class="status-item">
-      <span class="status-dot pending" id="statusMaestro"></span>
-      <span id="statusMaestroText">MAESTRO</span>
+  <!-- NAVIGATION MENUS (Replaces status badges) -->
+  <div class="hdr-center" id="nav-filters" style="display: none;">
+    <button class="nav-btn active" data-type="total" data-key="total">CERVEZA</button>
+    
+    <div class="dropdown">
+      <button class="nav-btn">SEGMENTOS <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i></button>
+      <ul class="dropdown-menu">
+        <li class="dropdown-submenu">
+          <a href="#" data-type="segmento" data-key="corevalue">CORE+VALUE <i class="fa-solid fa-chevron-right" style="float: right; margin-top: 4px; font-size: 10px;"></i></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-type="segmento" data-key="value">VALUE</a></li>
+            <li><a href="#" data-type="segmento" data-key="core">CORE</a></li>
+          </ul>
+        </li>
+        <li class="dropdown-submenu">
+          <a href="#" data-type="segmento" data-key="abovecore">ABOVE CORE <i class="fa-solid fa-chevron-right" style="float: right; margin-top: 4px; font-size: 10px;"></i></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-type="segmento" data-key="coreplus">CORE+</a></li>
+            <li><a href="#" data-type="segmento" data-key="premium">PREMIUM</a></li>
+            <li><a href="#" data-type="segmento" data-key="superpremium">SUPER PREMIUM</a></li>
+          </ul>
+        </li>
+        <li class="dropdown-submenu">
+          <a href="#" data-type="segmento" data-key="balanced">BALANCED CHOICES <i class="fa-solid fa-chevron-right" style="float: right; margin-top: 4px; font-size: 10px;"></i></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-type="marca" data-key="michelob">MICHELOB</a></li>
+            <li><a href="#" data-type="marca" data-key="stellapg">STELLA PURE GOLD</a></li>
+            <li><a href="#" data-type="marca" data-key="cero">CERVEZAS 0.0</a></li>
+          </ul>
+        </li>
+      </ul>
     </div>
-    <div class="status-item">
-      <span class="status-dot pending" id="statusMesas"></span>
-      <span id="statusMesasText">MESAS</span>
-    </div>
-    <div class="status-item">
-      <span class="status-dot pending" id="statusVentas"></span>
-      <span id="statusVentasText">AVANCE</span>
-    </div>
-    <div class="status-item">
-      <span class="status-dot pending" id="statusHistoricos"></span>
-      <span id="statusHistoricosText">HISTÓRICOS</span>
+
+    <div class="dropdown">
+      <button class="nav-btn">MARCAS <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i></button>
+      <ul class="dropdown-menu brand-grid">
+        <li><a href="#" data-type="marca" data-key="q1890">Quilmes 1890</a></li>
+        <li><a href="#" data-type="marca" data-key="brahma">Brahma</a></li>
+        <li><a href="#" data-type="marca" data-key="bud">Budweiser</a></li>
+        <li><a href="#" data-type="marca" data-key="quilmes">Quilmes</a></li>
+        <li><a href="#" data-type="marca" data-key="andes">Andes</a></li>
+        <li><a href="#" data-type="marca" data-key="michelob">Michelob</a></li>
+        <li><a href="#" data-type="marca" data-key="stella">Stella Artois</a></li>
+        <li><a href="#" data-type="marca" data-key="corona">Corona</a></li>
+        <li><a href="#" data-type="marca" data-key="patagonia">Patagonia</a></li>
+        <li><a href="#" data-type="marca" data-key="cero">Cervezas 0.0</a></li>
+        <li><a href="#" data-type="marca" data-key="stellapg">Stella Pure Gold</a></li>
+      </ul>
     </div>
   </div>
 
@@ -52,27 +83,7 @@
   </div>
 </div>
 
-<div class="tabs-container">
-  <div class="tab-group" id="tabs-segmentos">
-    <button class="tab-btn active" data-type="total" data-key="total">Todos</button>
-    <button class="tab-btn" data-type="segmento" data-key="corevalue">Core+Value</button>
-    <button class="tab-btn" data-type="segmento" data-key="abovecore">Above Core</button>
-    <button class="tab-btn" data-type="segmento" data-key="balanced">Balanced Choices</button>
-  </div>
-  <div class="tab-group" id="tabs-marcas">
-    <button class="tab-btn" data-type="marca" data-key="q1890">Quilmes 1890</button>
-    <button class="tab-btn" data-type="marca" data-key="brahma">Brahma</button>
-    <button class="tab-btn" data-type="marca" data-key="bud">Budweiser</button>
-    <button class="tab-btn" data-type="marca" data-key="quilmes">Quilmes</button>
-    <button class="tab-btn" data-type="marca" data-key="andes">Andes</button>
-    <button class="tab-btn" data-type="marca" data-key="michelob">Michelob</button>
-    <button class="tab-btn" data-type="marca" data-key="stella">Stella Artois</button>
-    <button class="tab-btn" data-type="marca" data-key="corona">Corona</button>
-    <button class="tab-btn" data-type="marca" data-key="patagonia">Patagonia</button>
-    <button class="tab-btn" data-type="marca" data-key="cero">Cervezas 0.0</button>
-    <button class="tab-btn" data-type="marca" data-key="stellapg">Stella Pure Gold</button>
-  </div>
-</div>
+
 
 <div class="dias-info" id="diasInfo" style="display:none"></div>
 
@@ -106,6 +117,12 @@
     <div class="loading-spinner"></div>
     <div style="margin-top:14px;font-weight:600;font-size:13px;color:#fff" id="loadingText">Procesando...</div>
   </div>
+</div>
+
+<!-- Main Loading Toast -->
+<div class="loading-toast" id="mainLoadingToast">
+  <div class="loading-spinner" style="width:20px;height:20px;border-width:2px;border-top-color:#1B5FA8;"></div>
+  <span>Sincronizando datos...</span>
 </div>
 
 <!-- Toast -->

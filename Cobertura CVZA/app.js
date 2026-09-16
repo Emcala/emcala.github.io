@@ -581,9 +581,15 @@ function tryRender() {
     `<td>${jMedia.toLocaleString('es-AR')}</td>`;
   tbody.appendChild(jRow);
 
-  // Show table
+  // Show table and filters, hide loading indicators
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('tableWrap').style.display = 'flex';
+  
+  const toast = document.getElementById('mainLoadingToast');
+  if (toast) toast.classList.remove('show');
+  
+  const navFilters = document.getElementById('nav-filters');
+  if (navFilters) navFilters.style.display = 'flex';
 }
 
 // ==========================================
@@ -627,22 +633,41 @@ monthSelect.addEventListener('change', async () => {
   document.getElementById('tableWrap').style.display = 'none';
   document.getElementById('emptyState').style.display = 'flex';
   
+  const toast = document.getElementById('mainLoadingToast');
+  if (toast) toast.classList.add('show');
+  const navFilters = document.getElementById('nav-filters');
+  if (navFilters) navFilters.style.display = 'none';
+
   updateStatus('ventas', 'pending');
   
   await loadAvance(getSelectedMonth());
 });
 
 // ==========================================
-// TABS & FILTERING
+// TABS & FILTERING (Premium Navigation)
 // ==========================================
-document.querySelectorAll('.tab-btn').forEach(btn => {
+document.querySelectorAll('.nav-btn, .dropdown-menu a').forEach(btn => {
   btn.addEventListener('click', (e) => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     const target = e.currentTarget;
+    if (target.tagName === 'A') e.preventDefault();
+    
+    // Ignore dropdown toggle buttons that have no data-type
+    const dType = target.getAttribute('data-type');
+    const dKey = target.getAttribute('data-key');
+    if (!dType || !dKey) return;
+    
+    document.querySelectorAll('.nav-btn, .dropdown-menu a').forEach(b => b.classList.remove('active'));
     target.classList.add('active');
     
-    currentTabType = target.getAttribute('data-type');
-    currentTabKey = target.getAttribute('data-key');
+    // Also highlight the parent dropdown button
+    const parentDropdown = target.closest('.dropdown');
+    if (parentDropdown) {
+      const mainBtn = parentDropdown.querySelector('.nav-btn');
+      if (mainBtn) mainBtn.classList.add('active');
+    }
+    
+    currentTabType = dType;
+    currentTabKey = dKey;
     
     tryRender();
   });
@@ -665,6 +690,11 @@ async function refreshAll() {
   historicosData = null;
   document.getElementById('tableWrap').style.display = 'none';
   document.getElementById('emptyState').style.display = 'flex';
+  
+  const toast = document.getElementById('mainLoadingToast');
+  if (toast) toast.classList.add('show');
+  const navFilters = document.getElementById('nav-filters');
+  if (navFilters) navFilters.style.display = 'none';
 
   updateStatus('maestro', 'pending');
   updateStatus('mesas', 'pending');
@@ -691,6 +721,11 @@ async function refreshAll() {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   populateMonthSelector();
+  
+  const toast = document.getElementById('mainLoadingToast');
+  if (toast) toast.classList.add('show');
+  const navFilters = document.getElementById('nav-filters');
+  if (navFilters) navFilters.style.display = 'none';
   
   loadMesas();
   loadMaestro();
