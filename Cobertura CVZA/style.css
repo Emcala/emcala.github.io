@@ -170,9 +170,9 @@ select#monthSelect{
 
 /* ---- TABLE WRAP ---- */
 .table-wrap{background:var(--surf);border-radius:12px;box-shadow:0 12px 24px rgba(0,0,0,0.3);border:1px solid var(--brd);
-  width:100%;max-width:800px;margin:0 auto;overflow:auto;flex:1;min-height:0;display:flex;flex-direction:column;}
+  width:100%;max-width:800px;margin:0 auto;overflow:auto;min-height:0;}
 
-table{width:100%;flex:1;border-collapse:separate;border-spacing:0;text-align:center;}
+table{width:100%;border-collapse:separate;border-spacing:0;text-align:center;}
 thead th{background:var(--acc);color:#fff;font-size:12px;font-weight:800;text-transform:uppercase;padding:5px 3px;
   position:sticky;top:0;z-index:5;border-bottom:2px solid rgba(0,0,0,0.2);}
 thead th:first-child{text-align:left;padding-left:8px;}
@@ -183,7 +183,8 @@ tr.prom-row td:not(.progress-cell){background:#fff;}
 tr.prom-row:hover td:not(.progress-cell){background:#f8fafc;}
 
 /* Supervisor row */
-tr.sdv-row td{background:var(--acc);color:#fff;font-weight:800;font-size:14.5px;letter-spacing:-0.015em;padding:3px 2px;text-transform:uppercase;}
+tr.sdv-row td{background:var(--acc);color:#fff;font-weight:800;font-size:14.5px;letter-spacing:-0.015em;padding:3px 2px;text-transform:uppercase;cursor:pointer;}
+tr.sdv-row:hover td{filter:brightness(1.1);}
 tr.sdv-row td.name-col{padding-left:8px;font-size:13.5px;letter-spacing:-0.01em;}
 
 /* JDV total row */
