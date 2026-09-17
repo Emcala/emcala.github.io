@@ -6,6 +6,7 @@
 <title>Portal EMCALA · Dashboard de Ventas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="../emcala-config.js"></script>
 <script src="../emcala-auth.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -318,10 +319,11 @@ function cell(obj, real, diasInfo, extraClass = '') {
 async function cargarDashboard() {
   const cMonth = document.getElementById('month-input').value || getCurrentMonth();
   const spv = document.getElementById('spv-select').value;
-  document.getElementById('dash-tbody').innerHTML = '<tr><td colspan="19" class="loading">Cargando datos…</td></tr>';
+  document.getElementById('dash-tbody').innerHTML = '<tr><td colspan="31" class="loading">Cargando datos…</td></tr>';
 
   try {
-    const url = `${SCRIPT_URL}?req=dashboard&cMonth=${cMonth}&spv=${encodeURIComponent(spv)}`;
+    // Siempre pedimos 'ALL' al backend para poder filtrar localmente sin re-fetch
+    const url = `${SCRIPT_URL}?req=dashboard&cMonth=${cMonth}&spv=ALL`;
     
     const MAX_RETRIES = 3;
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -378,7 +380,7 @@ async function cargarDashboard() {
     renderDashboard();
     seleccionarEntidad('TOTAL', 'TOTAL'); // Dibuja el grafico y resalta la fila
   } catch (err) {
-    document.getElementById('dash-tbody').innerHTML = `<tr><td colspan="19" class="loading">Error de conexión: ${err.message}</td></tr>`;
+    document.getElementById('dash-tbody').innerHTML = `<tr><td colspan="31" class="loading">Error de conexión: ${err.message}</td></tr>`;
   }
 }
 
@@ -393,11 +395,13 @@ function calcularDiasMes(mesStr, maxDateStr) {
   let trabajados = 0;
   let pesoPasado = 0;
   
-  // Feriados nacionales (aproximado 2026)
-  const feriados = [
-    '01-01', '02-16', '02-17', '03-24', '04-02', '04-03', '05-01', '05-25', 
-    '06-15', '06-20', '07-09', '08-17', '10-12', '11-23', '12-08', '12-25'
+  // Feriados: referencia al archivo compartido emcala-config.js, formato MM-DD para este cálculo
+  const sharedHolidays = (typeof EMCALA_HOLIDAYS !== 'undefined') ? EMCALA_HOLIDAYS : [
+    '2026-01-01','2026-02-16','2026-02-17','2026-03-24','2026-04-02','2026-04-03',
+    '2026-05-01','2026-05-25','2026-06-15','2026-06-20','2026-07-09','2026-08-17',
+    '2026-10-12','2026-11-20','2026-12-08','2026-12-25'
   ];
+  const feriados = sharedHolidays.map(d => d.substring(5)); // YYYY-MM-DD → MM-DD
   
   for (let d = 1; d <= diasEnMes; d++) {
     const fecha = new Date(year, month - 1, d);
@@ -441,6 +445,7 @@ function poblarSelectSpv() {
 }
 
 function renderKpis() {
+  const spvFilter = document.getElementById('spv-select').value;
   let subText = "Objetivo vs Acumulado del Mes — Vista Consolidada";
   if (dashData.diasInfo && dashData.diasInfo.diasHabiles > 0) {
     subText += ` | Días Hábiles: ${dashData.diasInfo.diasHabiles} (Trabajados: ${dashData.diasInfo.diasTrabajados})`;
@@ -449,6 +454,14 @@ function renderKpis() {
   
   let f1Plan = 0, f1Real = 0, f2Plan = 0, f2Real = 0;
   for (const prom in dashData.mesas) {
+    // Filtrar por SPV si corresponde
+    if (spvFilter !== 'ALL') {
+      let promBelongsToSpv = false;
+      if (dashData.mesasPorSpv && dashData.mesasPorSpv[spvFilter]) {
+        promBelongsToSpv = dashData.mesasPorSpv[spvFilter].includes(prom);
+      }
+      if (!promBelongsToSpv) continue;
+    }
     const d = dashData.mesas[prom];
     const obj = dashData.objetivos[prom] || {};
     f1Plan += obj.objF1 || 0;
@@ -478,9 +491,12 @@ function kpiCard(label, real, plan, pEfectividad) {
 }
 
 function renderDashboard() {
+  const spvFilter = document.getElementById('spv-select').value;
   const tbody = document.getElementById('dash-tbody');
   let html = '';
   const orden = dashData.spvOrder || Object.keys(dashData.mesasPorSpv || {});
+  // Filtrar orden por SPV seleccionado
+  const ordenFiltrado = (spvFilter !== 'ALL') ? orden.filter(s => s === spvFilter) : orden;
 
   // Acumuladores Globales Totales
   let tF1Plan = 0, tF1Real = 0;
@@ -489,7 +505,7 @@ function renderDashboard() {
   let tF2Plan = 0, tF2Real = 0;
   let tUNGPlan = 0, tUNGReal = 0, tUPPlan = 0, tUPReal = 0, tRBPlan = 0, tRBReal = 0, tAGPlan = 0, tAGReal = 0;
 
-  orden.forEach(spv => {
+  ordenFiltrado.forEach(spv => {
     const promotores = (dashData.mesasPorSpv && dashData.mesasPorSpv[spv]) || [];
     if (promotores.length === 0) return;
     
@@ -710,9 +726,7 @@ function renderEvolucionCharts() {
     dataAcumAG.push(+acumAG.toFixed(2));
   });
 
-  const createChart = (chartInstance, ctx, labels, dataObj, dataAcum, dataPrev, label1, label2, dataSub1, labelSub1, colorSub1, dataSub2, labelSub2, colorSub2) => {
-    if (chartInstance) chartInstance.destroy();
-    
+  const updateChart = (chartInstance, ctx, labels, dataObj, dataAcum, dataPrev, label1, label2, dataSub1, labelSub1, colorSub1, dataSub2, labelSub2, colorSub2) => {
     const datasets = [
       { 
         label: label1, 
@@ -773,6 +787,14 @@ function renderEvolucionCharts() {
       });
     }
 
+    // Reutilizar instancia existente con .update() en vez de destroy/create
+    if (chartInstance) {
+      chartInstance.data.labels = labels;
+      chartInstance.data.datasets = datasets;
+      chartInstance.update('none'); // 'none' = sin animación para máxima velocidad
+      return chartInstance;
+    }
+
     return new Chart(ctx, {
       type: 'line',
       data: { labels, datasets },
@@ -796,12 +818,21 @@ function renderEvolucionCharts() {
     });
   };
 
-  evoChartF1 = createChart(evoChartF1, ctxF1, labels, dataObjF1, dataAcumF1, dataPrevF1, 'Objetivo F1', 'Acumulado F1', dataAcumCV, 'Core+Value', '#eab308', dataAcumAC, 'Above Core', '#22c55e');
-  evoChartF2 = createChart(evoChartF2, ctxF2, labels, dataObjF2, dataAcumF2, dataPrevF2, 'Objetivo F2', 'Acumulado F2', dataAcumUP, 'UNG Top', '#ec4899', dataAcumAG, 'Aguas', '#0ea5e9');
+  evoChartF1 = updateChart(evoChartF1, ctxF1, labels, dataObjF1, dataAcumF1, dataPrevF1, 'Objetivo F1', 'Acumulado F1', dataAcumCV, 'Core+Value', '#eab308', dataAcumAC, 'Above Core', '#22c55e');
+  evoChartF2 = updateChart(evoChartF2, ctxF2, labels, dataObjF2, dataAcumF2, dataPrevF2, 'Objetivo F2', 'Acumulado F2', dataAcumUP, 'UNG Top', '#ec4899', dataAcumAG, 'Aguas', '#0ea5e9');
 }
 document.getElementById('btn-refresh').addEventListener('click', cargarDashboard);
 document.getElementById('month-input').addEventListener('change', cargarDashboard);
-document.getElementById('spv-select').addEventListener('change', cargarDashboard);
+document.getElementById('spv-select').addEventListener('change', () => {
+  // Filtrar localmente sin re-descargar del backend
+  if (dashData && dashData.status === 'success') {
+    renderKpis();
+    renderDashboard();
+    seleccionarEntidad('TOTAL', 'TOTAL');
+  } else {
+    cargarDashboard();
+  }
+});
 
 document.getElementById('month-input').value = getCurrentMonth();
 cargarDashboard();
