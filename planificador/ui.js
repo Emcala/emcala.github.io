@@ -59,7 +59,11 @@
       }
     }
 
-    function handleInput(e) {
+    // Flag global: se marca true al editar, false al guardar exitosamente.
+    // Evita JSON.stringify(volData) costoso en cada keystroke.
+    let _isDirty = false;
+
+    function _handleInputImmediate(e) {
       const el = e.target;
       const prom = el.dataset.prom;
       const field = el.dataset.field;
@@ -70,15 +74,18 @@
       }
       if (!volData[prom]) volData[prom] = {};
       volData[prom][field] = val;
-      calcTotals();
+      _isDirty = true;
       const btnSync = document.getElementById('btn-sync');
-      if (btnSync) {
-        if (window.currentCloudState && JSON.stringify(volData) === window.currentCloudState) {
-          btnSync.classList.remove('btn-needs-sync');
-        } else {
-          btnSync.classList.add('btn-needs-sync');
-        }
-      }
+      if (btnSync) btnSync.classList.add('btn-needs-sync');
+    }
+
+    // Debounce: recalcula totales solo tras 150ms sin keystrokes nuevos.
+    // El input directo (valor en volData) se aplica inmediatamente para no perder datos.
+    let _calcDebounceTimer = null;
+    function handleInput(e) {
+      _handleInputImmediate(e);
+      clearTimeout(_calcDebounceTimer);
+      _calcDebounceTimer = setTimeout(() => calcTotals(), 150);
     }
 
     function toggleFocoExtra(num) {
@@ -132,7 +139,7 @@
           <td id="tot-${spvId}-f2-up" class="tot-val f2-extra">0.00</td>
           <td id="tot-${spvId}-f2-rb" class="tot-val f2-extra">0.00</td>
           <td id="tot-${spvId}-f2-ag" class="tot-val f2-extra">0.00</td>
-          ${spv === 'MAYO' ? `
+          ${((typeof EMCALA_EXCLUDED_SPVS !== 'undefined') ? EMCALA_EXCLUDED_SPVS.includes(spv) : (spv === 'MAYO')) ? `
             <td colspan="4" style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
             <td colspan="4" style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
             <td colspan="3" style="background: var(--acc) !important; border-color: var(--acc) !important;"></td>
@@ -147,7 +154,7 @@
         promotores.forEach(p => {
           const tr = document.createElement('tr');
           tr.className = `prom-row-${spvId}`;
-          const isLemos = (p === 'LEMOS PATRICIA');
+          const isLemos = (typeof EMCALA_EXCLUDED_PROMOTORS !== 'undefined') ? EMCALA_EXCLUDED_PROMOTORS.includes(p) : (p === 'LEMOS PATRICIA');
           const tdBg = isLemos ? 'background: var(--acc) !important;' : '';
           const inpStyle = isLemos ? 'style="color: #ffffff !important; background: var(--acc) !important;"' : '';
           const planReadonly = ''; // Habilitado para supervisor y auditor
@@ -217,7 +224,8 @@
           `;
           fragment.appendChild(tr);
         });
-        if (spv !== 'LEMOS PATRICIA') {
+        const isExcludedSpv = (typeof EMCALA_EXCLUDED_PROMOTORS !== 'undefined') ? EMCALA_EXCLUDED_PROMOTORS.includes(spv) : (spv === 'LEMOS PATRICIA');
+        if (!isExcludedSpv) {
           fragment.appendChild(trSpv);
         }
       }
@@ -265,7 +273,7 @@
                 // Re-evaluar estado del botón sync correctamente
                 const btnSync = document.getElementById('btn-sync');
                 if (btnSync) {
-                  if (window.currentCloudState && JSON.stringify(volData) === window.currentCloudState) {
+                  if (!_isDirty) {
                     btnSync.classList.remove('btn-needs-sync');
                   } else {
                     btnSync.classList.add('btn-needs-sync');

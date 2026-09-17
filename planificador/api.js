@@ -168,6 +168,9 @@
           
           if (result.status === 'success') {
             window.currentCloudState = JSON.stringify(volData);
+            if (typeof _isDirty !== 'undefined') _isDirty = false;
+            const btnSync = document.getElementById('btn-sync');
+            if (btnSync) btnSync.classList.remove('btn-needs-sync');
             return true;
           }
           

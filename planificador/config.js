@@ -2,11 +2,11 @@
     // URL del servidor centralizado de Auth (para traer Mesas dinámicamente)
     const AUTH_URL = 'https://script.google.com/macros/s/AKfycbwQ_cArrrXQ8Z1e07cpTYm62TfLkMo0vbrmWRMrWcP7XUfNeE7gqLz81aSmPQfc7tm82g/exec';
 
-    // Lista global de feriados donde NO hay preventa ni reparto (formato YYYY-MM-DD)
-    const HOLIDAYS = [
+    // Feriados: referencia al archivo compartido emcala-config.js
+    const HOLIDAYS = (typeof EMCALA_HOLIDAYS !== 'undefined') ? EMCALA_HOLIDAYS : [
       '2026-01-01', '2026-02-16', '2026-02-17', '2026-03-24',
       '2026-04-02', '2026-04-03', '2026-05-01', '2026-05-25',
-      '2026-06-15', '2026-06-20', '2026-07-09', '2026-08-17', // San Martín
+      '2026-06-15', '2026-06-20', '2026-07-09', '2026-08-17',
       '2026-10-12', '2026-11-20', '2026-12-08', '2026-12-25'
     ];
 
