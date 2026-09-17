@@ -6,6 +6,7 @@
 <title>Efectividad de Cobertura · EMCALA</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<script src="../emcala-config.js"></script>
 <script src="../emcala-auth.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="style.css">
@@ -80,9 +81,26 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dW
 const AUTH_URL   = 'https://script.google.com/macros/s/AKfycbwQ_cArrrXQ8Z1e07cpTYm62TfLkMo0vbrmWRMrWcP7XUfNeE7gqLz81aSmPQfc7tm82g/exec';
 const CLOUD_URL  = 'https://script.google.com/macros/s/AKfycbwyNIGLygcCTmkXrbVbFqnLLkt8Z9RRJ34ya1d6TooxEgtiOhahAIY1-2MagjlfNpEJrA/exec';
 
-const HOLIDAYS = [
-  '2026-06-15','2026-06-20','2026-07-09'
+const HOLIDAYS = (typeof EMCALA_HOLIDAYS !== 'undefined') ? EMCALA_HOLIDAYS : [
+  '2026-01-01','2026-02-16','2026-02-17','2026-03-24',
+  '2026-04-02','2026-04-03','2026-05-01','2026-05-25',
+  '2026-06-15','2026-06-20','2026-07-09','2026-08-17',
+  '2026-10-12','2026-11-20','2026-12-08','2026-12-25'
 ];
+
+// Fetch con reintentos — Apps Script devuelve 404/HTML intermitentes
+async function fetchJsonRetry(url, options, maxRetries = 4) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const r = await fetch(url, options);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.json();
+    } catch (e) {
+      if (attempt === maxRetries - 1) throw e;
+      await new Promise(res => setTimeout(res, 1500 * (attempt + 1) + Math.random() * 1000));
+    }
+  }
+}
 
 // Umbrales de semáforo (% efectividad) — ajustables a ojo según cómo lo quieran ver
 // Planificador thresholds: <50 Rojo, 50-89 Ambar/Naranja, >=90 Verde Excel
@@ -169,12 +187,11 @@ function computeCommercialMonth(dateStr){
 // ==============================
 async function loadMesas(){
   try{
-    const response = await fetch(AUTH_URL, {
+    const result = await fetchJsonRetry(AUTH_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'getMesasEfectividad' })
     });
-    const result = await response.json();
     if (result.ok && Array.isArray(result.mesas)){
       vendMap = {};
       sdvOrder = [];
@@ -201,8 +218,7 @@ async function loadVentas(dateStr){
   const cMonth = computeCommercialMonth(dateStr);
   const url = `${SCRIPT_URL}?date=${dateStr}&cMonth=${cMonth}&spv=ALL&_t=${Date.now()}`;
   try{
-    const response = await fetch(url);
-    const result = await response.json();
+    const result = await fetchJsonRetry(url);
     if (result.status !== 'success') throw new Error(result.message || 'Error al traer ventas');
     const ventas = {};
     const fetched = result.data || {};
