@@ -37,9 +37,9 @@ input[type=date]{font-weight:600;font-size:12px;padding:5px 8px;border-radius:6p
 #warn-banner{display:none;background:#fde68a;color:#78350f;font-weight:600;font-size:11px;padding:6px 16px;text-align:center;}
 
 .table-wrap{background:var(--surf);border-radius:12px;box-shadow:0 12px 24px rgba(0,0,0,0.3);border:1px solid var(--brd);
-  width:100%;max-width:550px;margin:0 auto;overflow:auto;flex:1;min-height:0;display:flex;flex-direction:column;}
+  width:100%;max-width:550px;margin:0 auto;overflow:auto;min-height:0;}
 
-table{width:100%;flex:1;border-collapse:separate;border-spacing:0;text-align:center;}
+table{width:100%;border-collapse:separate;border-spacing:0;text-align:center;}
 thead th{background:var(--acc);color:#fff;font-size:12px;font-weight:800;text-transform:uppercase;padding:5px 3px;
   position:sticky;top:0;z-index:5;border-bottom:2px solid rgba(0,0,0,0.2);}
 thead th:first-child, thead th:nth-child(2){text-align:left;padding-left:8px;}
