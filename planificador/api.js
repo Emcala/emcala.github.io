@@ -220,9 +220,12 @@
         const cMonth = window.getCommercialMonthAndStart(date).month;
         const hasSkus = Array.isArray(skuMaster) && skuMaster.length > 0;
         const hasTareas = tareasSyncedMonth === cMonth && !!tareasMaster;
+        const hasObjetivos = window._currentMonthLoaded === cMonth;
+        
         const fetchUrl = `${SCRIPT_URL}?req=init_bundle&date=${date}&cMonth=${cMonth}&spv=ALL`
           + (hasSkus ? '&skipSkus=1' : '')
           + (hasTareas ? '&skipTareas=1' : '')
+          + (hasObjetivos ? '&skipObj=1' : '')
           + `&_t=${Date.now()}`;
         
         const SYNC_MAX_RETRIES = 6;
@@ -320,7 +323,7 @@
           cloudData[prom] = Object.assign(cloudData[prom] || {}, fetched[fetchedKey]);
         }
         
-        // Inyectar objetivos mensuales si vienen en la respuesta
+        // Inyectar objetivos mensuales si vienen en la respuesta, y registrar el mes para ahorrar cargas
         if (result.objectives && Object.keys(result.objectives).length > 0) {
           const objFields = ['obj-f1', 'obj-f2', 'obj-cv', 'obj-ac', 'obj-bc', 'obj-lt', 'obj-ung', 'obj-up', 'obj-rb', 'obj-ag'];
           for (const p in result.objectives) {
@@ -331,6 +334,17 @@
               }
             }
           }
+          // Guardar este mes en el front-end como cache de objetivos local
+          window._currentMonthLoaded = cMonth;
+        } else if (hasObjetivos && window._currentMonthLoaded === cMonth) {
+           // Si ya teníamos los objetivos locales (skipObj=1), los volvemos a inyectar al nuevo cloudData del día
+           const objFields = ['obj-f1', 'obj-f2', 'obj-cv', 'obj-ac', 'obj-bc', 'obj-lt', 'obj-ung', 'obj-up', 'obj-rb', 'obj-ag', 'acum-f1', 'acum-f2', 'acum-ccc'];
+           for (const p in volData) {
+              if (!cloudData[p]) cloudData[p] = {};
+              for (const f of objFields) {
+                 if (volData[p][f] !== undefined) cloudData[p][f] = volData[p][f];
+              }
+           }
         }
         
         // Reemplazar volData con datos de la nube (reemplazo completo)

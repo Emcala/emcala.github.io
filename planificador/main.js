@@ -452,11 +452,16 @@
             
             // -- LOGICA VENTAS --
             if (isVentas) {
-              btnImportAuto.innerHTML = '⏳ Sincronizando SKUs y Tareas...';
-              
-              await syncSkus();
-              const cMonthActual = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
-              const okTareas = await syncTareas(cMonthActual);
+              // Solo sincronizar si no se cargaron previamente
+              if (!skuMaster || skuMaster.length === 0) {
+                await syncSkus();
+              }
+              const dInput = document.getElementById('date-input').value;
+              const { month: cm } = window.getCommercialMonthAndStart(dInput);
+              let okTareas = true;
+              if (tareasSyncedMonth !== cm) {
+                okTareas = await syncTareas(cm);
+              }
               if (!okTareas) {
                 const continuar = confirm('No se pudo cargar la Plana de Tareas.\nLa validación de CV puede salir en 0 para todos los promotores.\n\n¿Querés continuar igual con la importación de ventas?');
                 if (!continuar) {

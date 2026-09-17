@@ -1,6 +1,6 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
-    // URL del servidor centralizado de Auth (para traer Mesas dinámicamente)
-    const AUTH_URL = 'https://script.google.com/macros/s/AKfycbwQ_cArrrXQ8Z1e07cpTYm62TfLkMo0vbrmWRMrWcP7XUfNeE7gqLz81aSmPQfc7tm82g/exec';
+    // URL del servidor centralizado de Auth (corregida)
+    const AUTH_URL = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec';
 
     // Feriados: referencia al archivo compartido emcala-config.js
     const HOLIDAYS = (typeof EMCALA_HOLIDAYS !== 'undefined') ? EMCALA_HOLIDAYS : [
