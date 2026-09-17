@@ -232,11 +232,12 @@
             updateProg(`${p}-k2`, volData[p]['k2-p'], volData[p]['k2-v']);
             updateProg(`${p}-bol`, volData[p]['bol-p'], volData[p]['bol-v']);
 
-            applyCellColor(document.querySelector(`input[data-prom="${p}"][data-field="f1-v"]`), volData[p]['f1-v'], volData[p]['f1-p']);
-            applyCellColor(document.querySelector(`input[data-prom="${p}"][data-field="f2-v"]`), volData[p]['f2-v'], volData[p]['f2-p']);
-            applyCellColor(document.querySelector(`input[data-prom="${p}"][data-field="k1-v"]`), volData[p]['k1-v'], volData[p]['k1-p']);
-            applyCellColor(document.querySelector(`input[data-prom="${p}"][data-field="k2-v"]`), volData[p]['k2-v'], volData[p]['k2-p']);
-            applyCellColor(document.querySelector(`input[data-prom="${p}"][data-field="bol-v"]`), volData[p]['bol-v'], volData[p]['bol-p']);
+            const _c = window._inputCache || {};
+            applyCellColor(_c[`${p}::f1-v`], volData[p]['f1-v'], volData[p]['f1-p']);
+            applyCellColor(_c[`${p}::f2-v`], volData[p]['f2-v'], volData[p]['f2-p']);
+            applyCellColor(_c[`${p}::k1-v`], volData[p]['k1-v'], volData[p]['k1-p']);
+            applyCellColor(_c[`${p}::k2-v`], volData[p]['k2-v'], volData[p]['k2-p']);
+            applyCellColor(_c[`${p}::bol-v`], volData[p]['bol-v'], volData[p]['bol-p']);
 
             // Acumular porcentajes para promedios de KPI (Focos III y IV)
             const k1P = parseFloat(volData[p]['k1-p'] || 0);

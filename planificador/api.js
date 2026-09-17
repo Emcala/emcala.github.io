@@ -227,7 +227,17 @@
         
         const SYNC_MAX_RETRIES = 6;
         let result = null;
-        for (let attempt = 0; attempt < SYNC_MAX_RETRIES; attempt++) {
+
+        // Consumir resultado pre-fetched del arranque paralelo (si existe)
+        if (window._prefetchedBundle) {
+          try {
+            const prefetched = await window._prefetchedBundle;
+            if (prefetched && prefetched.status === 'success') result = prefetched;
+          } catch(e) { /* prefetch falló, se hará fetch normal */ }
+          delete window._prefetchedBundle;
+        }
+
+        for (let attempt = 0; attempt < SYNC_MAX_RETRIES && !result; attempt++) {
           try {
             btn.innerHTML = attempt === 0 ? '⏳ Descargando datos...' : `⏳ Reintentando (${attempt + 1}/${SYNC_MAX_RETRIES})...`;
             const response = await fetch(fetchUrl);

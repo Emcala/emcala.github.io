@@ -182,11 +182,12 @@
         await new Promise(r => setTimeout(r, 50));
         const canvas = await html2canvas(captureEl, {
           backgroundColor: '#0B2559',
-          scale: 2,
+          scale: 1.5, // Reducido de 2 a 1.5 para evitar crashes de falta de memoria (out of memory) en tablas largas
           windowWidth: tableCont ? tableCont.scrollWidth + 60 : captureEl.scrollWidth,
           windowHeight: captureEl.scrollHeight + 20,
           logging: false,
-          useCORS: true
+          useCORS: true,
+          allowTaint: true // Necesario si hay imágenes de perfiles o medallas de otros dominios
         });
         // Restaurar ancho original
         captureEl.style.width = originalWidth;
@@ -276,6 +277,15 @@
               let monthStr = window.getCommercialMonthAndStart(document.getElementById('date-input').value).month;
               let monthObjs = {};
 
+              // Funciones de normalización y pre-cálculo O(1) movidas fuera del bucle anidado
+              const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
+              const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
+              
+              const promLookup = new Map();
+              for (const p of allPromoters) {
+                promLookup.set(p, { flat: normalizeFlat(p), parts: normalizeParts(p) });
+              }
+
               workbook.SheetNames.forEach(sheetName => {
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
@@ -290,10 +300,6 @@
                   if (colA !== '') {
                     currentCategory = colA.toUpperCase();
                   }
-
-                  // Normalización robusta para matching de promotores
-                  const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
-                  const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
                   
                   const colDUpper = colD.toUpperCase();
                   const colDFlat = normalizeFlat(colD);
@@ -303,8 +309,7 @@
                   if (colDFlat.length > 2 && colDUpper !== 'TOTAL' && colDUpper !== 'FOCO') {
                     // Detectar si la fila contiene el nombre de algún promotor conocido en la Columna D
                     matchedProm = allPromoters.find(p => {
-                      const pFlat = normalizeFlat(p);
-                      const pParts = normalizeParts(p);
+                      const { flat: pFlat, parts: pParts } = promLookup.get(p);
                       const pInCol = pParts.every(part => colDParts.includes(part));
                       const colInP = colDParts.every(part => pParts.includes(part));
                       const isFlatMatch = colDFlat.includes(pFlat) || pFlat === colDFlat || (colDFlat.length > 5 && pFlat.includes(colDFlat));
@@ -619,6 +624,16 @@
       if (btn) { btn.innerHTML = '⏳ Conectando...'; btn.disabled = true; }
       if (dateEl) dateEl.disabled = true;
 
+      // Pre-fetch init_bundle en PARALELO con fetchMesas para eliminar el doble
+      // cold-start secuencial de Google Apps Script (ahorra ~3-5s en el arranque).
+      // performSync() consumirá este resultado si está disponible.
+      {
+        const d = dateEl.value;
+        const cm = window.getCommercialMonthAndStart(d).month;
+        const pfUrl = `${SCRIPT_URL}?req=init_bundle&date=${d}&cMonth=${cm}&spv=ALL&_t=${Date.now()}`;
+        window._prefetchedBundle = fetch(pfUrl).then(r => r.ok ? r.json() : null).catch(() => null);
+      }
+
       let mesasOk = await fetchMesasFromServer();
       if (!mesasOk || Object.keys(SPV_DATA).length === 0) {
         // Reintentar una vez más tras 3 segundos
@@ -641,4 +656,4 @@
       
       applyRoleFilter(); 
       await performSync(true);
-    }, 300);
+    }, 0);

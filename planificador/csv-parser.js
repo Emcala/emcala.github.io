@@ -384,6 +384,19 @@
       const currentPlannerDate = document.getElementById('date-input').value;
       const sortedDates = Object.keys(allDatesSales).sort();
       const payload = [];
+
+      // Funciones de normalización y pre-cálculo O(1) movidas fuera del bucle anidado
+      const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
+      const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
+      
+      const promNorm = new Map();
+      const promoterToSpv = {};
+      for (const spv in SPV_DATA) {
+        for (const p of SPV_DATA[spv]) {
+          promNorm.set(p, { flat: normalizeFlat(p), parts: normalizeParts(p) });
+          promoterToSpv[p] = spv;
+        }
+      }
       
       for (const pDate of sortedDates) {
         const cMonth = window.getCommercialMonthAndStart(pDate).month;
@@ -404,15 +417,12 @@
 
           // 2) Fallback: matching difuso por nombre (solo si no vino código o no está en Mesas).
           if (!trackedPromoter) {
-            const normalizeParts = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, " ").trim().toUpperCase().split(/\s+/);
-            const normalizeFlat = (n) => String(n).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/ig, "").toUpperCase();
             const csvFlat = normalizeFlat(promoter);
             if (csvFlat.length > 2) {
               const csvParts = normalizeParts(promoter);
               for (const spv in SPV_DATA) {
                 const match = SPV_DATA[spv].find(p => {
-                  const pParts = normalizeParts(p);
-                  const pFlat = normalizeFlat(p);
+                  const { flat: pFlat, parts: pParts } = promNorm.get(p);
                   const pInCsv = pParts.every(part => csvParts.includes(part));
                   const csvInP = csvParts.every(part => pParts.includes(part));
                   const isFlatMatch = pFlat === csvFlat || csvFlat.includes(pFlat) || (csvFlat.length > 5 && pFlat.includes(csvFlat));
@@ -443,7 +453,7 @@
           const f1TotalSum = coreValueSum + acSum;
           const f2TotalSum = nabsSum;
 
-          const spvName = Object.keys(SPV_DATA).find(s => SPV_DATA[s].includes(trackedPromoter));
+          const spvName = promoterToSpv[trackedPromoter];
           payload.push({
             date: pDate, spv: spvName, promotor: trackedPromoter, cMonth,
             'f1-v': f1TotalSum !== 0 ? parseFloat(f1TotalSum.toFixed(2)) : '', 

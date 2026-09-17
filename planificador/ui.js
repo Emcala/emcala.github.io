@@ -230,6 +230,14 @@
         }
       }
       tbody.appendChild(fragment);
+      
+      // Cachear referencias a inputs para evitar querySelector en calcTotals
+      window._inputCache = {};
+      tbody.querySelectorAll('input.cell-input[data-prom][data-field]').forEach(inp => {
+        const key = `${inp.dataset.prom}::${inp.dataset.field}`;
+        window._inputCache[key] = inp;
+      });
+
       document.querySelectorAll('.cell-input').forEach(inp => {
         inp.addEventListener('input', handleInput);
         inp.addEventListener('focus', function () { 
