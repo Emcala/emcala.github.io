@@ -14,8 +14,8 @@ let currentTabKey = 'total';  // 'total' | 'corevalue' | 'q1890' | etc.
 const MAESTRO_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwL5ivpzRjy7Q83PcHZWRjWEqyFnNzDY9OlEBUjIeGPgOTl13zkUzJ3SjKt52Jya3NgMA/exec';
 const MESAS_AUTH_URL = 'https://script.google.com/macros/s/AKfycbwQ_cArrrXQ8Z1e07cpTYm62TfLkMo0vbrmWRMrWcP7XUfNeE7gqLz81aSmPQfc7tm82g/exec';
 const PLANIFICADOR_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
-// Feriados argentinos 2026  (agregar o quitar según sea necesario)
-const FERIADOS = [
+// Feriados: referencia al archivo compartido emcala-config.js
+const FERIADOS = (typeof EMCALA_HOLIDAYS !== 'undefined') ? EMCALA_HOLIDAYS : [
   '2026-01-01','2026-02-16','2026-02-17','2026-03-24',
   '2026-04-02','2026-04-03','2026-05-01','2026-05-25',
   '2026-06-15','2026-06-20','2026-07-09','2026-08-17',
@@ -248,9 +248,9 @@ async function loadMaestro(forceRefresh) {
 async function loadAvance(selectedMonth) {
   updateStatus('ventas', 'loading');
   
-  // Esperar a que las mesas estén cargadas para saber la lista de SPVs
+  // Esperar a que las mesas estén cargadas (sin polling recursivo)
   if (!mesasData) {
-    setTimeout(() => loadAvance(selectedMonth), 500);
+    console.warn('loadAvance: mesasData aún no listo. Esperando...');
     return;
   }
   
@@ -522,6 +522,16 @@ function tryRender() {
     // --- Supervisor header row ---
     const sRow = document.createElement('tr');
     sRow.className = 'sdv-row';
+    sRow.style.cursor = 'pointer';
+    
+    const createdPromRows = []; // Keep references to toggle later
+    
+    sRow.onclick = function() {
+      createdPromRows.forEach(r => {
+        r.style.display = (r.style.display === 'none') ? '' : 'none';
+      });
+    };
+    
     sRow.innerHTML =
       `<td class="name-col">${spv}</td>` +
       `<td>${sCartera.toLocaleString('es-AR')}</td>` +
@@ -538,6 +548,8 @@ function tryRender() {
     for (const p of promRows) {
       const pRow = document.createElement('tr');
       pRow.className = 'prom-row';
+      pRow.style.display = 'none'; // Hidden by default, like dashboard de ventas
+      createdPromRows.push(pRow);
       
       const classMA = (p.cccMA > 0 && p.ccc >= p.cccMA) ? ' class="achieved"' : '';
       const classAA = (p.cccMMAA > 0 && p.ccc >= p.cccMMAA) ? ' class="achieved"' : '';
@@ -702,8 +714,9 @@ async function refreshAll() {
   updateStatus('historicos', 'pending');
 
   try {
+    // Mesas primero (loadAvance depende de mesasData), luego maestro+avance en paralelo
+    await loadMesas();
     await Promise.all([
-      loadMesas(),
       loadMaestro(true),   // forceRefresh=true → saltea el caché de 2hs del Maestro
       loadAvance()         // ya trae datos en vivo (sin caché) desde el Planificador
     ]);
@@ -719,7 +732,7 @@ async function refreshAll() {
 // ==========================================
 // INIT
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   populateMonthSelector();
   
   const toast = document.getElementById('mainLoadingToast');
@@ -727,9 +740,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const navFilters = document.getElementById('nav-filters');
   if (navFilters) navFilters.style.display = 'none';
   
-  loadMesas();
-  loadMaestro();
-  loadAvance();
+  // Carga secuencial correcta: mesas primero (loadAvance depende de mesasData),
+  // luego maestro y avance en paralelo.
+  await loadMesas();
+  await Promise.all([loadMaestro(), loadAvance()]);
 
   const btn = document.getElementById('btnRefresh');
   if (btn) btn.addEventListener('click', refreshAll);
