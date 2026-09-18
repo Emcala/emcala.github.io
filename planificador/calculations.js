@@ -185,14 +185,16 @@
               const computed = parseFloat(Number(kpiVal).toFixed(2));
               d[kf.valField] = computed;
               // Actualizar el input en el DOM si existe
-              const input = document.querySelector(`input[data-prom="${prom}"][data-field="${kf.valField}"]`);
+              const _c = window._inputCache || {};
+              const input = _c[`${prom}::${kf.valField}`];
               if (input) input.value = computed;
             } else {
               // met/tar estaban seteados pero no matchean ninguna combinación
               // conocida, o el campo de datos correspondiente está vacío: 0,
               // no dejar colgado un valor de un cálculo anterior.
               d[kf.valField] = 0;
-              const input = document.querySelector(`input[data-prom="${prom}"][data-field="${kf.valField}"]`);
+              const _c = window._inputCache || {};
+              const input = _c[`${prom}::${kf.valField}`];
               if (input) input.value = 0;
             }
           }

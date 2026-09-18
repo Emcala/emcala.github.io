@@ -98,10 +98,11 @@
       } catch (e) {
         baseline = {};
       }
+      
+      const cMonth = window.getCommercialMonthAndStart(date).month;
       for (const spv in SPV_DATA) {
         SPV_DATA[spv].forEach(prom => {
           if (volData[prom]) {
-            const cMonth = window.getCommercialMonthAndStart(date).month;
             const codigo = window.CODE_MAP && window.CODE_MAP[prom] ? window.CODE_MAP[prom] : prom;
             const rowPayload = { date, spv, promotor: prom, codigo, cMonth };
             let hasChanges = false;
@@ -363,6 +364,7 @@
         console.warn('Error de sincronización:', e);
         // Sin localStorage fallback — mostrar error claro
         volData = {};
+        window._currentMonthLoaded = null; // Fix: evitar inyectar un acumulado viejo si hay un error y luego éxito parcial
         renderTables();
         btn.innerHTML = '❌ Sin conexión';
         btn.disabled = false;

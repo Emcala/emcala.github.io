@@ -639,14 +639,22 @@
         window._prefetchedBundle = fetch(pfUrl).then(r => r.ok ? r.json() : null).catch(() => null);
       }
 
-      let mesasOk = await fetchMesasFromServer();
+      // Problema 4 FIX: Corremos el fetch de Mesas y el performSync al MISMO tiempo.
+      // Así los 2 scripts hacen el "cold-start" (despertarse) en paralelo de verdad, 
+      // ahorrando entre 3 y 5 segundos extra!
+      let mesasPromise = fetchMesasFromServer();
+      let syncPromise = performSync(true);
+
+      let [mesasOk] = await Promise.all([mesasPromise, syncPromise]);
+
       if (!mesasOk || Object.keys(SPV_DATA).length === 0) {
-        // Reintentar una vez más tras 3 segundos
+        // Reintentar una vez más tras 3 segundos solo mesas
         console.warn('Mesas no cargaron a la primera. Reintentando en 3s...');
-        if (btn) btn.innerHTML = '⏳ Reintentando...';
+        if (btn) btn.innerHTML = '⏳ Reintentando Mesas...';
         await new Promise(r => setTimeout(r, 3000));
         mesasOk = await fetchMesasFromServer();
       }
+      
       if (!mesasOk || Object.keys(SPV_DATA).length === 0) {
         if (btn) { btn.innerHTML = '❌ Error al cargar mesas'; btn.style.color = '#ef4444'; }
         if (plannerContainer) {
@@ -656,9 +664,9 @@
         return;
       }
       
-      // 2. Restaurar botón temporalmente antes de pasárselo a performSync
-      if (btn) btn.innerHTML = origBtnText;
-      
+      // Aplicar el filtro de supervisor AHORA que ya tenemos SPV_DATA completo.
+      // Como performSync ya corrió y pintó con 'ALL', forzamos un re-render 
+      // para que oculte las tablas que no le tocan a este rol.
       applyRoleFilter(); 
-      await performSync(true);
+      renderTables();
     }, 0);
