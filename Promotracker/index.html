@@ -535,6 +535,8 @@
       if (!nombre) return;
       verRecorrido(nombre, 'supervisor');
     }
+
+    function cerrarRecorrido() {
       if (capaRecorrido) {
         map.removeLayer(capaRecorrido);
         capaRecorrido = null;
