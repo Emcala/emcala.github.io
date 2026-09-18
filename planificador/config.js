@@ -1,3 +1,18 @@
+    // fetch() no tiene timeout por defecto: si Apps Script no responde (cold start,
+    // límite de ejecuciones simultáneas cuando varios usuarios entran juntos, etc.)
+    // la promesa queda colgada para siempre y toda la UI que depende de ella también.
+    // Este wrapper aborta el request pasado el tiempo límite para que el código que
+    // llama pueda reintentar en vez de quedarse esperando indefinidamente.
+    async function fetchConTimeout(url, options = {}, timeoutMs = 15000) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await fetch(url, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
     // URL del servidor centralizado de Auth (corregida)
     const AUTH_URL = 'https://script.google.com/macros/s/AKfycbxtaLF6l7f_UEj8ypCZV_4LoPKJtgH44e5hvPxPceu7Ya_lI_WM3eaWqd2iSUJfEFfIzw/exec';
@@ -27,7 +42,7 @@
       let retries = 3;
       while (retries > 0) {
         try {
-          const response = await fetch(AUTH_URL, {
+          const response = await fetchConTimeout(AUTH_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'getMesas' })

@@ -636,7 +636,7 @@
         const d = dateEl.value;
         const cm = window.getCommercialMonthAndStart(d).month;
         const pfUrl = `${SCRIPT_URL}?req=init_bundle&date=${d}&cMonth=${cm}&spv=ALL&_t=${Date.now()}`;
-        window._prefetchedBundle = fetch(pfUrl).then(r => r.ok ? r.json() : null).catch(() => null);
+        window._prefetchedBundle = fetchConTimeout(pfUrl).then(r => r.ok ? r.json() : null).catch(() => null);
       }
 
       // Problema 4 FIX: Corremos el fetch de Mesas y el performSync al MISMO tiempo.
@@ -668,5 +668,20 @@
       // Como performSync ya corrió y pintó con 'ALL', forzamos un re-render 
       // para que oculte las tablas que no le tocan a este rol.
       applyRoleFilter(); 
-      if (isSupervisor) renderTables(); // Solo re-render si el filtro de rol pudo haber ocultado tablas
+      if (isSupervisor) {
+        renderTables(); // Solo re-render si el filtro de rol pudo haber ocultado tablas
+        // Si el filtro dejó SPV_DATA vacío (no matcheó el nombre de la sesión contra
+        // ninguna mesa), antes quedaba en silencio con la tabla vacía. Avisamos.
+        if (Object.keys(SPV_DATA).length === 0) {
+          if (plannerContainer) {
+            plannerContainer.innerHTML = '<div style="text-align:center; padding:50px; font-size:1.2rem; color:#ef4444;">❌ No se encontró tu mesa de promotores. Contactá al administrador (tu nombre de sesión no coincide con ninguna mesa cargada).</div>';
+          }
+        }
+      }
+
+      // Restaurar el texto original del botón, capturado ANTES de pisarlo con
+      // "Conectando..." — performSync captura su propio "orig" en el momento en
+      // que se lo llama, así que sin esto el botón quedaba pegado en un texto
+      // de carga para siempre aunque la sincronización hubiera terminado bien.
+      if (btn) { btn.innerHTML = origBtnText; btn.style.color = ''; }
     }, 0);

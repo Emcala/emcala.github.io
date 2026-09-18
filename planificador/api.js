@@ -9,7 +9,7 @@
 
     async function syncSkus() {
       try {
-        const response = await fetch(`${SCRIPT_URL}?req=skus`);
+        const response = await fetchConTimeout(`${SCRIPT_URL}?req=skus`);
         const result = await response.json();
         if (result.status === 'success' && result.skus) {
           skuMaster = result.skus;
@@ -31,7 +31,7 @@
       const cleanReqMonth = cMonth.replace('-fallback', '');
       if (tareasSyncedMonth === cleanReqMonth && tareasMaster && !forceRefresh) return true;
       try {
-        const response = await fetch(`${SCRIPT_URL}?req=tareas&cMonth=${encodeURIComponent(cleanReqMonth)}`);
+        const response = await fetchConTimeout(`${SCRIPT_URL}?req=tareas&cMonth=${encodeURIComponent(cleanReqMonth)}`);
         const result = await response.json();
         if (result.status === 'success' && result.tareas) {
           let map = {};
@@ -127,7 +127,7 @@
       const MAX_RETRIES = 5;
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-          const response = await fetch(SCRIPT_URL, {
+          const response = await fetchConTimeout(SCRIPT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
@@ -253,7 +253,7 @@
         for (let attempt = 0; attempt < SYNC_MAX_RETRIES && !result; attempt++) {
           try {
             btn.innerHTML = attempt === 0 ? '⏳ Descargando datos...' : `⏳ Reintentando (${attempt + 1}/${SYNC_MAX_RETRIES})...`;
-            const response = await fetch(fetchUrl);
+            const response = await fetchConTimeout(fetchUrl);
             
             if (!response.ok) {
               console.warn(`performSync: HTTP ${response.status}. Intento ${attempt + 1}/${SYNC_MAX_RETRIES}`);
