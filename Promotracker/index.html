@@ -21,7 +21,7 @@
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body { height: 100vh; height: 100dvh; }
     body { background: var(--bg); color: var(--txt); font-family: 'Bricolage Grotesque', sans-serif; overflow: hidden; }
 
     .hdr { background: rgba(30,41,59,0.9); border-bottom: 1px solid var(--brd); padding: 12px 20px; display:flex; justify-content:space-between; align-items:center; z-index: 1000; position: relative; }
@@ -36,7 +36,7 @@
     .btn.outline { background: transparent; border: 1px solid var(--brd); color: var(--txt); }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    #app-layout { display: flex; height: calc(100vh - 57px); }
+    #app-layout { display: flex; height: calc(100vh - 57px); height: calc(100dvh - 57px); }
 
     #sidebar {
       width: 280px; background: var(--surf); border-right: 1px solid var(--brd);
@@ -89,6 +89,41 @@
     .popup-nombre { font-weight: 800; font-size: 14px; margin-bottom: 4px; }
     .popup-detalle { font-size: 12px; color: var(--muted); margin-bottom: 8px; line-height: 1.5; }
     .popup-btn { background: var(--acc); color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-family: inherit; font-weight: 700; font-size: 11px; cursor: pointer; width: 100%; }
+
+    #sidebar-backdrop {
+      display: none; position: fixed; top: 57px; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); z-index: 900;
+    }
+
+    /* ============== RESPONSIVE (celulares) ============== */
+    @media (max-width: 820px) {
+      .hdr { padding: 10px 12px; flex-wrap: wrap; gap: 6px; }
+      .hdr h1 { font-size: 14px; }
+      .hdr h1 span { display: none; } /* ocultamos el subtítulo para ganar espacio */
+      .user-badge { gap: 8px; font-size: 11px; }
+      .solo-desktop { display: none; } /* ocultamos "Actualizado hh:mm" para ganar espacio */
+
+      .btn-hamburguesa { display: inline-flex !important; }
+
+      #sidebar {
+        position: fixed; top: 57px; left: 0; bottom: 0; z-index: 950;
+        transform: translateX(-100%); transition: transform 0.25s ease;
+        width: 82vw; max-width: 320px; box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+      }
+      #sidebar.abierto { transform: translateX(0); }
+      #sidebar-backdrop.abierto { display: block; }
+
+      #map { width: 100%; }
+      .leyenda { left: 12px; bottom: 12px; font-size: 10px; padding: 8px 10px; gap: 10px; }
+
+      /* Objetivos táctiles más grandes */
+      .prom-item { padding: 14px 16px; font-size: 13px; }
+      .btn { padding: 12px 16px; font-size: 13px; }
+      .sidebar-section input[type="date"] { padding: 12px; font-size: 14px; }
+      .popup-btn { padding: 10px 12px; font-size: 13px; }
+      .login-card { padding: 24px; }
+      .form-group input { padding: 14px; font-size: 15px; } /* evita zoom automático de iOS en inputs */
+    }
   </style>
 </head>
 <body>
@@ -114,14 +149,18 @@
   <!-- ============== APP PRINCIPAL ============== -->
   <div id="main-screen" style="display:none;">
     <div class="hdr">
-      <h1>MAPA EN VIVO <span>| Supervisión EMCALA</span></h1>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="btn outline btn-hamburguesa" id="btn-toggle-sidebar" style="display:none; padding:8px 10px; font-size:16px;">☰</button>
+        <h1>MAPA EN VIVO <span>| Supervisión EMCALA</span></h1>
+      </div>
       <div class="user-badge">
-        <span id="ultima-actualizacion"></span>
+        <span id="ultima-actualizacion" class="solo-desktop"></span>
         <span id="user-badge-text"></span>
         <button class="btn outline" style="padding:6px 10px; font-size:11px;" onclick="cerrarSesion()">Cerrar sesión</button>
       </div>
     </div>
 
+    <div id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
     <div id="app-layout">
       <div id="sidebar">
         <div class="sidebar-section">
@@ -175,6 +214,22 @@
     let ultimasPosiciones = [];
     let promotorSeleccionado = null;
     let intervaloRefresco = null;
+
+    // ==========================================================
+    // SIDEBAR MOBILE (panel deslizable)
+    // ==========================================================
+    function toggleSidebar(forzarEstado) {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      const abrir = typeof forzarEstado === 'boolean' ? forzarEstado : !sidebar.classList.contains('abierto');
+      sidebar.classList.toggle('abierto', abrir);
+      backdrop.classList.toggle('abierto', abrir);
+    }
+    document.getElementById('btn-toggle-sidebar').addEventListener('click', () => toggleSidebar());
+
+    function esMobile() {
+      return window.matchMedia('(max-width: 820px)').matches;
+    }
 
     // ==========================================================
     // LOGIN
@@ -354,9 +409,12 @@
                Canal: ${item.canal || '-'}<br>
                Última posición: ${item.hora || '-'}
              </div>
-             <button class="popup-btn" onclick="verRecorrido('${item.nombre.replace(/'/g, "\\'")}')">Ver recorrido de hoy</button>`
+             <button class="popup-btn" onclick="verRecorrido('${item.nombre.replace(/'/g, "\\'")}')">Ver recorrido de hoy</button>
+             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})">🚗 Cómo llegar</button>`
           : `<div class="popup-nombre">Supervisor</div>
-             <div class="popup-detalle">Usuario: ${item.usuario || '-'}<br>Última posición: ${item.hora || '-'}</div>`;
+             <div class="popup-detalle">Usuario: ${item.usuario || '-'}<br>Última posición: ${item.hora || '-'}</div>
+             <button class="popup-btn" onclick="verRecorridoSupervisor('${item.usuario}')">Ver recorrido de hoy</button>
+             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})">🚗 Cómo llegar</button>`;
 
         if (marcadoresPromotores[clave]) {
           marcadoresPromotores[clave].setLatLng([item.lat, item.lng]);
@@ -408,6 +466,7 @@
             marcadoresPromotores[nombre].openPopup();
           }
           verRecorrido(nombre);
+          if (esMobile()) toggleSidebar(false);
         };
         cont.appendChild(div);
       });
@@ -416,8 +475,8 @@
     // ==========================================================
     // RECORRIDO HISTÓRICO
     // ==========================================================
-    async function verRecorrido(nombre) {
-      promotorSeleccionado = nombre;
+    async function verRecorrido(nombre, tipo = 'promotor') {
+      promotorSeleccionado = tipo === 'promotor' ? nombre : null;
       renderizarListaLateral();
 
       const fecha = document.getElementById('fecha-recorrido').value;
@@ -430,6 +489,7 @@
         .from('posiciones')
         .select('lat, lng, registrado_en')
         .eq('promotor', nombre)
+        .eq('tipo', tipo)
         .gte('registrado_en', inicio)
         .lte('registrado_en', fin)
         .order('registrado_en', { ascending: true });
@@ -446,17 +506,35 @@
 
       if (!data || data.length === 0) return;
 
+      const colorRecorrido = tipo === 'supervisor' ? '#f59e0b' : '#38bdf8';
       const puntos = data.map((p) => [p.lat, p.lng]);
       capaRecorrido = L.layerGroup().addTo(map);
-      L.polyline(puntos, { color: '#f59e0b', weight: 3, opacity: 0.8 }).addTo(capaRecorrido);
-      puntos.forEach((p, idx) => {
-        L.circleMarker(p, { radius: 4, color: '#f59e0b', fillOpacity: 1 }).addTo(capaRecorrido);
+      L.polyline(puntos, { color: colorRecorrido, weight: 3, opacity: 0.8 }).addTo(capaRecorrido);
+      puntos.forEach((p) => {
+        L.circleMarker(p, { radius: 4, color: colorRecorrido, fillOpacity: 1 }).addTo(capaRecorrido);
       });
 
       map.fitBounds(puntos, { padding: [40, 40] });
     }
 
-    function cerrarRecorrido() {
+    // Usuario de login de supervisor -> nombre real (para consultar su recorrido)
+    const SUPERVISOR_NOMBRES = {
+      'SDVAS': 'ARES PEDRO',
+      'SDVKT20': 'AVILA EZEQUIEL',
+      'SDVKT27': 'RIERA SALA DANIELA',
+      'SDVKT47': 'ECEIZA KEVIN'
+    };
+
+    function abrirEnGoogleMaps(lat, lng) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+      window.open(url, '_blank');
+    }
+
+    function verRecorridoSupervisor(usuario) {
+      const nombre = SUPERVISOR_NOMBRES[usuario];
+      if (!nombre) return;
+      verRecorrido(nombre, 'supervisor');
+    }
       if (capaRecorrido) {
         map.removeLayer(capaRecorrido);
         capaRecorrido = null;
