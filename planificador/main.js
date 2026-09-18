@@ -668,5 +668,5 @@
       // Como performSync ya corrió y pintó con 'ALL', forzamos un re-render 
       // para que oculte las tablas que no le tocan a este rol.
       applyRoleFilter(); 
-      renderTables();
+      if (isSupervisor) renderTables(); // Solo re-render si el filtro de rol pudo haber ocultado tablas
     }, 0);

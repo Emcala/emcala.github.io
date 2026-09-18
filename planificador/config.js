@@ -87,10 +87,10 @@
       }
       if (spvMatched) {
         SPV_DATA = filtered;
-      } else if (Object.keys(SPV_DATA).length > 0) {
-        // Fallback: mostrar la primera mesa
-        const firstKey = Object.keys(SPV_DATA)[0];
-        SPV_DATA = { [firstKey]: SPV_DATA[firstKey] };
+      } else {
+        // No mostrar datos ajenos — loguear error y dejar vacío
+        console.error('applyRoleFilter: no se encontró mesa para supervisor', MY_SPV);
+        SPV_DATA = {};
       }
     }
 

@@ -211,7 +211,16 @@
       try {
         // Solo guardar planificación pendiente si fue clic manual del usuario
         if (!isAutoSync) {
-          await saveToServer(true);
+          const saveOk = await saveToServer(true);
+          if (saveOk === false) {
+            const continuar = confirm('No se pudieron guardar los cambios pendientes.\n¿Querés continuar con la sincronización? (Se perderán los cambios no guardados)');
+            if (!continuar) {
+              btn.innerHTML = orig;
+              btn.disabled = false;
+              dateEl.disabled = false;
+              return;
+            }
+          }
         }
 
         // UN SOLO FETCH: init_bundle trae SKUs + Tareas + Datos del día en 1 sola respuesta.
