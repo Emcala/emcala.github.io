@@ -639,7 +639,7 @@
         const d = dateEl.value;
         const cm = window.getCommercialMonthAndStart(d).month;
         const pfUrl = `${SCRIPT_URL}?req=init_bundle&date=${d}&cMonth=${cm}&spv=ALL&_t=${Date.now()}`;
-        window._prefetchedBundle = fetchConTimeout(pfUrl).then(r => r.ok ? r.json() : null).catch(() => null);
+        window._prefetchedBundle = fetchConTimeout(pfUrl, {}, 45000).then(r => r.ok ? r.json() : null).catch(() => null);
       }
 
       // Problema 4 FIX: Corremos el fetch de Mesas y el performSync al MISMO tiempo.

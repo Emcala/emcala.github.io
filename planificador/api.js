@@ -264,7 +264,7 @@
         for (let attempt = 0; attempt < SYNC_MAX_RETRIES && !result; attempt++) {
           try {
             btn.innerHTML = attempt === 0 ? '⏳ Descargando datos...' : `⏳ Reintentando (${attempt + 1}/${SYNC_MAX_RETRIES})...`;
-            const response = await fetchConTimeout(fetchUrl);
+            const response = await fetchConTimeout(fetchUrl, {}, 45000);
             
             if (!response.ok) {
               console.warn(`performSync: HTTP ${response.status}. Intento ${attempt + 1}/${SYNC_MAX_RETRIES}`);
@@ -300,8 +300,11 @@
             throw new Error(result.message || 'Error al sincronizar');
             
           } catch (fetchErr) {
+            const esTimeout = fetchErr.name === 'AbortError' || fetchErr.message.includes('aborted');
+            const tipoError = esTimeout ? 'timeout' : 'error de red';
+            
             if (attempt < SYNC_MAX_RETRIES - 1 && !fetchErr.message.includes('Error al sincronizar')) {
-              console.warn(`performSync: error de red. Intento ${attempt + 1}/${SYNC_MAX_RETRIES}`, fetchErr.message);
+              console.warn(`performSync: ${tipoError}. Intento ${attempt + 1}/${SYNC_MAX_RETRIES}`, fetchErr.message);
               await new Promise(r => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
               continue;
             }

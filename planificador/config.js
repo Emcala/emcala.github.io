@@ -46,7 +46,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'getMesas' })
-          });
+          }, 30000);
           const result = await response.json();
           if (result.ok && result.mesas && Object.keys(result.mesas).length > 0) {
             SPV_DATA = result.mesas;
