@@ -59,7 +59,7 @@
     .prom-item.selected { background: rgba(27,95,168,0.3); }
     .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .dot.offline { background: #475569; }
+    .dot.offline { background: var(--red); box-shadow: 0 0 6px var(--red); }
     .prom-item .nombre { font-weight: 700; flex: 1; }
     .prom-item .hora { color: var(--muted); font-size: 10px; }
 
@@ -214,6 +214,7 @@
     let ultimasPosiciones = [];
     let promotorSeleccionado = null;
     let intervaloRefresco = null;
+    let listaPromotoresCompleta = [];
 
     // ==========================================================
     // SIDEBAR MOBILE (panel deslizable)
@@ -319,6 +320,13 @@
         `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
 
       inicializarMapa();
+
+      const { data: todosLosPromotores } = await supabaseClient
+        .from('promotores')
+        .select('nombre')
+        .order('nombre');
+      listaPromotoresCompleta = todosLosPromotores || [];
+
       actualizarPosiciones();
       intervaloRefresco = setInterval(actualizarPosiciones, INTERVALO_REFRESCO_MS);
     }
@@ -441,12 +449,16 @@
 
       // Si es supervisor, también mostramos en la lista a los promotores a cargo que
       // ahora mismo NO están online (para que se note que están offline)
-      let nombresBase = visibles.map((v) => v.nombre);
-      if (perfilActual.rol === 'supervisor') {
-        (perfilActual.promotores_a_cargo || []).forEach((n) => {
-          if (!nombresBase.includes(n)) nombresBase.push(n);
-        });
+      let nombresBase;
+      if (perfilActual.rol === 'auditor') {
+        nombresBase = listaPromotoresCompleta.map((p) => p.nombre);
+      } else {
+        nombresBase = [...(perfilActual.promotores_a_cargo || [])];
       }
+      // Por las dudas, si alguien aparece online pero no estaba en la lista base, lo agregamos igual
+      visibles.forEach((v) => {
+        if (!nombresBase.includes(v.nombre)) nombresBase.push(v.nombre);
+      });
 
       nombresBase.sort();
 
