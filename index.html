@@ -65,13 +65,25 @@ async function doLoginHub() {
   let success = false;
   
   while (retries > 0) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s: cubre cold start + hash + lecturas
+    
     try {
       const response = await fetch(SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'login', usuario: u, password: p })
+        body: JSON.stringify({ action: 'login', usuario: u, password: p }),
+        signal: controller.signal
       });
-      const data = await response.json();
+      
+      clearTimeout(timeoutId);
+      
+      // Apps Script a veces devuelve HTML de error en vez de JSON.
+      const text = await response.text();
+      if (!text || text.trim().startsWith('<')) {
+        throw new Error('Respuesta no-JSON del servidor');
+      }
+      const data = JSON.parse(text);
       
       if (data.ok) {
         EmcalaAuth.createSession({
@@ -86,13 +98,15 @@ async function doLoginHub() {
         success = true;
         break;
       } else {
-        document.getElementById('loginErr').textContent = 'Credenciales incorrectas';
+        document.getElementById('loginErr').textContent = data.error || 'Credenciales incorrectas';
         document.getElementById('loginErr').style.display = 'block';
         btn.textContent = 'Ingresar'; btn.disabled = false;
-        success = true; // no es error de red, así que no reintentar
+        success = true; // error de credenciales: no reintentar
         break;
       }
     } catch (error) {
+      clearTimeout(timeoutId);
+      console.error('[LOGIN] intento fallido:', error.name, error.message);
       retries--;
       if (retries > 0) {
         btn.textContent = 'Reintentando...';
