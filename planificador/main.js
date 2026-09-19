@@ -667,18 +667,24 @@
         return;
       }
       
-      // Aplicar el filtro de supervisor AHORA que ya tenemos SPV_DATA completo.
-      // Como performSync ya corrió y pintó con 'ALL', forzamos un re-render 
-      // para que oculte las tablas que no le tocan a este rol.
-      applyRoleFilter(); 
-      if (isSupervisor) {
-        renderTables(); // Solo re-render si el filtro de rol pudo haber ocultado tablas
-        // Si el filtro dejó SPV_DATA vacío (no matcheó el nombre de la sesión contra
-        // ninguna mesa), antes quedaba en silencio con la tabla vacía. Avisamos.
-        if (Object.keys(SPV_DATA).length === 0) {
-          if (plannerContainer) {
-            plannerContainer.innerHTML = '<div style="text-align:center; padding:50px; font-size:1.2rem; color:#ef4444;">❌ No se encontró tu mesa de promotores. Contactá al administrador (tu nombre de sesión no coincide con ninguna mesa cargada).</div>';
-          }
+            // Aplicar el filtro de supervisor AHORA que ya tenemos SPV_DATA completo.
+      // Como performSync ya corrió y pintó con 'ALL', forzamos un re-render
+      // para que oculte las tablas que no le tocan a este rol (supervisor)
+      // o para que muestre todo (auditor).
+      applyRoleFilter();
+
+      // FIX CRÍTICO: renderTables() debe ejecutarse SIEMPRE después del Promise.all,
+      // porque performSync() corrió ANTES de que SPV_DATA se poblara (fetchMesas
+      // y performSync van en paralelo con Promise.all). Para auditores, el render
+      // de performSync fue con SPV_DATA={} y quedaba la tabla vacía.
+      renderTables();
+
+      // Si después del filtro no quedó ninguna mesa, avisar
+      if (Object.keys(SPV_DATA).length === 0) {
+        if (plannerContainer) {
+          plannerContainer.innerHTML = '<div style="text-align:center; padding:50px; font-size:1.2rem; color:#ef4444;">❌ No se pudo cargar ninguna mesa de promotores. Contactá al administrador.</div>';
+        } else {
+          alert('No se pudo cargar ninguna mesa de promotores.');
         }
       }
 
