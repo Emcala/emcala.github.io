@@ -200,7 +200,18 @@
       if (SCRIPT_URL === 'AQUI_VA_LA_URL_DE_TU_APPS_SCRIPT') { alert('Falta URL de Sheets'); return; }
       const btn = document.getElementById('btn-sync');
       btn.classList.remove('btn-needs-sync');
-      const orig = btn.innerHTML;
+      
+      // Guardar el estado original de forma persistente para evitar pisarlo 
+      // si justo arrancamos cuando el botón dice "Conectando..."
+      if (!btn.dataset.origText) {
+         if (btn.innerHTML.includes('Conectando')) {
+             btn.dataset.origText = '<i class="fa-solid fa-rotate"></i> Sincronizar';
+         } else {
+             btn.dataset.origText = btn.innerHTML;
+         }
+      }
+      const orig = btn.dataset.origText;
+      
       btn.innerHTML = '⏳ Sincronizando...'; 
       btn.disabled = true;
       dateEl.disabled = true;

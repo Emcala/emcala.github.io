@@ -242,6 +242,9 @@
         alert('Hubo un pequeño inconveniente al generar la captura. Por favor, reintenta.');
         btn.innerHTML = orig;
         btn.disabled = false;
+        // Restaurar barra en caso de error
+        const toolbar = document.getElementById('main-hdr');
+        if (toolbar) toolbar.style.display = '';
       }
     });
     // Botón único de importación (Auto-detect)
@@ -679,9 +682,8 @@
         }
       }
 
-      // Restaurar el texto original del botón, capturado ANTES de pisarlo con
-      // "Conectando..." — performSync captura su propio "orig" en el momento en
-      // que se lo llama, así que sin esto el botón quedaba pegado en un texto
-      // de carga para siempre aunque la sincronización hubiera terminado bien.
-      if (btn) { btn.innerHTML = origBtnText; btn.style.color = ''; }
+      // El texto del botón ahora es gestionado inteligentemente por performSync a través de btn.dataset.origText,
+      // por lo que ya no necesitamos pisarlo acá, evitando la condición de carrera (race condition)
+      // que dejaba el botón pegado en "CONECTANDO..."
+      if (btn) { btn.style.color = ''; }
     }, 0);
