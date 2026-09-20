@@ -33,17 +33,43 @@ const MONTH_NAMES = [
 // carga (mismo fenómeno ya visto en el planificador) — reintenta antes
 // de darse por vencido, en vez de fallar al primer intento.
 // ==========================================
+// fetch() con reintentos. Ahora que usamos GET para los endpoints de Cobertura,
+// el redirect de googleusercontent.com ya no rompe el flujo. Igual dejamos
+// reintentos para cold starts y errores transitorios.
 async function fetchJsonRetry(url, options, maxRetries = 4) {
+  let lastError = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const r = await fetch(url, options);
+      
+      // 4xx (excepto 429) → no reintentar, es un error definitivo
+      if (r.status >= 400 && r.status < 500 && r.status !== 429) {
+        throw new Error('HTTP ' + r.status + ' (no retry)');
+      }
+      
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      return await r.json();
+      
+      // Leer texto primero — si viene HTML (redirect fallido) o texto plano, detectarlo
+      const text = await r.text();
+      
+      if (text.trim().startsWith('<')) {
+        throw new Error('Respuesta HTML (redirect fallido)');
+      }
+      
+      try {
+        return JSON.parse(text);
+      } catch (parseErr) {
+        throw new Error('Respuesta no-JSON: ' + text.substring(0, 100));
+      }
     } catch (e) {
+      lastError = e;
+      if (e.message.includes('no retry')) throw e;
       if (attempt === maxRetries - 1) throw e;
-      await new Promise(res => setTimeout(res, 1500 * (attempt + 1) + Math.random() * 1000));
+      // Backoff: 2s, 4s, 6s
+      await new Promise(res => setTimeout(res, 2000 * (attempt + 1) + Math.random() * 1000));
     }
   }
+  throw lastError;
 }
 
 // ==========================================
@@ -207,12 +233,13 @@ async function loadMaestro(forceRefresh) {
       return;
     }
 
-    const data = await fetchJsonRetry(MAESTRO_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'getCartera', forceRefresh: !!forceRefresh }),
-      // text/plain avoids CORS preflight issues with GAS
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-    });
+    // GET en vez de POST: evita el redirect a googleusercontent.com que
+    // devolvía 404 intermitentes en cold start.
+    const url = MAESTRO_SCRIPT_URL 
+      + '?action=getCartera' 
+      + (forceRefresh ? '&forceRefresh=1' : '')
+      + '&_t=' + Date.now();  // Cache-buster
+    const data = await fetchJsonRetry(url);
     
     if (!data.ok) throw new Error(data.error || 'Error desconocido');
 
@@ -739,6 +766,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (toast) toast.classList.add('show');
   const navFilters = document.getElementById('nav-filters');
   if (navFilters) navFilters.style.display = 'none';
+  
+  // PING INICIAL: despertar el GAS de Cobertura mientras cargamos las mesas.
+  // Es un GET liviano que devuelve {pong:true} y fuerza el cold start.
+  // No bloquea el flujo principal.
+  if (MAESTRO_SCRIPT_URL !== 'PEGAR_AQUI_LA_URL_DEL_SCRIPT') {
+    fetch(MAESTRO_SCRIPT_URL + '?action=ping&_t=' + Date.now()).catch(() => {});
+  }
   
   // Carga secuencial correcta: mesas primero (loadAvance depende de mesasData),
   // luego maestro y avance en paralelo.
