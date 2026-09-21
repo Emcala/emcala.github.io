@@ -1,4 +1,4 @@
-﻿document.getElementById('folder-input').addEventListener('change', e => {
+document.getElementById('folder-input').addEventListener('change', e => {
   const files = [...e.target.files].filter(f => f.name.toLowerCase().endsWith('.csv'));
   if (!files.length) return;
   let loaded = 0;
@@ -655,6 +655,106 @@ ST[4] = { un:'CERVEZAS CMQ', activePromos: initActivePromos(), calSel: new Set()
 // SDV for page 4
 mkSDV(4);
 
+function createMultiSelect({ btnId, panelId, hdrId, list, getSet, onChange, label }) {
+  const set = getSet();
+  set.clear();
+  list.forEach(v => {
+    const key = (typeof v === 'object') ? v.key : v;
+    set.add(key);
+  });
+
+  const btn    = document.getElementById(btnId);
+  const panel  = document.getElementById(panelId);
+  const hdrAll = document.getElementById(hdrId);
+  if (!btn || !panel || !hdrAll) return;
+
+  panel.querySelectorAll('.promo-item').forEach(el => el.remove());
+
+  function getState() {
+    if (set.size === list.length) return 'all';
+    if (set.size === 0) return 'none';
+    return 'partial';
+  }
+
+  function updateBtn() {
+    const st = getState();
+    btn.classList.toggle('all', st === 'all');
+    btn.classList.toggle('partial', st === 'partial');
+    btn.classList.toggle('none', st === 'none');
+    
+    let txt = label;
+    if (st === 'none') {
+      txt += ' (0)';
+    } else if (st !== 'all') {
+      txt += ' (' + set.size + ')';
+    }
+    btn.innerHTML = txt + ' <span class="chv">▼</span>';
+  }
+
+  function syncHdr() {
+    const allOn = set.size === list.length;
+    hdrAll.innerHTML = '';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = allOn;
+    cb.indeterminate = set.size > 0 && !allOn;
+    cb.addEventListener('click', e => e.stopPropagation());
+    cb.addEventListener('change', () => {
+      set.clear();
+      if (cb.checked) {
+        list.forEach(v => set.add(typeof v === 'object' ? v.key : v));
+      }
+      panel.querySelectorAll('input[type="checkbox"]').forEach(c => {
+        if (c !== cb) c.checked = cb.checked;
+      });
+      syncHdr();
+      updateBtn();
+      if (onChange) onChange();
+    });
+    hdrAll.appendChild(cb);
+    hdrAll.appendChild(document.createTextNode(' Tod' + (label === 'Marcas' ? 'as las ' : 'os los ') + label.toLowerCase()));
+
+    panel.querySelectorAll('input[data-item]').forEach(c => {
+      c.checked = set.has(c.dataset.item);
+    });
+  }
+
+  list.forEach(v => {
+    const val = typeof v === 'object' ? v.key : v;
+    const lbl = typeof v === 'object' ? v.label : v;
+    const item = document.createElement('label');
+    item.className = 'promo-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.dataset.item = val;
+    cb.checked = true;
+    cb.addEventListener('click', e => e.stopPropagation());
+    cb.addEventListener('change', () => {
+      if (cb.checked) set.add(val);
+      else set.delete(val);
+      syncHdr();
+      updateBtn();
+      if (onChange) onChange();
+    });
+    item.appendChild(cb);
+    item.appendChild(document.createTextNode(' ' + lbl));
+    panel.appendChild(item);
+  });
+
+  if (btn._multiSelectHandler) {
+    btn.removeEventListener('click', btn._multiSelectHandler);
+  }
+  btn._multiSelectHandler = (e) => {
+    e.stopPropagation();
+    const cbAll = panel.querySelector('input[type=checkbox]');
+    if (cbAll) cbAll.click();
+  };
+  btn.addEventListener('click', btn._multiSelectHandler);
+
+  syncHdr();
+  updateBtn();
+}
+
 // Calibre dropdown (multi-select)
 const CAL_LIST = [
   '473 CC LATAS','710 CC LATAS','1000 CC VIDRIO','330 CC S/R',
@@ -662,76 +762,15 @@ const CAL_LIST = [
   '730 CC','BOT VD 275 CC','BOT VD 355'
 ];
 
-(function initCalUI() {
-  CAL_LIST.forEach(c => ST[4].calSel.add(c));
-  const btn  = document.getElementById('cal-drop-btn');
-  const panel = document.getElementById('cal-panel');
-  const hdrAll = document.getElementById('cal-hdr-all');
-
-  function getCalState() {
-    if (ST[4].calSel.size === CAL_LIST.length) return 'all';
-    if (ST[4].calSel.size === 0) return 'none';
-    return 'partial';
-  }
-
-  function updateBtn() {
-    const st = getCalState();
-    btn.classList.toggle('all',     st === 'all');
-    btn.classList.toggle('partial', st === 'partial');
-    btn.classList.toggle('none',    st === 'none');
-    if (st === 'all') {
-      btn.innerHTML = 'Calibres <span class="chv">▼</span>';
-    } else if (st === 'none') {
-      btn.innerHTML = 'Calibres (0) <span class="chv">▼</span>';
-    } else {
-      btn.innerHTML = 'Calibres (' + ST[4].calSel.size + ') <span class="chv">▼</span>';
-    }
-  }
-
-  function syncHdr() {
-    const allOn  = ST[4].calSel.size === CAL_LIST.length;
-    const partial = ST[4].calSel.size > 0 && ST[4].calSel.size < CAL_LIST.length;
-    hdrAll.innerHTML = '';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.checked = allOn; cb.indeterminate = partial;
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      ST[4].calSel.clear();
-      if (cb.checked) CAL_LIST.forEach(c => ST[4].calSel.add(c));
-      panel.querySelectorAll('input[data-cal]').forEach(c => c.checked = cb.checked);
-      syncHdr(); updateBtn(); render4();
-    });
-    hdrAll.appendChild(cb);
-    hdrAll.appendChild(document.createTextNode(' Todos los calibres'));
-    panel.querySelectorAll('input[data-cal]').forEach(c => {
-      c.checked = ST[4].calSel.has(c.dataset.cal);
-    });
-  }
-
-  CAL_LIST.forEach(cal => {
-    const item = document.createElement('label');
-    item.className = 'promo-item';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.dataset.cal = cal; cb.checked = true;
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      if (cb.checked) ST[4].calSel.add(cal);
-      else            ST[4].calSel.delete(cal);
-      syncHdr(); updateBtn(); render4();
-    });
-    item.appendChild(cb);
-    item.appendChild(document.createTextNode(' ' + cal));
-    panel.appendChild(item);
-  });
-
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    const cbAll = panel.querySelector('input[type=checkbox]');
-    if (cbAll) cbAll.click();
-  });
-
-  syncHdr(); updateBtn();
-})();
+createMultiSelect({
+  btnId: 'cal-drop-btn',
+  panelId: 'cal-panel',
+  hdrId: 'cal-hdr-all',
+  list: CAL_LIST,
+  getSet: () => ST[4].calSel,
+  onChange: render4,
+  label: 'Calibres'
+});
 
 // Marca dropdown (multi-select)
 const MARCA_LIST = [
@@ -746,72 +785,15 @@ const MARCA_LIST = [
   {key:'PATAGONIA', label:'Patagonia'},
 ];
 
-(function initMarcaUI() {
-  MARCA_LIST.forEach(m => ST[4].marcaSel.add(m.key));
-  const btn   = document.getElementById('marca-drop-btn');
-  const panel = document.getElementById('marca-panel');
-  const hdrAll = document.getElementById('marca-hdr-all');
-
-  function getMarcaState() {
-    if (ST[4].marcaSel.size === MARCA_LIST.length) return 'all';
-    if (ST[4].marcaSel.size === 0) return 'none';
-    return 'partial';
-  }
-
-  function updateBtn() {
-    const st = getMarcaState();
-    btn.classList.toggle('all',     st === 'all');
-    btn.classList.toggle('partial', st === 'partial');
-    btn.classList.toggle('none',    st === 'none');
-    if (st === 'all')  btn.innerHTML = 'Marcas <span class="chv">▼</span>';
-    else if (st === 'none') btn.innerHTML = 'Marcas (0) <span class="chv">▼</span>';
-    else btn.innerHTML = 'Marcas (' + ST[4].marcaSel.size + ') <span class="chv">▼</span>';
-  }
-
-  function syncHdr() {
-    const allOn  = ST[4].marcaSel.size === MARCA_LIST.length;
-    const partial = ST[4].marcaSel.size > 0 && ST[4].marcaSel.size < MARCA_LIST.length;
-    hdrAll.innerHTML = '';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.checked = allOn; cb.indeterminate = partial;
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      ST[4].marcaSel.clear();
-      if (cb.checked) MARCA_LIST.forEach(m => ST[4].marcaSel.add(m.key));
-      panel.querySelectorAll('input[data-marca]').forEach(c => c.checked = cb.checked);
-      syncHdr(); updateBtn(); render4();
-    });
-    hdrAll.appendChild(cb);
-    hdrAll.appendChild(document.createTextNode(' Todas las marcas'));
-    panel.querySelectorAll('input[data-marca]').forEach(c => {
-      c.checked = ST[4].marcaSel.has(c.dataset.marca);
-    });
-  }
-
-  MARCA_LIST.forEach(({key, label}) => {
-    const item = document.createElement('label');
-    item.className = 'promo-item';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.dataset.marca = key; cb.checked = true;
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      if (cb.checked) ST[4].marcaSel.add(key);
-      else            ST[4].marcaSel.delete(key);
-      syncHdr(); updateBtn(); render4();
-    });
-    item.appendChild(cb);
-    item.appendChild(document.createTextNode(' ' + label));
-    panel.appendChild(item);
-  });
-
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    const cbAll = panel.querySelector('input[type=checkbox]');
-    if (cbAll) cbAll.click();
-  });
-
-  syncHdr(); updateBtn();
-})();
+createMultiSelect({
+  btnId: 'marca-drop-btn',
+  panelId: 'marca-panel',
+  hdrId: 'marca-hdr-all',
+  list: MARCA_LIST,
+  getSet: () => ST[4].marcaSel,
+  onChange: render4,
+  label: 'Marcas'
+});
 
 // Brand detection
 const EXCLUIR = ['BOT 1/1 ARACELI','BOT 1/3','BOTSA','ENVASE RET BARRIL','Q  SA','Q CERVEZAS','Q PLAS'];
@@ -1069,70 +1051,25 @@ const MARCA5_LIST = [
   'H2Oh','RED BULL','ROCKSTAR','7 UP FREE','MIRINDA','DEL VALLE JUGOS'
 ];
 
-function makeDropdown5(listArr, stKey, btnId, panelId, hdrId, label, renderFn) {
-  listArr.forEach(v => ST[5][stKey].add(v));
-  const btn    = document.getElementById(btnId);
-  const panel  = document.getElementById(panelId);
-  const hdrAll = document.getElementById(hdrId);
+createMultiSelect({
+  btnId: 'cal5-drop-btn',
+  panelId: 'cal5-panel',
+  hdrId: 'cal5-hdr-all',
+  list: CAL5_LIST,
+  getSet: () => ST[5].calSel,
+  onChange: render5,
+  label: 'Calibres'
+});
 
-  function getState() {
-    if (ST[5][stKey].size === listArr.length) return 'all';
-    if (ST[5][stKey].size === 0) return 'none';
-    return 'partial';
-  }
-  function updateBtn() {
-    const st = getState();
-    btn.classList.toggle('all',     st === 'all');
-    btn.classList.toggle('partial', st === 'partial');
-    btn.classList.toggle('none',    st === 'none');
-    if (st === 'all')       btn.innerHTML = label + ' <span class="chv">▼</span>';
-    else if (st === 'none') btn.innerHTML = label + ' (0) <span class="chv">▼</span>';
-    else                    btn.innerHTML = label + ' (' + ST[5][stKey].size + ') <span class="chv">▼</span>';
-  }
-  function syncHdr() {
-    const allOn  = ST[5][stKey].size === listArr.length;
-    const partial = ST[5][stKey].size > 0 && ST[5][stKey].size < listArr.length;
-    hdrAll.innerHTML = '';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.checked = allOn; cb.indeterminate = partial;
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      ST[5][stKey].clear();
-      if (cb.checked) listArr.forEach(v => ST[5][stKey].add(v));
-      panel.querySelectorAll('input[data-item]').forEach(c => c.checked = cb.checked);
-      syncHdr(); updateBtn(); renderFn();
-    });
-    hdrAll.appendChild(cb);
-    hdrAll.appendChild(document.createTextNode(' Tod' + (label==='Marcas'?'as':'os')));
-    panel.querySelectorAll('input[data-item]').forEach(c => {
-      c.checked = ST[5][stKey].has(c.dataset.item);
-    });
-  }
-  listArr.forEach(val => {
-    const item = document.createElement('label');
-    item.className = 'promo-item';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.dataset.item = val; cb.checked = true;
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      if (cb.checked) ST[5][stKey].add(val);
-      else            ST[5][stKey].delete(val);
-      syncHdr(); updateBtn(); renderFn();
-    });
-    item.appendChild(cb);
-    item.appendChild(document.createTextNode(' ' + val));
-    panel.appendChild(item);
-  });
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    const cbAll = panel.querySelector('input[type=checkbox]');
-    if (cbAll) cbAll.click();
-  });
-  syncHdr(); updateBtn();
-}
-
-makeDropdown5(CAL5_LIST,   'calSel',   'cal5-drop-btn',   'cal5-panel',   'cal5-hdr-all',   'Calibres', render5);
-makeDropdown5(MARCA5_LIST, 'marcaSel', 'marca5-drop-btn', 'marca5-panel', 'marca5-hdr-all', 'Marcas',   render5);
+createMultiSelect({
+  btnId: 'marca5-drop-btn',
+  panelId: 'marca5-panel',
+  hdrId: 'marca5-hdr-all',
+  list: MARCA5_LIST,
+  getSet: () => ST[5].marcaSel,
+  onChange: render5,
+  label: 'Marcas'
+});
 
 // Data helpers page 5
 function getRows5(yr, extra) {
@@ -1297,62 +1234,15 @@ const MARCA6_CERV_LIST = ['BRAHMA','QUILMES','BUDWEISER','1890','ANDES','MICHELO
 const MARCA6_UNG_LIST  = ['7 UP','PASO DE LOS TOROS','PEPSI','PEPSI BLACK','GATORADE','H2Oh','RED BULL','ROCKSTAR','7 UP FREE','MIRINDA','DEL VALLE JUGOS'];
 
 function initMarca6UI(list) {
-  const btn    = document.getElementById('marca6-drop-btn');
-  const panel  = document.getElementById('marca6-panel');
-  const hdrAll = document.getElementById('marca6-hdr-all');
-  if (!btn || !panel || !hdrAll) return;
-
-  // Limpiar panel y poblar marcaSel
-  panel.querySelectorAll('.promo-item').forEach(el => el.remove());
-  ST[6].marcaSel = new Set(list);
-
-  function getState() {
-    if (ST[6].marcaSel.size === list.length) return 'all';
-    if (ST[6].marcaSel.size === 0) return 'none';
-    return 'partial';
-  }
-  function updateBtn() {
-    const st = getState();
-    btn.classList.toggle('all', st==='all'); btn.classList.toggle('partial', st==='partial'); btn.classList.toggle('none', st==='none');
-    btn.innerHTML = (st==='all' ? 'Marcas' : 'Marcas ('+ST[6].marcaSel.size+')') + ' <span class="chv">▼</span>';
-  }
-  function syncHdr() {
-    const allOn = ST[6].marcaSel.size === list.length;
-    hdrAll.innerHTML = '';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.checked = allOn; cb.indeterminate = ST[6].marcaSel.size > 0 && !allOn;
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      ST[6].marcaSel.clear();
-      if (cb.checked) list.forEach(v => ST[6].marcaSel.add(v));
-      panel.querySelectorAll('input[data-m6]').forEach(c => c.checked = cb.checked);
-      syncHdr(); updateBtn(); render6();
-    });
-    hdrAll.appendChild(cb);
-    hdrAll.appendChild(document.createTextNode(' Todas las marcas'));
-    panel.querySelectorAll('input[data-m6]').forEach(c => { c.checked = ST[6].marcaSel.has(c.dataset.m6); });
-  }
-  list.forEach(val => {
-    const item = document.createElement('label'); item.className = 'promo-item';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.dataset.m6 = val; cb.checked = true;
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      if (cb.checked) ST[6].marcaSel.add(val); else ST[6].marcaSel.delete(val);
-      syncHdr(); updateBtn(); render6();
-    });
-    item.appendChild(cb); item.appendChild(document.createTextNode(' ' + val));
-    panel.appendChild(item);
+  createMultiSelect({
+    btnId: 'marca6-drop-btn',
+    panelId: 'marca6-panel',
+    hdrId: 'marca6-hdr-all',
+    list: list,
+    getSet: () => ST[6].marcaSel,
+    onChange: render6,
+    label: 'Marcas'
   });
-  if (!btn._m6init) {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const cbAll = panel.querySelector('input[type=checkbox]');
-      if (cbAll) cbAll.click();
-    });
-    btn._m6init = true;
-  }
-  syncHdr(); updateBtn();
 }
 
 // Calibre dropdown pg6
@@ -1360,61 +1250,15 @@ const CAL6_CERV_LIST = ['473 CC LATAS','710 CC LATAS','1000 CC VIDRIO','330 CC S
 const CAL6_UNG_LIST  = ['500 CC PET','350 CC PET','354 CC LATA','2000 RECO','2250 CC PET','1500 CC PET','1250 CC PET','354 CC','250 CC LATAS','2000 CC PET','500 CC VD S/R','269 CC LATA','750 CC PET','355 CC LATA','473 CC','2.25L','TETRA 200CC','TETRA 1L','3000 CC PET'];
 
 function initCal6UI(list) {
-  const btn    = document.getElementById('cal6-drop-btn');
-  const panel  = document.getElementById('cal6-panel');
-  const hdrAll = document.getElementById('cal6-hdr-all');
-  if (!btn || !panel || !hdrAll) return;
-
-  panel.querySelectorAll('.promo-item').forEach(el => el.remove());
-  ST[6].calSel = new Set(list);
-
-  function getState() {
-    if (ST[6].calSel.size === list.length) return 'all';
-    if (ST[6].calSel.size === 0) return 'none';
-    return 'partial';
-  }
-  function updateBtn() {
-    const st = getState();
-    btn.classList.toggle('all', st==='all'); btn.classList.toggle('partial', st==='partial'); btn.classList.toggle('none', st==='none');
-    btn.innerHTML = (st==='all' ? 'Calibres' : 'Calibres ('+ST[6].calSel.size+')') + ' <span class="chv">▼</span>';
-  }
-  function syncHdr() {
-    const allOn = ST[6].calSel.size === list.length;
-    hdrAll.innerHTML = '';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.checked = allOn; cb.indeterminate = ST[6].calSel.size > 0 && !allOn;
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      ST[6].calSel.clear();
-      if (cb.checked) list.forEach(v => ST[6].calSel.add(v));
-      panel.querySelectorAll('input[data-c6]').forEach(c => c.checked = cb.checked);
-      syncHdr(); updateBtn(); render6();
-    });
-    hdrAll.appendChild(cb);
-    hdrAll.appendChild(document.createTextNode(' Todos los calibres'));
-    panel.querySelectorAll('input[data-c6]').forEach(c => { c.checked = ST[6].calSel.has(c.dataset.c6); });
-  }
-  list.forEach(val => {
-    const item = document.createElement('label'); item.className = 'promo-item';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.dataset.c6 = val; cb.checked = true;
-    cb.addEventListener('click', e => e.stopPropagation());
-    cb.addEventListener('change', () => {
-      if (cb.checked) ST[6].calSel.add(val); else ST[6].calSel.delete(val);
-      syncHdr(); updateBtn(); render6();
-    });
-    item.appendChild(cb); item.appendChild(document.createTextNode(' ' + val));
-    panel.appendChild(item);
+  createMultiSelect({
+    btnId: 'cal6-drop-btn',
+    panelId: 'cal6-panel',
+    hdrId: 'cal6-hdr-all',
+    list: list,
+    getSet: () => ST[6].calSel,
+    onChange: render6,
+    label: 'Calibres'
   });
-  if (!btn._c6init) {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const cbAll = panel.querySelector('input[type=checkbox]');
-      if (cbAll) cbAll.click();
-    });
-    btn._c6init = true;
-  }
-  syncHdr(); updateBtn();
 }
 
 // Inicializar dropdowns con listas de cervezas por defecto
