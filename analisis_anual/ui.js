@@ -655,7 +655,7 @@ ST[4] = { un:'CERVEZAS CMQ', activePromos: initActivePromos(), calSel: new Set()
 // SDV for page 4
 mkSDV(4);
 
-function createMultiSelect({ btnId, panelId, hdrId, list, getSet, onChange, label }) {
+function createMultiSelect({ btnId, panelId, hdrId, list, getSet, onChange, label, headerLabel }) {
   const set = getSet();
   set.clear();
   list.forEach(v => {
@@ -696,6 +696,7 @@ function createMultiSelect({ btnId, panelId, hdrId, list, getSet, onChange, labe
     hdrAll.innerHTML = '';
     const cb = document.createElement('input');
     cb.type = 'checkbox';
+    cb.className = 'hdr-cb-all';
     cb.checked = allOn;
     cb.indeterminate = set.size > 0 && !allOn;
     cb.addEventListener('click', e => e.stopPropagation());
@@ -712,7 +713,7 @@ function createMultiSelect({ btnId, panelId, hdrId, list, getSet, onChange, labe
       if (onChange) onChange();
     });
     hdrAll.appendChild(cb);
-    hdrAll.appendChild(document.createTextNode(' Tod' + (label === 'Marcas' ? 'as las ' : 'os los ') + label.toLowerCase()));
+    hdrAll.appendChild(document.createTextNode(' ' + (headerLabel || ('Todos los ' + label.toLowerCase()))));
 
     panel.querySelectorAll('input[data-item]').forEach(c => {
       c.checked = set.has(c.dataset.item);
@@ -746,7 +747,7 @@ function createMultiSelect({ btnId, panelId, hdrId, list, getSet, onChange, labe
   }
   btn._multiSelectHandler = (e) => {
     e.stopPropagation();
-    const cbAll = panel.querySelector('input[type=checkbox]');
+    const cbAll = panel.querySelector('.hdr-cb-all') || panel.querySelector('input[type=checkbox]');
     if (cbAll) cbAll.click();
   };
   btn.addEventListener('click', btn._multiSelectHandler);
@@ -1058,7 +1059,8 @@ createMultiSelect({
   list: CAL5_LIST,
   getSet: () => ST[5].calSel,
   onChange: render5,
-  label: 'Calibres'
+  label: 'Calibres',
+  headerLabel: 'Todos los calibres'
 });
 
 createMultiSelect({
@@ -1068,7 +1070,8 @@ createMultiSelect({
   list: MARCA5_LIST,
   getSet: () => ST[5].marcaSel,
   onChange: render5,
-  label: 'Marcas'
+  label: 'Marcas',
+  headerLabel: 'Todas las marcas'
 });
 
 // Data helpers page 5
@@ -1080,8 +1083,8 @@ function getRows5(yr, extra) {
     if (!pf(r)) return false;
     const marca = r.marca || getNABSMarca(r.prod2);
     if (!marca) return false;
-    if (ST[5].calSel.size > 0 && !ST[5].calSel.has(r.calibre)) return false;
-    if (ST[5].marcaSel.size > 0 && !ST[5].marcaSel.has(marca)) return false;
+    if (!ST[5].calSel.has(r.calibre)) return false;
+    if (!ST[5].marcaSel.has(marca)) return false;
     if (extra && !extra(r)) return false;
     if (r.yr == 2026 && window.GLOBAL_ALLOWED_MONTHS && !window.GLOBAL_ALLOWED_MONTHS.has(r.mes)) return false;
     return true;
@@ -1136,7 +1139,7 @@ function render5() {
 // ═══════════════════════════════════════════════════════════════
 
 ST[6] = { un: 'CERVEZAS CMQ', activePromos: initActivePromos(), canal: new Set(), seg: new Set(),
-  marcaSel: new Set(), calSel: new Set() };
+  marcaSel: new Set(), calSel: new Set(), diasSel: new Set() };
 
 mkUN(6);
 mkSDV(6);
@@ -1241,7 +1244,8 @@ function initMarca6UI(list) {
     list: list,
     getSet: () => ST[6].marcaSel,
     onChange: render6,
-    label: 'Marcas'
+    label: 'Marcas',
+    headerLabel: 'Todas las marcas'
   });
 }
 
@@ -1257,13 +1261,28 @@ function initCal6UI(list) {
     list: list,
     getSet: () => ST[6].calSel,
     onChange: render6,
-    label: 'Calibres'
+    label: 'Calibres',
+    headerLabel: 'Todos los calibres'
+  });
+}
+
+function initDias6UI() {
+  createMultiSelect({
+    btnId: 'dias6-drop-btn',
+    panelId: 'dias6-panel',
+    hdrId: 'dias6-hdr-all',
+    list: FREQ_LIST.filter(x => x.key !== 'TODOS').map(x => ({ key: normDias(x.key), label: x.label })),
+    getSet: () => ST[6].diasSel,
+    onChange: render6,
+    label: 'Días',
+    headerLabel: 'Todos los días'
   });
 }
 
 // Inicializar dropdowns con listas de cervezas por defecto
 initMarca6UI(MARCA6_CERV_LIST);
 initCal6UI(CAL6_CERV_LIST);
+initDias6UI();
 
 // Mostrar/ocultar segmento según UN
 function updateSeg6Visibility() {
@@ -1304,17 +1323,17 @@ function canal6Filter(r) {
 // Helper: marca/calibre filter pg6
 function marcaCal6Filter(r) {
   const isCerv = ST[6].un === 'CERVEZAS CMQ';
+  if (ST[6].marcaSel.size === 0 || ST[6].calSel.size === 0) return false;
+  
   if (isCerv) {
     const m = getMarca(r.prod2);
-    if (!m) return false;
-    if (ST[6].marcaSel.size > 0 && !ST[6].marcaSel.has(m)) return false;
-    if (ST[6].calSel.size > 0 && !ST[6].calSel.has(r.calibre)) return false;
+    if (!m || !ST[6].marcaSel.has(m)) return false;
+    if (!ST[6].calSel.has(r.calibre)) return false;
     if (!seg6Filter(r)) return false;
   } else {
     const m = r.marca || '';
-    if (!m) return false;
-    if (ST[6].marcaSel.size > 0 && !ST[6].marcaSel.has(m)) return false;
-    if (ST[6].calSel.size > 0 && !ST[6].calSel.has(r.calibre)) return false;
+    if (!m || !ST[6].marcaSel.has(m)) return false;
+    if (!ST[6].calSel.has(r.calibre)) return false;
   }
   return true;
 }
@@ -1328,6 +1347,11 @@ function getRows6(yr, extra) {
     if (!pf(r)) return false;
     if (!canal6Filter(r)) return false;
     if (!marcaCal6Filter(r)) return false;
+    if (ST[6].diasSel.size === 0) return false;
+    if (ST[6].diasSel.size < FREQ_LIST.length - 1) {
+      const d = normDias(r.dias);
+      if (!d || !ST[6].diasSel.has(d)) return false;
+    }
     if (extra && !extra(r)) return false;
     if (r.yr == 2026 && window.GLOBAL_ALLOWED_MONTHS && !window.GLOBAL_ALLOWED_MONTHS.has(r.mes)) return false;
     return true;
@@ -1449,8 +1473,8 @@ function render6() {
   if (t6) t6.textContent = `Volumen HL · Top 50 · ${per3lbl}`;
 
   setKPI('k6-0', `HL ${last}`,      d26v[last], pct(d26v[last],d25v[last]), ' HL');
-  setKPI('k6-1', `SKU/PDV ${last}`, sku26, pct(sku26,sku25), '', 2);
-  setKPI('k6-2', `SKU/PDV ${last}`, sku26,      pct(sku26,sku25), '', 2);
+  setKPI('k6-1', `CCC ${last}`,      d26c[last], pct(d26c[last],d25c[last]));
+  setKPI('k6-2', `SKU/PDV ${last}`,  sku26,      pct(sku26,sku25), '', 2);
   setKPI('k6-3', `Top 50 · ${per3lbl}`, top50Clis.length, null, ' clientes', 0, '');
 
   makeMonthly('c6-hl',  d25v, d26v, col);
@@ -1509,6 +1533,12 @@ document.getElementById('un-dd6')?.addEventListener('click', () => {
     const isCerv = ST[6].un === 'CERVEZAS CMQ';
     initMarca6UI(isCerv ? MARCA6_CERV_LIST : MARCA6_UNG_LIST);
     initCal6UI(isCerv ? CAL6_CERV_LIST : CAL6_UNG_LIST);
+    if (!isCerv) {
+      ST[6].seg.clear();
+      if (typeof sAll !== 'undefined' && sAll) sAll.checked = true;
+      if (typeof s6Btn !== 'undefined' && s6Btn) s6Btn.classList.add('all');
+      document.querySelectorAll('.s6-chk').forEach(c => c.checked = false);
+    }
     render6();
   }, 50);
 });

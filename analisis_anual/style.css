@@ -359,3 +359,6 @@ body{background:var(--bg);color:var(--txt);font-family:'Roboto',sans-serif;heigh
 }
 .carousel-prev { left: 0; }
 .carousel-next { right: 0; }
+
+/* Custom Checkbox styles */
+.hdr-cb-all { accent-color: #2563eb; cursor: pointer; }
