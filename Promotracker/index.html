@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mapa en Vivo · Supervisión EMCALA</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&display=swap');
 
@@ -176,7 +177,7 @@
   <div id="main-screen" style="display:none;">
     <div class="hdr">
       <div style="display:flex; align-items:center; gap:10px;">
-        <button class="btn outline btn-hamburguesa" id="btn-toggle-sidebar" style="display:none; padding:8px 10px; font-size:16px;">☰</button>
+        <button class="btn outline btn-hamburguesa" id="btn-toggle-sidebar" style="display:none; padding:8px 10px; font-size:16px;"><i class="fa-solid fa-bars"></i></button>
         <h1>MAPA EN VIVO <span>| Supervisión EMCALA</span></h1>
       </div>
       <div class="user-badge">
@@ -221,8 +222,8 @@
           <div class="leyenda-item"><div class="leyenda-dot" style="background:#f59e0b;"></div> Supervisor</div>
         </div>
         <div class="mapa-controles">
-          <button id="btn-mi-ubicacion" title="Mostrar mi ubicación">📍</button>
-          <button id="btn-centrar-distri" title="Centrar en Suralnor">🏭</button>
+          <button id="btn-mi-ubicacion" title="Mostrar mi ubicación"><i class="fa-solid fa-location-crosshairs"></i></button>
+          <button id="btn-centrar-distri" title="Centrar en Suralnor"><i class="fa-solid fa-warehouse"></i></button>
         </div>
       </div>
     </div>
@@ -412,7 +413,7 @@
       marcadorDistri = L.marker(DISTRI_COORDS, {
         icon: L.divIcon({
           className: '',
-          html: `<div style="background:#8b5cf6; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.4);">🏭</div>`,
+          html: `<div style="background:#8b5cf6; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.4);"><i class="fa-solid fa-warehouse"></i></div>`,
           iconSize: [30, 30],
           iconAnchor: [15, 15],
           popupAnchor: [0, -15]
@@ -457,13 +458,13 @@
 
     function crearIcono(tipo) {
       const color = tipo === 'supervisor' ? '#f59e0b' : '#1B5FA8';
-      const emoji = tipo === 'supervisor' ? '★' : '●';
+      const icono = tipo === 'supervisor' ? 'fa-user-tie' : 'fa-user';
       return L.divIcon({
         className: '',
-        html: `<div style="background:${color}; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.4);">${emoji}</div>`,
-        iconSize: [26, 26],
-        iconAnchor: [13, 13],
-        popupAnchor: [0, -13]
+        html: `<div style="background:${color}; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.4);"><i class="fa-solid ${icono}"></i></div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+        popupAnchor: [0, -14]
       });
     }
 
@@ -540,12 +541,12 @@
                Canal: ${item.canal || '-'}<br>
                Última posición: ${item.hora || '-'}
              </div>
-             <button class="popup-btn" onclick="verRecorrido('${item.nombre.replace(/'/g, "\\'")}')">Ver recorrido</button>
-             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})">🚗 Cómo llegar</button>`
+             <button class="popup-btn" onclick="verRecorrido('${item.nombre.replace(/'/g, "\\'")}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
+             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`
           : `<div class="popup-nombre">Supervisor</div>
              <div class="popup-detalle">Usuario: ${item.usuario || '-'}<br>Última posición: ${item.hora || '-'}</div>
-             <button class="popup-btn" onclick="verRecorridoSupervisor('${item.usuario}')">Ver recorrido</button>
-             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})">🚗 Cómo llegar</button>`;
+             <button class="popup-btn" onclick="verRecorridoSupervisor('${item.usuario}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
+             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`;
 
         if (marcadoresPromotores[clave]) {
           marcadoresPromotores[clave].setLatLng([item.lat, item.lng]);
