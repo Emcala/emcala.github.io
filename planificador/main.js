@@ -182,12 +182,12 @@
         await new Promise(r => setTimeout(r, 50));
         const canvas = await html2canvas(captureEl, {
           backgroundColor: '#0B2559',
-          scale: 1.5, // Reducido de 2 a 1.5 para evitar crashes de falta de memoria (out of memory) en tablas largas
-          windowWidth: tableCont ? tableCont.scrollWidth + 60 : captureEl.scrollWidth,
-          windowHeight: captureEl.scrollHeight + 20,
+          scale: 2,                 // <-- subir a 2 (mejor calidad, WhatsApp comprime)
+          windowWidth: captureEl.scrollWidth,       // <-- usar captureEl, no tableCont
+          windowHeight: captureEl.scrollHeight,     // <-- idem
           logging: false,
           useCORS: true,
-          allowTaint: true // Necesario si hay imágenes de perfiles o medallas de otros dominios
+          allowTaint: false         // <-- CRÍTICO: false evita canvas tainted
         });
         // Restaurar ancho original
         captureEl.style.width = originalWidth;
@@ -216,27 +216,52 @@
         // ───────────────────────────
 
         canvas.toBlob(async (blob) => {
+          // Guard: si html2canvas devolvió un blob vacío, no escribir basura al portapapeles
+          if (!blob || blob.size < 1024) {
+            console.error('Captura vacía o demasiado chica:', blob && blob.size);
+            alert('No se pudo generar la imagen. Reintentá o achicá la tabla (colapsá focos).');
+            btn.innerHTML = orig;
+            btn.disabled = false;
+            return;
+          }
+
+          // Detectar si el portapapeles soporta imágenes (Firefox no, Safari parcialmente)
+          const canCopyImage = typeof ClipboardItem !== 'undefined'
+            && navigator.clipboard
+            && navigator.clipboard.write
+            && (window.ClipboardItem.supports ? ClipboardItem.supports('image/png') : true);
+
+          if (canCopyImage) {
+            try {
+              // IMPORTANTE: solo la imagen. NO mezclar text/plain en el mismo ClipboardItem,
+              // porque WhatsApp Web toma el texto y descarta el PNG (bug conocido).
+              const item = new ClipboardItem({ 'image/png': blob });
+              await navigator.clipboard.write([item]);
+              showCopyToast(titleText);
+              btn.innerHTML = orig;
+              btn.disabled = false;
+              return;
+            } catch (err) {
+              console.warn('Clipboard.write falló, cayendo a descarga:', err);
+            }
+          }
+
+          // Fallback universal: descargar el PNG (WhatsApp lo acepta perfecto desde archivo)
           try {
-            // Escribir imagen y texto descriptivo en el portapapeles
-            const textBlob = new Blob([titleText], { type: 'text/plain' });
-            const data = [new ClipboardItem({
-              [blob.type]: blob,
-              'text/plain': textBlob
-            })];
-            await navigator.clipboard.write(data);
-            showCopyToast(titleText);
-          } catch (err) {
-            console.warn("Clipboard API no soportada. Descargando imagen...", err);
-            // Fallback: descargar si falla el portapapeles
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.download = `Planificador_EMCALA_${formattedDate.replace(/\//g, '-')}.png`;
-            link.href = canvas.toDataURL();
+            link.href = url;
             link.click();
-            showCopyToast(" Foto descargada a tu PC ⬇️");
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            showCopyToast('📥 Imagen descargada. Adjuntala desde tu galería.');
+          } catch (e) {
+            console.error('Fallback de descarga falló:', e);
+            alert('No se pudo copiar ni descargar la imagen.');
           }
           btn.innerHTML = orig;
           btn.disabled = false;
-        }, "image/png");
+        }, 'image/png', 1.0);
       } catch (e) {
         console.error(e);
         alert('Hubo un pequeño inconveniente al generar la captura. Por favor, reintenta.');
