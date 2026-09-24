@@ -51,6 +51,7 @@
       width: 100%; background: #0f172a; border: 1px solid var(--brd); padding: 8px; border-radius: 6px;
       color: #fff; font-family: inherit; font-size: 12px; outline: none;
     }
+    .sidebar-hint { font-size: 10.5px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
 
     #lista-promotores { flex: 1; overflow-y: auto; }
     .prom-item {
@@ -208,6 +209,7 @@
         <div class="sidebar-section">
           <div class="sidebar-title">Recorrido histórico</div>
           <input type="date" id="fecha-recorrido">
+          <div class="sidebar-hint">Elegí la fecha y después tocá a un promotor o supervisor para ver su recorrido en el mapa.</div>
           <button class="btn outline" style="width:100%; margin-top:8px; font-size:11px;" onclick="cerrarRecorrido()">Ocultar recorrido</button>
         </div>
         <div class="sidebar-section" style="border-bottom:none; padding-bottom:6px;">
@@ -238,7 +240,7 @@
     const SUPABASE_URL = 'https://tdwdqgtnyqnsigzhhxsl.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2RxZ3RueXFuc2lnemhoeHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTE3NDcsImV4cCI6MjA5ODY2Nzc0N30.aiYnQ3g1HIk1e4G89sODitBqtPlzva_akCz5ruvLw-8';
     const DOMINIO_INTERNO = 'surcala.com.ar';
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxesXxWV1mkiUyadi7QoOFvLMuzbWObkRtg7nMLUGuhOrZOsqgNyg0AWRao0J6bqcmm8A/exec';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcCGsiNDNr2wjHueMbkeam4sE_kh3OZKP7at6iuscj8Tacxbimr7xxSAablc6bo2MFdQ/exec';
     const INTERVALO_REFRESCO_MS = 25000; // 25 segundos
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -681,7 +683,11 @@
     }
 
     document.getElementById('fecha-recorrido').addEventListener('change', () => {
-      if (promotorSeleccionado) verRecorrido(promotorSeleccionado);
+      if (promotorSeleccionado) {
+        verRecorrido(promotorSeleccionado);
+      } else {
+        alert('Ahora tocá a un promotor o supervisor (en la lista o en el mapa) para ver su recorrido de ese día.');
+      }
     });
   </script>
 </body>
