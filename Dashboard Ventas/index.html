@@ -81,6 +81,49 @@
   .btn-outline { background: rgba(255,255,255,0.06) !important; border: 1px solid rgba(255,255,255,0.25) !important; }
   .btn-outline:hover { background: rgba(255,255,255,0.16) !important; }
 
+  /* Modal días */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    width: 340px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    color: var(--text);
+  }
+  .modal-box h3 { margin: 0 0 6px; font-size: 1.1rem; }
+  .modal-box p { margin: 0 0 18px; font-size: .82rem; color: var(--text-dim); line-height: 1.5; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { display: block; font-size: .78rem; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .modal-field input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+  .modal-actions button { padding: 8px 18px; border-radius: 6px; font-size: .85rem; font-weight: 600; cursor: pointer; border: none; }
+  .btn-cancel { background: #f1f5f9; color: var(--text); }
+  .btn-apply { background: var(--blue); color: #fff; }
+  .dias-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: .78rem;
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .dias-badge:hover { background: rgba(255,255,255,0.22); }
+  .dias-badge.overridden { border-color: #f59e0b; color: #fde68a; }
+
   main { padding: 12px 20px 20px; max-width: 1400px; margin: 0 auto; }
 
   .kpi-row {
@@ -202,12 +245,41 @@
       <input type="month" id="month-input">
       <select id="spv-select"><option value="ALL">Todos los SPV</option></select>
       <button id="btn-refresh"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+      <div id="dias-badge" class="dias-badge" onclick="abrirModalDias()" title="Configurar días del mes">
+        <i class="fa-solid fa-calendar-days"></i>
+        <span id="dias-badge-text">— días</span>
+        <i class="fa-solid fa-pen" style="font-size:.65rem; opacity:.7;"></i>
+      </div>
       <button id="btn-copy-img" class="btn-outline"><i class="fa-solid fa-camera"></i> Copiar Foto</button>
     </div>
     
     <div id="userBadgeContainer"></div>
   </div>
 </header>
+
+<!-- Modal configuración días -->
+<div class="modal-overlay" id="modal-dias">
+  <div class="modal-box">
+    <h3>⚙️ Configurar Días del Mes</h3>
+    <p>El cálculo automático cuenta lunes a viernes como 1 día y sábados como 0.6. Podés sobreescribir los valores si hay feriados u otras variaciones.</p>
+    <div class="modal-field">
+      <label>Días peso total del mes</label>
+      <input type="number" id="cfg-dias-peso" step="0.1" min="0" placeholder="Ej: 23.2">
+    </div>
+    <div class="modal-field">
+      <label>Días peso transcurridos (hasta hoy)</label>
+      <input type="number" id="cfg-peso-pasado" step="0.1" min="0" placeholder="Ej: 15.4">
+    </div>
+    <div style="font-size:.75rem; color: var(--text-dim); margin-top: -8px; margin-bottom: 12px;">
+      💡 Dejá en blanco para volver al cálculo automático.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModalDias()">Cancelar</button>
+      <button class="btn-cancel" onclick="resetearDias()" style="color:#ef4444;">Resetear</button>
+      <button class="btn-apply" onclick="aplicarDias()">Aplicar</button>
+    </div>
+  </div>
+</div>
 
 <main>
   <div class="kpi-row" id="kpi-row"></div>
@@ -279,6 +351,80 @@ let dashData = null;
 let evoChartF1 = null;
 let evoChartF2 = null;
 let entidadSeleccionada = { tipo: 'TOTAL', id: 'TOTAL' };
+let diasOverride = null; // { diasPeso, pesoPasado } si el usuario sobreescribió manualmente
+
+function abrirModalDias() {
+  const info = dashData && dashData.diasInfo ? dashData.diasInfo : {};
+  document.getElementById('cfg-dias-peso').value = diasOverride ? diasOverride.diasPeso : (info.diasPeso || '');
+  document.getElementById('cfg-peso-pasado').value = diasOverride ? diasOverride.pesoPasado : (info.pesoPasado || '');
+  document.getElementById('modal-dias').classList.add('open');
+}
+
+function cerrarModalDias() {
+  document.getElementById('modal-dias').classList.remove('open');
+}
+
+function resetearDias() {
+  diasOverride = null;
+  document.getElementById('dias-badge').classList.remove('overridden');
+  cerrarModalDias();
+  if (dashData) {
+    // Recalcular sin override
+    const cMonth = document.getElementById('month-input').value || getCurrentMonth();
+    let maxDate;
+    if (dashData.rawDaily && dashData.rawDaily.length > 0) {
+      const fechas = dashData.rawDaily.map(r => r.date).filter(Boolean).sort();
+      maxDate = fechas[fechas.length - 1];
+    } else {
+      const hoy = new Date();
+      maxDate = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+    }
+    dashData.diasInfo = calcularDiasMes(cMonth, maxDate);
+    actualizarBadgeDias();
+    renderKpis();
+    renderDashboard();
+    seleccionarEntidad(entidadSeleccionada.tipo, entidadSeleccionada.id);
+  }
+}
+
+function aplicarDias() {
+  const dp = parseFloat(document.getElementById('cfg-dias-peso').value);
+  const pp = parseFloat(document.getElementById('cfg-peso-pasado').value);
+  if (isNaN(dp) || isNaN(pp)) {
+    alert('Ingresá valores numéricos válidos para ambos campos.');
+    return;
+  }
+  diasOverride = { diasPeso: dp, pesoPasado: pp };
+  document.getElementById('dias-badge').classList.add('overridden');
+  cerrarModalDias();
+  if (dashData && dashData.diasInfo) {
+    dashData.diasInfo.diasPeso = dp;
+    dashData.diasInfo.pesoPasado = pp;
+    actualizarBadgeDias();
+    renderKpis();
+    renderDashboard();
+    seleccionarEntidad(entidadSeleccionada.tipo, entidadSeleccionada.id);
+  }
+}
+
+function actualizarBadgeDias() {
+  const info = dashData && dashData.diasInfo ? dashData.diasInfo : null;
+  if (info) {
+    const badge = document.getElementById('dias-badge-text');
+    const trabajados = info.pesoPasado || 0;
+    const total = info.diasPeso || 0;
+    badge.textContent = `${trabajados}/${total} días`;
+    if (diasOverride) {
+      document.getElementById('dias-badge').classList.add('overridden');
+    }
+  }
+}
+
+// Cerrar modal al hacer clic fuera
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('modal-dias');
+  if (modal && e.target === modal) cerrarModalDias();
+});
 
 function getCurrentMonth() {
   const d = new Date();
@@ -360,16 +506,27 @@ async function cargarDashboard() {
       return;
     }
     
-    // Calcular días trabajados y peso automáticamente si no viene de backend
-    if (!dashData.diasInfo || !dashData.diasInfo.diasHabiles) {
-      let maxDate = cMonth + '-01';
-      if (dashData.evolucionF1 && dashData.evolucionF1.length > 0) {
+    // Siempre calcular días desde el frontend (ignora el valor del backend para evitar errores)
+    {
+      let maxDate;
+      // Determinar la última fecha con datos de ventas reales
+      if (dashData.rawDaily && dashData.rawDaily.length > 0) {
+        const fechas = dashData.rawDaily.map(r => r.date).filter(Boolean).sort();
+        maxDate = fechas[fechas.length - 1];
+      } else if (dashData.evolucionF1 && dashData.evolucionF1.length > 0) {
         maxDate = dashData.evolucionF1[dashData.evolucionF1.length - 1].date;
       } else {
         const hoy = new Date();
         maxDate = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
       }
-      dashData.diasInfo = calcularDiasMes(cMonth, maxDate);
+      const calculado = calcularDiasMes(cMonth, maxDate);
+      // Si hay override manual, aplicarlo
+      if (diasOverride) {
+        calculado.diasPeso = diasOverride.diasPeso;
+        calculado.pesoPasado = diasOverride.pesoPasado;
+        calculado.diasHabiles = diasOverride.diasHabiles !== undefined ? diasOverride.diasHabiles : calculado.diasHabiles;
+      }
+      dashData.diasInfo = calculado;
     }
     
     // Restablecer seleccion al cargar nuevo mes
@@ -447,10 +604,12 @@ function poblarSelectSpv() {
 function renderKpis() {
   const spvFilter = document.getElementById('spv-select').value;
   let subText = "Objetivo vs Acumulado del Mes — Vista Consolidada";
-  if (dashData.diasInfo && dashData.diasInfo.diasHabiles > 0) {
-    subText += ` | Días Hábiles: ${dashData.diasInfo.diasHabiles} (Trabajados: ${dashData.diasInfo.diasTrabajados})`;
+  if (dashData.diasInfo && dashData.diasInfo.diasPeso > 0) {
+    const sufijo = diasOverride ? ' ⚙️' : '';
+    subText += ` | Días peso: ${dashData.diasInfo.diasPeso} (Transcurridos: ${dashData.diasInfo.pesoPasado})${sufijo}`;
     document.querySelector('.sub').textContent = subText;
   }
+  actualizarBadgeDias();
   
   let f1Plan = 0, f1Real = 0, f2Plan = 0, f2Real = 0;
   for (const prom in dashData.mesas) {
