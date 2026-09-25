@@ -20,22 +20,6 @@ const EmcalaAuth = (() => {
   const INACTIVITY_MS   = 30 * 60 * 1000; // 30 minutos
   const CHECK_INTERVAL  = 60 * 1000;       // verificar cada 1 min
 
-  // ── UTILIDADES ─────────────────────────────────────────────
-
-  // Hash simple para firmar sesión (no criptográfico, solo anti-manipulación)
-  function simpleHash(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const ch = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + ch;
-      hash |= 0; // convertir a 32bit int
-    }
-    return 'h' + Math.abs(hash).toString(36);
-  }
-
-  // El hash ya no se computa localmente, se confía en el token del servidor.
-  // Mantenemos la firma para compatibilidad o uso futuro si fuera necesario.
-
   // ── SESIÓN ─────────────────────────────────────────────────
 
   function getRawSession() {
@@ -52,7 +36,7 @@ const EmcalaAuth = (() => {
     if (!session) return false;
 
     // Campos obligatorios
-    if (!session.usuario || !session.rol || !session.usuario || !session.lastActivity) {
+    if (!session.usuario || !session.rol || !session.lastActivity) {
       return false;
     }
 
@@ -101,8 +85,6 @@ const EmcalaAuth = (() => {
   // ── PROTECCIÓN ─────────────────────────────────────────────
 
   function requireLogin() {
-
-
     const session = getRawSession();
     if (!isSessionValid(session)) {
       localStorage.removeItem(SESSION_KEY);
@@ -179,6 +161,13 @@ const EmcalaAuth = (() => {
 
   // ── UTILIDADES UI ──────────────────────────────────────────
 
+  // Escapa texto para interpolarlo de forma segura dentro de innerHTML.
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
   // Inserta un badge pequeño con info de usuario (para headers de herramientas)
   function renderUserBadge(containerId) {
     const session = getSession();
@@ -187,22 +176,22 @@ const EmcalaAuth = (() => {
     if (!container) return;
 
     const rolColors = {
-      auditor:    { bg: '#7C3AED', label: 'JEFE DE VENTA' },
-      supervisor: { bg: '#2563EB', label: 'SUPERVISOR' },
-      trade:      { bg: '#D97706', label: 'TRADE MARKETING' },
-      tecnico:    { bg: '#059669', label: 'TÉCNICO' },
-      promotor:   { bg: '#0891B2', label: 'PROMOTOR' },
-      merch:      { bg: '#DB2777', label: 'MERCH' },
-      admin:      { bg: '#DC2626', label: 'ADMIN' }
+      auditor:    '#7C3AED',
+      supervisor: '#2563EB',
+      trade:      '#D97706',
+      tecnico:    '#059669',
+      promotor:   '#0891B2',
+      merch:      '#DB2777',
+      admin:      '#DC2626'
     };
 
-    const info = rolColors[session.rol.toLowerCase()] || { bg: '#6B7280', label: session.rol.toUpperCase() };
+    const rolColor = rolColors[session.rol.toLowerCase()] || '#6B7280';
 
     container.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;font-family:'Bricolage Grotesque',Inter,system-ui,sans-serif;">
         <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);padding:6px 12px;border-radius:100px;white-space:nowrap;">
-          <span style="width:8px;height:8px;border-radius:50%;background:${info.bg};box-shadow:0 0 8px ${info.bg}88;"></span>
-          <span style="font-size:12px;font-weight:700;color:#fff;">${session.nombre}</span>
+          <span style="width:8px;height:8px;border-radius:50%;background:${rolColor};box-shadow:0 0 8px ${rolColor}88;"></span>
+          <span style="font-size:12px;font-weight:700;color:#fff;">${escapeHtml(session.nombre)}</span>
         </div>
         <button onclick="window.location.href='${PORTAL_URL}'" title="Volver al menú principal" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:transparent;border:1.5px solid rgba(255,255,255,0.4);border-radius:50%;color:white;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.borderColor='white';" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,0.4)';">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 576 512"><path d="M575.8 255.5c0 18-15 32.1-32 32.1h-32l.7 160.2c0 2.7-.2 5.4-.5 8.1V472c0 22.1-17.9 40-40 40H456c-11 0-20-9-20-20v-56c0-13.3-10.7-24-24-24H164c-13.3 0-24 10.7-24 24v56c0 11-9 20-20 20H104c-22.1 0-40-17.9-40-40v-16.2c-.3-2.7-.5-5.4-.5-8.1L64.7 287.6h-32c-17 0-32-14.1-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 11 15 11 24z"/></svg>

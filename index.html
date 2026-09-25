@@ -30,10 +30,12 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
   </div>
 
   <div id="sectionLogin" class="login-card">
-    <div class="field"><label>Usuario</label><input type="text" id="user" placeholder="USUARIO"></div>
-    <div class="field"><label>Contraseña</label><input type="password" id="pass" placeholder="••••••••"></div>
-    <button class="btn-login" onclick="doLoginHub()">Ingresar</button>
-    <div id="loginErr" class="error">Credenciales incorrectas</div>
+    <form id="loginForm" method="post" onsubmit="doLoginHub(); return false;">
+      <div class="field"><label for="user">Usuario</label><input type="text" id="user" name="username" autocomplete="username" autocapitalize="off" autocorrect="off" placeholder="USUARIO"></div>
+      <div class="field"><label for="pass">Contraseña</label><input type="password" id="pass" name="password" autocomplete="current-password" placeholder="••••••••"></div>
+      <button type="submit" class="btn-login">Ingresar</button>
+    </form>
+    <div id="loginErr" class="error" role="alert">Credenciales incorrectas</div>
   </div>
 </div>
 
@@ -62,7 +64,7 @@ async function doLoginHub() {
   document.getElementById('loginErr').style.display = 'none';
 
   let retries = 3;
-  let success = false;
+  let handled = false;
   
   while (retries > 0) {
     const controller = new AbortController();
@@ -95,13 +97,13 @@ async function doLoginHub() {
           promotores: data.promotores
         });
         window.location.href = './portal/index.html';
-        success = true;
+        handled = true;
         break;
       } else {
         document.getElementById('loginErr').textContent = data.error || 'Credenciales incorrectas';
         document.getElementById('loginErr').style.display = 'block';
         btn.textContent = 'Ingresar'; btn.disabled = false;
-        success = true; // error de credenciales: no reintentar
+        handled = true; // error de credenciales: no reintentar
         break;
       }
     } catch (error) {
@@ -115,7 +117,7 @@ async function doLoginHub() {
     }
   }
   
-  if (!success && retries === 0) {
+  if (!handled && retries === 0) {
     document.getElementById('loginErr').textContent = 'Error de conexión';
     document.getElementById('loginErr').style.display = 'block';
     btn.textContent = 'Ingresar'; btn.disabled = false;
@@ -124,8 +126,7 @@ async function doLoginHub() {
 
 // Si entra a esta página pero ya está logueado de antes, lo mandamos directo al portal
 window.onload = () => {
-  const s = localStorage.getItem('user_session');
-  if (s) {
+  if (EmcalaAuth.getSession()) {
     window.location.href = './portal/index.html';
   }
 };
