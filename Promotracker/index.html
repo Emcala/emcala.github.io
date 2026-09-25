@@ -541,12 +541,17 @@
              <div class="popup-detalle">
                Supervisor: ${item.supervisor_nombre || '-'}<br>
                Canal: ${item.canal || '-'}<br>
+               Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}</strong><br>
                Última posición: ${item.hora || '-'}
              </div>
              <button class="popup-btn" onclick="verRecorrido('${item.nombre.replace(/'/g, "\\'")}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
              <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`
           : `<div class="popup-nombre">Supervisor</div>
-             <div class="popup-detalle">Usuario: ${item.usuario || '-'}<br>Última posición: ${item.hora || '-'}</div>
+             <div class="popup-detalle">
+               Usuario: ${item.usuario || '-'}<br>
+               Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}</strong><br>
+               Última posición: ${item.hora || '-'}
+             </div>
              <button class="popup-btn" onclick="verRecorridoSupervisor('${item.usuario}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
              <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`;
 
