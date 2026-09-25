@@ -3,6 +3,10 @@
 // Sidebar, filters, print, config (read-only, no CRUD)
 // ============================================
 
+// Helper para escapar datos del CSV / localStorage antes de innerHTML
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 const UI = {
     activeClients: new Set(),
     mapSelection: null,
@@ -47,9 +51,14 @@ const UI = {
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 btn.classList.add('active');
                 document.getElementById(btn.dataset.tab).classList.add('active');
+
+                // Si salimos de la pestaña de impresión, limpiamos el polígono del mapa para que no moleste
+                if (btn.dataset.tab !== 'tab-print') {
+                    this.clearMapSelection();
+                }
             };
         });
         // Search
@@ -90,6 +99,120 @@ const UI = {
         if (btnClearSelection) {
             btnClearSelection.onclick = () => this.clearMapSelection();
         }
+
+        this.bindCustomZoneEvents();
+    },
+
+    bindCustomZoneEvents() {
+        // Draw Button
+        const btnDraw = document.getElementById('btn-draw-custom-zone');
+        if (btnDraw) {
+            btnDraw.onclick = () => {
+                if (window.MapManager) {
+                    MapManager.startDrawingCustomZone();
+                }
+            };
+        }
+
+        // Modal close/cancel
+        const modal = document.getElementById('custom-zone-modal');
+        const closeModal = () => {
+            modal.classList.remove('active');
+            if (window.MapManager) MapManager.cancelPendingCustomZone();
+        };
+
+        if (document.getElementById('custom-zone-modal-close')) {
+            document.getElementById('custom-zone-modal-close').onclick = closeModal;
+        }
+        if (document.getElementById('btn-cancel-zone')) {
+            document.getElementById('btn-cancel-zone').onclick = closeModal;
+        }
+        if (modal) {
+            modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+        }
+
+        // Modal Save
+        const btnSave = document.getElementById('btn-save-zone');
+        if (btnSave) {
+            btnSave.onclick = () => {
+                const nameInput = document.getElementById('custom-zone-name');
+                const colorInput = document.getElementById('custom-zone-color');
+                const name = nameInput.value.trim() || 'Zona sin nombre';
+                const color = colorInput.value || '#3b82f6';
+
+                const existe = DataService.getCustomZones()
+                    .some(z => (z.name || '').trim().toLowerCase() === name.trim().toLowerCase());
+
+                if (existe && !confirm(`Ya existe una zona llamada "${name}". ¿Guardarla igual?`)) {
+                    return; // no cierra el modal, no descarta el polígono pendiente
+                }
+
+                if (window.MapManager) MapManager.savePendingCustomZone(name, color);
+                nameInput.value = '';
+                modal.classList.remove('active');
+                this.renderCustomZonesList();
+            };
+        }
+    },
+
+    showCustomZoneModal() {
+        const modal = document.getElementById('custom-zone-modal');
+        if (modal) {
+            modal.classList.add('active');
+            document.getElementById('custom-zone-name').focus();
+        }
+    },
+
+    renderCustomZonesList() {
+        const list = document.getElementById('custom-zones-list');
+        if (!list) return;
+
+        const zones = DataService.getCustomZones();
+        if (zones.length === 0) {
+            list.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding: 20px;">No hay zonas guardadas.</div>';
+            return;
+        }
+
+        let html = '';
+        zones.forEach(z => {
+            const isVis = z.visible !== false;
+            html += `
+            <div class="tree-node level-1" style="display:flex; align-items:center; justify-content:space-between; padding: 8px; border-bottom: 1px solid var(--border-color);">
+                <div style="display:flex; align-items:center; gap: 10px;">
+                    <div style="width:16px; height:16px; border-radius:3px; background:${esc(z.color)}"></div>
+                    <span style="font-size:13px; font-weight:500;">${esc(z.name)}</span>
+                </div>
+                <div style="display:flex; gap: 8px;">
+                    <button class="link-btn toggle-zone-vis" data-id="${esc(z.id)}" style="color:var(--text-secondary);" title="${isVis ? 'Ocultar' : 'Mostrar'}">
+                        <i class="fas ${isVis ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                    </button>
+                    <button class="link-btn delete-zone" data-id="${esc(z.id)}" style="color:var(--danger-color);" title="Eliminar">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>`;
+        });
+
+        list.innerHTML = html;
+
+        // Bind events
+        list.querySelectorAll('.toggle-zone-vis').forEach(btn => {
+            btn.onclick = () => {
+                DataService.toggleCustomZoneVisibility(btn.dataset.id);
+                this.renderCustomZonesList();
+                if (window.MapManager) MapManager.renderCustomZones();
+            };
+        });
+
+        list.querySelectorAll('.delete-zone').forEach(btn => {
+            btn.onclick = () => {
+                if (confirm('¿Estás seguro de eliminar esta zona?')) {
+                    DataService.deleteCustomZone(btn.dataset.id);
+                    this.renderCustomZonesList();
+                    if (window.MapManager) MapManager.renderCustomZones();
+                }
+            };
+        });
     },
 
     // --- DATA RENDERING ---
@@ -98,6 +221,7 @@ const UI = {
         this.renderClientList(DataService.data.clientes);
         this.renderPrintDropdowns();
         this.updatePrintPreview();
+        this.renderCustomZonesList();
     },
 
     renderClientList(clients) {
@@ -112,15 +236,15 @@ const UI = {
         list.innerHTML = displayClients.map(c => {
             const supervisor = DataService.getSupervisor(c.SupervisorID);
             const promotor = DataService.getPromotor(c.PromotorID);
-            return `<div class="client-item" data-id="${c.ID}" data-lat="${c.Latitud}" data-lng="${c.Longitud}">
+            return `<div class="client-item" data-id="${esc(c.ID)}" data-lat="${c.Latitud}" data-lng="${c.Longitud}">
                 <div class="client-item-header">
-                    <span class="client-item-code">#${c.Codigo || c.ID}</span>
-                    <span class="client-item-name">${c.Nombre}</span>
+                    <span class="client-item-code">#${esc(c.Codigo || c.ID)}</span>
+                    <span class="client-item-name">${esc(c.Nombre)}</span>
                 </div>
-                <div class="client-item-addr">${c.Direccion || ''}</div>
+                <div class="client-item-addr">${esc(c.Direccion || '')}</div>
                 <div class="client-item-tags">
-                    ${supervisor ? `<span class="client-tag" style="background:${supervisor.Color}">${supervisor.Nombre}</span>` : ''}
-                    ${promotor ? `<span class="client-tag" style="background:${promotor.Color}">${promotor.Nombre}</span>` : ''}
+                    ${supervisor ? `<span class="client-tag" style="background:${supervisor.Color}">${esc(supervisor.Nombre)}</span>` : ''}
+                    ${promotor ? `<span class="client-tag" style="background:${promotor.Color}">${esc(promotor.Nombre)}</span>` : ''}
                 </div>
             </div>`;
         }).join('');
@@ -154,8 +278,9 @@ const UI = {
         
         if (mode === 'supervisor') {
             supervisores.forEach(sup => {
-                const supPromotores = promotores.filter(p => p.SupervisorID === sup.ID);
                 const supClientes = clientes.filter(c => c.SupervisorID === sup.ID);
+                const promIds = new Set(supClientes.map(c => c.PromotorID));
+                const supPromotores = promotores.filter(p => promIds.has(p.ID));
                 if (supClientes.length === 0) return;
 
                 html += `
@@ -166,7 +291,7 @@ const UI = {
                             <input type="checkbox" class="tree-checkbox" data-level="sup" value="${sup.ID}" checked>
                         </div>
                         <div class="tree-color" style="background:${sup.Color}"></div>
-                        <div class="tree-name">${sup.Nombre}</div>
+                        <div class="tree-name">${esc(sup.Nombre)}</div>
                         <div class="tree-count">${supClientes.length}</div>
                     </div>
                     <div class="tree-children">
@@ -192,7 +317,7 @@ const UI = {
                                 <input type="checkbox" class="tree-checkbox" data-level="prom" value="${prom.ID}" checked>
                             </div>
                             <div class="tree-color" style="background:${prom.Color}"></div>
-                            <div class="tree-name">${prom.Nombre}</div>
+                            <div class="tree-name">${esc(prom.Nombre)}</div>
                             <div class="tree-count">${promClientes.length}</div>
                         </div>
                         <div class="tree-children">
@@ -221,7 +346,7 @@ const UI = {
                                     <div class="tree-checkbox-wrap">
                                         <input type="checkbox" class="tree-checkbox" data-level="cli" value="${c.ID}" checked>
                                     </div>
-                                    <div class="tree-name">#${c.Codigo || c.ID} - ${c.Nombre}</div>
+                                    <div class="tree-name">#${esc(c.Codigo || c.ID)} - ${esc(c.Nombre)}</div>
                                 </div>
                             </div>
                             `;
@@ -297,7 +422,7 @@ const UI = {
                                 <div class="tree-checkbox-wrap">
                                     <input type="checkbox" class="tree-checkbox" data-level="cli" value="${c.ID}" checked>
                                 </div>
-                                <div class="tree-name">#${c.Codigo || c.ID} - ${c.Nombre}</div>
+                                <div class="tree-name">#${esc(c.Codigo || c.ID)} - ${esc(c.Nombre)}</div>
                             </div>
                         </div>
                         `;
@@ -405,11 +530,11 @@ const UI = {
         const pSelect = document.getElementById('print-promotor');
         const lSelect = document.getElementById('print-localidad');
         sSelect.innerHTML = '<option value="">-- Todos los supervisores --</option>' +
-            DataService.data.supervisores.map(s => `<option value="${s.ID}">${s.Nombre}</option>`).join('');
+            DataService.data.supervisores.map(s => `<option value="${esc(s.ID)}">${esc(s.Nombre)}</option>`).join('');
         pSelect.innerHTML = '<option value="">-- Todos los promotores --</option>' +
-            DataService.data.promotores.map(p => `<option value="${p.ID}">${p.Nombre}</option>`).join('');
+            DataService.data.promotores.map(p => `<option value="${esc(p.ID)}">${esc(p.Nombre)}</option>`).join('');
         lSelect.innerHTML = '<option value="">-- Todas las localidades --</option>' +
-            DataService.data.localidades.map(l => `<option value="${l.Nombre}">${l.Nombre}</option>`).join('');
+            DataService.data.localidades.map(l => `<option value="${esc(l.Nombre)}">${esc(l.Nombre)}</option>`).join('');
     },
 
     getFilteredPrintClients() {
@@ -471,11 +596,11 @@ const UI = {
         html += '</tr></thead><tbody>';
         previewClients.forEach((c, i) => {
             html += `<tr>
-                <td>${c.Codigo || c.ID}</td>
-                <td>${c.Nombre}</td>
-                <td>${c.Direccion || ''}</td>
-                <td>${c.Localidad || ''}</td>
-                <td>${c.Zona || ''}</td>
+                <td>${esc(c.Codigo || c.ID)}</td>
+                <td>${esc(c.Nombre)}</td>
+                <td>${esc(c.Direccion || '')}</td>
+                <td>${esc(c.Localidad || '')}</td>
+                <td>${esc(c.Zona || '')}</td>
             </tr>`;
         });
         html += '</tbody></table>';
@@ -489,29 +614,32 @@ const UI = {
         const clients = this.getFilteredPrintClients();
         if (clients.length === 0) { alert('No hay clientes para imprimir con los filtros seleccionados.'); return; }
 
-        const sid = document.getElementById('print-supervisor').value;
-        const pid = document.getElementById('print-promotor').value;
-        const loc = document.getElementById('print-localidad').value;
-
         document.getElementById('print-date').textContent = `Generado: ${new Date().toLocaleString('es-AR')}`;
         let info = '';
-        if (sid) { const s = DataService.getSupervisor(sid); info += `<strong>Supervisor:</strong> ${s ? s.Nombre : sid} | `; }
-        if (pid) { const p = DataService.getPromotor(pid); info += `<strong>Promotor:</strong> ${p ? p.Nombre : pid} | `; }
-        if (loc) { info += `<strong>Localidad:</strong> ${loc} | `; }
-        info += `<strong>Total:</strong> ${clients.length} clientes`;
+        if (this.mapSelection !== null) {
+            info = `<strong>Selección en mapa</strong> | <strong>Total:</strong> ${clients.length} clientes`;
+        } else {
+            const sid = document.getElementById('print-supervisor').value;
+            const pid = document.getElementById('print-promotor').value;
+            const loc = document.getElementById('print-localidad').value;
+            if (sid) { const s = DataService.getSupervisor(sid); info += `<strong>Supervisor:</strong> ${esc(s ? s.Nombre : sid)} | `; }
+            if (pid) { const p = DataService.getPromotor(pid); info += `<strong>Promotor:</strong> ${esc(p ? p.Nombre : pid)} | `; }
+            if (loc) { info += `<strong>Localidad:</strong> ${loc} | `; }
+            info += `<strong>Total:</strong> ${clients.length} clientes`;
+        }
         document.getElementById('print-filters-info').innerHTML = info;
 
         const tbody = document.getElementById('print-table-body');
         tbody.innerHTML = clients.map(c => {
             return `<tr>
-                <td>${c.Codigo || c.ID}</td>
-                <td>${c.Nombre}</td>
-                <td>${c.Direccion || ''}</td>
-                <td>${c.Localidad || ''}</td>
-                <td>${c.Zona || ''}</td>
-                <td>${c.Vendedor || ''}</td>
-                <td>${c.Promotor || ''}</td>
-                <td>${c.Supervisor || ''}</td>
+                <td>${esc(c.Codigo || c.ID)}</td>
+                <td>${esc(c.Nombre)}</td>
+                <td>${esc(c.Direccion || '')}</td>
+                <td>${esc(c.Localidad || '')}</td>
+                <td>${esc(c.Zona || '')}</td>
+                <td>${esc(c.Vendedor || '')}</td>
+                <td>${esc(c.Promotor || '')}</td>
+                <td>${esc(c.Supervisor || '')}</td>
             </tr>`;
         }).join('');
 
@@ -537,12 +665,12 @@ const UI = {
         ]);
 
         // BOM for UTF-8 + CSV content
-        let csv = '\uFEFF' + headers.join(',') + '\n';
+        let csv = '\uFEFF' + headers.join(';') + '\n';
         rows.forEach(row => {
             csv += row.map(cell => {
                 let text = String(cell).replace(/"/g, '""').replace(/[\r\n]+/g, ' ');
                 return `"${text}"`;
-            }).join(',') + '\n';
+            }).join(';') + '\n';
         });
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -598,11 +726,20 @@ const UI = {
             alert('No se pudieron guardar los ajustes (puede deberse a permisos del navegador).');
         }
         document.getElementById('config-modal').classList.remove('active');
+        localStorage.removeItem('surcala_map_lat');
+        localStorage.removeItem('surcala_map_lng');
+        localStorage.removeItem('surcala_map_zoom');
         window.location.reload(); // Recargar para aplicar colores en todo el sistema
     },
 
-    refreshData() {
-        DataService.loadData();
+    async refreshData() {
+        try {
+            await DataService.loadData();
+        } catch (e) {
+            console.error('[Zonas Surcala] No se pudieron recargar los clientes:', e);
+            alert('No se pudieron recargar los clientes (clientes.csv).');
+            return;
+        }
         MapManager.renderAll();
         this.renderUI();
     }

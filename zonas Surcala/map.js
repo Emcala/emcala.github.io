@@ -3,6 +3,12 @@
 // Supervisor zones, Promotor zones, and Client markers rendered natively with GPU
 // ============================================
 
+// Reusar el helper de ui.js si ya existe, o definirlo
+if (typeof esc === 'undefined') {
+    var esc = (v) => String(v ?? '').replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const MapManager = {
     map: null,
     isLoaded: false,
@@ -19,7 +25,7 @@ const MapManager = {
                     "type": "raster",
                     "tiles": ["https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"],
                     "tileSize": 256,
-                    "attribution": "&copy; OpenStreetMap Contributors"
+                    "attribution": "&copy; OpenStreetMap contributors"
                 }
             },
             "layers": [{
@@ -35,9 +41,9 @@ const MapManager = {
             "sources": {
                 "carto": {
                     "type": "raster",
-                    "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+                    "tiles": ["https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"],
                     "tileSize": 256,
-                    "attribution": "&copy; OpenStreetMap, &copy; CARTO"
+                    "attribution": "&copy; OpenStreetMap contributors &copy; CARTO"
                 }
             },
             "layers": [{
@@ -45,7 +51,7 @@ const MapManager = {
                 "type": "raster",
                 "source": "carto",
                 "minzoom": 0,
-                "maxzoom": 20
+                "maxzoom": 19
             }]
         },
         'carto-light': {
@@ -53,9 +59,9 @@ const MapManager = {
             "sources": {
                 "carto-light": {
                     "type": "raster",
-                    "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+                    "tiles": ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
                     "tileSize": 256,
-                    "attribution": "&copy; OpenStreetMap, &copy; CARTO"
+                    "attribution": "&copy; OpenStreetMap contributors &copy; CARTO"
                 }
             },
             "layers": [{
@@ -63,7 +69,7 @@ const MapManager = {
                 "type": "raster",
                 "source": "carto-light",
                 "minzoom": 0,
-                "maxzoom": 20
+                "maxzoom": 19
             }]
         },
         'carto-dark': {
@@ -71,9 +77,9 @@ const MapManager = {
             "sources": {
                 "carto-dark": {
                     "type": "raster",
-                    "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+                    "tiles": ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
                     "tileSize": 256,
-                    "attribution": "&copy; OpenStreetMap, &copy; CARTO"
+                    "attribution": "&copy; OpenStreetMap contributors &copy; CARTO"
                 }
             },
             "layers": [{
@@ -81,7 +87,7 @@ const MapManager = {
                 "type": "raster",
                 "source": "carto-dark",
                 "minzoom": 0,
-                "maxzoom": 20
+                "maxzoom": 19
             }]
         }
     },
@@ -210,7 +216,7 @@ const MapManager = {
             const c = feature.properties;
             
             // Hover Tooltip Promotor
-            const html = `<div style="font-weight:600; font-size:12px; color:var(--text-primary); text-align:center;">${c.PromotorName || 'Sin Promotor'}</div>`;
+            const html = `<div style="font-weight:600; font-size:12px; color:var(--text-primary); text-align:center;">${esc(c.PromotorName || 'Sin Promotor')}</div>`;
             this.hoverPopup.setLngLat(feature.geometry.coordinates)
                 .setHTML(html)
                 .addTo(this.map);
@@ -240,7 +246,17 @@ const MapManager = {
         // Changing style in MapLibre removes custom sources/layers
         // So we must wait for the new style to load, then re-add our data.
         this.map.setStyle(this.baseMaps[this._currentBaseMap]);
-        this.map.once('styledata', () => {
+        this.map.once('idle', () => {
+            if (!this.map.isStyleLoaded()) {
+                // Red de seguridad: reintentar en el próximo idle
+                this.map.once('idle', () => {
+                    if (DataService.isLoaded) {
+                        this.renderAll();
+                        if (window.UI) UI.applyClientFilters();
+                    }
+                });
+                return;
+            }
             if (DataService.isLoaded) {
                 this.renderAll();
                 if (window.UI) UI.applyClientFilters();
@@ -345,9 +361,9 @@ const MapManager = {
             }
 
             resultsDiv.innerHTML = results.map(c => `
-                <div class="map-search-result-item" data-id="${c.ID}">
-                    <div class="item-title">#${c.Codigo || c.ID} - ${c.Nombre}</div>
-                    <div class="item-sub"><i class="fas fa-map-marker-alt"></i> ${c.Direccion || 'Sin dirección'}</div>
+                <div class="map-search-result-item" data-id="${esc(c.ID)}">
+                    <div class="item-title">#${esc(c.Codigo || c.ID)} - ${esc(c.Nombre)}</div>
+                    <div class="item-sub"><i class="fas fa-map-marker-alt"></i> ${esc(c.Direccion || 'Sin dirección')}</div>
                 </div>
             `).join('');
 
@@ -380,9 +396,24 @@ const MapManager = {
         const data = this.draw.getAll();
         if (data.features.length === 0) return;
 
+        const lastFeature = data.features[data.features.length - 1];
+
+        // Si estamos en modo de dibujar zona personalizada
+        if (this.isDrawingCustomZone) {
+            this.pendingCustomZoneFeature = lastFeature;
+            this.draw.delete(lastFeature.id); // Remove from draw tools immediately
+            this.isDrawingCustomZone = false;
+            
+            // Trigger UI modal
+            if (window.UI) {
+                UI.showCustomZoneModal();
+            }
+            return;
+        }
+
+        // --- MODO SELECCIÓN NORMAL (Imprimir) ---
         // Si hay más de un polígono, quedarnos sólo con el último
         if (data.features.length > 1) {
-            const lastFeature = data.features[data.features.length - 1];
             this.draw.deleteAll();
             this.draw.add(lastFeature);
         }
@@ -537,10 +568,10 @@ const MapManager = {
 
     clearAll() {
         if (!this.map || !this.isLoaded) return;
-        const layers = ['clients-points', 'promoter-zones-line', 'promoter-zones-fill'];
+        const layers = ['clients-points', 'promoter-zones-line', 'promoter-zones-fill', 'custom-zones-line', 'custom-zones-fill'];
         layers.forEach(l => { if (this.map.getLayer(l)) this.map.removeLayer(l); });
         
-        const sources = ['clients', 'promoter-zones'];
+        const sources = ['clients', 'promoter-zones', 'custom-zones'];
         sources.forEach(s => { if (this.map.getSource(s)) this.map.removeSource(s); });
     },
 
@@ -681,6 +712,110 @@ const MapManager = {
             this.map.fitBounds(bounds, { padding: 50, duration: 1000 });
             this._hasAutoCentered = true;
         }
+
+        // Render custom zones
+        this.renderCustomZones();
+    },
+
+    startDrawingCustomZone() {
+        this.isDrawingCustomZone = true;
+        this.draw.changeMode('draw_polygon');
+    },
+
+    savePendingCustomZone(name, color) {
+        if (!this.pendingCustomZoneFeature) return;
+        
+        const zone = {
+            name: name,
+            color: color,
+            geometry: this.pendingCustomZoneFeature.geometry
+        };
+        
+        const saved = DataService.saveCustomZone(zone);
+        this.pendingCustomZoneFeature = null;
+        this.renderCustomZones();
+        return saved;
+    },
+
+    cancelPendingCustomZone() {
+        this.pendingCustomZoneFeature = null;
+    },
+
+    renderCustomZones() {
+        if (!this.map) return;
+        
+        const zones = DataService.getCustomZones();
+        const features = zones.filter(z => z.visible !== false).map(z => ({
+            type: 'Feature',
+            geometry: z.geometry,
+            properties: {
+                id: z.id,
+                name: z.name,
+                color: z.color
+            }
+        }));
+
+        const geojsonData = {
+            type: 'FeatureCollection',
+            features: features
+        };
+
+        if (this.map.getSource('custom-zones')) {
+            this.map.getSource('custom-zones').setData(geojsonData);
+        } else {
+            this.map.addSource('custom-zones', {
+                type: 'geojson',
+                data: geojsonData
+            });
+
+            this.map.addLayer({
+                id: 'custom-zones-fill',
+                type: 'fill',
+                source: 'custom-zones',
+                layout: {},
+                paint: {
+                    'fill-color': ['get', 'color'],
+                    'fill-opacity': 0.3
+                }
+            }, 'clients-points');
+
+            this.map.addLayer({
+                id: 'custom-zones-line',
+                type: 'line',
+                source: 'custom-zones',
+                layout: {},
+                paint: {
+                    'line-color': ['get', 'color'],
+                    'line-width': 2
+                }
+            }, 'clients-points');
+        }
+
+        // Handlers de custom-zones: registrar una sola vez
+        if (!this._customZoneHandlersBound) {
+            this._customZoneHandlersBound = true;
+
+            this.map.on('click', 'custom-zones-fill', (e) => {
+                const props = e.features[0].properties;
+                new maplibregl.Popup({ className: 'custom-popup' })
+                    .setLngLat(e.lngLat)
+                    .setHTML(`
+                        <div style="padding:5px;">
+                            <h3 style="margin:0 0 5px 0; color:var(--primary-color);">Zona: ${esc(props.name)}</h3>
+                        </div>
+                    `)
+                    .addTo(this.map);
+            });
+
+            this.map.on('mouseenter', 'custom-zones-fill', () => {
+                if (this.draw && this.draw.getMode() !== 'draw_polygon') {
+                    this.map.getCanvas().style.cursor = 'pointer';
+                }
+            });
+            this.map.on('mouseleave', 'custom-zones-fill', () => {
+                this.map.getCanvas().style.cursor = '';
+            });
+        }
     },
 
 
@@ -697,7 +832,7 @@ const MapManager = {
         const idsArray = Array.from(visibleClientIds);
         const activePromFreqIDs = new Set();
         idsArray.forEach(id => {
-            const c = DataService.data.clientes.find(cli => cli.ID == id);
+            const c = DataService.byId && DataService.byId.get(id);
             if (c) activePromFreqIDs.add(c.PromotorID + '_' + (c.FrecuenciaGrupo || 'Sin Frecuencia'));
         });
         
@@ -724,16 +859,16 @@ const MapManager = {
 
     generatePopupHtml(c) {
         let popupHtml = `<div class="popup-content">`;
-        popupHtml += `<div class="popup-client-code">#${c.Codigo || c.ID}</div>`;
-        popupHtml += `<h3>${c.Nombre}</h3>`;
-        if (c.Direccion) popupHtml += `<div class="popup-row"><i class="fas fa-map-marker-alt"></i> ${c.Direccion}</div>`;
-        if (c.Localidad) popupHtml += `<div class="popup-row"><i class="fas fa-map-pin"></i> ${c.Localidad}</div>`;
-        if (c.Zona) popupHtml += `<div class="popup-row"><i class="fas fa-th-large"></i> Zona ${c.Zona}</div>`;
-        if (c.Vendedor) popupHtml += `<div class="popup-row"><i class="fas fa-user"></i> Vendedor: ${c.Vendedor}</div>`;
+        popupHtml += `<div class="popup-client-code">#${esc(c.Codigo || c.ID)}</div>`;
+        popupHtml += `<h3>${esc(c.Nombre)}</h3>`;
+        if (c.Direccion) popupHtml += `<div class="popup-row"><i class="fas fa-map-marker-alt"></i> ${esc(c.Direccion)}</div>`;
+        if (c.Localidad) popupHtml += `<div class="popup-row"><i class="fas fa-map-pin"></i> ${esc(c.Localidad)}</div>`;
+        if (c.Zona) popupHtml += `<div class="popup-row"><i class="fas fa-th-large"></i> Zona ${esc(c.Zona)}</div>`;
+        if (c.Vendedor) popupHtml += `<div class="popup-row"><i class="fas fa-user"></i> Vendedor: ${esc(c.Vendedor)}</div>`;
         popupHtml += `<div class="popup-divider"></div>`;
-        if (c.SupervisorName) popupHtml += `<span class="popup-tag" style="background:${c.SupervisorColor}">${c.SupervisorName}</span>`;
-        if (c.PromotorName) popupHtml += `<span class="popup-tag" style="background:${c.PromotorColor}">${c.PromotorName}</span>`;
-        if (c.FrecuenciaGrupo) popupHtml += `<span class="popup-tag" style="background:${c.FrecuenciaColor}; text-shadow: 0px 1px 2px rgba(0,0,0,0.4);">${c.FrecuenciaGrupo}</span>`;
+        if (c.SupervisorName) popupHtml += `<span class="popup-tag" style="background:${c.SupervisorColor}">${esc(c.SupervisorName)}</span>`;
+        if (c.PromotorName) popupHtml += `<span class="popup-tag" style="background:${c.PromotorColor}">${esc(c.PromotorName)}</span>`;
+        if (c.FrecuenciaGrupo) popupHtml += `<span class="popup-tag" style="background:${c.FrecuenciaColor}; text-shadow: 0px 1px 2px rgba(0,0,0,0.4);">${esc(c.FrecuenciaGrupo)}</span>`;
         popupHtml += `</div>`;
         return popupHtml;
     },

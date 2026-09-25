@@ -19,17 +19,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Retrasar unos milisegundos la inicialización pesada 
     // para permitir que el navegador pinte la interfaz de "Cargando"
-    setTimeout(() => {
+    setTimeout(async () => {
         // Init map
         MapManager.init(lat, lng, zoom);
 
         // Init UI
         UI.init();
 
-        // Load embedded data
-        DataService.loadData();
+        // Cargar clientes desde clientes.csv
+        try {
+            await DataService.loadData();
+        } catch (e) {
+            console.error('[Zonas Surcala] No se pudieron cargar los clientes:', e);
+            alert('No se pudieron cargar los clientes (clientes.csv).\nVerificá que el archivo esté junto al index.html y recargá la página.');
+            return;
+        }
 
         // Render UI
         UI.renderUI();
+
+        // Si el mapa ya terminó de cargar antes que los datos, dibujamos ahora.
+        // Si no, lo hará el handler map.on('load') de map.js (isLoaded ya es true).
+        if (MapManager.isLoaded) {
+            MapManager.renderAll();
+            UI.applyClientFilters();
+        }
     }, 50);
 });
