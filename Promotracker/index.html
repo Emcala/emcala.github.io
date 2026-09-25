@@ -260,6 +260,7 @@
     let marcadoresPromotores = {}; // nombre -> L.Marker
     let capaRecorrido = null;
     let ultimasPosiciones = [];
+    let ultimosDesconectados = [];
     let promotorSeleccionado = null;
     let intervaloRefresco = null;
     let listaPromotoresCompleta = [];
@@ -470,6 +471,22 @@
       });
     }
 
+    function crearIconoDesconectado(conAlerta) {
+      const badge = conAlerta
+        ? `<div style="position:absolute; top:-4px; right:-4px; width:16px; height:16px; border-radius:50%; background:#ef4444; display:flex; align-items:center; justify-content:center; color:#fff; font-size:9px; border:1.5px solid #fff;"><i class="fa-solid fa-exclamation"></i></div>`
+        : '';
+      return L.divIcon({
+        className: '',
+        html: `<div style="position:relative; width:28px; height:28px;">
+                 <div style="background:#64748b; opacity:0.9; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.4);"><i class="fa-solid fa-user"></i></div>
+                 ${badge}
+               </div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+        popupAnchor: [0, -14]
+      });
+    }
+
     // ==========================================================
     // ACTUALIZAR POSICIONES EN VIVO
     // ==========================================================
@@ -483,6 +500,7 @@
         }
 
         ultimasPosiciones = data.posiciones;
+        ultimosDesconectados = data.desconectados || [];
         renderizarMarcadores();
         renderizarListaLateral();
         actualizarKPIs();
@@ -541,6 +559,7 @@
              <div class="popup-detalle">
                Supervisor: ${item.supervisor_nombre || '-'}<br>
                Canal: ${item.canal || '-'}<br>
+               Inicio de jornada: ${item.horaInicio || '-'}<br>
                Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}</strong><br>
                Última posición: ${item.hora || '-'}
              </div>
@@ -557,9 +576,42 @@
 
         if (marcadoresPromotores[clave]) {
           marcadoresPromotores[clave].setLatLng([item.lat, item.lng]);
+          marcadoresPromotores[clave].setIcon(crearIcono(item.tipo));
           marcadoresPromotores[clave].setPopupContent(popupHtml);
         } else {
           const marker = L.marker([item.lat, item.lng], { icon: crearIcono(item.tipo) }).addTo(map);
+          marker.bindPopup(popupHtml);
+          marcadoresPromotores[clave] = marker;
+        }
+      });
+
+      // Promotores desconectados: se muestran en gris, en su última posición conocida,
+      // con un símbolo de alerta si llevan 40+ minutos sin transmitir
+      const desconectadosVisibles = ultimosDesconectados.filter(itemVisible);
+      desconectadosVisibles.forEach((item) => {
+        const clave = item.nombre;
+        if (!clave) return;
+        nombresActuales.add(clave);
+
+        const conAlerta = item.minutosSinTransmitir >= 40;
+        const popupHtml = `<div class="popup-nombre">${item.nombre}</div>
+             <div class="popup-detalle">
+               Supervisor: ${item.supervisor_nombre || '-'}<br>
+               Canal: ${item.canal || '-'}<br>
+               Inicio de jornada: ${item.horaInicio || '-'}<br>
+               Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}</strong><br>
+               ${conAlerta ? '<strong style="color:#ef4444;">⚠ Sin transmitir hace ' + item.minutosSinTransmitir + ' min</strong><br>' : ''}
+               Última posición conocida: ${item.ultimaVezVisto || '-'}
+             </div>
+             <button class="popup-btn" onclick="verRecorrido('${item.nombre.replace(/'/g, "\\'")}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
+             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`;
+
+        if (marcadoresPromotores[clave]) {
+          marcadoresPromotores[clave].setLatLng([item.lat, item.lng]);
+          marcadoresPromotores[clave].setIcon(crearIconoDesconectado(conAlerta));
+          marcadoresPromotores[clave].setPopupContent(popupHtml);
+        } else {
+          const marker = L.marker([item.lat, item.lng], { icon: crearIconoDesconectado(conAlerta) }).addTo(map);
           marker.bindPopup(popupHtml);
           marcadoresPromotores[clave] = marker;
         }
