@@ -3,12 +3,6 @@
 // Supervisor zones, Promotor zones, and Client markers rendered natively with GPU
 // ============================================
 
-// Reusar el helper de ui.js si ya existe, o definirlo
-if (typeof esc === 'undefined') {
-    var esc = (v) => String(v ?? '').replace(/[&<>"']/g, c =>
-        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
 const MapManager = {
     map: null,
     isLoaded: false,
