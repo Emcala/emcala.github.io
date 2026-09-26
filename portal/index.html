@@ -118,6 +118,7 @@
         { href: '../planificador/vespertina.html', label: 'VESPERTINA' }
       ]
     },
+    planificador_matinal: { href: '../planificador/index.html', label: 'PLANIFICADOR', col: 'comercial' },
     cobertura_efectividad: { 
       isSplit: true, 
       col: 'comercial', 
@@ -131,7 +132,7 @@
     dashboard_ventas: { href: '../Dashboard Ventas/index.html', label: 'DASHBOARD VENTAS', col: 'comercial' },
     potenciales_sdv: { href: 'https://suralnorpotenciaes.netlify.app/supervisor.html', label: 'DASHBOARD POTENCIALES SDV', col: 'comercial' },
     ventas: { href: 'https://emcala.github.io/analisis_anual/', label: 'ANÁLISIS ANUAL', col: 'comercial' },
-    zonas_merch: { href: '../plan_merchs/', label: 'ZONAS MERCH', col: 'comercial' },
+    zonas_surcala: { href: '../zonas Surcala/index.html', label: 'MAPA SURCALA', col: 'comercial' },
 
     // CAPEX
     reparaciones: { href: 'https://emcala.github.io/reparaciones/', label: 'DASHBOARD REPARACIONES', col: 'capex' },
@@ -151,22 +152,23 @@
   
   const MENU_POR_ROL = {
     auditor: [
-      'planificador', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'dashboard_ventas', 'ventas', 'zonas_merch', 
+      'planificador', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'dashboard_ventas', 'ventas', 'zonas_surcala', 
       'reparaciones', 'consulta_pi', 'retiro_edf', 
       'form_planificacion', 'form_coaching', 'form_coaching_merch', 'form_abm', 'form_reparacion', 
       'cuentas'
     ],
     supervisor: [
-      'planificador', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'dashboard_ventas', 'ventas', 'zonas_merch', 
+      'planificador', 'cobertura_efectividad', 'coaching_pr', 'ejecucion', 'potenciales_sdv', 'dashboard_ventas', 'ventas', 'zonas_surcala', 
       'reparaciones', 'consulta_pi', 'retiro_edf', 
       'form_planificacion', 'form_coaching', 'form_abm', 'form_reparacion'
     ],
     trade: [
-      'ejecucion', 'dashboard_ventas', 'ventas', 
+      'planificador_matinal', 'ejecucion', 'dashboard_ventas', 'ventas', 'zonas_surcala',
       'reparaciones', 'consulta_pi', 'retiro_edf', 
       'form_reparacion'
     ],
     tecnico: [
+      'zonas_surcala',
       'reparaciones'
     ]
   };
@@ -186,7 +188,7 @@
     if (usuario === 'SDVAS') {
       toolKeys = [...toolKeys];
       if (!toolKeys.includes('ejecucion')) toolKeys.push('ejecucion');
-      if (!toolKeys.includes('zonas_merch')) toolKeys.push('zonas_merch');
+      if (!toolKeys.includes('zonas_surcala')) toolKeys.push('zonas_surcala');
       if (!toolKeys.includes('form_coaching_merch')) toolKeys.push('form_coaching_merch');
     }
   
