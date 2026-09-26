@@ -560,7 +560,7 @@
                Supervisor: ${item.supervisor_nombre || '-'}<br>
                Canal: ${item.canal || '-'}<br>
                Inicio de jornada: ${item.horaInicio || '-'}<br>
-               Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}</strong><br>
+               Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}${item.totalClientesHoy != null ? ' de ' + item.totalClientesHoy : ''}</strong><br>
                Última posición: ${item.hora || '-'}
              </div>
              <button class="popup-btn" onclick="verRecorrido('${item.nombre.replace(/'/g, "\\'")}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
@@ -599,7 +599,7 @@
                Supervisor: ${item.supervisor_nombre || '-'}<br>
                Canal: ${item.canal || '-'}<br>
                Inicio de jornada: ${item.horaInicio || '-'}<br>
-               Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}</strong><br>
+               Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}${item.totalClientesHoy != null ? ' de ' + item.totalClientesHoy : ''}</strong><br>
                ${conAlerta ? '<strong style="color:#ef4444;">⚠ Sin transmitir hace ' + item.minutosSinTransmitir + ' min</strong><br>' : ''}
                Última posición conocida: ${item.ultimaVezVisto || '-'}
              </div>
