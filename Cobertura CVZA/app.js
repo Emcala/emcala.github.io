@@ -357,24 +357,26 @@ function calcDiasRestantes() {
   // Meses pasados (ya cerrados): sin días restantes
   if (cMonth < commercialMonth) return 0;
   
-  const parts = cMonth.split('-');
-  const year = parseInt(parts[0]);
-  const mon = parseInt(parts[1]) - 1; // 0-based
-  
-  const primerDia = new Date(year, mon, 1);
-  const ultimoDia = new Date(year, mon + 1, 0);
+  // OJO: el fin del rango NO es el último día del calendario.
+  // La venta del último día del mes se entrega y factura el mes siguiente,
+  // así que ese día pertenece al PRÓXIMO mes comercial. El fin correcto es
+  // el último día de PLANIFICACIÓN del mes comercial (commInfo.last),
+  // la misma regla que ya usa el Planificador.
+  const ancla = (cMonth === commercialMonth) ? emcalaHoy() : `${cMonth}-01`;
+  const commInfo = getCommercialMonthAndStart(ancla);
+  const ultimoDia = new Date(commInfo.last + 'T00:00:00');
 
   let desde;
   if (cMonth === commercialMonth) {
-    // Mes comercial actual: días restantes desde mañana
-    const now = new Date();
-    desde = (now.getMonth() === mon)
-      ? new Date(year, mon, now.getDate() + 1)   // caso normal
-      : primerDia;                               // caso borde: mes calendario anterior
+    // La venta de hoy ya contó: los días restantes arrancan mañana
+    desde = new Date();
+    desde.setDate(desde.getDate() + 1);
   } else {
-    desde = primerDia;                           // mes futuro: todos los días
+    // Mes futuro: todos sus días de planificación
+    desde = new Date(commInfo.start + 'T00:00:00');
   }
 
+  if (ultimoDia < desde) return 0;
   return contarDiasHabiles(desde, ultimoDia).peso;
 }
 
