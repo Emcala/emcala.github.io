@@ -69,14 +69,16 @@ const UI = {
             this.filterClients(searchInput.value);
         };
         clearBtn.onclick = () => { searchInput.value = ''; clearBtn.classList.remove('visible'); this.filterClients(''); };
-        // Tree Toggle all
-        document.getElementById('toggle-all-tree').onclick = (e) => this.toggleAllTree(e.target);
-        // Tree Group Mode
-        const groupModeSelect = document.getElementById('tree-group-mode');
-        if (groupModeSelect) {
-            groupModeSelect.onchange = () => {
-                this.renderTreeFilters();
-                this.applyTreeFilters();
+        // Filtro en cascada: "Ver Todos"
+        const btnCascadeReset = document.getElementById('cascade-reset');
+        if (btnCascadeReset) {
+            btnCascadeReset.onclick = () => {
+                this.cascadeActivos = null;               // null = todo activo, se recalcula al renderizar
+                this.cascadeAbiertas = new Set();
+                this.cascadeSupsAbiertos = new Set();
+                this.cascadePromsAbiertos = new Set();
+                this.renderCascadeFilters();
+                this.applyCascadeFilters();
             };
         }
         // Config
@@ -214,10 +216,276 @@ const UI = {
             };
         });
     },
+    // ============================================
+    // FILTRO EN CASCADA: Día > Supervisor > Promotor > Cliente
+    // Estado: claves "FREC|SUPERVISORID|PROMOTORID|CLIENTEID" activas.
+    // ============================================
+    cascadeAbiertas: null,        // Set de frecuencias con el panel desplegado
+    cascadeSupsAbiertos: null,    // Set de "SUPERVISORID@FREC"
+    cascadePromsAbiertos: null,   // Set de "PROMOTORID@SUPERVISORID@FREC"
+    cascadeActivos: null,         // Set de claves activas
+    cascadeJerarquia: null,       // Map FREC -> Map(SUP -> Map(PROM -> [idsCliente]))
+
+    // Se arma desde los CLIENTES (no desde supervisores[]/promotores[]), para que cada
+    // combinación sea independiente y no reaparezca el bug de promotores compartidos.
+    buildCascadeJerarquia() {
+        const jer = new Map();
+        DataService.data.clientes.forEach(c => {
+            const f = c.FrecuenciaGrupo || 'Sin Frecuencia';
+            if (!jer.has(f)) jer.set(f, new Map());
+            if (!jer.get(f).has(c.SupervisorID)) jer.get(f).set(c.SupervisorID, new Map());
+            if (!jer.get(f).get(c.SupervisorID).has(c.PromotorID)) jer.get(f).get(c.SupervisorID).set(c.PromotorID, []);
+            jer.get(f).get(c.SupervisorID).get(c.PromotorID).push(c.ID);
+        });
+        return jer;
+    },
+
+    cascadeClave(f, s, p, id) { return f + '|' + s + '|' + p + '|' + id; },
+
+    cascadeTodasLasClaves() {
+        const claves = [];
+        this.cascadeJerarquia.forEach((sups, f) => {
+            sups.forEach((proms, s) => proms.forEach((ids, p) => ids.forEach(id => claves.push(this.cascadeClave(f, s, p, id)))));
+        });
+        return claves;
+    },
+
+    // Devuelve las claves de un alcance: (f) | (f,s) | (f,s,p)
+    cascadeClaves(f, s, p) {
+        const claves = [];
+        const sups = this.cascadeJerarquia.get(f);
+        if (!sups) return claves;
+        const agregarProm = (sid, pid, ids) => ids.forEach(id => claves.push(this.cascadeClave(f, sid, pid, id)));
+        if (s === undefined) {
+            sups.forEach((proms, sid) => proms.forEach((ids, pid) => agregarProm(sid, pid, ids)));
+        } else if (p === undefined) {
+            const proms = sups.get(s);
+            if (proms) proms.forEach((ids, pid) => agregarProm(s, pid, ids));
+        } else {
+            const proms = sups.get(s);
+            const ids = proms && proms.get(p);
+            if (ids) agregarProm(s, p, ids);
+        }
+        return claves;
+    },
+
+    renderCascadeFilters() {
+        const cont = document.getElementById('cascade-chips');
+        const panel = document.getElementById('cascade-panel');
+        if (!cont || !panel) return;
+
+        this.cascadeJerarquia = this.buildCascadeJerarquia();
+        if (!this.cascadeActivos) this.cascadeActivos = new Set(this.cascadeTodasLasClaves());
+        if (!this.cascadeAbiertas) this.cascadeAbiertas = new Set();
+        if (!this.cascadeSupsAbiertos) this.cascadeSupsAbiertos = new Set();
+        if (!this.cascadePromsAbiertos) this.cascadePromsAbiertos = new Set();
+
+        const ORDEN = ['LU-JU', 'MA-VI', 'MI-SA'];
+        const freqs = [...this.cascadeJerarquia.keys()].sort((a, b) => {
+            const ia = ORDEN.indexOf(a), ib = ORDEN.indexOf(b);
+            if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+            return a.localeCompare(b);
+        });
+
+        // ---- Nivel 1: chips de Día de Visita ----
+        cont.innerHTML = '';
+        freqs.forEach(f => {
+            const sups = this.cascadeJerarquia.get(f);
+            const claves = this.cascadeClaves(f);
+            const activos = claves.filter(k => this.cascadeActivos.has(k)).length;
+            const st = activos === 0 ? 'none' : (activos === claves.length ? 'all' : 'partial');
+            const abierta = this.cascadeAbiertas.has(f);
+
+            const chip = document.createElement('div');
+            chip.className = 'chip ' + st;
+
+            const sel = document.createElement('button');
+            sel.type = 'button';
+            sel.className = 'chip-sel';
+            sel.textContent = f + ' (' + sups.size + ')';   // nº de supervisores
+            sel.title = 'Seleccionar / deseleccionar todo ' + f;
+            sel.onclick = () => {
+                const todas = claves.every(k => this.cascadeActivos.has(k));
+                claves.forEach(k => { if (todas) this.cascadeActivos.delete(k); else this.cascadeActivos.add(k); });
+                this.renderCascadeFilters();
+                this.applyCascadeFilters();
+            };
+            chip.appendChild(sel);
+
+            const abr = document.createElement('button');
+            abr.type = 'button';
+            abr.className = 'chip-open' + (abierta ? ' open' : '');
+            abr.innerHTML = '<i class="fas fa-chevron-down"></i>';
+            abr.title = 'Desplegar / cerrar';
+            abr.onclick = () => {
+                if (abierta) this.cascadeAbiertas.delete(f); else this.cascadeAbiertas.add(f);
+                this.renderCascadeFilters();
+            };
+            chip.appendChild(abr);
+
+            cont.appendChild(chip);
+        });
+
+        // ---- Niveles 2, 3 y 4 ----
+        panel.innerHTML = '';
+        freqs.filter(f => this.cascadeAbiertas.has(f)).forEach(f => {
+            const sups = this.cascadeJerarquia.get(f);
+
+            const seccion = document.createElement('div');
+            seccion.className = 'chip-section';
+
+            const titulo = document.createElement('div');
+            titulo.className = 'chip-section-title';
+            titulo.textContent = f;
+            seccion.appendChild(titulo);
+
+            sups.forEach((proms, sid) => {
+                const sup = DataService.getSupervisor(sid);
+                const clavesS = this.cascadeClaves(f, sid);
+                const activasS = clavesS.filter(k => this.cascadeActivos.has(k)).length;
+                const abiertoSup = this.cascadeSupsAbiertos.has(sid + '@' + f);
+
+                const fila = document.createElement('div');
+                fila.className = 'chip-row';
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = activasS === clavesS.length;
+                cb.indeterminate = activasS > 0 && activasS < clavesS.length;
+                cb.onchange = () => {
+                    clavesS.forEach(k => { if (cb.checked) this.cascadeActivos.add(k); else this.cascadeActivos.delete(k); });
+                    this.renderCascadeFilters();
+                    this.applyCascadeFilters();
+                };
+                fila.appendChild(cb);
+
+                const col = document.createElement('span');
+                col.className = 'chip-color';
+                col.style.background = sup ? sup.Color : '#666';
+                fila.appendChild(col);
+
+                const nom = document.createElement('span');
+                nom.className = 'chip-name';
+                nom.textContent = sup ? sup.Nombre : sid;
+                fila.appendChild(nom);
+
+                const cnt = document.createElement('span');
+                cnt.className = 'chip-count';
+                cnt.textContent = proms.size;              // nº de promotores
+                fila.appendChild(cnt);
+
+                const chev = document.createElement('button');
+                chev.className = 'chip-chevron' + (abiertoSup ? ' open' : '');
+                chev.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                chev.onclick = () => {
+                    if (abiertoSup) this.cascadeSupsAbiertos.delete(sid + '@' + f);
+                    else this.cascadeSupsAbiertos.add(sid + '@' + f);
+                    this.renderCascadeFilters();
+                };
+                fila.appendChild(chev);
+
+                seccion.appendChild(fila);
+                if (!abiertoSup) return;
+
+                proms.forEach((ids, pid) => {
+                    const prom = DataService.getPromotor(pid);
+                    const clavesP = this.cascadeClaves(f, sid, pid);
+                    const activasP = clavesP.filter(k => this.cascadeActivos.has(k)).length;
+                    const abiertoProm = this.cascadePromsAbiertos.has(pid + '@' + sid + '@' + f);
+
+                    const sub = document.createElement('div');
+                    sub.className = 'chip-subrow';
+
+                    const cb2 = document.createElement('input');
+                    cb2.type = 'checkbox';
+                    cb2.checked = activasP === clavesP.length;
+                    cb2.indeterminate = activasP > 0 && activasP < clavesP.length;
+                    cb2.onchange = () => {
+                        clavesP.forEach(k => { if (cb2.checked) this.cascadeActivos.add(k); else this.cascadeActivos.delete(k); });
+                        this.renderCascadeFilters();
+                        this.applyCascadeFilters();
+                    };
+                    sub.appendChild(cb2);
+
+                    const col2 = document.createElement('span');
+                    col2.className = 'chip-color';
+                    col2.style.background = prom ? prom.Color : '#666';
+                    sub.appendChild(col2);
+
+                    const nom2 = document.createElement('span');
+                    nom2.className = 'chip-name';
+                    nom2.textContent = prom ? prom.Nombre : pid;
+                    sub.appendChild(nom2);
+
+                    const cnt2 = document.createElement('span');
+                    cnt2.className = 'chip-count';
+                    cnt2.textContent = ids.length;          // nº de clientes
+                    sub.appendChild(cnt2);
+
+                    const chev2 = document.createElement('button');
+                    chev2.className = 'chip-chevron' + (abiertoProm ? ' open' : '');
+                    chev2.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                    chev2.onclick = () => {
+                        if (abiertoProm) this.cascadePromsAbiertos.delete(pid + '@' + sid + '@' + f);
+                        else this.cascadePromsAbiertos.add(pid + '@' + sid + '@' + f);
+                        this.renderCascadeFilters();
+                    };
+                    sub.appendChild(chev2);
+
+                    seccion.appendChild(sub);
+                    if (!abiertoProm) return;
+
+                    ids.forEach(id => {
+                        const cli = DataService.byId ? DataService.byId.get(id) : null;
+                        const clave = this.cascadeClave(f, sid, pid, id);
+
+                        const filaCli = document.createElement('div');
+                        filaCli.className = 'chip-clientrow';
+
+                        const cb3 = document.createElement('input');
+                        cb3.type = 'checkbox';
+                        cb3.checked = this.cascadeActivos.has(clave);
+                        cb3.onchange = () => {
+                            if (cb3.checked) this.cascadeActivos.add(clave);
+                            else this.cascadeActivos.delete(clave);
+                            this.renderCascadeFilters();
+                            this.applyCascadeFilters();
+                        };
+                        filaCli.appendChild(cb3);
+
+                        const nom3 = document.createElement('span');
+                        nom3.className = 'chip-name';
+                        nom3.textContent = cli ? ('#' + (cli.Codigo || cli.ID) + ' - ' + cli.Nombre) : id;
+                        filaCli.appendChild(nom3);
+
+                        seccion.appendChild(filaCli);
+                    });
+                });
+            });
+
+            panel.appendChild(seccion);
+        });
+    },
+
+    applyCascadeFilters() {
+        if (!this.cascadeJerarquia) this.cascadeJerarquia = this.buildCascadeJerarquia();
+        if (!this.cascadeActivos) this.cascadeActivos = new Set(this.cascadeTodasLasClaves());
+
+        const visibles = new Set();
+        DataService.data.clientes.forEach(c => {
+            const f = c.FrecuenciaGrupo || 'Sin Frecuencia';
+            if (this.cascadeActivos.has(this.cascadeClave(f, c.SupervisorID, c.PromotorID, c.ID))) visibles.add(c.ID);
+        });
+        this.activeClients = visibles;
+
+        const checkbox = document.getElementById('floating-show-clients');
+        const globalShow = checkbox ? checkbox.checked : true;
+        MapManager.updateClientVisibility(visibles, globalShow);
+    },
 
     // --- DATA RENDERING ---
     renderUI() {
-        this.renderTreeFilters();
+        this.renderCascadeFilters();
         this.renderClientList(DataService.data.clientes);
         this.renderPrintDropdowns();
         this.updatePrintPreview();
@@ -515,8 +783,8 @@ const UI = {
     },
 
     applyClientFilters() {
-        // Kept for floating layer backwards compatibility
-        this.applyTreeFilters();
+        // Usado por el panel de capas del mapa y por app.js/map.js
+        this.applyCascadeFilters();
     },
 
     filterClients(query) {

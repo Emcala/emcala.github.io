@@ -971,3 +971,106 @@ body {
     #sidebar:not(.sidebar-open) { transform: translateX(-100%); width: var(--sidebar-width); }
     .header-stats { display: none; }
 }
+
+/* ==========================================
+   FILTRO EN CASCADA: Día > Supervisor > Promotor > Cliente
+   ========================================== */
+.chip-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-tertiary);
+    overflow: hidden;
+}
+.chip-sel {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 6px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.chip-open {
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 0 8px;
+    cursor: pointer;
+    font-size: 9px;
+}
+.chip-open i { display: inline-block; transition: transform 0.2s; }
+.chip-open.open i { transform: rotate(180deg); }
+
+.chip.all { background: var(--accent-primary); border-color: var(--accent-primary); }
+.chip.all .chip-sel { color: #06231a; }
+.chip.all .chip-open { color: #06231a; border-left-color: rgba(0,0,0,0.2); }
+.chip.partial { background: var(--accent-glow); border-color: var(--accent-primary); }
+.chip.partial .chip-sel { color: var(--accent-primary); }
+.chip.none .chip-sel { color: var(--text-muted); }
+
+.chip-panel {
+    display: none;
+    margin-top: 8px;
+    padding: 4px 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    max-height: 55vh;
+    overflow-y: auto;
+}
+.chip-panel:not(:empty) { display: block; }
+
+.chip-section-title {
+    padding: 8px 12px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent-primary);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    background: var(--bg-secondary);
+    z-index: 1;
+}
+
+.chip-row, .chip-subrow, .chip-clientrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.chip-row { font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border-color); }
+.chip-subrow { padding-left: 34px; font-weight: 500; color: var(--text-secondary); }
+.chip-clientrow { padding-left: 56px; font-weight: 400; color: var(--text-muted); font-size: 11px; }
+.chip-row:hover, .chip-subrow:hover, .chip-clientrow:hover { background: var(--bg-tertiary); }
+
+.chip-row input[type=checkbox], .chip-subrow input[type=checkbox], .chip-clientrow input[type=checkbox] {
+    width: 13px; height: 13px; flex-shrink: 0; cursor: pointer;
+    accent-color: var(--accent-primary);
+}
+.chip-color { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.chip-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.chip-count { color: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chip-chevron {
+    background: none; border: none; padding: 0 2px; margin-left: 4px;
+    color: var(--text-muted); font-size: 10px; line-height: 1; cursor: pointer;
+}
+.chip-chevron i { display: inline-block; transition: transform 0.2s; }
+.chip-chevron.open i { transform: rotate(180deg); }
