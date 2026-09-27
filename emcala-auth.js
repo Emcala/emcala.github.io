@@ -180,9 +180,7 @@ const EmcalaAuth = (() => {
       supervisor: '#2563EB',
       trade:      '#D97706',
       tecnico:    '#059669',
-      promotor:   '#0891B2',
-      merch:      '#DB2777',
-      admin:      '#DC2626'
+      promotor:   '#0891B2'
     };
 
     const rolColor = rolColors[session.rol.toLowerCase()] || '#6B7280';
