@@ -41,7 +41,7 @@ function parseCoordinate(coordStr) {
 
 
 const DataService = {
-    data: { supervisores: [], promotores: [], clientes: [], vendedores: [], localidades: [] },
+    data: { supervisores: [], promotores: [], clientes: [], localidades: [] },
 
     async loadData() {
         // cache:'no-cache' evita que GitHub Pages sirva una copia vieja del CSV.
@@ -110,7 +110,6 @@ const DataService = {
         let supervisores = [];
         let promotores = [];
         let clientes = [];
-        let vendedoresSet = new Set();
         let localidadesSet = new Set();
 
         // Read from localStorage if available (only once)
@@ -160,7 +159,6 @@ const DataService = {
                 });
             }
 
-            if (vendedorVal) vendedoresSet.add(vendedorVal);
             if (localidadVal) localidadesSet.add(localidadVal);
 
             const codigoVal = getVal('codigo') || ('C' + clientes.length);
@@ -207,10 +205,7 @@ const DataService = {
                 Localidad: localidadVal,
                 Frecuencia: freqStr,
                 FrecuenciaGrupo: freqGroup,
-                FrecuenciaColor: freqColor,
-                Prioridad: '',
-                Telefono: '',
-                Notas: ''
+                FrecuenciaColor: freqColor
             });
         });
 
@@ -229,16 +224,10 @@ const DataService = {
             }
         });
 
-        // Build vendedores and localidades arrays for filters
-        const vendedores = [...vendedoresSet].sort((a, b) => {
-            const na = parseInt(a), nb = parseInt(b);
-            if (!isNaN(na) && !isNaN(nb)) return na - nb;
-            return a.localeCompare(b);
-        }).map((v, i) => ({ Nombre: v, Color: generateColor(i + 3) }));
-
+        // Build localidades array for filters
         const localidades = [...localidadesSet].sort().map((l, i) => ({ Nombre: l, Color: generateColor(i + 7) }));
 
-        this.data = { supervisores, promotores, clientes, vendedores, localidades };
+        this.data = { supervisores, promotores, clientes, localidades };
         this.byId = new Map(clientes.map(c => [c.ID, c]));
 
         const validCoords = clientes.filter(c => !isNaN(c.Latitud) && !isNaN(c.Longitud));
@@ -286,13 +275,28 @@ const DataService = {
 
     getSupervisor(id) { return this.data.supervisores.find(s => s.ID === id); },
     getPromotor(id) { return this.data.promotores.find(p => p.ID === id); },
-    getPromotoresBySupervisor(sid) {
-        const pIds = new Set(this.data.clientes.filter(c => c.SupervisorID === sid).map(c => c.PromotorID));
-        return this.data.promotores.filter(p => pIds.has(p.ID));
-    },
-    getClientsBySupervisor(sid) { return this.data.clientes.filter(c => c.SupervisorID === sid); },
     getClientsByPromotor(pid) { return this.data.clientes.filter(c => c.PromotorID === pid); },
-    
+    // Clientes que caen dentro de una geometría (polígono) dibujada
+    getClientsInGeometry(geometry) {
+        if (!geometry) return [];
+        return this.data.clientes.filter(c =>
+            !isNaN(c.Latitud) && !isNaN(c.Longitud) &&
+            turf.booleanPointInPolygon(
+                turf.point([c.Longitud, c.Latitud]),
+                { type: 'Feature', geometry: geometry, properties: {} }
+            )
+        );
+    },
+    // Conteo de supervisores, promotores y clientes dentro de una geometría
+    getZoneStats(geometry) {
+        const clientes = this.getClientsInGeometry(geometry);
+        return {
+            clientes: clientes.length,
+            promotores: new Set(clientes.map(c => c.PromotorID)).size,
+            supervisores: new Set(clientes.map(c => c.SupervisorID)).size
+        };
+    },
+
     searchClients(query) {
         const q = query.toLowerCase().trim();
         if (!q) return this.data.clientes;

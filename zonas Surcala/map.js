@@ -175,22 +175,13 @@ const MapManager = {
             localStorage.setItem('surcala_map_zoom', this.map.getZoom());
         });
 
-        // Popup logic
-        this.popup = new maplibregl.Popup({
-            closeButton: true,
-            closeOnClick: true,
-            offset: 15,
-            maxWidth: '300px'
-        });
-
+        // Popup hover
         this.hoverPopup = new maplibregl.Popup({
             closeButton: false,
             closeOnClick: false,
             className: 'hover-tooltip',
             offset: 15
         });
-
-        let hoveredSupervisorID = null;
 
         this.map.on('click', 'clients-points', (e) => {
             const feature = e.features[0];
@@ -218,7 +209,6 @@ const MapManager = {
 
         this.map.on('mouseleave', 'clients-points', () => {
             this.map.getCanvas().style.cursor = '';
-            hoveredSupervisorID = null;
             this.hoverPopup.remove();
         });
     },
@@ -363,7 +353,7 @@ const MapManager = {
 
             resultsDiv.querySelectorAll('.map-search-result-item[data-id]').forEach(item => {
                 item.onclick = () => {
-                    const c = DataService.data.clientes.find(cl => cl.ID === item.dataset.id);
+                    const c = DataService.byId ? DataService.byId.get(item.dataset.id) : null;
                     if (c && !isNaN(c.Latitud) && !isNaN(c.Longitud)) {
                         input.value = c.Nombre;
                         resultsDiv.innerHTML = '';
@@ -376,14 +366,6 @@ const MapManager = {
                 };
             });
         };
-    },
-
-    toggleSelectionMode(btn) {
-        if (this.isSelectingArea) {
-            this.disableSelectionMode(btn);
-        } else {
-            this.enableSelectionMode(btn);
-        }
     },
 
     onDrawUpdate(e) {
@@ -600,21 +582,10 @@ const MapManager = {
                     PromotorName: prom ? prom.Nombre : '',
                     PromotorColor: prom ? prom.Color : '#666',
                     FrecuenciaColor: c.FrecuenciaColor,
-                    FrecuenciaGrupo: c.FrecuenciaGrupo,
-                    CodeLabel: (c.Codigo || c.ID).toString()
+                    FrecuenciaGrupo: c.FrecuenciaGrupo
                 }
             });
         });
-
-
-
-
-
-
-
-
-
-
 
         // --- Add Source & Layer for Clients ---
         this.map.addSource('clients', { type: 'geojson', data: { type: 'FeatureCollection', features: clientFeatures }});
@@ -791,11 +762,19 @@ const MapManager = {
 
             this.map.on('click', 'custom-zones-fill', (e) => {
                 const props = e.features[0].properties;
+                // Buscar la geometría por id (no confiar en que el evento la incluya)
+                const zona = DataService.getCustomZones().find(z => z.id === props.id);
+                const stats = DataService.getZoneStats(zona ? zona.geometry : null);
                 new maplibregl.Popup({ className: 'custom-popup' })
                     .setLngLat(e.lngLat)
                     .setHTML(`
-                        <div style="padding:5px;">
-                            <h3 style="margin:0 0 5px 0; color:var(--primary-color);">Zona: ${esc(props.name)}</h3>
+                        <div style="padding:6px; min-width:160px;">
+                            <h3 style="margin:0 0 8px 0; font-size:14px; color:var(--accent-primary);">${esc(props.name)}</h3>
+                            <div style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--text-primary);">
+                                <span><i class="fas fa-user-shield" style="display:inline-block; width:16px; color:var(--text-muted);"></i> Supervisores: <strong>${stats.supervisores}</strong></span>
+                                <span><i class="fas fa-user-tie" style="display:inline-block; width:16px; color:var(--text-muted);"></i> Promotores: <strong>${stats.promotores}</strong></span>
+                                <span><i class="fas fa-store" style="display:inline-block; width:16px; color:var(--text-muted);"></i> Clientes: <strong>${stats.clientes}</strong></span>
+                            </div>
                         </div>
                     `)
                     .addTo(this.map);

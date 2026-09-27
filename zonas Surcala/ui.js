@@ -178,13 +178,17 @@ const UI = {
         let html = '';
         zones.forEach(z => {
             const isVis = z.visible !== false;
+            const stats = DataService.getZoneStats(z.geometry);
             html += `
-            <div class="tree-node level-1" style="display:flex; align-items:center; justify-content:space-between; padding: 8px; border-bottom: 1px solid var(--border-color);">
-                <div style="display:flex; align-items:center; gap: 10px;">
-                    <div style="width:16px; height:16px; border-radius:3px; background:${esc(z.color)}"></div>
-                    <span style="font-size:13px; font-weight:500;">${esc(z.name)}</span>
+            <div class="tree-node level-1" style="display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:8px; padding: 8px; border-bottom: 1px solid var(--border-color);">
+                <div style="display:flex; flex-direction:column; gap:2px; flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:16px; height:16px; border-radius:3px; background:${esc(z.color)}"></div>
+                        <span style="font-size:13px; font-weight:500;">${esc(z.name)}</span>
+                    </div>
+                    <span style="font-size:11px; color:var(--text-secondary); padding-left:26px;">${stats.clientes} clientes · ${stats.promotores} promotores · ${stats.supervisores} supervisores</span>
                 </div>
-                <div style="display:flex; gap: 8px;">
+                <div style="display:flex; gap:8px; flex-shrink:0;">
                     <button class="link-btn toggle-zone-vis" data-id="${esc(z.id)}" style="color:var(--text-secondary);" title="${isVis ? 'Ocultar' : 'Mostrar'}">
                         <i class="fas ${isVis ? 'fa-eye' : 'fa-eye-slash'}"></i>
                     </button>
@@ -523,263 +527,10 @@ const UI = {
         
         list.querySelectorAll('.client-item').forEach(el => {
             el.onclick = () => {
-                const id = el.dataset.id;
-                const c = DataService.data.clientes.find(cli => cli.ID == id);
+                const c = DataService.byId ? DataService.byId.get(el.dataset.id) : null;
                 if (c) MapManager.flyToClient(c);
             };
         });
-    },
-
-
-    // --- TREE FILTERS ---
-    renderTreeFilters() {
-        const { supervisores, promotores, clientes } = DataService.data;
-        const treeList = document.getElementById('tree-filters-list');
-        
-        // Initialize active clients with all clients
-        this.activeClients = new Set(clientes.map(c => c.ID));
-
-        const groupModeSelect = document.getElementById('tree-group-mode');
-        const mode = groupModeSelect ? groupModeSelect.value : 'supervisor';
-
-        let html = '';
-        
-        if (mode === 'supervisor') {
-            supervisores.forEach(sup => {
-                const supClientes = clientes.filter(c => c.SupervisorID === sup.ID);
-                const promIds = new Set(supClientes.map(c => c.PromotorID));
-                const supPromotores = promotores.filter(p => promIds.has(p.ID));
-                if (supClientes.length === 0) return;
-
-                html += `
-                <div class="tree-node level-1">
-                    <div class="tree-header">
-                        <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
-                        <div class="tree-checkbox-wrap">
-                            <input type="checkbox" class="tree-checkbox" data-level="sup" value="${sup.ID}" checked>
-                        </div>
-                        <div class="tree-color" style="background:${sup.Color}"></div>
-                        <div class="tree-name">${esc(sup.Nombre)}</div>
-                        <div class="tree-count">${supClientes.length}</div>
-                    </div>
-                    <div class="tree-children">
-                `;
-
-                supPromotores.forEach(prom => {
-                    const promClientes = supClientes.filter(c => c.PromotorID === prom.ID);
-                    if (promClientes.length === 0) return;
-
-                    // Group by Frecuencia
-                    const freqGroups = {};
-                    promClientes.forEach(c => {
-                        const f = c.FrecuenciaGrupo;
-                        if(!freqGroups[f]) freqGroups[f] = { clients: [], color: c.FrecuenciaColor, name: c.Frecuencia || f };
-                        freqGroups[f].clients.push(c);
-                    });
-
-                    html += `
-                    <div class="tree-node level-2">
-                        <div class="tree-header">
-                            <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
-                            <div class="tree-checkbox-wrap">
-                                <input type="checkbox" class="tree-checkbox" data-level="prom" value="${prom.ID}" checked>
-                            </div>
-                            <div class="tree-color" style="background:${prom.Color}"></div>
-                            <div class="tree-name">${esc(prom.Nombre)}</div>
-                            <div class="tree-count">${promClientes.length}</div>
-                        </div>
-                        <div class="tree-children">
-                    `;
-
-                    for (const [freq, groupData] of Object.entries(freqGroups)) {
-                        html += `
-                        <div class="tree-node level-3">
-                            <div class="tree-header">
-                                <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
-                                <div class="tree-checkbox-wrap">
-                                    <input type="checkbox" class="tree-checkbox" data-level="freq" value="${prom.ID}-${freq}" checked>
-                                </div>
-                                <div class="tree-color" style="background:${groupData.color}"></div>
-                                <div class="tree-name">${freq}</div>
-                                <div class="tree-count">${groupData.clients.length}</div>
-                            </div>
-                            <div class="tree-children">
-                        `;
-
-                        groupData.clients.forEach(c => {
-                            html += `
-                            <div class="tree-node empty level-4">
-                                <div class="tree-header">
-                                    <div class="tree-toggle"></div>
-                                    <div class="tree-checkbox-wrap">
-                                        <input type="checkbox" class="tree-checkbox" data-level="cli" value="${c.ID}" checked>
-                                    </div>
-                                    <div class="tree-name">#${esc(c.Codigo || c.ID)} - ${esc(c.Nombre)}</div>
-                                </div>
-                            </div>
-                            `;
-                        });
-
-                        html += `</div></div>`; // End Freq
-                    }
-
-                    html += `</div></div>`; // End Promotor
-                });
-
-                html += `</div></div>`; // End Supervisor
-            });
-        } else if (mode === 'frecuencia') {
-            const freqGroups = {};
-            clientes.forEach(c => {
-                const f = c.FrecuenciaGrupo || 'Sin Frecuencia';
-                if (!freqGroups[f]) freqGroups[f] = { clients: [], color: c.FrecuenciaColor, name: f };
-                freqGroups[f].clients.push(c);
-            });
-
-            for (const [freq, groupData] of Object.entries(freqGroups)) {
-                if (groupData.clients.length === 0) continue;
-
-                html += `
-                <div class="tree-node level-1">
-                    <div class="tree-header">
-                        <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
-                        <div class="tree-checkbox-wrap">
-                            <input type="checkbox" class="tree-checkbox" data-level="freq-top" value="${freq}" checked>
-                        </div>
-                        <div class="tree-color" style="background:${groupData.color}"></div>
-                        <div class="tree-name">${freq}</div>
-                        <div class="tree-count">${groupData.clients.length}</div>
-                    </div>
-                    <div class="tree-children">
-                `;
-
-                const promGroups = {};
-                groupData.clients.forEach(c => {
-                    const p = c.PromotorID;
-                    const prom = DataService.getPromotor(p);
-                    if (!promGroups[p]) promGroups[p] = { 
-                        clients: [], 
-                        color: prom ? prom.Color : '#666', 
-                        name: prom ? prom.Nombre : 'Sin Promotor' 
-                    };
-                    promGroups[p].clients.push(c);
-                });
-
-                for (const [promId, promData] of Object.entries(promGroups)) {
-                    if (promData.clients.length === 0) continue;
-
-                    html += `
-                    <div class="tree-node level-2">
-                        <div class="tree-header">
-                            <div class="tree-toggle"><i class="fas fa-chevron-right"></i></div>
-                            <div class="tree-checkbox-wrap">
-                                <input type="checkbox" class="tree-checkbox" data-level="prom-sub" value="${promId}-${freq}" checked>
-                            </div>
-                            <div class="tree-color" style="background:${promData.color}"></div>
-                            <div class="tree-name">${promData.name}</div>
-                            <div class="tree-count">${promData.clients.length}</div>
-                        </div>
-                        <div class="tree-children">
-                    `;
-
-                    promData.clients.forEach(c => {
-                        html += `
-                        <div class="tree-node empty level-3">
-                            <div class="tree-header">
-                                <div class="tree-toggle"></div>
-                                <div class="tree-checkbox-wrap">
-                                    <input type="checkbox" class="tree-checkbox" data-level="cli" value="${c.ID}" checked>
-                                </div>
-                                <div class="tree-name">#${esc(c.Codigo || c.ID)} - ${esc(c.Nombre)}</div>
-                            </div>
-                        </div>
-                        `;
-                    });
-
-                    html += `</div></div>`; // End Promotor
-                }
-
-                html += `</div></div>`; // End Frecuencia
-            }
-        }
-
-        treeList.innerHTML = html;
-        this.bindTreeEvents();
-    },
-
-    bindTreeEvents() {
-        const treeList = document.getElementById('tree-filters-list');
-        
-        // Accordion toggle
-        treeList.querySelectorAll('.tree-header').forEach(header => {
-            header.onclick = (e) => {
-                // Don't toggle accordion if clicking on checkbox
-                if (e.target.tagName.toLowerCase() === 'input') return;
-                const node = header.closest('.tree-node');
-                if (!node.classList.contains('empty')) {
-                    node.classList.toggle('expanded');
-                }
-            };
-        });
-
-        // Checkbox cascade
-        treeList.querySelectorAll('.tree-checkbox').forEach(cb => {
-            cb.onchange = (e) => {
-                const checked = e.target.checked;
-                const node = e.target.closest('.tree-node');
-                
-                // Cascade DOWN: check/uncheck all children
-                node.querySelectorAll('.tree-checkbox').forEach(childCb => {
-                    childCb.checked = checked;
-                });
-
-                // Cascade UP: if a child is unchecked, uncheck parents. If checked, check if all siblings are checked
-                this.updateParentCheckboxes(node);
-                
-                this.applyTreeFilters();
-            };
-        });
-    },
-
-    updateParentCheckboxes(node) {
-        let parentNode = node.parentElement.closest('.tree-node');
-        while (parentNode) {
-            const parentCb = parentNode.querySelector(':scope > .tree-header .tree-checkbox');
-            if (parentCb) {
-                const siblingCbs = parentNode.querySelectorAll(':scope > .tree-children > .tree-node > .tree-header .tree-checkbox');
-                let allChecked = true;
-                let someChecked = false;
-                siblingCbs.forEach(cb => {
-                    if (cb.checked) someChecked = true;
-                    else allChecked = false;
-                });
-                parentCb.checked = allChecked;
-                // We could add indeterminate state here if someChecked && !allChecked, but simple true/false works for now.
-            }
-            parentNode = parentNode.parentElement.closest('.tree-node');
-        }
-    },
-
-    applyTreeFilters() {
-        this.activeClients.clear();
-        const clientCbs = document.querySelectorAll('.tree-checkbox[data-level="cli"]');
-        clientCbs.forEach(cb => {
-            if (cb.checked) {
-                this.activeClients.add(cb.value);
-            }
-        });
-        
-        const checkbox = document.getElementById('floating-show-clients');
-        const globalShow = checkbox ? checkbox.checked : true;
-        
-        MapManager.updateClientVisibility(this.activeClients, globalShow);
-    },
-
-    toggleAllTree(btn) {
-        const checkAll = btn.textContent === 'Marcar Todos';
-        document.querySelectorAll('.tree-checkbox').forEach(cb => cb.checked = checkAll);
-        btn.textContent = checkAll ? 'Desmarcar Todos' : 'Marcar Todos';
-        this.applyTreeFilters();
     },
 
     applyClientFilters() {
@@ -862,7 +613,7 @@ const UI = {
         let html = '<table class="preview-table"><thead><tr>';
         html += '<th>Código</th><th>Razón Social</th><th>Dirección</th><th>Loc.</th><th>Zona</th>';
         html += '</tr></thead><tbody>';
-        previewClients.forEach((c, i) => {
+        previewClients.forEach((c) => {
             html += `<tr>
                 <td>${esc(c.Codigo || c.ID)}</td>
                 <td>${esc(c.Nombre)}</td>
@@ -971,8 +722,6 @@ const UI = {
         document.getElementById('color-luju').value = freqColors['LU-JU'];
         document.getElementById('color-mavi').value = freqColors['MA-VI'];
         document.getElementById('color-misa').value = freqColors['MI-SA'];
-
-        return config;
     },
 
     saveConfig() {
