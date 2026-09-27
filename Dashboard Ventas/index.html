@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="../emcala-config.js"></script>
+<script src="../emcala-dates.js"></script>
 <script src="../emcala-auth.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -542,49 +543,27 @@ async function cargarDashboard() {
 }
 
 function calcularDiasMes(mesStr, maxDateStr) {
-  const parts = mesStr.split('-');
-  const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10);
-  const diasEnMes = new Date(year, month, 0).getDate();
-  
-  let habiles = 0;
-  let pesoTotal = 0;
-  let trabajados = 0;
-  let pesoPasado = 0;
-  
-  // Feriados: referencia al archivo compartido emcala-config.js, formato MM-DD para este cálculo
-  const sharedHolidays = (typeof EMCALA_HOLIDAYS !== 'undefined') ? EMCALA_HOLIDAYS : [
-    '2026-01-01','2026-02-16','2026-02-17','2026-03-24','2026-04-02','2026-04-03',
-    '2026-05-01','2026-05-25','2026-06-15','2026-06-20','2026-07-09','2026-08-17',
-    '2026-10-12','2026-11-20','2026-12-08','2026-12-25'
-  ];
-  const feriados = sharedHolidays.map(d => d.substring(5)); // YYYY-MM-DD → MM-DD
-  
-  for (let d = 1; d <= diasEnMes; d++) {
-    const fecha = new Date(year, month - 1, d);
-    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const mdStr = `${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dayOfWeek = fecha.getDay();
-    
-    if (dayOfWeek === 0) continue; // Domingo
-    if (feriados.includes(mdStr)) continue; // Feriado
-    
-    const pesoDia = (dayOfWeek === 6) ? 0.6 : 1.0;
-    
-    habiles++;
-    pesoTotal += pesoDia;
-    
-    if (dateStr <= maxDateStr) {
-      trabajados++;
-      pesoPasado += pesoDia;
-    }
+  const p = mesStr.split('-');
+  const year = parseInt(p[0], 10);
+  const month = parseInt(p[1], 10);
+
+  const primerDia = new Date(year, month - 1, 1);
+  const ultimoDia = new Date(year, month, 0);
+  const total = contarDiasHabiles(primerDia, ultimoDia);
+
+  const mp = String(maxDateStr).split('-');
+  const maxDia = new Date(parseInt(mp[0], 10), parseInt(mp[1], 10) - 1, parseInt(mp[2], 10));
+
+  let pasado = { dias: 0, peso: 0 };
+  if (maxDia >= primerDia) {
+    pasado = contarDiasHabiles(primerDia, maxDia < ultimoDia ? maxDia : ultimoDia);
   }
-  
+
   return {
-    diasHabiles: habiles,
-    diasPeso: parseFloat(pesoTotal.toFixed(2)),
-    diasTrabajados: trabajados,
-    pesoPasado: parseFloat(pesoPasado.toFixed(2))
+    diasHabiles: total.dias,
+    diasPeso: parseFloat(total.peso.toFixed(2)),
+    diasTrabajados: pasado.dias,
+    pesoPasado: parseFloat(pasado.peso.toFixed(2))
   };
 }
 
