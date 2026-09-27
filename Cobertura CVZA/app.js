@@ -42,11 +42,7 @@ async function fetchJsonRetry(url, options, maxRetries = 4) {
     try {
       const r = await fetch(url, options);
       
-      // 4xx (excepto 429) → no reintentar, es un error definitivo
-      if (r.status >= 400 && r.status < 500 && r.status !== 429) {
-        throw new Error('HTTP ' + r.status + ' (no retry)');
-      }
-      
+
       if (!r.ok) throw new Error('HTTP ' + r.status);
       
       // Leer texto primero — si viene HTML (redirect fallido) o texto plano, detectarlo
@@ -63,7 +59,7 @@ async function fetchJsonRetry(url, options, maxRetries = 4) {
       }
     } catch (e) {
       lastError = e;
-      if (e.message.includes('no retry')) throw e;
+
       if (attempt === maxRetries - 1) throw e;
       // Backoff: 2s, 4s, 6s
       await new Promise(res => setTimeout(res, 2000 * (attempt + 1) + Math.random() * 1000));
