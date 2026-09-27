@@ -7,6 +7,7 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 <script src="../emcala-config.js"></script>
+<script src="../emcala-dates.js"></script>
 <script src="../emcala-auth.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="style.css">
@@ -81,12 +82,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/' + 'AKfycbzePqSmRPZhZJ9L
 const AUTH_URL   = 'https://script.google.com/macros/s/' + 'AKfycbwQ_cArrrXQ8Z1e07cpTYm62TfLkMo0vbrmWRMrWcP7XUfNeE7gqLz81aSmPQfc7tm82g/exec';
 const CLOUD_URL  = 'https://script.google.com/macros/s/' + 'AKfycbwyNIGLygcCTmkXrbVbFqnLLkt8Z9RRJ34ya1d6TooxEgtiOhahAIY1-2MagjlfNpEJrA/exec';
 
-const HOLIDAYS = (typeof EMCALA_HOLIDAYS !== 'undefined') ? EMCALA_HOLIDAYS : [
-  '2026-01-01','2026-02-16','2026-02-17','2026-03-24',
-  '2026-04-02','2026-04-03','2026-05-01','2026-05-25',
-  '2026-06-15','2026-06-20','2026-07-09','2026-08-17',
-  '2026-10-12','2026-11-20','2026-12-08','2026-12-25'
-];
+
 
 // Fetch con reintentos — Apps Script devuelve 404/HTML intermitentes
 async function fetchJsonRetry(url, options, maxRetries = 4) {
@@ -173,13 +169,7 @@ function dayKeyFromDate(dateStr){
 // MES COMERCIAL (mismo criterio que el planificador)
 // ==============================
 function computeCommercialMonth(dateStr){
-  const formatD = (d) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  const parts = dateStr.split('-');
-  let date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-  do {
-    date.setDate(date.getDate() + 1);
-  } while (date.getDay() === 0 || HOLIDAYS.includes(formatD(date)));
-  return formatD(date).substring(0, 7);
+  return getCommercialMonth(dateStr);
 }
 
 // ==============================
