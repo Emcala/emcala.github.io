@@ -80,13 +80,7 @@ const monthSelect = document.getElementById('monthSelect');
 // Calcula el mes comercial actual: el mes al que pertenece la entrega de
 // la venta de hoy (siguiente día hábil).  Misma lógica que el Planificador.
 function getCommercialMonthNow() {
-  const now = new Date();
-  const formatD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  let delivery = new Date(now);
-  do {
-    delivery.setDate(delivery.getDate() + 1);
-  } while (delivery.getDay() === 0 || FERIADOS.includes(formatD(delivery)));
-  return `${delivery.getFullYear()}-${String(delivery.getMonth()+1).padStart(2,'0')}`;
+  return getCommercialMonth(emcalaHoy());
 }
 
 function populateMonthSelector() {
@@ -371,35 +365,21 @@ function calcDiasRestantes() {
   const year = parseInt(parts[0]);
   const mon = parseInt(parts[1]) - 1; // 0-based
   
-  let startDay, lastDay;
+  const primerDia = new Date(year, mon, 1);
+  const ultimoDia = new Date(year, mon + 1, 0);
+
+  let desde;
   if (cMonth === commercialMonth) {
     // Mes comercial actual: días restantes desde mañana
     const now = new Date();
-    if (now.getMonth() === mon) {
-      // Caso normal: mes calendario == mes comercial
-      startDay = now.getDate() + 1;
-    } else {
-      // Caso borde: todavía en mes calendario anterior (ej: 31/8 → comercial Sep)
-      // La venta de hoy ya contó; los días restantes son todos los del nuevo mes.
-      startDay = 1;
-    }
-    lastDay = new Date(year, mon + 1, 0).getDate();
+    desde = (now.getMonth() === mon)
+      ? new Date(year, mon, now.getDate() + 1)   // caso normal
+      : primerDia;                               // caso borde: mes calendario anterior
   } else {
-    // Mes futuro: todos los días
-    startDay = 1;
-    lastDay = new Date(year, mon + 1, 0).getDate();
+    desde = primerDia;                           // mes futuro: todos los días
   }
-  
-  let dias = 0;
-  for (let d = startDay; d <= lastDay; d++) {
-    const dt = new Date(year, mon, d);
-    const dow = dt.getDay(); // 0=Sun … 6=Sat
-    const ds = `${year}-${String(mon + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
-    if (FERIADOS.includes(ds) || dow === 0) continue;   // feriado o domingo
-    dias += (dow === 6) ? 0.5 : 1;                      // sábado = 0.5
-  }
-  return dias;
+  return contarDiasHabiles(desde, ultimoDia).peso;
 }
 
 // ==========================================
