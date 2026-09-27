@@ -1,19 +1,3 @@
-    // Helper para formatear fecha en formato CSV (d-mmm-yy)
-    function formatCSVDate(date) {
-      const day = date.getDate();
-      const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-      const month = months[date.getMonth()];
-      const year = date.getFullYear().toString().slice(-2);
-      return `${day}-${month}-${year}`;
-    }
-
-    // Obtener la fecha del CSV para la venta (Directa 1 a 1 con la fecha del Planificador)
-    function getCSVTargetDate(plannerDateStr) {
-      const [y, m, d] = plannerDateStr.split('-').map(Number);
-      const date = new Date(y, m - 1, d);
-      return formatCSVDate(date);
-    }
-
     // Helper para parsear fecha del CSV (d-mmm-yy) a Objeto Date
     function parseCSVDateToObj(csvDateStr) {
       const parts = csvDateStr.split('-');

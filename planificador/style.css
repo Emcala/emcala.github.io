@@ -17,9 +17,7 @@
       --c-blue: #0284c7;
       --c-pink: #ec4899;
       --c-lightblue: #38bdf8;
-      --c-grey: #94a3b8;
       --c-yellow2: #fde047;
-      --c-purple: #9333ea;
       --c-purple2: #a855f7;
 
       /* Tamaños base tipo Excel - MÁXIMA COMPRESIÓN */
@@ -360,17 +358,9 @@
       color: #000;
     }
 
-    th.bg-grey {
-      background: var(--c-grey);
-    }
-
     th.bg-yellow2 {
       background: var(--c-yellow2);
       color: #000;
-    }
-
-    th.bg-purple {
-      background: var(--c-purple);
     }
 
     th.bg-purple2 {
@@ -489,10 +479,6 @@
       color: #fff;
     }
 
-    .spv-header .bg-dark {
-      background: #1e293b;
-    }
-
     .toggle-icon {
       display: inline-block;
       width: 12px;
@@ -538,7 +524,7 @@
     }
 
     @media print {
-      .hdr, #emcala-toast, #btn-toggle-hdr, #btn-floating-copy {
+      .hdr, #emcala-toast {
         display: none !important;
       }
 
@@ -993,20 +979,6 @@
         padding: 8px 14px;
       }
 
-      /* KPI bar scaling */
-      #spv-kpi-bar {
-        padding: 14px 28px !important;
-        gap: 20px !important;
-      }
-
-      #spv-kpi-bar span {
-        font-size: 13px !important;
-      }
-
-      #spv-kpi-bar select {
-        font-size: 12px !important;
-        padding: 6px 10px !important;
-      }
 
       #btn-apply-kpi {
         font-size: 12px !important;
@@ -1169,21 +1141,6 @@
         border-radius: 8px;
       }
 
-      /* KPI bar scaling */
-      #spv-kpi-bar {
-        padding: 16px 36px !important;
-        gap: 24px !important;
-      }
-
-      #spv-kpi-bar span {
-        font-size: 15px !important;
-      }
-
-      #spv-kpi-bar select {
-        font-size: 14px !important;
-        padding: 8px 12px !important;
-        border-radius: 6px !important;
-      }
 
       #btn-apply-kpi {
         font-size: 14px !important;
