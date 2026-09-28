@@ -368,9 +368,9 @@ function calcDiasRestantes() {
 
   let desde;
   if (cMonth === commercialMonth) {
-    // La venta de hoy ya contó: los días restantes arrancan mañana
+    // El día de HOY cuenta: la venta de hoy se entrega y factura MAÑANA,
+    // así que hoy sigue siendo un día de trabajo de este mes comercial.
     desde = new Date();
-    desde.setDate(desde.getDate() + 1);
   } else {
     // Mes futuro: todos sus días de planificación
     desde = new Date(commInfo.start + 'T00:00:00');
