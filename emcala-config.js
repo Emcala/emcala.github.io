@@ -21,3 +21,7 @@ const EMCALA_HOLIDAYS = [
 // Editar acá en vez de tocar ui.js cuando cambien las personas.
 const EMCALA_EXCLUDED_PROMOTORS = ['LEMOS PATRICIA'];
 const EMCALA_EXCLUDED_SPVS = ['MAYO'];
+
+// En SURCALA (Emcala + Suralnor) la columna "supervisor" de la base trae
+// 4 SPV + BDR + MAYO, pero BDR y MAYO NO son supervisores: cada uno es su propio rol.
+const EMCALA_NO_SPV = ['BDR', 'MAYO'];
