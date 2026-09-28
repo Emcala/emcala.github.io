@@ -764,14 +764,18 @@ const MapManager = {
                 const props = e.features[0].properties;
                 // Buscar la geometría por id (no confiar en que el evento la incluya)
                 const zona = DataService.getCustomZones().find(z => z.id === props.id);
-                const stats = DataService.getZoneStats(zona ? zona.geometry : null);
+                const stats = DataService.getZoneStats(
+                    zona ? zona.geometry : null,
+                    (window.UI && window.UI.activeClients) || null
+                );
                 new maplibregl.Popup({ className: 'custom-popup' })
                     .setLngLat(e.lngLat)
                     .setHTML(`
                         <div style="padding:6px; min-width:160px;">
                             <h3 style="margin:0 0 8px 0; font-size:14px; color:var(--accent-primary);">${esc(props.name)}</h3>
                             <div style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--text-primary);">
-                                <span><i class="fas fa-user-shield" style="display:inline-block; width:16px; color:var(--text-muted);"></i> Supervisores: <strong>${stats.supervisores}</strong></span>
+                                <span><i class="fas fa-user-shield" style="display:inline-block; width:16px; color:var(--text-muted);"></i> SPV: <strong>${stats.supervisores}</strong></span>
+${stats.especiales.map(e => `                                <span><i class="fas fa-user-shield" style="display:inline-block; width:16px; color:var(--text-muted);"></i> ${esc(e)}: <strong>1</strong></span>`).join('\n')}
                                 <span><i class="fas fa-user-tie" style="display:inline-block; width:16px; color:var(--text-muted);"></i> Promotores: <strong>${stats.promotores}</strong></span>
                                 <span><i class="fas fa-store" style="display:inline-block; width:16px; color:var(--text-muted);"></i> Clientes: <strong>${stats.clientes}</strong></span>
                             </div>

@@ -178,7 +178,7 @@ const UI = {
         let html = '';
         zones.forEach(z => {
             const isVis = z.visible !== false;
-            const stats = DataService.getZoneStats(z.geometry);
+            const stats = DataService.getZoneStats(z.geometry, this.activeClients);
             html += `
             <div class="tree-node level-1" style="display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:8px; padding: 8px; border-bottom: 1px solid var(--border-color);">
                 <div style="display:flex; flex-direction:column; gap:2px; flex:1; min-width:0;">
@@ -186,7 +186,7 @@ const UI = {
                         <div style="width:16px; height:16px; border-radius:3px; background:${esc(z.color)}"></div>
                         <span style="font-size:13px; font-weight:500;">${esc(z.name)}</span>
                     </div>
-                    <span style="font-size:11px; color:var(--text-secondary); padding-left:26px;">${stats.clientes} clientes · ${stats.promotores} promotores · ${stats.supervisores} supervisores</span>
+                    <span style="font-size:11px; color:var(--text-secondary); padding-left:26px;">${stats.clientes} clientes · ${stats.promotores} promotores · ${stats.supervisores} SPV${stats.especiales.map(e => ' · 1 ' + esc(e)).join('')}</span>
                 </div>
                 <div style="display:flex; gap:8px; flex-shrink:0;">
                     <button class="link-btn toggle-zone-vis" data-id="${esc(z.id)}" style="color:var(--text-secondary);" title="${isVis ? 'Ocultar' : 'Mostrar'}">
@@ -306,7 +306,23 @@ const UI = {
             const sel = document.createElement('button');
             sel.type = 'button';
             sel.className = 'chip-sel';
-            sel.textContent = f + ' (' + sups.size + ')';   // nº de supervisores
+            // Contar SOLO los tildados, separando SPV / BDR / MAYO
+            const activosSup = [...sups.keys()].filter(sid =>
+                this.cascadeClaves(f, sid).some(k => this.cascadeActivos.has(k))
+            );
+            let nSpv = 0, nBdr = 0, nMayo = 0;
+            activosSup.forEach(sid => {
+                const s = DataService.getSupervisor(sid);
+                const nombre = s ? s.Nombre : sid;
+                if (nombre === 'BDR') nBdr++;
+                else if (nombre === 'MAYO') nMayo++;
+                else nSpv++;
+            });
+            const partes = [];
+            if (nSpv) partes.push(nSpv + ' SPV');
+            if (nBdr) partes.push(nBdr + ' BDR');
+            if (nMayo) partes.push(nMayo + ' MAYO');
+            sel.textContent = f + ' (' + (partes.join(' · ') || '0') + ')';
             sel.title = 'Seleccionar / deseleccionar todo ' + f;
             sel.onclick = () => {
                 const todas = claves.every(k => this.cascadeActivos.has(k));
@@ -375,7 +391,9 @@ const UI = {
 
                 const cnt = document.createElement('span');
                 cnt.className = 'chip-count';
-                cnt.textContent = proms.size;              // nº de promotores
+                cnt.textContent = [...proms.keys()].filter(pid =>
+                    this.cascadeClaves(f, sid, pid).some(k => this.cascadeActivos.has(k))
+                ).length;                                  // nº de promotores tildados
                 fila.appendChild(cnt);
 
                 const chev = document.createElement('button');
@@ -423,7 +441,9 @@ const UI = {
 
                     const cnt2 = document.createElement('span');
                     cnt2.className = 'chip-count';
-                    cnt2.textContent = ids.length;          // nº de clientes
+                    cnt2.textContent = ids.filter(id =>
+                        this.cascadeActivos.has(this.cascadeClave(f, sid, pid, id))
+                    ).length;                              // nº de clientes tildados
                     sub.appendChild(cnt2);
 
                     const chev2 = document.createElement('button');
@@ -485,6 +505,9 @@ const UI = {
         const checkbox = document.getElementById('floating-show-clients');
         const globalShow = checkbox ? checkbox.checked : true;
         MapManager.updateClientVisibility(visibles, globalShow);
+
+        // Re-renderizar las zonas para que los contadores reflejen el filtro
+        this.renderCustomZonesList();
     },
 
     // --- DATA RENDERING ---

@@ -39,6 +39,11 @@ function parseCoordinate(coordStr) {
     return num;
 }
 
+// BDR y MAYO no son supervisores: cada uno es su propio rol (ver emcala-config.js)
+function esRolEspecial(nombre) {
+    return (typeof EMCALA_NO_SPV !== 'undefined') &&
+           EMCALA_NO_SPV.indexOf(String(nombre || '').trim().toUpperCase()) > -1;
+}
 
 const DataService = {
     data: { supervisores: [], promotores: [], clientes: [], localidades: [] },
@@ -141,6 +146,7 @@ const DataService = {
                     ID: sId,
                     Nombre: supervisorName,
                     Color: generateColor(supervisores.length),
+                    EsSpv: !esRolEspecial(supervisorName),
                     Zona: ''
                 });
             }
@@ -287,13 +293,26 @@ const DataService = {
             )
         );
     },
-    // Conteo de supervisores, promotores y clientes dentro de una geometría
-    getZoneStats(geometry) {
-        const clientes = this.getClientsInGeometry(geometry);
+    // `filtroIds` (opcional): limita el conteo a los clientes que pasan
+    // la herramienta de selección (UI.activeClients).
+    getZoneStats(geometry, filtroIds) {
+        let clientes = this.getClientsInGeometry(geometry);
+        if (filtroIds) clientes = clientes.filter(c => filtroIds.has(c.ID));
+
+        const spvIds = new Set();
+        const especiales = new Set();
+        clientes.forEach(c => {
+            const sup = this.getSupervisor(c.SupervisorID);
+            if (!sup) return;
+            if (sup.EsSpv) spvIds.add(c.SupervisorID);
+            else especiales.add(sup.Nombre);
+        });
+
         return {
             clientes: clientes.length,
             promotores: new Set(clientes.map(c => c.PromotorID)).size,
-            supervisores: new Set(clientes.map(c => c.SupervisorID)).size
+            supervisores: spvIds.size,
+            especiales: [...especiales].sort()
         };
     },
 
