@@ -109,7 +109,7 @@ const DataService = {
         return out;
     },
 
-    processRawClients(rawClients) {
+    buildStructure(rawClients) {
         let sMap = {};
         let pMap = {};
         let supervisores = [];
@@ -233,9 +233,6 @@ const DataService = {
         // Build localidades array for filters
         const localidades = [...localidadesSet].sort().map((l, i) => ({ Nombre: l, Color: generateColor(i + 7) }));
 
-        this.data = { supervisores, promotores, clientes, localidades };
-        this.byId = new Map(clientes.map(c => [c.ID, c]));
-
         const validCoords = clientes.filter(c => !isNaN(c.Latitud) && !isNaN(c.Longitud));
         console.log('Datos cargados: ' + supervisores.length + ' supervisores, ' + promotores.length + ' promotores, ' + clientes.length + ' clientes (' + validCoords.length + ' con coordenadas)');
 
@@ -276,7 +273,111 @@ const DataService = {
             console.warn('[Zonas Surcala] ' + duplicados.length + ' clientes con código duplicado (' + uniq.slice(0, 10).join(', ') + (uniq.length > 10 ? '...' : '') + ').');
         }
 
+        return { supervisores, promotores, clientes, localidades }; // Sin vendedores porque la version en Google Drive no lo declara
+    },
+
+    // Carga inicial: guarda las filas crudas (para la simulación) y arma la estructura REAL.
+    processRawClients(rawClients) {
+        this.rawRows = rawClients;
+        this.dataReal = this.buildStructure(rawClients);
+        this.data = this.dataReal;
+        this.byId = new Map(this.data.clientes.map(c => [c.ID, c]));
         this.isLoaded = true;
+    },
+
+    // ============================================================
+    // SIMULACIÓN — cambios "what-if" sin tocar la base real
+    // ============================================================
+    escenario: null,       // { activo: bool, reglas: [...] }
+
+    getEscenario() {
+        if (!this.escenario) {
+            try { this.escenario = JSON.parse(localStorage.getItem('surcala_escenario') || 'null'); }
+            catch (e) { this.escenario = null; }
+        }
+        if (!this.escenario || !Array.isArray(this.escenario.reglas)) {
+            this.escenario = { activo: false, reglas: [] };
+        }
+        return this.escenario;
+    },
+
+    persistirEscenario() {
+        try { localStorage.setItem('surcala_escenario', JSON.stringify(this.getEscenario())); } catch (e) {}
+    },
+
+    // A qué clientes aplica una regla (siempre evaluado sobre la base REAL)
+    clientesDeRegla(regla) {
+        const codigos = new Set();
+        const base = this.dataReal || this.data;
+        if (!base) return codigos;
+        if (regla.tipo === 'zona') {
+            const zona = this.getCustomZones().find(z => z.id === regla.zonaId);
+            if (zona) this.getClientsInGeometry(zona.geometry).forEach(c => codigos.add(String(c.Codigo || c.ID)));
+        } else if (regla.tipo === 'seleccion') {
+            (regla.clienteIds || []).forEach(id => codigos.add(String(id)));
+        } else if (regla.tipo === 'promotor') {
+            base.clientes.filter(c => c.Promotor === regla.promotorOrigen)
+                .forEach(c => codigos.add(String(c.Codigo || c.ID)));
+        }
+        return codigos;
+    },
+
+    // Aplica las reglas a una copia de las filas crudas y reconstruye la estructura
+    aplicarEscenario() {
+        if (!this.rawRows) return;
+        const escenario = this.getEscenario();
+        const rows = this.rawRows.map(r => Object.assign({}, r));
+
+        if (escenario.activo && escenario.reglas.length) {
+            const idx = new Map();
+            rows.forEach((r, i) => idx.set(String(r.codigo), i));
+            escenario.reglas.forEach(regla => {
+                this.clientesDeRegla(regla).forEach(cod => {
+                    const i = idx.get(String(cod));
+                    if (i === undefined) return;
+                    if (regla.nuevoSupervisor) rows[i].supervisor = regla.nuevoSupervisor;
+                    if (regla.nuevoPromotor)   rows[i].promotor   = regla.nuevoPromotor;
+                    if (regla.nuevaFrecuencia) rows[i].frecuencia = regla.nuevaFrecuencia;
+                });
+            });
+        }
+
+        this.dataSim = this.buildStructure(rows);
+        this.data = escenario.activo ? this.dataSim : this.dataReal;
+        this.byId = new Map(this.data.clientes.map(c => [c.ID, c]));
+    },
+
+    // Comparativo real vs simulado
+    compararEscenario() {
+        const contar = (d) => {
+            if (!d) return { spv: 0, bdr: 0, mayo: 0, promotores: 0, clientes: 0 };
+            const spv = new Set(), esp = new Set();
+            d.clientes.forEach(c => {
+                const s = d.supervisores.find(x => x.ID === c.SupervisorID);
+                if (!s) return;
+                if (s.EsSpv) spv.add(c.SupervisorID); else esp.add(s.Nombre);
+            });
+            return {
+                spv: spv.size,
+                bdr: esp.has('BDR') ? 1 : 0,
+                mayo: esp.has('MAYO') ? 1 : 0,
+                promotores: new Set(d.clientes.map(c => c.PromotorID)).size,
+                clientes: d.clientes.length
+            };
+        };
+        const antes = contar(this.dataReal);
+        const despues = contar(this.dataSim || this.dataReal);
+
+        let movidos = 0;
+        if (this.dataReal && this.dataSim) {
+            const realPorCod = new Map(this.dataReal.clientes.map(c => [String(c.Codigo), c]));
+            this.dataSim.clientes.forEach(c => {
+                const r = realPorCod.get(String(c.Codigo));
+                if (!r) return;
+                if (r.Promotor !== c.Promotor || r.Supervisor !== c.Supervisor || r.FrecuenciaGrupo !== c.FrecuenciaGrupo) movidos++;
+            });
+        }
+        return { antes, despues, movidos };
     },
 
     getSupervisor(id) { return this.data.supervisores.find(s => s.ID === id); },

@@ -103,6 +103,7 @@ const UI = {
         }
 
         this.bindCustomZoneEvents();
+        this.bindSimEvents();
     },
 
     bindCustomZoneEvents() {
@@ -189,6 +190,12 @@ const UI = {
                     <span style="font-size:11px; color:var(--text-secondary); padding-left:26px;">${stats.clientes} clientes · ${stats.promotores} promotores · ${stats.supervisores} SPV${stats.especiales.map(e => ' · 1 ' + esc(e)).join('')}</span>
                 </div>
                 <div style="display:flex; gap:8px; flex-shrink:0;">
+                    <button class="link-btn export-zone" data-id="${esc(z.id)}" style="color:var(--text-secondary);" title="Descargar Excel (CSV) de esta zona">
+                        <i class="fas fa-file-excel"></i>
+                    </button>
+                    <button class="link-btn print-zone" data-id="${esc(z.id)}" style="color:var(--text-secondary);" title="Imprimir esta zona">
+                        <i class="fas fa-print"></i>
+                    </button>
                     <button class="link-btn toggle-zone-vis" data-id="${esc(z.id)}" style="color:var(--text-secondary);" title="${isVis ? 'Ocultar' : 'Mostrar'}">
                         <i class="fas ${isVis ? 'fa-eye' : 'fa-eye-slash'}"></i>
                     </button>
@@ -217,6 +224,20 @@ const UI = {
                     this.renderCustomZonesList();
                     if (window.MapManager) MapManager.renderCustomZones();
                 }
+            };
+        });
+
+        list.querySelectorAll('.export-zone').forEach(btn => {
+            btn.onclick = () => {
+                const z = DataService.getCustomZones().find(x => x.id === btn.dataset.id);
+                this.exportCSV(this.getZoneClients(btn.dataset.id), z ? z.name : '');
+            };
+        });
+
+        list.querySelectorAll('.print-zone').forEach(btn => {
+            btn.onclick = () => {
+                const z = DataService.getCustomZones().find(x => x.id === btn.dataset.id);
+                this.printReport(this.getZoneClients(btn.dataset.id), z ? z.name : '');
             };
         });
     },
@@ -517,6 +538,7 @@ const UI = {
         this.renderPrintDropdowns();
         this.updatePrintPreview();
         this.renderCustomZonesList();
+        this.renderSimTab();
     },
 
     renderClientList(clients) {
@@ -595,6 +617,15 @@ const UI = {
         return clients;
     },
 
+    // Clientes dentro de una zona dibujada, respetando el filtro de la herramienta de selección
+    getZoneClients(zoneId) {
+        const zona = DataService.getCustomZones().find(z => z.id === zoneId);
+        if (!zona) return [];
+        let clientes = DataService.getClientsInGeometry(zona.geometry);
+        if (this.activeClients) clientes = clientes.filter(c => this.activeClients.has(c.ID));
+        return clientes;
+    },
+
     handleMapSelection(ids) {
         this.mapSelection = ids;
         
@@ -652,13 +683,15 @@ const UI = {
         list.innerHTML = html;
     },
 
-    printReport() {
-        const clients = this.getFilteredPrintClients();
+    printReport(clients, etiqueta) {
+        clients = clients || this.getFilteredPrintClients();
         if (clients.length === 0) { alert('No hay clientes para imprimir con los filtros seleccionados.'); return; }
 
         document.getElementById('print-date').textContent = `Generado: ${new Date().toLocaleString('es-AR')}`;
         let info = '';
-        if (this.mapSelection !== null) {
+        if (etiqueta) {
+            info = `<strong>Zona:</strong> ${esc(etiqueta)} | <strong>Total:</strong> ${clients.length} clientes`;
+        } else if (this.mapSelection !== null) {
             info = `<strong>Selección en mapa</strong> | <strong>Total:</strong> ${clients.length} clientes`;
         } else {
             const sid = document.getElementById('print-supervisor').value;
@@ -688,8 +721,8 @@ const UI = {
         window.print();
     },
 
-    exportCSV() {
-        const clients = this.getFilteredPrintClients();
+    exportCSV(clients, etiqueta) {
+        clients = clients || this.getFilteredPrintClients();
         if (clients.length === 0) { alert('No hay clientes para exportar.'); return; }
 
         const headers = ['Código', 'Razón Social', 'Dirección', 'Localidad', 'Zona', 'Vendedor', 'Promotor', 'Supervisor', 'Latitud', 'Longitud'];
@@ -719,9 +752,237 @@ const UI = {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `SURCALA_Clientes_${new Date().toISOString().slice(0,10)}.csv`;
+        const sufijo = etiqueta ? String(etiqueta).replace(/[^A-Za-z0-9]+/g, '_') + '_' : '';
+        a.download = `SURCALA_${sufijo}${new Date().toISOString().slice(0,10)}.csv`;
         a.click();
         URL.revokeObjectURL(url);
+    },
+
+    // ============================================
+    // MÓDULO DE SIMULACIÓN
+    // ============================================
+    bindSimEvents() {
+        const tipo = document.getElementById('sim-tipo');
+        if (tipo) {
+            tipo.onchange = () => {
+                document.getElementById('sim-zona').style.display     = tipo.value === 'zona' ? '' : 'none';
+                document.getElementById('sim-promotor').style.display = tipo.value === 'promotor' ? '' : 'none';
+            };
+        }
+
+        const btnToggle = document.getElementById('btn-sim-toggle');
+        if (btnToggle) {
+            btnToggle.onclick = () => {
+                const escenario = DataService.getEscenario();
+                escenario.activo = !escenario.activo;
+                DataService.persistirEscenario();
+                DataService.aplicarEscenario();
+                this.afterSimChange();
+            };
+        }
+
+        const btnAdd = document.getElementById('btn-sim-add');
+        if (btnAdd) {
+            btnAdd.onclick = () => {
+                const t = tipo.value;
+                const nuevoSup  = document.getElementById('sim-new-sup').value;
+                const nuevoProm = document.getElementById('sim-new-prom').value;
+                const nuevaFreq = document.getElementById('sim-new-freq').value;
+
+                if (!nuevoSup && !nuevoProm && !nuevaFreq) {
+                    alert('Elegí al menos un cambio (supervisor, promotor o frecuencia).');
+                    return;
+                }
+
+                const regla = { tipo: t, nuevoSupervisor: nuevoSup || null, nuevoPromotor: nuevoProm || null, nuevaFrecuencia: nuevaFreq || null };
+
+                if (t === 'zona') {
+                    const zid = document.getElementById('sim-zona').value;
+                    const zona = DataService.getCustomZones().find(z => z.id === zid);
+                    if (!zona) { alert('No hay ninguna zona seleccionada.'); return; }
+                    regla.zonaId = zid;
+                } else if (t === 'seleccion') {
+                    if (!this.activeClients || this.activeClients.size === 0) {
+                        alert('No hay clientes tildados. Andá a "Filtros" y tildá lo que quieras mover.');
+                        return;
+                    }
+                    regla.clienteIds = [...this.activeClients];
+                } else {
+                    regla.promotorOrigen = document.getElementById('sim-promotor').value;
+                    if (!regla.promotorOrigen) { alert('Elegí un promotor.'); return; }
+                }
+
+                const escenario = DataService.getEscenario();
+                escenario.reglas.push(regla);
+                DataService.persistirEscenario();
+                DataService.aplicarEscenario();
+                this.afterSimChange();
+            };
+        }
+
+        const btnLimpiar = document.getElementById('btn-sim-limpiar');
+        if (btnLimpiar) {
+            btnLimpiar.onclick = () => {
+                if (!confirm('¿Borrar todos los cambios de la simulación?')) return;
+                DataService.escenario = { activo: false, reglas: [] };
+                DataService.persistirEscenario();
+                DataService.aplicarEscenario();
+                this.afterSimChange();
+            };
+        }
+
+        const btnGuardar = document.getElementById('btn-sim-guardar');
+        if (btnGuardar) {
+            btnGuardar.onclick = () => {
+                const escenario = DataService.getEscenario();
+                if (!escenario.reglas.length) { alert('No hay cambios para guardar.'); return; }
+                const nombre = prompt('Nombre del escenario:', 'Escenario ' + new Date().toLocaleDateString('es-AR'));
+                if (!nombre) return;
+                let todos = {};
+                try { todos = JSON.parse(localStorage.getItem('surcala_escenarios') || '{}'); } catch (e) { todos = {}; }
+                todos[nombre] = { activo: escenario.activo, reglas: escenario.reglas };
+                try { localStorage.setItem('surcala_escenarios', JSON.stringify(todos)); } catch (e) {}
+                alert('Escenario "' + nombre + '" guardado.');
+            };
+        }
+
+        const btnCargar = document.getElementById('btn-sim-cargar');
+        if (btnCargar) {
+            btnCargar.onclick = () => {
+                let todos = {};
+                try { todos = JSON.parse(localStorage.getItem('surcala_escenarios') || '{}'); } catch (e) { todos = {}; }
+                const nombres = Object.keys(todos);
+                if (!nombres.length) { alert('No hay escenarios guardados.'); return; }
+                const nombre = prompt('¿Cuál querés cargar?\n\n' + nombres.map((n, i) => (i + 1) + ') ' + n).join('\n'));
+                if (!nombre) return;
+                if (!todos[nombre]) { alert('No encontré el escenario "' + nombre + '".'); return; }
+                DataService.escenario = JSON.parse(JSON.stringify(todos[nombre]));
+                DataService.persistirEscenario();
+                DataService.aplicarEscenario();
+                this.afterSimChange();
+            };
+        }
+
+        const btnExport = document.getElementById('btn-sim-export');
+        if (btnExport) {
+            btnExport.onclick = () => {
+                this.exportCSV(DataService.data.clientes.slice(), 'simulado');
+            };
+        }
+    },
+
+    renderSimTab() {
+        const escenario = DataService.getEscenario();
+
+        const btnToggle = document.getElementById('btn-sim-toggle');
+        if (btnToggle) {
+            btnToggle.textContent = escenario.activo ? '🧪 Simulación: ON' : 'Simulación: OFF';
+            btnToggle.style.background = escenario.activo ? 'var(--danger-color)' : '';
+        }
+
+        const base = DataService.dataReal;
+        if (!base) return;
+
+        const selZona = document.getElementById('sim-zona');
+        if (selZona) {
+            const zonas = DataService.getCustomZones();
+            selZona.innerHTML = zonas.length
+                ? zonas.map(z => `<option value="${esc(z.id)}">${esc(z.name)}</option>`).join('')
+                : '<option value="">(no hay zonas dibujadas)</option>';
+        }
+        const selProm = document.getElementById('sim-promotor');
+        if (selProm) {
+            selProm.innerHTML = base.promotores.map(p => `<option value="${esc(p.Nombre)}">${esc(p.Nombre)}</option>`).join('');
+        }
+        const selSup = document.getElementById('sim-new-sup');
+        if (selSup) {
+            selSup.innerHTML = '<option value="">Supervisor: sin cambio</option>' +
+                base.supervisores.map(s => `<option value="${esc(s.Nombre)}">${esc(s.Nombre)}</option>`).join('');
+        }
+        const selPromN = document.getElementById('sim-new-prom');
+        if (selPromN) {
+            selPromN.innerHTML = '<option value="">Promotor: sin cambio</option>' +
+                base.promotores.map(p => `<option value="${esc(p.Nombre)}">${esc(p.Nombre)}</option>`).join('');
+        }
+
+        this.renderSimReglas();
+        this.renderSimComparativo();
+    },
+
+    renderSimReglas() {
+        const cont = document.getElementById('sim-reglas-list');
+        if (!cont) return;
+        const escenario = DataService.getEscenario();
+        if (!escenario.reglas.length) {
+            cont.innerHTML = '<div class="loading-placeholder">Sin cambios todavía.</div>';
+            return;
+        }
+        cont.innerHTML = escenario.reglas.map((r, i) => {
+            let donde;
+            if (r.tipo === 'zona') {
+                const z = DataService.getCustomZones().find(x => x.id === r.zonaId);
+                donde = 'Zona "' + (z ? z.name : '?') + '"';
+            } else if (r.tipo === 'seleccion') {
+                donde = 'Selección (' + (r.clienteIds || []).length + ' clientes)';
+            } else {
+                donde = 'Promotor ' + r.promotorOrigen;
+            }
+            const cambios = [];
+            if (r.nuevoSupervisor) cambios.push('SPV → ' + r.nuevoSupervisor);
+            if (r.nuevoPromotor)   cambios.push('Promotor → ' + r.nuevoPromotor);
+            if (r.nuevaFrecuencia) cambios.push('Frecuencia → ' + r.nuevaFrecuencia);
+            return `<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px; border-bottom:1px solid var(--border-color);">
+                <div style="font-size:12px; min-width:0;">
+                    <div style="font-weight:600;">${i + 1}. ${esc(donde)}</div>
+                    <div style="color:var(--text-secondary); font-size:11px;">${esc(cambios.join(' · '))}</div>
+                </div>
+                <button class="link-btn del-sim-regla" data-idx="${i}" style="color:var(--danger-color);" title="Quitar"><i class="fas fa-times"></i></button>
+            </div>`;
+        }).join('');
+
+        cont.querySelectorAll('.del-sim-regla').forEach(btn => {
+            btn.onclick = () => {
+                const escenario = DataService.getEscenario();
+                escenario.reglas.splice(parseInt(btn.dataset.idx, 10), 1);
+                DataService.persistirEscenario();
+                DataService.aplicarEscenario();
+                this.afterSimChange();
+            };
+        });
+    },
+
+    renderSimComparativo() {
+        const cont = document.getElementById('sim-comparativo');
+        if (!cont) return;
+        const cmp = DataService.compararEscenario();
+        const fila = (t, x, y) => {
+            const cambio = x !== y;
+            return `<div style="display:flex; justify-content:space-between;">
+                <span>${t}</span>
+                <span>${x} → <strong style="color:${cambio ? 'var(--accent-secondary)' : 'inherit'}">${y}</strong></span>
+            </div>`;
+        };
+        cont.innerHTML =
+            `<div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:10px; margin-bottom:4px;"><span></span><span>REAL → SIMULADO</span></div>` +
+            fila('SPV', cmp.antes.spv, cmp.despues.spv) +
+            fila('BDR', cmp.antes.bdr, cmp.despues.bdr) +
+            fila('MAYO', cmp.antes.mayo, cmp.despues.mayo) +
+            fila('Promotores', cmp.antes.promotores, cmp.despues.promotores) +
+            fila('Clientes', cmp.antes.clientes, cmp.despues.clientes) +
+            `<div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border-color);">
+                <strong>${cmp.movidos}</strong> clientes con asignación distinta
+            </div>`;
+    },
+
+    // Refrescar todo lo que depende de los datos
+    afterSimChange() {
+        this.cascadeActivos = null;      // el filtro vuelve a "todo tildado"
+        this.cascadeJerarquia = null;
+        this.renderCascadeFilters();
+        this.applyCascadeFilters();
+        this.renderCustomZonesList();
+        this.renderSimTab();
+        if (MapManager.map && MapManager.isLoaded) MapManager.renderAll();
     },
 
     // --- CONFIG ---

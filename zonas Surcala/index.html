@@ -109,6 +109,10 @@
                     <i class="fas fa-draw-polygon"></i>
                     <span>Zonas</span>
                 </button>
+                <button class="tab-btn" data-tab="tab-sim" id="tab-btn-sim">
+                    <i class="fas fa-flask"></i>
+                    <span>Simular</span>
+                </button>
             </div>
 
             <!-- Tab: Filters -->
@@ -222,6 +226,73 @@
                     <div id="custom-zones-list" class="tree-list" style="max-height: none;">
                         <!-- Custom zones will be listed here -->
                     </div>
+                </div>
+            </div>
+
+            <!-- Tab: Simulación -->
+            <div class="tab-content" id="tab-sim">
+                <div class="print-intro">
+                    <i class="fas fa-flask"></i>
+                    <p>Probá cambios de <strong>supervisor</strong>, <strong>promotor</strong> y <strong>frecuencia</strong> sin tocar la base real. Todo es descartable.</p>
+                </div>
+
+                <button class="btn-primary" id="btn-sim-toggle" style="width:100%; justify-content:center; margin-bottom:16px;">
+                    Simulación: OFF
+                </button>
+
+                <div class="filter-section">
+                    <div class="section-header"><h3><i class="fas fa-plus"></i> Nuevo cambio</h3></div>
+
+                    <select id="sim-tipo" class="select-input" style="margin-bottom:10px;">
+                        <option value="zona">Aplicar a una zona dibujada</option>
+                        <option value="seleccion">Aplicar a lo tildado en Filtros</option>
+                        <option value="promotor">Aplicar a un promotor completo</option>
+                    </select>
+
+                    <select id="sim-zona" class="select-input" style="margin-bottom:10px;"></select>
+                    <select id="sim-promotor" class="select-input" style="margin-bottom:10px; display:none;"></select>
+
+                    <select id="sim-new-sup" class="select-input" style="margin-bottom:10px;">
+                        <option value="">Supervisor: sin cambio</option>
+                    </select>
+                    <select id="sim-new-prom" class="select-input" style="margin-bottom:10px;">
+                        <option value="">Promotor: sin cambio</option>
+                    </select>
+                    <select id="sim-new-freq" class="select-input" style="margin-bottom:12px;">
+                        <option value="">Frecuencia: sin cambio</option>
+                        <option value="LU-JU">LU-JU</option>
+                        <option value="MA-VI">MA-VI</option>
+                        <option value="MI-SA">MI-SA</option>
+                    </select>
+
+                    <button class="btn-primary" id="btn-sim-add" style="width:100%; justify-content:center;">
+                        <i class="fas fa-plus"></i> Agregar cambio
+                    </button>
+                </div>
+
+                <div class="filter-section">
+                    <div class="section-header"><h3><i class="fas fa-list"></i> Cambios aplicados</h3></div>
+                    <div id="sim-reglas-list" class="tree-list"></div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="section-header"><h3><i class="fas fa-scale-balanced"></i> Comparativo</h3></div>
+                    <div id="sim-comparativo" style="font-size:12px; line-height:1.7;"></div>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+                    <button class="btn-primary" id="btn-sim-limpiar" style="justify-content:center;">
+                        <i class="fas fa-broom"></i> Limpiar simulación
+                    </button>
+                    <button class="btn-secondary" id="btn-sim-guardar" style="justify-content:center;">
+                        <i class="fas fa-floppy-disk"></i> Guardar escenario
+                    </button>
+                    <button class="btn-secondary" id="btn-sim-cargar" style="justify-content:center;">
+                        <i class="fas fa-folder-open"></i> Cargar escenario
+                    </button>
+                    <button class="btn-secondary" id="btn-sim-export" style="justify-content:center;">
+                        <i class="fas fa-file-excel"></i> Exportar CSV simulado
+                    </button>
                 </div>
             </div>
         </aside>
