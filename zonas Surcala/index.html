@@ -271,6 +271,17 @@
                 </div>
 
                 <div class="filter-section">
+                    <div class="section-header"><h3><i class="fas fa-file-import"></i> Importar CSV modificado</h3></div>
+                    <p style="font-size:11px; color:var(--text-secondary); margin-bottom:8px; line-height:1.5;">
+                        Exportá el CSV, cambiá <strong>Supervisor</strong>, <strong>Promotor</strong>, <strong>Día de visita</strong>, Zona o Vendedor en Excel y cargalo acá. Se compara contra la base real por <strong>Código</strong>.
+                    </p>
+                    <input type="file" id="sim-import-file" accept=".csv,text/csv,.txt" style="display:none;">
+                    <button class="btn-secondary" id="btn-sim-import" style="width:100%; justify-content:center;">
+                        <i class="fas fa-file-import"></i> Importar CSV modificado
+                    </button>
+                </div>
+
+                <div class="filter-section">
                     <div class="section-header"><h3><i class="fas fa-list"></i> Cambios aplicados</h3></div>
                     <div id="sim-reglas-list" class="tree-list"></div>
                 </div>
@@ -280,15 +291,26 @@
                     <div id="sim-comparativo" style="font-size:12px; line-height:1.7;"></div>
                 </div>
 
+                <div class="filter-section">
+                    <div class="section-header"><h3><i class="fas fa-cloud"></i> Escenarios guardados (online)</h3></div>
+                    <select id="sim-escenarios-sel" class="select-input" style="margin-bottom:8px;"></select>
+                    <div id="sim-escenarios-estado" style="font-size:11px; color:var(--text-secondary); margin-bottom:8px;"></div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn-secondary" id="btn-sim-cargar" style="flex:1; justify-content:center;">
+                            <i class="fas fa-cloud-arrow-down"></i> Cargar
+                        </button>
+                        <button class="btn-secondary" id="btn-sim-borrar" style="flex:1; justify-content:center; color:var(--danger-color);">
+                            <i class="fas fa-trash"></i> Borrar
+                        </button>
+                    </div>
+                </div>
+
                 <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
                     <button class="btn-primary" id="btn-sim-limpiar" style="justify-content:center;">
                         <i class="fas fa-broom"></i> Limpiar simulación
                     </button>
                     <button class="btn-secondary" id="btn-sim-guardar" style="justify-content:center;">
-                        <i class="fas fa-floppy-disk"></i> Guardar escenario
-                    </button>
-                    <button class="btn-secondary" id="btn-sim-cargar" style="justify-content:center;">
-                        <i class="fas fa-folder-open"></i> Cargar escenario
+                        <i class="fas fa-cloud-arrow-up"></i> Guardar escenario online
                     </button>
                     <button class="btn-secondary" id="btn-sim-export" style="justify-content:center;">
                         <i class="fas fa-file-excel"></i> Exportar CSV simulado

@@ -48,6 +48,73 @@ function esRolEspecial(nombre) {
 const DataService = {
     data: { supervisores: [], promotores: [], clientes: [], localidades: [] },
 
+    // ── Escenarios online (GAS_escenarios.js) ──
+    // PEGAR ACÁ la URL /exec del despliegue del script de escenarios:
+    ESCENARIOS_URL: 'PEGAR_URL_DEL_SCRIPT_AQUI',
+
+    _simAuth() {
+        try {
+            const raw = JSON.parse(localStorage.getItem('user_session') || '{}');
+            return { usuario: raw.usuario || '', userHash: raw.userHash || '', sessionToken: raw._h || '', rol: raw.rol || '' };
+        } catch (e) { return {}; }
+    },
+
+    async _escenariosApi(action, extra) {
+        if (!this.ESCENARIOS_URL || this.ESCENARIOS_URL.indexOf('http') !== 0) {
+            throw new Error('Falta configurar ESCENARIOS_URL en data.js.');
+        }
+        const payload = Object.assign({ action: action }, this._simAuth(), extra || {});
+        let res;
+        try {
+            res = await fetch(this.ESCENARIOS_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            });
+        } catch (e) { throw new Error('Sin conexión con el servidor de escenarios.'); }
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error || 'Error desconocido');
+        return json;
+    },
+
+    async escenariosListar() {
+        const r = await this._escenariosApi('escenarios_listar');
+        return r.escenarios || [];
+    },
+
+    // Guarda el escenario actual. Las reglas por zona llevan la geometría adentro
+    // (las zonas dibujadas viven en el navegador de cada usuario).
+    async escenarioGuardar(nombre) {
+        const esc = this.getEscenario();
+        const zonas = this.getCustomZones();
+        const reglas = esc.reglas.map(r => {
+            const copia = JSON.parse(JSON.stringify(r));
+            if (copia.tipo === 'zona' && !copia.zonaGeometry) {
+                const z = zonas.find(x => x.id === copia.zonaId);
+                if (z) { copia.zonaGeometry = z.geometry; copia.zonaNombre = z.name; }
+            }
+            return copia;
+        });
+        const clientes = new Set();
+        reglas.forEach(r => this.clientesDeRegla(r).forEach(c => clientes.add(c)));
+        return this._escenariosApi('escenario_guardar', {
+            nombre: nombre,
+            clientes: clientes.size,
+            n_reglas: reglas.length,
+            escenario: JSON.stringify({ activo: true, reglas: reglas })
+        });
+    },
+
+    async escenarioObtener(id) {
+        const r = await this._escenariosApi('escenario_obtener', { id: id });
+        return JSON.parse(r.escenario);
+    },
+
+    async escenarioBorrar(id) {
+        return this._escenariosApi('escenario_borrar', { id: id });
+    },
+
     async loadData() {
         // cache:'no-cache' evita que GitHub Pages sirva una copia vieja del CSV.
         const res = await fetch('clientes.csv', { cache: 'no-cache' });
@@ -311,8 +378,12 @@ const DataService = {
         const base = this.dataReal || this.data;
         if (!base) return codigos;
         if (regla.tipo === 'zona') {
+            // Escenarios guardados online traen la geometría adentro; si no, se busca la zona local
             const zona = this.getCustomZones().find(z => z.id === regla.zonaId);
-            if (zona) this.getClientsInGeometry(zona.geometry).forEach(c => codigos.add(String(c.Codigo || c.ID)));
+            const geom = regla.zonaGeometry || (zona && zona.geometry);
+            if (geom) this.getClientsInGeometry(geom).forEach(c => codigos.add(String(c.Codigo || c.ID)));
+        } else if (regla.tipo === 'csv') {
+            Object.keys(regla.cambios || {}).forEach(cod => codigos.add(String(cod)));
         } else if (regla.tipo === 'seleccion') {
             (regla.clienteIds || []).forEach(id => codigos.add(String(id)));
         } else if (regla.tipo === 'promotor') {
@@ -332,6 +403,15 @@ const DataService = {
             const idx = new Map();
             rows.forEach((r, i) => idx.set(String(r.codigo), i));
             escenario.reglas.forEach(regla => {
+                // Regla importada desde CSV: cambios puntuales por código de cliente
+                if (regla.tipo === 'csv') {
+                    Object.keys(regla.cambios || {}).forEach(cod => {
+                        const i = idx.get(String(cod));
+                        if (i === undefined) return;
+                        Object.assign(rows[i], regla.cambios[cod]);
+                    });
+                    return;
+                }
                 this.clientesDeRegla(regla).forEach(cod => {
                     const i = idx.get(String(cod));
                     if (i === undefined) return;
@@ -378,6 +458,107 @@ const DataService = {
             });
         }
         return { antes, despues, movidos };
+    },
+
+    // ============================================================
+    // Importar CSV modificado como escenario
+    // ============================================================
+    // Parser genérico: detecta delimitador (; , tab), respeta comillas y saltos de línea entre comillas.
+    parseCsvTabla(text) {
+        text = String(text || '').replace(/^\uFEFF/, '');
+        const primera = (text.split(/\r?\n/).find(l => l.trim() !== '') || '');
+        const cuenta = (ch) => primera.split(ch).length - 1;
+        let delim = ';';
+        if (cuenta('\t') > cuenta(delim)) delim = '\t';
+        if (cuenta(',') > cuenta(delim)) delim = ',';
+
+        const filas = [];
+        let fila = [], campo = '', enComillas = false;
+        for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            if (enComillas) {
+                if (ch === '"') {
+                    if (text[i + 1] === '"') { campo += '"'; i++; }
+                    else enComillas = false;
+                } else campo += ch;
+            } else if (ch === '"') {
+                enComillas = true;
+            } else if (ch === delim) {
+                fila.push(campo); campo = '';
+            } else if (ch === '\n' || ch === '\r') {
+                if (ch === '\r' && text[i + 1] === '\n') i++;
+                fila.push(campo); campo = '';
+                if (fila.some(c => c.trim() !== '')) filas.push(fila);
+                fila = [];
+            } else {
+                campo += ch;
+            }
+        }
+        fila.push(campo);
+        if (fila.some(c => c.trim() !== '')) filas.push(fila);
+        return filas;
+    },
+
+    // Compara el CSV contra la base REAL (rawRows) y guarda solo las diferencias como una regla 'csv'.
+    // Reemplaza cualquier importación CSV anterior y activa la simulación.
+    importarCsvEscenario(text, etiqueta) {
+        if (!this.rawRows) throw new Error('Todavía no se cargaron los clientes.');
+        const filas = this.parseCsvTabla(text);
+        const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+        const aliasCodigo = ['codigo', 'cod', 'codigo cliente', 'cod cliente'];
+        let idxH = -1;
+        for (let i = 0; i < Math.min(filas.length, 5); i++) {
+            if (filas[i].some(c => aliasCodigo.indexOf(norm(c)) > -1)) { idxH = i; break; }
+        }
+        if (idxH === -1) throw new Error('No encontré la columna "Código" en las primeras filas del CSV.');
+
+        const headers = filas[idxH].map(norm);
+        const buscar = (alias) => headers.findIndex(h => alias.indexOf(h) > -1);
+        const cols = {
+            codigo:     buscar(aliasCodigo),
+            supervisor: buscar(['supervisor', 'spv']),
+            promotor:   buscar(['promotor']),
+            frecuencia: buscar(['dia de visita', 'dia visita', 'frecuencia']),
+            zona:       buscar(['zona']),
+            vendedor:   buscar(['vendedor'])
+        };
+        const editables = ['supervisor', 'promotor', 'frecuencia', 'zona', 'vendedor'].filter(k => cols[k] >= 0);
+        if (!editables.length) {
+            throw new Error('El CSV no tiene ninguna columna para simular (Supervisor, Promotor, Día de visita, Zona o Vendedor).');
+        }
+
+        const porCodigo = new Map(this.rawRows.map(r => [String(r.codigo).trim(), r]));
+        const vacios = { supervisor: 'sin supervisor', promotor: 'sin promotor' };
+        const cambios = {};
+        let filasLeidas = 0, sinMatch = 0;
+
+        for (let i = idxH + 1; i < filas.length; i++) {
+            const fila = filas[i];
+            const cod = String(fila[cols.codigo] === undefined ? '' : fila[cols.codigo]).trim();
+            if (!cod) continue;
+            filasLeidas++;
+            const raw = porCodigo.get(cod);
+            if (!raw) { sinMatch++; continue; }
+            const diff = {};
+            editables.forEach(k => {
+                const nuevo = String(fila[cols[k]] === undefined ? '' : fila[cols[k]]).trim();
+                if (!nuevo) return;                                   // celda vacía = sin cambio
+                const actual = String(raw[k] || '').trim();
+                if (nuevo.toUpperCase() === actual.toUpperCase()) return;
+                if (!actual && vacios[k] && nuevo.toLowerCase() === vacios[k]) return;
+                diff[k] = nuevo;
+            });
+            if (Object.keys(diff).length) cambios[cod] = diff;
+        }
+
+        const modificados = Object.keys(cambios).length;
+        const escenario = this.getEscenario();
+        escenario.reglas = escenario.reglas.filter(r => r.tipo !== 'csv');
+        if (modificados) escenario.reglas.push({ tipo: 'csv', etiqueta: etiqueta || '', cambios: cambios });
+        escenario.activo = escenario.reglas.length > 0;
+        return { filasLeidas, sinMatch, modificados, columnas: editables };
     },
 
     getSupervisor(id) { return this.data.supervisores.find(s => s.ID === id); },

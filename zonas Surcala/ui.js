@@ -539,6 +539,7 @@ const UI = {
         this.updatePrintPreview();
         this.renderCustomZonesList();
         this.renderSimTab();
+        this.refrescarEscenariosOnline();
     },
 
     renderClientList(clients) {
@@ -725,7 +726,7 @@ const UI = {
         clients = clients || this.getFilteredPrintClients();
         if (clients.length === 0) { alert('No hay clientes para exportar.'); return; }
 
-        const headers = ['Código', 'Razón Social', 'Dirección', 'Localidad', 'Zona', 'Vendedor', 'Promotor', 'Supervisor', 'Latitud', 'Longitud'];
+        const headers = ['Código', 'Razón Social', 'Dirección', 'Localidad', 'Zona', 'Vendedor', 'Promotor', 'Supervisor', 'Latitud', 'Longitud', 'Día de visita'];
         const rows = clients.map(c => [
             c.Codigo || c.ID,
             c.Nombre,
@@ -736,7 +737,8 @@ const UI = {
             c.Promotor || '',
             c.Supervisor || '',
             c.Latitud || '',
-            c.Longitud || ''
+            c.Longitud || '',
+            c.Frecuencia || ''
         ]);
 
         // BOM for UTF-8 + CSV content
@@ -833,33 +835,97 @@ const UI = {
 
         const btnGuardar = document.getElementById('btn-sim-guardar');
         if (btnGuardar) {
-            btnGuardar.onclick = () => {
+            btnGuardar.onclick = async () => {
                 const escenario = DataService.getEscenario();
                 if (!escenario.reglas.length) { alert('No hay cambios para guardar.'); return; }
-                const nombre = prompt('Nombre del escenario:', 'Escenario ' + new Date().toLocaleDateString('es-AR'));
+                const nombre = (prompt('Nombre del escenario:', 'Escenario ' + new Date().toLocaleDateString('es-AR')) || '').trim();
                 if (!nombre) return;
-                let todos = {};
-                try { todos = JSON.parse(localStorage.getItem('surcala_escenarios') || '{}'); } catch (e) { todos = {}; }
-                todos[nombre] = { activo: escenario.activo, reglas: escenario.reglas };
-                try { localStorage.setItem('surcala_escenarios', JSON.stringify(todos)); } catch (e) {}
-                alert('Escenario "' + nombre + '" guardado.');
+                const existente = (this.escenariosOnline || []).find(e => e.nombre.toLowerCase() === nombre.toLowerCase());
+                if (existente && !confirm('Ya existe "' + existente.nombre + '" (guardado por ' + existente.usuario + ').\n¿Reemplazarlo?')) return;
+                btnGuardar.disabled = true;
+                try {
+                    const r = await DataService.escenarioGuardar(nombre);
+                    alert('Escenario "' + nombre + '" guardado online.');
+                    await this.refrescarEscenariosOnline(r.id);
+                } catch (e) {
+                    alert('No se pudo guardar online:\n' + e.message);
+                } finally {
+                    btnGuardar.disabled = false;
+                }
             };
         }
 
         const btnCargar = document.getElementById('btn-sim-cargar');
         if (btnCargar) {
-            btnCargar.onclick = () => {
-                let todos = {};
-                try { todos = JSON.parse(localStorage.getItem('surcala_escenarios') || '{}'); } catch (e) { todos = {}; }
-                const nombres = Object.keys(todos);
-                if (!nombres.length) { alert('No hay escenarios guardados.'); return; }
-                const nombre = prompt('¿Cuál querés cargar?\n\n' + nombres.map((n, i) => (i + 1) + ') ' + n).join('\n'));
-                if (!nombre) return;
-                if (!todos[nombre]) { alert('No encontré el escenario "' + nombre + '".'); return; }
-                DataService.escenario = JSON.parse(JSON.stringify(todos[nombre]));
-                DataService.persistirEscenario();
-                DataService.aplicarEscenario();
-                this.afterSimChange();
+            btnCargar.onclick = async () => {
+                const sel = document.getElementById('sim-escenarios-sel');
+                const id = sel && sel.value;
+                if (!id) { alert('Elegí un escenario de la lista.'); return; }
+                btnCargar.disabled = true;
+                try {
+                    const cargado = await DataService.escenarioObtener(id);
+                    DataService.escenario = { activo: true, reglas: cargado.reglas || [] };
+                    DataService.persistirEscenario();
+                    DataService.aplicarEscenario();
+                    this.afterSimChange();
+                } catch (e) {
+                    alert('No se pudo cargar el escenario:\n' + e.message);
+                } finally {
+                    btnCargar.disabled = false;
+                }
+            };
+        }
+
+        const btnBorrar = document.getElementById('btn-sim-borrar');
+        if (btnBorrar) {
+            btnBorrar.onclick = async () => {
+                const sel = document.getElementById('sim-escenarios-sel');
+                const id = sel && sel.value;
+                if (!id) { alert('Elegí un escenario de la lista.'); return; }
+                const e = (this.escenariosOnline || []).find(x => x.id === id);
+                if (!confirm('¿Borrar "' + (e ? e.nombre : id) + '" del servidor?\nSe borra para todos los usuarios.')) return;
+                btnBorrar.disabled = true;
+                try {
+                    await DataService.escenarioBorrar(id);
+                    await this.refrescarEscenariosOnline();
+                } catch (err) {
+                    alert('No se pudo borrar:\n' + err.message);
+                } finally {
+                    btnBorrar.disabled = false;
+                }
+            };
+        }
+
+        const btnImport = document.getElementById('btn-sim-import');
+        const fileImport = document.getElementById('sim-import-file');
+        if (btnImport && fileImport) {
+            btnImport.onclick = () => { fileImport.value = ''; fileImport.click(); };
+            fileImport.onchange = () => {
+                const f = fileImport.files && fileImport.files[0];
+                if (!f) return;
+                const reader = new FileReader();
+                reader.onerror = () => alert('No se pudo leer el archivo.');
+                reader.onload = () => {
+                    // UTF-8 primero; si falla (Excel en ANSI) se usa windows-1252
+                    let texto;
+                    try { texto = new TextDecoder('utf-8', { fatal: true }).decode(reader.result); }
+                    catch (e) { texto = new TextDecoder('windows-1252').decode(reader.result); }
+                    try {
+                        const r = DataService.importarCsvEscenario(texto, f.name);
+                        DataService.persistirEscenario();
+                        DataService.aplicarEscenario();
+                        this.afterSimChange();
+                        alert('CSV importado.\n\n' +
+                            'Filas leídas: ' + r.filasLeidas + '\n' +
+                            'Clientes con cambios: ' + r.modificados + '\n' +
+                            (r.sinMatch ? 'Códigos que no existen en la base: ' + r.sinMatch + '\n' : '') +
+                            'Columnas detectadas: ' + r.columnas.join(', ') +
+                            (r.modificados ? '' : '\n\nNo hay diferencias contra la base real.'));
+                    } catch (e) {
+                        alert('No se pudo importar el CSV:\n' + e.message);
+                    }
+                };
+                reader.readAsArrayBuffer(f);
             };
         }
 
@@ -921,13 +987,21 @@ const UI = {
             let donde;
             if (r.tipo === 'zona') {
                 const z = DataService.getCustomZones().find(x => x.id === r.zonaId);
-                donde = 'Zona "' + (z ? z.name : '?') + '"';
+                donde = 'Zona "' + (z ? z.name : (r.zonaNombre || '?')) + '"';
             } else if (r.tipo === 'seleccion') {
                 donde = 'Selección (' + (r.clienteIds || []).length + ' clientes)';
+            } else if (r.tipo === 'csv') {
+                donde = 'CSV importado' + (r.etiqueta ? ' (' + r.etiqueta + ')' : '') + ' — ' + Object.keys(r.cambios || {}).length + ' clientes';
             } else {
                 donde = 'Promotor ' + r.promotorOrigen;
             }
             const cambios = [];
+            if (r.tipo === 'csv') {
+                const cont = {};
+                Object.values(r.cambios || {}).forEach(d => Object.keys(d).forEach(k => { cont[k] = (cont[k] || 0) + 1; }));
+                const nombres = { supervisor: 'SPV', promotor: 'Promotor', frecuencia: 'Frecuencia', zona: 'Zona', vendedor: 'Vendedor' };
+                Object.keys(cont).forEach(k => cambios.push(nombres[k] + ': ' + cont[k]));
+            }
             if (r.nuevoSupervisor) cambios.push('SPV → ' + r.nuevoSupervisor);
             if (r.nuevoPromotor)   cambios.push('Promotor → ' + r.nuevoPromotor);
             if (r.nuevaFrecuencia) cambios.push('Frecuencia → ' + r.nuevaFrecuencia);
@@ -983,6 +1057,27 @@ const UI = {
         this.renderCustomZonesList();
         this.renderSimTab();
         if (MapManager.map && MapManager.isLoaded) MapManager.renderAll();
+    },
+
+    // Lista de escenarios guardados en el servidor
+    async refrescarEscenariosOnline(seleccionarId) {
+        const sel = document.getElementById('sim-escenarios-sel');
+        const estado = document.getElementById('sim-escenarios-estado');
+        if (!sel) return;
+        if (estado) estado.textContent = 'Consultando servidor…';
+        try {
+            const lista = await DataService.escenariosListar();
+            this.escenariosOnline = lista;
+            sel.innerHTML = lista.length
+                ? lista.map(e => `<option value="${esc(e.id)}">${esc(e.nombre)} · ${esc(e.usuario)} · ${esc(new Date(e.fecha).toLocaleDateString('es-AR'))} · ${esc(e.clientes)} cli.</option>`).join('')
+                : '<option value="">(no hay escenarios guardados)</option>';
+            if (seleccionarId) sel.value = seleccionarId;
+            if (estado) estado.textContent = lista.length + ' escenario(s) online';
+        } catch (e) {
+            this.escenariosOnline = [];
+            sel.innerHTML = '<option value="">(sin conexión)</option>';
+            if (estado) estado.textContent = e.message;
+        }
     },
 
     // --- CONFIG ---
