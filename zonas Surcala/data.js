@@ -50,7 +50,7 @@ const DataService = {
 
     // ── Escenarios online (GAS_escenarios.js) ──
     // PEGAR ACÁ la URL /exec del despliegue del script de escenarios:
-    ESCENARIOS_URL: 'PEGAR_URL_DEL_SCRIPT_AQUI',
+    ESCENARIOS_URL: 'https://script.google.com/macros/s/AKfycbzWsns5rhzsPNjoMkIogCYgKByn2YuXy9LTwahFWXndZ_uluqmTFpfQzqECvpd0Y9dF/exec',
 
     _simAuth() {
         try {
