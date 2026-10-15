@@ -240,8 +240,7 @@
     const SUPABASE_URL = 'https://tdwdqgtnyqnsigzhhxsl.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2RxZ3RueXFuc2lnemhoeHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTE3NDcsImV4cCI6MjA5ODY2Nzc0N30.aiYnQ3g1HIk1e4G89sODitBqtPlzva_akCz5ruvLw-8';
     const DOMINIO_INTERNO = 'surcala.com.ar';
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcCGsiNDNr2wjHueMbkeam4sE_kh3OZKP7at6iuscj8Tacxbimr7xxSAablc6bo2MFdQ/exec';
-    const INTERVALO_REFRESCO_MS = 25000; // 25 segundos
+    const INTERVALO_REFRESCO_MS = 60000; // 60 s (el GAS actualiza la tabla cada 5 min)
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -386,6 +385,9 @@
         .order('nombre');
       listaPromotoresCompleta = todosLosPromotores || [];
 
+      // Dibuja la lista al instante (offline por defecto); luego se actualiza con los online
+      renderizarListaLateral();
+
       actualizarPosiciones();
       intervaloRefresco = setInterval(actualizarPosiciones, INTERVALO_REFRESCO_MS);
     }
@@ -492,22 +494,40 @@
     // ==========================================================
     async function actualizarPosiciones() {
       try {
-        const resp = await fetch(APPS_SCRIPT_URL);
-        const data = await resp.json();
-        if (!data.ok) {
-          console.error('Error del puente Axum:', data.error);
+        const hoy = new Date();
+        const inicioHoy = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}T00:00:00-03:00`;
+
+        // Supabase filtra por rol (RLS): el auditor recibe todo, el supervisor solo sus promotores
+        const { data, error } = await supabaseClient
+          .from('posiciones_vivo')
+          .select('*')
+          .gte('actualizado_en', inicioHoy);
+
+        if (error) {
+          console.error('Error leyendo posiciones_vivo:', error.message);
           return;
         }
 
-        ultimasPosiciones = data.posiciones;
-        ultimosDesconectados = data.desconectados || [];
+        const filas = data || [];
+        const aObjeto = (f) => ({
+          tipo: f.tipo, nombre: f.nombre, usuario: f.usuario, codigo: f.codigo,
+          supervisor_login: f.supervisor_login, supervisor_nombre: f.supervisor_nombre, canal: f.canal,
+          lat: f.lat, lng: f.lng, hora: f.hora, horaInicio: f.hora_inicio,
+          ultimaVezVisto: f.ultima_vez_visto, minutosSinTransmitir: f.minutos_sin_transmitir,
+          clientesVisitadosHoy: f.clientes_visitados_hoy, totalClientesHoy: f.total_clientes_hoy
+        });
+
+        ultimasPosiciones = filas.filter((f) => f.estado === 'online').map(aObjeto);
+        ultimosDesconectados = filas.filter((f) => f.estado === 'offline').map(aObjeto);
         renderizarMarcadores();
         renderizarListaLateral();
         actualizarKPIs();
 
-        const ahora = new Date();
-        document.getElementById('ultima-actualizacion').textContent =
-          'Actualizado ' + ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        // Mostramos la hora del último snapshot del GAS, no la del navegador
+        const ultimo = filas.reduce((max, f) => (f.actualizado_en > max ? f.actualizado_en : max), '');
+        document.getElementById('ultima-actualizacion').textContent = ultimo
+          ? 'Datos de las ' + new Date(ultimo).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+          : 'Sin datos hoy';
       } catch (err) {
         console.error('Error consultando posiciones:', err);
       }
