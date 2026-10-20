@@ -142,8 +142,10 @@
   }
   .kpi-card .label { font-size: .75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
   .kpi-card .value { font-size: 1.6rem; font-weight: 700; margin-top: 4px; }
-  .kpi-card .bar-bg { height: 6px; background: #eef1f6; border-radius: 4px; margin-top: 8px; overflow: hidden; }
-  .kpi-card .bar-fill { height: 100%; border-radius: 4px; }
+  .kpi-card .bar-bg { position: relative; height: 20px; background: #4a5568; border-radius: 4px; margin-top: 8px; overflow: hidden; }
+  .kpi-card .bar-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 4px; }
+  .kpi-card .bar-text { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; height: 100%; padding: 0 6px; color: #fff; font-size: .72rem; font-weight: 800; white-space: nowrap; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
+  .kpi-card .bar-text .bar-text-sec { font-weight: 600; opacity: .9; margin-left: 6px; }
 
   .chart-card {
     background: var(--card);
@@ -452,6 +454,10 @@ function format(num) {
   return parseFloat(num || 0).toFixed(2);
 }
 
+function titleCase(str) {
+  return String(str || '').toLowerCase().replace(/(^|\s)(\S)/g, (m, sp, ch) => sp + ch.toUpperCase());
+}
+
 function cell(obj, real, diasInfo, extraClass = '') {
     const cAttr = extraClass ? ` class="${extraClass}"` : '';
     const pcAttr = extraClass ? ` class="progress-cell ${extraClass}"` : ` class="progress-cell"`;
@@ -536,7 +542,9 @@ async function cargarDashboard() {
     poblarSelectSpv();
     renderKpis();
     renderDashboard();
-    seleccionarEntidad('TOTAL', 'TOTAL'); // Dibuja el grafico y resalta la fila
+    const spvActual = document.getElementById('spv-select').value;
+    if (spvActual && spvActual !== 'ALL') seleccionarEntidad('SPV', spvActual);
+    else seleccionarEntidad('TOTAL', 'TOTAL'); // Dibuja el grafico y resalta la fila
   } catch (err) {
     document.getElementById('dash-tbody').innerHTML = `<tr><td colspan="31" class="loading">Error de conexión: ${err.message}</td></tr>`;
   }
@@ -618,13 +626,14 @@ function renderKpis() {
 function kpiCard(label, real, plan, pEfectividad) {
   const pAbsoluto = plan > 0 ? Math.round((real / plan) * 100) : 0;
   const barCol = plan > 0 ? colorFor(pEfectividad) : '#94a3b8';
-  const pTxt = plan > 0 ? `<b style="color:${barCol}">${pAbsoluto}% de avance REAL</b> <span style="opacity:0.8; margin-left:6px;">(Efectivo: ${pEfectividad}%)</span>` : 'Sin objetivo definido';
+  const barTxt = plan > 0
+    ? `${pAbsoluto}% de avance REAL<span class="bar-text-sec">(Efectivo: ${pEfectividad}%)</span>`
+    : 'Sin objetivo definido';
   return `
     <div class="kpi-card">
       <div class="label">${label}</div>
       <div class="value">${format(real)} <span style="font-size:.9rem;color:var(--text-dim);font-weight:400">/ ${format(plan)}</span></div>
-      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100, pAbsoluto)}%;background:${barCol}"></div></div>
-      <div style="font-size:.75rem;color:var(--text-dim);margin-top:4px">${pTxt}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100, pAbsoluto)}%;background:${barCol}"></div><div class="bar-text">${barTxt}</div></div>
     </div>`;
 }
 
@@ -771,7 +780,7 @@ window.seleccionarEntidad = function(tipo, id) {
   if (r) r.classList.add('selected-row');
 
   // Actualizar subtitulo
-  const titulos = { TOTAL: 'Toda la empresa', SPV: `Equipo ${id}`, PROM: `Promotor ${id}` };
+  const titulos = { TOTAL: 'Toda la empresa', SPV: `Mesa ${titleCase(id)}`, PROM: `Promotor ${id}` };
   document.getElementById('chart-subtitle-f1').textContent = titulos[tipo] || '';
   document.getElementById('chart-subtitle-f2').textContent = titulos[tipo] || '';
 
@@ -966,7 +975,9 @@ document.getElementById('spv-select').addEventListener('change', () => {
   if (dashData && dashData.status === 'success') {
     renderKpis();
     renderDashboard();
-    seleccionarEntidad('TOTAL', 'TOTAL');
+    const spvSel = document.getElementById('spv-select').value;
+    if (spvSel && spvSel !== 'ALL') seleccionarEntidad('SPV', spvSel);
+    else seleccionarEntidad('TOTAL', 'TOTAL');
   } else {
     cargarDashboard();
   }
