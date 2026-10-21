@@ -72,6 +72,7 @@
       position: absolute; bottom: 20px; left: 296px; z-index: 500;
       background: rgba(15,23,42,0.9); border: 1px solid var(--brd); border-radius: 10px;
       padding: 10px 14px; font-size: 11px; display: flex; gap: 14px; align-items: center;
+      flex-wrap: wrap; max-width: calc(100% - 360px);
     }
     .leyenda-item { display: flex; align-items: center; gap: 6px; }
     .leyenda-dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -219,7 +220,7 @@
       </div>
       <div style="position: relative; flex: 1;">
         <div id="map"></div>
-        <div class="leyenda">
+        <div class="leyenda" id="leyenda-mapa">
           <div class="leyenda-item"><div class="leyenda-dot" style="background:#1B5FA8;"></div> Promotor</div>
           <div class="leyenda-item"><div class="leyenda-dot" style="background:#f59e0b;"></div> Supervisor</div>
         </div>
@@ -378,10 +379,11 @@
         `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
 
       inicializarMapa();
+      actualizarLeyenda();
 
       const { data: todosLosPromotores } = await supabaseClient
         .from('promotores')
-        .select('nombre, supervisor_login')
+        .select('nombre, supervisor_login, supervisor_nombre')
         .order('nombre');
       listaPromotoresCompleta = todosLosPromotores || [];
 
@@ -461,9 +463,65 @@
       marcadorDistri.openPopup();
     }
 
-    function crearIcono(tipo) {
-      const color = tipo === 'supervisor' ? '#f59e0b' : '#1B5FA8';
-      const icono = tipo === 'supervisor' ? 'fa-user-tie' : 'fa-user';
+    // ==========================================================
+    // COLORES POR SUPERVISOR (solo para perfil Auditor)
+    // ==========================================================
+    const SUPERVISOR_COLORES = {
+      'ARES PEDRO': '#3b82f6',         // Azul brillante
+      'AVILA EZEQUIEL': '#10b981',     // Verde esmeralda
+      'RIERA SALA DANIELA': '#a855f7', // Violeta
+      'ECEIZA KEVIN': '#f97316',       // Naranja
+      'BDR': '#ec4899',                // Rosa / Fucsia
+      'MAYO': '#06b6d4',               // Cyan / Turquesa
+      'DEFAULT': '#1B5FA8'             // Azul corporativo original
+    };
+
+    function obtenerColorSupervisor(nombreSup, loginSup) {
+      if (!nombreSup && !loginSup) return SUPERVISOR_COLORES.DEFAULT;
+      const n = (nombreSup || '').toUpperCase().trim();
+      const l = (loginSup || '').toUpperCase().trim();
+
+      if (n.includes('ARES') || l === 'SDVAS') return SUPERVISOR_COLORES['ARES PEDRO'];
+      if (n.includes('AVILA') || l === 'SDVKT20') return SUPERVISOR_COLORES['AVILA EZEQUIEL'];
+      if (n.includes('RIERA') || l === 'SDVKT27') return SUPERVISOR_COLORES['RIERA SALA DANIELA'];
+      if (n.includes('ECEIZA') || l === 'SDVKT47') return SUPERVISOR_COLORES['ECEIZA KEVIN'];
+      if (n.includes('BDR')) return SUPERVISOR_COLORES['BDR'];
+      if (n.includes('MAYO')) return SUPERVISOR_COLORES['MAYO'];
+      return SUPERVISOR_COLORES.DEFAULT;
+    }
+
+    function obtenerColorPromotor(item) {
+      // Los supervisores ven a sus promotores en el azul institucional habitual
+      if (!perfilActual || perfilActual.rol !== 'auditor') {
+        return SUPERVISOR_COLORES.DEFAULT;
+      }
+      return obtenerColorSupervisor(item?.supervisor_nombre, item?.supervisor_login);
+    }
+
+    function actualizarLeyenda() {
+      const el = document.getElementById('leyenda-mapa');
+      if (!el) return;
+      if (perfilActual && perfilActual.rol === 'auditor') {
+        el.innerHTML = `
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#3b82f6;"></div> Ares</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#10b981;"></div> Avila</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#a855f7;"></div> Riera</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#f97316;"></div> Eceiza</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#ec4899;"></div> BDR</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#f59e0b;"></div> Supervisor</div>
+        `;
+      } else {
+        el.innerHTML = `
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#1B5FA8;"></div> Promotor</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#f59e0b;"></div> Supervisor</div>
+        `;
+      }
+    }
+
+    function crearIcono(item) {
+      const esSupervisor = item.tipo === 'supervisor';
+      const color = esSupervisor ? '#f59e0b' : obtenerColorPromotor(item);
+      const icono = esSupervisor ? 'fa-user-tie' : 'fa-user';
       return L.divIcon({
         className: '',
         html: `<div style="background:${color}; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.4);"><i class="fa-solid ${icono}"></i></div>`,
@@ -473,14 +531,17 @@
       });
     }
 
-    function crearIconoDesconectado(conAlerta) {
+    function crearIconoDesconectado(conAlerta, item) {
+      const colorBorde = (perfilActual && perfilActual.rol === 'auditor' && item)
+        ? obtenerColorPromotor(item)
+        : '#ffffff';
       const badge = conAlerta
         ? `<div style="position:absolute; top:-4px; right:-4px; width:16px; height:16px; border-radius:50%; background:#ef4444; display:flex; align-items:center; justify-content:center; color:#fff; font-size:9px; border:1.5px solid #fff;"><i class="fa-solid fa-exclamation"></i></div>`
         : '';
       return L.divIcon({
         className: '',
         html: `<div style="position:relative; width:28px; height:28px;">
-                 <div style="background:#64748b; opacity:0.9; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.4);"><i class="fa-solid fa-user"></i></div>
+                 <div style="background:#64748b; opacity:0.92; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; border:2.5px solid ${colorBorde}; box-shadow:0 2px 6px rgba(0,0,0,0.4);"><i class="fa-solid fa-user"></i></div>
                  ${badge}
                </div>`,
         iconSize: [28, 28],
@@ -596,10 +657,10 @@
 
         if (marcadoresPromotores[clave]) {
           marcadoresPromotores[clave].setLatLng([item.lat, item.lng]);
-          marcadoresPromotores[clave].setIcon(crearIcono(item.tipo));
+          marcadoresPromotores[clave].setIcon(crearIcono(item));
           marcadoresPromotores[clave].setPopupContent(popupHtml);
         } else {
-          const marker = L.marker([item.lat, item.lng], { icon: crearIcono(item.tipo) }).addTo(map);
+          const marker = L.marker([item.lat, item.lng], { icon: crearIcono(item) }).addTo(map);
           marker.bindPopup(popupHtml);
           marcadoresPromotores[clave] = marker;
         }
@@ -628,10 +689,10 @@
 
         if (marcadoresPromotores[clave]) {
           marcadoresPromotores[clave].setLatLng([item.lat, item.lng]);
-          marcadoresPromotores[clave].setIcon(crearIconoDesconectado(conAlerta));
+          marcadoresPromotores[clave].setIcon(crearIconoDesconectado(conAlerta, item));
           marcadoresPromotores[clave].setPopupContent(popupHtml);
         } else {
-          const marker = L.marker([item.lat, item.lng], { icon: crearIconoDesconectado(conAlerta) }).addTo(map);
+          const marker = L.marker([item.lat, item.lng], { icon: crearIconoDesconectado(conAlerta, item) }).addTo(map);
           marker.bindPopup(popupHtml);
           marcadoresPromotores[clave] = marker;
         }
@@ -668,11 +729,22 @@
       cont.innerHTML = '';
       nombresBase.forEach((nombre) => {
         const item = visibles.find((v) => v.nombre === nombre);
+        const infoProm = listaPromotoresCompleta.find((p) => p.nombre === nombre) || item || {};
+        const supNombre = infoProm.supervisor_nombre || item?.supervisor_nombre || '';
+        const supLogin = infoProm.supervisor_login || item?.supervisor_login || '';
+        const colorSup = (perfilActual && perfilActual.rol === 'auditor') ? obtenerColorSupervisor(supNombre, supLogin) : '';
+        const subtagSup = (perfilActual && perfilActual.rol === 'auditor' && supNombre)
+          ? `<div style="font-size:10px; color:${colorSup}; font-weight:600; opacity:0.9; margin-top:2px;">${supNombre}</div>`
+          : '';
+
         const div = document.createElement('div');
         div.className = 'prom-item' + (promotorSeleccionado === nombre ? ' selected' : '');
         div.innerHTML = `
           <div class="dot ${item ? 'online' : 'offline'}"></div>
-          <div class="nombre">${nombre}</div>
+          <div class="nombre">
+            <div>${nombre}</div>
+            ${subtagSup}
+          </div>
           <div class="hora">${item ? item.hora : ''}</div>
         `;
         div.onclick = () => {
@@ -735,7 +807,13 @@
 
       if (error || !data || data.length === 0) return;
 
-      const colorRecorrido = tipo === 'supervisor' ? '#f59e0b' : '#38bdf8';
+      let colorRecorrido = tipo === 'supervisor' ? '#f59e0b' : '#38bdf8';
+      if (tipo === 'promotor' && perfilActual && perfilActual.rol === 'auditor') {
+        const infoP = listaPromotoresCompleta.find((p) => p.nombre === nombre);
+        if (infoP) {
+          colorRecorrido = obtenerColorSupervisor(infoP.supervisor_nombre, infoP.supervisor_login);
+        }
+      }
       const puntos = data.map((p) => [p.lat, p.lng]);
       capaRecorrido = L.layerGroup().addTo(map);
       L.polyline(puntos, { color: colorRecorrido, weight: 4, opacity: 0.85 }).addTo(capaRecorrido);
