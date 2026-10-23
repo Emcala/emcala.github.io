@@ -150,3 +150,10 @@ tr.grand-row td.name-col{font-size:14px;letter-spacing:-0.01em;}
   .brand strong{font-size:16px;}
   .file-label{display:none;}
 }
+
+/* Alerta: promotor con pocos clientes a visitar */
+td.alerta-roja, td.name-col.alerta-roja{color:#dc2626 !important;font-weight:800 !important;}
+
+/* Indicador de carga inicial */
+.loading-indicator{flex:1;display:flex;align-items:center;justify-content:center;gap:12px;color:#fff;font-size:18px;font-weight:700;padding:60px 20px;}
+.loading-indicator i{font-size:26px;color:#60a5fa;}

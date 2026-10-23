@@ -39,6 +39,10 @@
 <div id="warn-banner"></div>
 
 <div class="container">
+  <div id="loading-indicator" class="loading-indicator" style="display:none;">
+    <i class="fa-solid fa-spinner fa-spin"></i>
+    <span id="loading-text">Cargando datos...</span>
+  </div>
   <div id="empty-state" class="empty-state-steps">
     <div class="step-card">
       <div class="step-num">1</div>
@@ -103,10 +107,14 @@ async function fetchJsonRetry(url, options, maxRetries = 4) {
 const UMBRAL_VERDE   = 90;
 const UMBRAL_AMARILLO= 50;
 
+// Alerta en rojo (nombre + clientes a visitar) para promotores con pocos clientes en el día
+const MIN_CLIENTES_ALERTA = 35;
+const SUPS_SIN_ALERTA = ['ARES PEDRO', 'BDR', 'MAYO']; // supervisores exceptuados (ya normalizados)
+
 // ==============================
 // ESTADO
 // ==============================
-let visitRows = [];      // filas crudas del excel: {vnd, modo, days:{LU,MA,MI,JU,VI,SA,DO}}
+let visitCounts = {};    // clientes a visitar por vendedor y día: { vnd: {DO,LU,MA,MI,JU,VI,SA: cantidad} } (sin MER)
 let vendMap = {};         // vend(code) -> {promotor, supName}
 let sdvOrder = [];        // orden de supervisores según Mesas
 let mesasLoaded = false;
@@ -154,6 +162,38 @@ function normVend(v){
   const s = (v === null || v === undefined) ? '' : v.toString().trim();
   const n = parseInt(s, 10);
   return isNaN(n) ? s : String(n);
+}
+
+function hasVisitCounts(){
+  return Object.keys(visitCounts).length > 0;
+}
+
+// Convierte lo que devuelve la nube a visitCounts. Acepta el formato nuevo (visitCounts)
+// y el viejo (visitRows, una fila por cliente) por si el script de Apps Script aún no se actualizó.
+function visitCountsFromCloud(result){
+  const out = {};
+  if (result && result.visitCounts && typeof result.visitCounts === 'object'){
+    Object.keys(result.visitCounts).forEach(v => {
+      const vnd = normVend(v);
+      if (!vnd) return;
+      out[vnd] = out[vnd] || {};
+      DAY_KEYS.forEach(k => {
+        const n = Number(result.visitCounts[v][k]) || 0;
+        if (n > 0) out[vnd][k] = (out[vnd][k] || 0) + n;
+      });
+    });
+  } else if (result && Array.isArray(result.visitRows)){
+    result.visitRows.forEach(r => {
+      const vnd = normVend(r.vnd);
+      if (!vnd || (r.modo || '').toString().toUpperCase() === 'MER') return;
+      DAY_KEYS.forEach(k => {
+        if (((r.days && r.days[k]) || '').toString().trim().toUpperCase() !== 'X') return;
+        out[vnd] = out[vnd] || {};
+        out[vnd][k] = (out[vnd][k] || 0) + 1;
+      });
+    });
+  }
+  return out;
 }
 
 // ==============================
@@ -204,11 +244,27 @@ async function loadMesas(){
 // ==============================
 // CARGA DE VENTAS (CCC = bol-v) DESDE EL PLANIFICADOR
 // ==============================
-async function loadVentas(dateStr){
+// Pedido crudo de ventas al planificador (no depende de Mesas, se puede disparar en paralelo)
+function fetchVentasRaw(dateStr){
   const cMonth = computeCommercialMonth(dateStr);
   const url = `${SCRIPT_URL}?date=${dateStr}&cMonth=${cMonth}&spv=ALL&_t=${Date.now()}`;
+  return fetchJsonRetry(url);
+}
+
+// Precarga iniciada en init(); se consume una sola vez en loadVentas
+let ventasPrefetch = null; // { date, promise }
+
+async function loadVentas(dateStr){
   try{
-    const result = await fetchJsonRetry(url);
+    let rawPromise;
+    // La precarga solo sirve si es de la misma fecha y tiene menos de 2 minutos (datos frescos)
+    if (ventasPrefetch && ventasPrefetch.date === dateStr && (Date.now() - ventasPrefetch.ts) < 120000){
+      rawPromise = ventasPrefetch.promise;
+      ventasPrefetch = null;
+    } else {
+      rawPromise = fetchVentasRaw(dateStr);
+    }
+    const result = await rawPromise;
     if (result.status !== 'success') throw new Error(result.message || 'Error al traer ventas');
     const ventas = {};
     const fetched = result.data || {};
@@ -275,15 +331,21 @@ fileInput.addEventListener('change', (e) => {
         throw new Error('No se encontraron las columnas "Vnd." o "Modo" en el Excel');
       }
 
-      visitRows = [];
+      // Se agrupa directo por vendedor/día (excluye MER y filas sin vendedor)
+      visitCounts = {};
       for (let i = 1; i < rows.length; i++){
         const r = rows[i];
         if (!r || r.length === 0) continue;
         const vnd = normVend(r[iVnd]);
+        if (!vnd) continue;
         const modo = (r[iModo] || '').toString().trim().toUpperCase();
-        const days = {};
-        DAY_KEYS.forEach(k => { if (k !== 'DO' || dayIdx['DO'] >= 0) days[k] = dayIdx[k] >= 0 ? (r[dayIdx[k]] || '').toString().trim().toUpperCase() : ''; });
-        visitRows.push({ vnd, modo, days });
+        if (modo === 'MER') continue;
+        DAY_KEYS.forEach(k => {
+          if (dayIdx[k] < 0) return;
+          if ((r[dayIdx[k]] || '').toString().trim().toUpperCase() !== 'X') return;
+          if (!visitCounts[vnd]) visitCounts[vnd] = {};
+          visitCounts[vnd][k] = (visitCounts[vnd][k] || 0) + 1;
+        });
       }
       clearError();
       btnCloud.style.display = 'flex'; // Mostrar botón de nube al parsear localmente
@@ -304,7 +366,7 @@ dateInput.addEventListener('change', () => calcular());
 // GUARDAR EN LA NUBE
 // ==============================
 btnCloud.addEventListener('click', async () => {
-  if (!visitRows || visitRows.length === 0) return;
+  if (!hasVisitCounts()) return;
   
   if (CLOUD_URL === 'PEGAR_AQUI_LA_URL_DEL_NUEVO_SCRIPT') {
     showError('Debes configurar CLOUD_URL en el código con la URL del nuevo script de Apps Script.');
@@ -316,7 +378,7 @@ btnCloud.addEventListener('click', async () => {
   btnCloud.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
   
   try {
-    const payload = { action: 'saveVisits', visitRows: visitRows };
+    const payload = { action: 'saveVisits', visitCounts: visitCounts };
     const response = await fetch(CLOUD_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -350,7 +412,7 @@ async function calcular(){
   clearError();
   clearWarn();
 
-  if (visitRows.length === 0){
+  if (!hasVisitCounts()){
     return; // todavía no cargaron el excel
   }
 
@@ -374,13 +436,11 @@ async function calcular(){
 
   const dayKey = dayKeyFromDate(dateStr);
 
-  // 1. Filtrar visitas del día, excluyendo MER
+  // 1. Clientes a visitar del día por vendedor (MER ya viene excluido)
   const countByVend = {};
-  visitRows.forEach(r => {
-    if (r.modo === 'MER') return;
-    if ((r.days[dayKey] || '') !== 'X') return;
-    if (!r.vnd) return;
-    countByVend[r.vnd] = (countByVend[r.vnd] || 0) + 1;
+  Object.keys(visitCounts).forEach(vnd => {
+    const n = Number(visitCounts[vnd][dayKey]) || 0;
+    if (n > 0) countByVend[vnd] = n;
   });
 
   // 2. Mapear Vend -> Promotor/SDV
@@ -493,10 +553,13 @@ function renderTabla(rows){
     </tr>`;
 
     g.promotores.forEach(p => {
+      // Alerta roja: menos de MIN_CLIENTES_ALERTA clientes a visitar, salvo supervisores exceptuados
+      const aplicarAlerta = p.clientes < MIN_CLIENTES_ALERTA && !SUPS_SIN_ALERTA.includes(normName(p.supName));
+      const claseAlerta = aplicarAlerta ? ' alerta-roja' : '';
       html += `<tr class="prom-row">
         <td></td>
-        <td class="name-col">${p.promotor}</td>
-        <td>${p.clientes}</td>
+        <td class="name-col${claseAlerta}">${p.promotor}</td>
+        <td class="${claseAlerta.trim()}">${p.clientes}</td>
         <td>${p.ccc}</td>
         ${renderProgressCell(p.efect)}
       </tr>`;
@@ -519,21 +582,71 @@ function renderTabla(rows){
 // ==============================
 // INICIALIZACION
 // ==============================
+const CLOUD_TIMEOUT_MS = 25000; // Apps Script en frío puede tardar; pasado este tiempo seguimos sin la nube
+
+function setLoading(on, text){
+  const ind = document.getElementById('loading-indicator');
+  if (text) document.getElementById('loading-text').textContent = text;
+  ind.style.display = on ? 'flex' : 'none';
+  // El estado vacío solo se muestra si no hay tabla visible
+  if (on) emptyState.style.display = 'none';
+  else if (tableWrap.style.display === 'none') emptyState.style.display = '';
+}
+
 async function init() {
-  const cloudPromise = (CLOUD_URL !== 'PEGAR_AQUI_LA_URL_DEL_NUEVO_SCRIPT')
-    ? fetch(CLOUD_URL).then(r => r.json()).catch(err => {
-        console.warn("No se pudo cargar de la nube:", err);
-        return null;
-      })
-    : Promise.resolve(null);
+  setLoading(true, 'Cargando datos...');
 
-  // Disparamos ambas peticiones a Apps Script en paralelo en vez de encadenarlas
-  const [, result] = await Promise.all([loadMesas(), cloudPromise]);
+  try {
+    // Ventas del día: se dispara ya mismo, en paralelo (antes esperaba a Mesas + nube)
+    const dateStr = dateInput.value;
+    if (dateStr) {
+      ventasPrefetch = { date: dateStr, ts: Date.now(), promise: fetchVentasRaw(dateStr) };
+      ventasPrefetch.promise.catch(() => {}); // evita "unhandled rejection" si nunca se consume
+    }
 
-  if (result && result.ok && result.visitRows && result.visitRows.length > 0) {
-    visitRows = result.visitRows;
-    fileLabel.textContent = "Datos cargados desde la nube";
-    calcular();
+    // Nube con reintentos (Apps Script devuelve errores intermitentes).
+    // Esta promesa NO se corta por timeout: si llega tarde igual se aplica (ver abajo).
+    const cloudFull = (CLOUD_URL !== 'PEGAR_AQUI_LA_URL_DEL_NUEVO_SCRIPT')
+      ? fetchJsonRetry(CLOUD_URL, undefined, 3).catch(err => {
+          console.warn("No se pudo cargar de la nube:", err);
+          return null;
+        })
+      : Promise.resolve(null);
+
+    // Aplica los datos de la nube salvo que el usuario ya haya cargado un Excel
+    let cloudApplied = false;
+    const applyCloud = async (result) => {
+      if (cloudApplied || hasVisitCounts()) return;
+      const counts = visitCountsFromCloud(result);
+      if (!result || !result.ok || Object.keys(counts).length === 0) return;
+      cloudApplied = true;
+      visitCounts = counts;
+      fileLabel.textContent = "Datos cargados desde la nube";
+      await calcular();
+    };
+
+    // El indicador de carga espera como máximo CLOUD_TIMEOUT_MS; la nube sigue en curso
+    const cloudOrTimeout = Promise.race([
+      cloudFull,
+      new Promise(resolve => setTimeout(() => {
+        console.warn("La nube tarda más de " + (CLOUD_TIMEOUT_MS / 1000) + " segundos; se sigue esperando en segundo plano.");
+        resolve('timeout');
+      }, CLOUD_TIMEOUT_MS))
+    ]);
+
+    // Mesas + nube (+ ventas ya en vuelo) en paralelo
+    const [, result] = await Promise.all([loadMesas(), cloudOrTimeout]);
+
+    if (result === 'timeout') {
+      // Dejamos la pantalla utilizable (se puede subir el Excel) y aplicamos la nube cuando llegue
+      setLoading(false);
+      cloudFull.then(applyCloud);
+    } else {
+      setLoading(true, 'Calculando efectividad...');
+      await applyCloud(result);
+    }
+  } finally {
+    setLoading(false);
   }
 }
 
