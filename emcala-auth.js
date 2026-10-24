@@ -8,7 +8,7 @@
 // Uso:
 //   EmcalaAuth.requireLogin();              // redirige si no hay sesión
 //   EmcalaAuth.requireRole(['supervisor']); // redirige si no tiene el rol
-//   const s = EmcalaAuth.getSession();      // { usuario, rol, nombre, ... }
+//   const s = EmcalaAuth.getSession();      // { usuario, rol, nombre, sessionToken, ... }
 //   EmcalaAuth.logout();                    // limpia y redirige
 // ═══════════════════════════════════════════════════════════════════
 
@@ -59,11 +59,12 @@ const EmcalaAuth = (() => {
     const session = getRawSession();
     if (!isSessionValid(session)) return null;
     return {
-      usuario:    session.usuario,
-      rol:        session.rol,
-      nombre:     session.nombre,
-      promotores: session.promotores || '',
-      userHash:   session.userHash || ''
+      usuario:      session.usuario,
+      rol:          session.rol,
+      nombre:       session.nombre,
+      promotores:   session.promotores || '',
+      userHash:     session.userHash || '',
+      sessionToken: session._h
     };
   }
 
@@ -117,6 +118,10 @@ const EmcalaAuth = (() => {
 
   function logout() {
     localStorage.removeItem(SESSION_KEY);
+    // También cerramos la sesión de Supabase (si existe) para que no queden sesiones sueltas
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+      .forEach(k => localStorage.removeItem(k));
     window.location.replace(LOGIN_URL);
   }
 
