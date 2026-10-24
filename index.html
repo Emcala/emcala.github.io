@@ -41,57 +41,80 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145
 
 <!-- Auth Module -->
 <script src="emcala-auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-// GS URL for Auth
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQ_cArrrXQ8Z1e07cpTYm62TfLkMo0vbrmWRMrWcP7XUfNeE7gqLz81aSmPQfc7tm82g/exec'; 
+// ── Portal GAS (puente): convierte la sesión de Supabase en la sesión que esperan las herramientas viejas
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQ_cArrrXQ8Z1e07cpTYm62TfLkMo0vbrmWRMrWcP7XUfNeE7gqLz81aSmPQfc7tm82g/exec';
 
+// ── Supabase Auth (login real)
+const SUPABASE_URL = 'https://tdwdqgtnyqnsigzhhxsl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2RxZ3RueXFuc2lnemhoeHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTE3NDcsImV4cCI6MjA5ODY2Nzc0N30.aiYnQ3g1HIk1e4G89sODitBqtPlzva_akCz5ruvLw-8';
+const DOMINIO_INTERNO = 'surcala.com.ar';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Nombres viejos que algunos usuarios todavía escriben -> usuario actual en Supabase
+const ALIAS_LOGIN = { ECEIZA: 'SDVKT47', RIERASALA: 'SDVKT27' };
+
+function mostrarError(msg) {
+  const el = document.getElementById('loginErr');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
 
 async function doLoginHub() {
-  const u = document.getElementById('user').value.trim().toUpperCase();
+  const tipeado = document.getElementById('user').value.trim().toUpperCase();
   const p = document.getElementById('pass').value.trim();
   const btn = document.querySelector('.btn-login');
-  
-  if (!u || !p) {
-    document.getElementById('loginErr').textContent = 'Ingresa usuario y contraseña';
-    document.getElementById('loginErr').style.display = 'block';
-    return;
-  }
+  const u = ALIAS_LOGIN[tipeado] || tipeado;
 
+  if (!u || !p) { mostrarError('Ingresa usuario y contraseña'); return; }
 
-  btn.textContent = 'Verificando...'; 
+  btn.textContent = 'Verificando...';
   btn.disabled = true;
   document.getElementById('loginErr').style.display = 'none';
 
+  // 1) Login contra Supabase
+  const { data: sb, error: sbErr } = await supabaseClient.auth.signInWithPassword({
+    email: u.toLowerCase() + '@' + DOMINIO_INTERNO,
+    password: p
+  });
+  if (sbErr) {
+    const sinRed = /fetch|network/i.test(sbErr.message || '');
+    mostrarError(sinRed ? 'Error de conexión' : 'Usuario o contraseña incorrectos');
+    btn.textContent = 'Ingresar'; btn.disabled = false;
+    return;
+  }
+
+  // 2) Puente: pedimos al GAS la sesión legacy (rol, token, promotores) a partir del token de Supabase
   let retries = 3;
   let handled = false;
-  
+
   while (retries > 0) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s: cubre cold start + hash + lecturas
-    
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s: cubre cold start del GAS
+
     try {
       const response = await fetch(SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'login', usuario: u, password: p }),
+        body: JSON.stringify({ action: 'login_supabase', accessToken: sb.session.access_token }),
         signal: controller.signal
       });
-      
       clearTimeout(timeoutId);
-      
+
       // Apps Script a veces devuelve HTML de error en vez de JSON.
       const text = await response.text();
       if (!text || text.trim().startsWith('<')) {
         throw new Error('Respuesta no-JSON del servidor');
       }
       const data = JSON.parse(text);
-      
+
       if (data.ok) {
         EmcalaAuth.createSession({
-          usuario: u,
-          userHash: data.userHash, 
-          sessionToken: data.sessionToken, 
+          usuario: data.usuario || u,
+          userHash: data.userHash,
+          sessionToken: data.sessionToken,
           rol: data.rol,
           nombre: data.label,
           promotores: data.promotores
@@ -100,10 +123,10 @@ async function doLoginHub() {
         handled = true;
         break;
       } else {
-        document.getElementById('loginErr').textContent = data.error || 'Credenciales incorrectas';
-        document.getElementById('loginErr').style.display = 'block';
+        await supabaseClient.auth.signOut();
+        mostrarError(data.error || 'No se pudo iniciar sesión');
         btn.textContent = 'Ingresar'; btn.disabled = false;
-        handled = true; // error de credenciales: no reintentar
+        handled = true; // error de negocio: no reintentar
         break;
       }
     } catch (error) {
@@ -116,10 +139,10 @@ async function doLoginHub() {
       }
     }
   }
-  
+
   if (!handled && retries === 0) {
-    document.getElementById('loginErr').textContent = 'Error de conexión';
-    document.getElementById('loginErr').style.display = 'block';
+    await supabaseClient.auth.signOut();
+    mostrarError('Error de conexión');
     btn.textContent = 'Ingresar'; btn.disabled = false;
   }
 }
