@@ -45,6 +45,13 @@ function esRolEspecial(nombre) {
            EMCALA_NO_SPV.indexOf(String(nombre || '').trim().toUpperCase()) > -1;
 }
 
+// ── Supabase (refresca el access_token antes de cada llamada al GAS) ──
+const SUPABASE_URL = 'https://tdwdqgtnyqnsigzhhxsl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2RxZ3RueXFuc2lnemhoeHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTE3NDcsImV4cCI6MjA5ODY2Nzc0N30.aiYnQ3g1HIk1e4G89sODitBqtPlzva_akCz5ruvLw-8';
+const supabaseClient = (typeof window !== 'undefined' && window.supabase)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
 const DataService = {
     data: { supervisores: [], promotores: [], clientes: [], localidades: [] },
 
@@ -52,18 +59,38 @@ const DataService = {
     // PEGAR ACÁ la URL /exec del despliegue del script de escenarios:
     ESCENARIOS_URL: 'https://script.google.com/macros/s/AKfycbzWsns5rhzsPNjoMkIogCYgKByn2YuXy9LTwahFWXndZ_uluqmTFpfQzqECvpd0Y9dF/exec',
 
-    _simAuth() {
-        try {
-            const raw = JSON.parse(localStorage.getItem('user_session') || '{}');
-            return { accessToken: raw.accessToken || '' };
-        } catch (e) { return {}; }
+    // Devuelve { accessToken } siempre vigente.
+    // supabase-js lee la sesión que guardó el login hub (localStorage 'sb-<ref>-auth-token')
+    // y, si el JWT venció, lo renueva solo con el refresh_token.
+    async _simAuth() {
+        let token = '';
+        if (supabaseClient) {
+            try {
+                const { data } = await supabaseClient.auth.getSession();
+                token = (data && data.session && data.session.access_token) || '';
+            } catch (e) { token = ''; }
+        }
+        let raw = {};
+        try { raw = JSON.parse(localStorage.getItem('user_session') || '{}'); } catch (e) { raw = {}; }
+        if (token) {
+            // Mantener sincronizada la copia de user_session (la usan otras herramientas)
+            if (raw && raw.usuario && raw.accessToken !== token) {
+                raw.accessToken = token;
+                localStorage.setItem('user_session', JSON.stringify(raw));
+            }
+            return { accessToken: token };
+        }
+        // Fallback: supabase-js no cargó (CDN caído) → token guardado (puede estar vencido)
+        if (!supabaseClient && raw.accessToken) return { accessToken: raw.accessToken };
+        throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
     },
 
     async _escenariosApi(action, extra) {
         if (!this.ESCENARIOS_URL || this.ESCENARIOS_URL.indexOf('http') !== 0) {
             throw new Error('Falta configurar ESCENARIOS_URL en data.js.');
         }
-        const payload = Object.assign({ action: action }, this._simAuth(), extra || {});
+        const auth = await this._simAuth();
+        const payload = Object.assign({ action: action }, auth, extra || {});
         let res;
         try {
             res = await fetch(this.ESCENARIOS_URL, {
