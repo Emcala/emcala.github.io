@@ -65,38 +65,11 @@
     .nav-link { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 600; transition: 0.2s; }
     .nav-link:hover { color: #fff; }
 
-    /* Login screen */
-    #login-screen {
-      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
-    }
-    .login-card { background: var(--surf); border: 1px solid var(--brd); border-radius: 16px; padding: 32px; width: 100%; max-width: 380px; box-shadow: var(--shad); }
-    .login-card h1 { font-size: 20px; text-transform: uppercase; text-align: center; margin-bottom: 4px; }
-    .login-card p.sub { text-align: center; color: var(--muted); font-size: 12px; margin-bottom: 24px; }
-    .login-error { background: rgba(239,68,68,0.15); border: 1px solid var(--red); color: #fecaca; padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; display: none; }
-
     .user-badge { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
     .user-badge strong { color: #fff; }
   </style>
 </head>
 <body>
-
-  <!-- ============== PANTALLA DE LOGIN ============== -->
-  <div id="login-screen">
-    <div class="login-card">
-      <h1>Supervisión EMCALA</h1>
-      <p class="sub">Ingresá con tu usuario</p>
-      <div class="login-error" id="login-error"></div>
-      <div class="form-group">
-        <label>Usuario</label>
-        <input type="text" id="login-user" placeholder="Ej: SDVAS" autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label>Contraseña</label>
-        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <button class="btn" style="width:100%;" id="btn-login">Ingresar</button>
-    </div>
-  </div>
 
   <!-- ============== PANTALLA PRINCIPAL (solo auditor) ============== -->
   <div id="main-screen" style="display:none;">
@@ -178,68 +151,28 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../emcala-auth.js"></script>
   <script>
+    // Helper de escape HTML
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
     // ==========================================================
     // CONFIGURACIÓN
     // ==========================================================
     const SUPABASE_URL = 'https://tdwdqgtnyqnsigzhhxsl.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2RxZ3RueXFuc2lnemhoeHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTE3NDcsImV4cCI6MjA5ODY2Nzc0N30.aiYnQ3g1HIk1e4G89sODitBqtPlzva_akCz5ruvLw-8';
-    const DOMINIO_INTERNO = 'surcala.com.ar';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    function usuarioToEmail(usuario) {
-      return `${usuario.trim().toLowerCase()}@${DOMINIO_INTERNO}`;
-    }
 
     function emailToUsuario(email) {
       return (email || '').split('@')[0].toUpperCase();
     }
 
     // ==========================================================
-    // LOGIN
+    // LOGIN / SESIÓN COMPARTIDA CON EL PORTAL (solo auditor)
     // ==========================================================
-    const loginScreen = document.getElementById('login-screen');
     const mainScreen = document.getElementById('main-screen');
-    const loginError = document.getElementById('login-error');
-
-    function mostrarErrorLogin(msg) {
-      loginError.textContent = msg;
-      loginError.style.display = 'block';
-    }
-
-    document.getElementById('btn-login').addEventListener('click', hacerLogin);
-    document.getElementById('login-pass').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') hacerLogin();
-    });
-
-    async function hacerLogin() {
-      loginError.style.display = 'none';
-      const usuario = document.getElementById('login-user').value.trim();
-      const pass = document.getElementById('login-pass').value;
-
-      if (!usuario || !pass) {
-        mostrarErrorLogin('Completá usuario y contraseña.');
-        return;
-      }
-
-      const btn = document.getElementById('btn-login');
-      btn.disabled = true;
-      btn.textContent = 'Ingresando...';
-
-      const email = usuarioToEmail(usuario);
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
-
-      btn.disabled = false;
-      btn.textContent = 'Ingresar';
-
-      if (error) {
-        mostrarErrorLogin('Usuario o contraseña incorrectos.');
-        return;
-      }
-
-      await verificarRolYMostrarApp(data.user.id);
-    }
+    let cerrando = false;
 
     async function verificarRolYMostrarApp(userId) {
       const { data: perfil, error } = await supabaseClient
@@ -248,21 +181,16 @@
         .eq('id', userId)
         .single();
 
-      if (error || !perfil) {
-        mostrarErrorLogin('No se encontró un perfil asociado a este usuario.');
-        await supabaseClient.auth.signOut();
+      // Sin perfil o cuenta desactivada: se cierra todo y vuelve al login del portal
+      if (error || !perfil || !perfil.activo) {
+        await cerrarSesion();
         return;
       }
 
-      if (!perfil.activo) {
-        mostrarErrorLogin('Esta cuenta está desactivada.');
-        await supabaseClient.auth.signOut();
-        return;
-      }
-
+      // Rol distinto de auditor: NO se cierra la sesión, vuelve al portal
       if (perfil.rol !== 'auditor') {
-        mostrarErrorLogin('Esta pantalla es solo para usuarios con rol Auditor.');
-        await supabaseClient.auth.signOut();
+        alert('No tenés permiso para acceder a Gestión de Cuentas (solo Auditor).');
+        window.location.replace(EmcalaAuth.PORTAL_URL);
         return;
       }
 
@@ -270,24 +198,25 @@
       const { data: sessionData } = await supabaseClient.auth.getSession();
       const email = sessionData.session.user.email;
       document.getElementById('user-badge-text').innerHTML =
-        `<strong>${perfil.nombre}</strong> (${emailToUsuario(email)})`;
+        `<strong>${esc(perfil.nombre)}</strong> (${esc(emailToUsuario(email))})`;
 
-      loginScreen.style.display = 'none';
       mainScreen.style.display = 'block';
       cargarUsuarios();
     }
 
     async function cerrarSesion() {
-      await supabaseClient.auth.signOut();
-      location.reload();
+      if (cerrando) return;
+      cerrando = true;
+      try { await supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) {}
+      EmcalaAuth.logout(); // borra user_session y las claves sb-*, y redirige al login del portal
     }
 
-    // Si ya había una sesión activa (recarga de página), la retomamos
     (async () => {
+      // Misma regla que el portal y el mapa: sin sesión del portal, o vencida por 30 min de inactividad -> al login
+      if (!EmcalaAuth.requireLogin()) return;
       const { data } = await supabaseClient.auth.getSession();
-      if (data.session) {
-        await verificarRolYMostrarApp(data.session.user.id);
-      }
+      if (!data.session) { window.location.replace(EmcalaAuth.LOGIN_URL); return; }
+      await verificarRolYMostrarApp(data.session.user.id);
     })();
 
     // ==========================================================
