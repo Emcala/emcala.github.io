@@ -55,7 +55,7 @@ const DataService = {
     _simAuth() {
         try {
             const raw = JSON.parse(localStorage.getItem('user_session') || '{}');
-            return { usuario: raw.usuario || '', userHash: raw.userHash || '', sessionToken: raw._h || '', rol: raw.rol || '' };
+            return { accessToken: raw.accessToken || '' };
         } catch (e) { return {}; }
     },
 
