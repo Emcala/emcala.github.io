@@ -64,7 +64,8 @@ const EmcalaAuth = (() => {
       nombre:       session.nombre,
       promotores:   session.promotores || '',
       userHash:     session.userHash || '',
-      sessionToken: session._h
+      sessionToken: session._h,
+      accessToken:  session.accessToken || ''
     };
   }
 
@@ -150,7 +151,7 @@ const EmcalaAuth = (() => {
 
   // ── CREAR SESIÓN (para uso desde el login) ─────────────────
 
-  function createSession({ usuario, rol, nombre, promotores, userHash, sessionToken }) {
+  function createSession({ usuario, rol, nombre, promotores, userHash, sessionToken, accessToken }) {
     const session = {
       usuario:      usuario,
       rol:          rol,
@@ -158,6 +159,7 @@ const EmcalaAuth = (() => {
       promotores:   promotores || '',
       userHash:     userHash || '',
       _h:           sessionToken || '',
+      accessToken:  accessToken || '',
       lastActivity: Date.now()
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));

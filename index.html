@@ -117,7 +117,8 @@ async function doLoginHub() {
           sessionToken: data.sessionToken,
           rol: data.rol,
           nombre: data.label,
-          promotores: data.promotores
+          promotores: data.promotores,
+          accessToken: sb.session.access_token
         });
         window.location.href = './portal/index.html';
         handled = true;
