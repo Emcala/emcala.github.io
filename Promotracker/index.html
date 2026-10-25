@@ -157,24 +157,6 @@
 </head>
 <body>
 
-  <!-- ============== LOGIN ============== -->
-  <div id="login-screen">
-    <div class="login-card">
-      <h1>Supervisión EMCALA</h1>
-      <p class="sub">Mapa en vivo · Ingresá con tu usuario</p>
-      <div class="login-error" id="login-error"></div>
-      <div class="form-group">
-        <label>Usuario</label>
-        <input type="text" id="login-user" placeholder="Ej: SDVAS" autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label>Contraseña</label>
-        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <button class="btn" style="width:100%;" id="btn-login">Ingresar</button>
-    </div>
-  </div>
-
   <!-- ============== APP PRINCIPAL ============== -->
   <div id="main-screen" style="display:none;">
     <div class="hdr">
@@ -237,7 +219,7 @@
   <script src="../emcala-auth.js"></script>
   <script>
     // Helper de escape HTML (usa EmcalaAuth.escapeHtml con fallback defensivo)
-    const esc = (v) => (window.EmcalaAuth && typeof EmcalaAuth.escapeHtml === 'function')
+    const esc = (v) => (typeof EmcalaAuth !== 'undefined' && typeof EmcalaAuth.escapeHtml === 'function')
       ? EmcalaAuth.escapeHtml(v)
       : String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     // Escapa un string para usarlo dentro de un literal JS entre comillas simples dentro de un atributo HTML
@@ -248,14 +230,10 @@
     // ==========================================================
     const SUPABASE_URL = 'https://tdwdqgtnyqnsigzhhxsl.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2RxZ3RueXFuc2lnemhoeHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTE3NDcsImV4cCI6MjA5ODY2Nzc0N30.aiYnQ3g1HIk1e4G89sODitBqtPlzva_akCz5ruvLw-8';
-    const DOMINIO_INTERNO = 'surcala.com.ar';
     const INTERVALO_REFRESCO_MS = 60000; // 60 s (el GAS actualiza la tabla cada 5 min)
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function usuarioToEmail(usuario) {
-      return `${usuario.trim().toLowerCase()}@${DOMINIO_INTERNO}`;
-    }
     function emailToUsuario(email) {
       return (email || '').split('@')[0].toUpperCase();
     }
@@ -264,6 +242,8 @@
     // ESTADO GLOBAL
     // ==========================================================
     let perfilActual = null;
+    let userIdActual = null;
+    let cerrando = false;
     let map = null;
     let marcadoresPromotores = {}; // nombre -> L.Marker
     let capaRecorrido = null;
@@ -296,48 +276,21 @@
     }
 
     // ==========================================================
-    // LOGIN
+    // LOGIN / SESIÓN COMPARTIDA CON EL PORTAL
     // ==========================================================
-    const loginScreen = document.getElementById('login-screen');
     const mainScreen = document.getElementById('main-screen');
-    const loginError = document.getElementById('login-error');
 
-    function mostrarErrorLogin(msg) {
-      loginError.textContent = msg;
-      loginError.style.display = 'block';
-    }
-
-    document.getElementById('btn-login').addEventListener('click', hacerLogin);
-    document.getElementById('login-pass').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') hacerLogin();
-    });
-
-    async function hacerLogin() {
-      loginError.style.display = 'none';
-      const usuario = document.getElementById('login-user').value.trim();
-      const pass = document.getElementById('login-pass').value;
-
-      if (!usuario || !pass) {
-        mostrarErrorLogin('Completá usuario y contraseña.');
-        return;
+    async function revalidarCuenta() {
+      if (!userIdActual) return true;
+      const { data, error } = await supabaseClient
+        .from('perfiles').select('activo, rol').eq('id', userIdActual).single();
+      if (error && error.code !== 'PGRST116') return true;   // error de red: no sacar al usuario
+      if (!data || data.activo !== true) { await cerrarSesion(); return false; }
+      if (data.rol !== 'auditor' && data.rol !== 'supervisor') {
+        window.location.replace(EmcalaAuth.PORTAL_URL);
+        return false;
       }
-
-      const btn = document.getElementById('btn-login');
-      btn.disabled = true;
-      btn.textContent = 'Ingresando...';
-
-      const email = usuarioToEmail(usuario);
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
-
-      btn.disabled = false;
-      btn.textContent = 'Ingresar';
-
-      if (error) {
-        mostrarErrorLogin('Usuario o contraseña incorrectos.');
-        return;
-      }
-
-      await verificarRolYMostrarApp(data.user.id);
+      return true;
     }
 
     async function verificarRolYMostrarApp(userId) {
@@ -347,25 +300,21 @@
         .eq('id', userId)
         .single();
 
-      if (error || !perfil) {
-        mostrarErrorLogin('No se encontró un perfil asociado a este usuario.');
-        await supabaseClient.auth.signOut();
+      // Sin perfil o cuenta desactivada: se cierra todo y vuelve al login del portal
+      if (error || !perfil || !perfil.activo) {
+        await cerrarSesion();
         return;
       }
 
-      if (!perfil.activo) {
-        mostrarErrorLogin('Esta cuenta está desactivada.');
-        await supabaseClient.auth.signOut();
-        return;
-      }
-
+      // Rol sin acceso al mapa (trade, tecnico...): NO se cierra la sesión, vuelve al portal
       if (perfil.rol !== 'auditor' && perfil.rol !== 'supervisor') {
-        mostrarErrorLogin('No tenés permiso para ver el mapa de supervisión.');
-        await supabaseClient.auth.signOut();
+        alert('No tenés permiso para ver el mapa de supervisión.');
+        window.location.replace(EmcalaAuth.PORTAL_URL);
         return;
       }
 
       perfilActual = perfil;
+      userIdActual = userId;
 
       const { data: sessionData } = await supabaseClient.auth.getSession();
       const email = sessionData.session.user.email;
@@ -375,7 +324,6 @@
       document.getElementById('titulo-lista').textContent =
         perfil.rol === 'auditor' ? 'Todos los promotores' : 'Mis promotores';
 
-      loginScreen.style.display = 'none';
       mainScreen.style.display = 'flex';
 
       if (perfil.rol === 'auditor') {
@@ -403,16 +351,19 @@
     }
 
     async function cerrarSesion() {
+      if (cerrando) return;
+      cerrando = true;
       if (intervaloRefresco) clearInterval(intervaloRefresco);
-      await supabaseClient.auth.signOut();
-      location.reload();
+      try { await supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) {}
+      EmcalaAuth.logout(); // borra user_session y las claves sb-*, y redirige al login del portal
     }
 
     (async () => {
+      // Misma regla que el portal: sin sesión del portal, o vencida por 30 min de inactividad -> al login
+      if (!EmcalaAuth.requireLogin()) return;
       const { data } = await supabaseClient.auth.getSession();
-      if (data.session) {
-        await verificarRolYMostrarApp(data.session.user.id);
-      }
+      if (!data.session) { window.location.replace(EmcalaAuth.LOGIN_URL); return; }
+      await verificarRolYMostrarApp(data.session.user.id);
     })();
 
     // ==========================================================
@@ -563,6 +514,7 @@
     // ==========================================================
     async function actualizarPosiciones() {
       try {
+        if (!(await revalidarCuenta())) return;
         const hoy = new Date();
         const inicioHoy = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}T00:00:00-03:00`;
 
