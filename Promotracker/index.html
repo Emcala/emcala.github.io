@@ -234,7 +234,15 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../emcala-auth.js"></script>
   <script>
+    // Helper de escape HTML (usa EmcalaAuth.escapeHtml con fallback defensivo)
+    const esc = (v) => (window.EmcalaAuth && typeof EmcalaAuth.escapeHtml === 'function')
+      ? EmcalaAuth.escapeHtml(v)
+      : String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // Escapa un string para usarlo dentro de un literal JS entre comillas simples dentro de un atributo HTML
+    const escJsAttr = (v) => esc(String(v ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+
     // ==========================================================
     // CONFIGURACIÓN
     // ==========================================================
@@ -362,7 +370,7 @@
       const { data: sessionData } = await supabaseClient.auth.getSession();
       const email = sessionData.session.user.email;
       document.getElementById('user-badge-text').innerHTML =
-        `<strong>${perfil.nombre}</strong> (${emailToUsuario(email)})`;
+        `<strong>${esc(perfil.nombre)}</strong> (${esc(emailToUsuario(email))})`;
 
       document.getElementById('titulo-lista').textContent =
         perfil.rol === 'auditor' ? 'Todos los promotores' : 'Mis promotores';
@@ -636,24 +644,24 @@
         nombresActuales.add(clave);
 
         const popupHtml = item.tipo === 'promotor'
-          ? `<div class="popup-nombre">${item.nombre}</div>
+          ? `<div class="popup-nombre">${esc(item.nombre)}</div>
              <div class="popup-detalle">
-               Supervisor: ${item.supervisor_nombre || '-'}<br>
-               Canal: ${item.canal || '-'}<br>
-               Inicio de jornada: ${item.horaInicio || '-'}<br>
-               Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}${item.totalClientesHoy != null ? ' de ' + item.totalClientesHoy : ''}</strong><br>
-               Última posición: ${item.hora || '-'}
+               Supervisor: ${esc(item.supervisor_nombre || '-')}<br>
+               Canal: ${esc(item.canal || '-')}<br>
+               Inicio de jornada: ${esc(item.horaInicio || '-')}<br>
+               Clientes visitados hoy: <strong>${Number(item.clientesVisitadosHoy) || 0}${item.totalClientesHoy != null ? ' de ' + Number(item.totalClientesHoy) : ''}</strong><br>
+               Última posición: ${esc(item.hora || '-')}
              </div>
-             <button class="popup-btn" onclick="verRecorrido('${item.nombre.replace(/'/g, "\\'")}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
-             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`
+             <button class="popup-btn" onclick="verRecorrido('${escJsAttr(item.nombre)}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
+             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${Number(item.lat)}, ${Number(item.lng)})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`
           : `<div class="popup-nombre">Supervisor</div>
              <div class="popup-detalle">
-               Usuario: ${item.usuario || '-'}<br>
-               Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}</strong><br>
-               Última posición: ${item.hora || '-'}
+               Usuario: ${esc(item.usuario || '-')}<br>
+               Clientes visitados hoy: <strong>${Number(item.clientesVisitadosHoy) || 0}</strong><br>
+               Última posición: ${esc(item.hora || '-')}
              </div>
-             <button class="popup-btn" onclick="verRecorridoSupervisor('${item.usuario}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
-             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`;
+             <button class="popup-btn" onclick="verRecorridoSupervisor('${escJsAttr(item.usuario)}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
+             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${Number(item.lat)}, ${Number(item.lng)})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`;
 
         if (marcadoresPromotores[clave]) {
           marcadoresPromotores[clave].setLatLng([item.lat, item.lng]);
@@ -675,17 +683,17 @@
         nombresActuales.add(clave);
 
         const conAlerta = item.minutosSinTransmitir >= 40;
-        const popupHtml = `<div class="popup-nombre">${item.nombre}</div>
+        const popupHtml = `<div class="popup-nombre">${esc(item.nombre)}</div>
              <div class="popup-detalle">
-               Supervisor: ${item.supervisor_nombre || '-'}<br>
-               Canal: ${item.canal || '-'}<br>
-               Inicio de jornada: ${item.horaInicio || '-'}<br>
-               Clientes visitados hoy: <strong>${item.clientesVisitadosHoy || 0}${item.totalClientesHoy != null ? ' de ' + item.totalClientesHoy : ''}</strong><br>
-               ${conAlerta ? '<strong style="color:#ef4444;">⚠ Sin transmitir hace ' + item.minutosSinTransmitir + ' min</strong><br>' : ''}
-               Última posición conocida: ${item.ultimaVezVisto || '-'}
+               Supervisor: ${esc(item.supervisor_nombre || '-')}<br>
+               Canal: ${esc(item.canal || '-')}<br>
+               Inicio de jornada: ${esc(item.horaInicio || '-')}<br>
+               Clientes visitados hoy: <strong>${Number(item.clientesVisitadosHoy) || 0}${item.totalClientesHoy != null ? ' de ' + Number(item.totalClientesHoy) : ''}</strong><br>
+               ${conAlerta ? '<strong style="color:#ef4444;">⚠ Sin transmitir hace ' + Number(item.minutosSinTransmitir) + ' min</strong><br>' : ''}
+               Última posición conocida: ${esc(item.ultimaVezVisto || '-')}
              </div>
-             <button class="popup-btn" onclick="verRecorrido('${item.nombre.replace(/'/g, "\\'")}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
-             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${item.lat}, ${item.lng})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`;
+             <button class="popup-btn" onclick="verRecorrido('${escJsAttr(item.nombre)}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
+             <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${Number(item.lat)}, ${Number(item.lng)})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`;
 
         if (marcadoresPromotores[clave]) {
           marcadoresPromotores[clave].setLatLng([item.lat, item.lng]);
@@ -734,7 +742,7 @@
         const supLogin = infoProm.supervisor_login || item?.supervisor_login || '';
         const colorSup = (perfilActual && perfilActual.rol === 'auditor') ? obtenerColorSupervisor(supNombre, supLogin) : '';
         const subtagSup = (perfilActual && perfilActual.rol === 'auditor' && supNombre)
-          ? `<div style="font-size:10px; color:${colorSup}; font-weight:600; opacity:0.9; margin-top:2px;">${supNombre}</div>`
+          ? `<div style="font-size:10px; color:${colorSup}; font-weight:600; opacity:0.9; margin-top:2px;">${esc(supNombre)}</div>`
           : '';
 
         const div = document.createElement('div');
@@ -742,10 +750,10 @@
         div.innerHTML = `
           <div class="dot ${item ? 'online' : 'offline'}"></div>
           <div class="nombre">
-            <div>${nombre}</div>
+            <div>${esc(nombre)}</div>
             ${subtagSup}
           </div>
-          <div class="hora">${item ? item.hora : ''}</div>
+          <div class="hora">${item ? esc(item.hora) : ''}</div>
         `;
         div.onclick = () => {
           if (item) {
