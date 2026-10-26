@@ -536,8 +536,8 @@ function renderTabla(rows, dayKey){
     return idxA - idxB;
   });
 
-  // Ordenar promotores dentro de cada grupo por clientes a visitar desc
-  grupos.forEach(g => g.promotores.sort((a,b) => b.clientes - a.clientes));
+  // Ordenar promotores dentro de cada grupo alfabéticamente por nombre
+  grupos.forEach(g => g.promotores.sort((a,b) => String(a.promotor).localeCompare(String(b.promotor), 'es', { sensitivity: 'base' })));
 
   let html = '';
   let grandClientes = 0, grandCcc = 0;
