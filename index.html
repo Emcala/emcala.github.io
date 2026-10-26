@@ -7,26 +7,38 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+html{background:#0B2559;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* vh/dvh = área útil del navegador (ya descontadas barra del navegador y barra de Windows) */
+body{font-family:'Bricolage Grotesque',sans-serif;background:linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%);min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
 .container{width:100%;max-width:400px;text-align:center;animation:fadeIn 0.6s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.login-card{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);padding:36px 28px;border-radius:24px;margin-bottom:20px}
-.field{margin-bottom:16px;text-align:left}
+.brand{margin-bottom:clamp(12px,3vh,28px)}
+/* El logo se achica según el alto disponible para que logo + formulario entren sin scroll */
+.logo{display:block;position:relative;left:50%;transform:translateX(-50%);height:clamp(120px,36vh,412px);width:auto;max-width:min(490px,92vw);object-fit:contain;margin-bottom:-5px;mix-blend-mode:screen;opacity:0.95}
+.subtitle{font-size:11px;font-weight:700;letter-spacing:0.22em;color:rgba(255,255,255,0.45);text-transform:uppercase}
+.login-card{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);padding:clamp(20px,4vh,36px) clamp(18px,6vw,28px);border-radius:24px;margin-bottom:clamp(8px,2vh,20px)}
+.field{margin-bottom:clamp(10px,2vh,16px);text-align:left}
 .field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;color:rgba(255,255,255,0.55)}
-.field input{width:100%;padding:14px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:12px;font-family:inherit;font-size:15px;outline:none;transition:all 0.2s;text-align:center;color:#fff}
+/* font-size 16px: evita que iPhone haga zoom automático al tocar el campo */
+.field input{width:100%;padding:clamp(11px,1.8vh,14px);background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:12px;font-family:inherit;font-size:16px;outline:none;transition:all 0.2s;text-align:center;color:#fff}
 .field input::placeholder{color:rgba(255,255,255,0.35)}
 .field input:focus{border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.18)}
-.btn-login{width:100%;background:#fff;color:#0B2559;border:none;padding:16px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;transition:opacity 0.2s;font-family:inherit}
-.btn-login:hover{opacity:0.9}
+.btn-login{width:100%;min-height:48px;background:#fff;color:#0B2559;border:none;padding:clamp(12px,2vh,16px);border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;transition:opacity 0.2s,transform 0.1s;font-family:inherit;-webkit-tap-highlight-color:transparent}
+@media (hover:hover){.btn-login:hover{opacity:0.9}}
+.btn-login:active{transform:scale(0.98)}
+.btn-login:disabled{opacity:0.7;cursor:wait}
 .error{color:#FFD580;font-size:13px;margin-top:12px;display:none;font-weight:600}
+/* Celulares en horizontal / pantallas muy bajas */
+@media (max-height:520px){.logo{height:clamp(80px,28vh,160px)}.brand{margin-bottom:10px}}
+@media (prefers-reduced-motion:reduce){.container{animation:none}}
 </style>
 </head>
 <body>
 
 <div class="container">
-  <div style="margin-bottom:28px">
-    <img src="logo.png" alt="Logo EMCALA" style="position: relative; left: 50%; transform: translateX(-50%); width: 490px; max-width: 90vw; height: auto; margin-bottom: -5px; mix-blend-mode: screen; opacity: 0.95;">
-    <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:rgba(255,255,255,0.45);text-transform:uppercase;">Portal de Acceso</div>
+  <div class="brand">
+    <img src="logo.png" alt="Logo EMCALA" class="logo">
+    <div class="subtitle">Portal de Acceso</div>
   </div>
 
   <div id="sectionLogin" class="login-card">
