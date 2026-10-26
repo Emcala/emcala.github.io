@@ -516,8 +516,8 @@ function tryRender() {
       promRows.push({ canal: m.canal, promotor: m.promotor, codigo: m.codigo || '', cartera, ccc, cnc, avance, cccMA, cccMMAA, nuevos, media });
     }
 
-    // Ordenar los promotores por su código VEND numéricamente/alfabéticamente
-    promRows.sort((a, b) => String(a.codigo).localeCompare(String(b.codigo)));
+    // Ordenar los promotores alfabéticamente por nombre (dentro de su supervisor)
+    promRows.sort((a, b) => String(a.promotor).localeCompare(String(b.promotor), 'es', { sensitivity: 'base' }));
 
     // Supervisor totals
     const sAvance = sCartera > 0 ? (sCCC / sCartera * 100) : 0;
