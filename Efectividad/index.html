@@ -110,6 +110,7 @@ const UMBRAL_AMARILLO= 50;
 // Alerta en rojo (nombre + clientes a visitar) para promotores con pocos clientes en el día
 const MIN_CLIENTES_ALERTA = 35;
 const SUPS_SIN_ALERTA = ['ARES PEDRO', 'BDR', 'MAYO']; // supervisores exceptuados (ya normalizados)
+const DIAS_SIN_ALERTA = ['SA', 'DO']; // sábado y domingo no aplican la alerta de pocos clientes
 
 // ==============================
 // ESTADO
@@ -484,7 +485,7 @@ async function calcular(){
     rows.push({ promotor: promotorName, supName, clientes, ccc, efect });
   });
 
-  renderTabla(rows);
+  renderTabla(rows, dayKey);
 }
 
 // ==============================
@@ -511,7 +512,10 @@ function renderProgressCell(pct){
   </td>`;
 }
 
-function renderTabla(rows){
+function renderTabla(rows, dayKey){
+  // Fin de semana: no se marca en rojo a nadie por pocos clientes
+  const diaConAlerta = !DIAS_SIN_ALERTA.includes(dayKey);
+
   // Agrupar por SDV, preservando el orden de primera aparición
   const grupos = [];
   const grupoIndex = {};
@@ -553,8 +557,8 @@ function renderTabla(rows){
     </tr>`;
 
     g.promotores.forEach(p => {
-      // Alerta roja: menos de MIN_CLIENTES_ALERTA clientes a visitar, salvo supervisores exceptuados
-      const aplicarAlerta = p.clientes < MIN_CLIENTES_ALERTA && !SUPS_SIN_ALERTA.includes(normName(p.supName));
+      // Alerta roja: menos de MIN_CLIENTES_ALERTA clientes a visitar, salvo supervisores exceptuados y fines de semana
+      const aplicarAlerta = diaConAlerta && p.clientes < MIN_CLIENTES_ALERTA && !SUPS_SIN_ALERTA.includes(normName(p.supName));
       const claseAlerta = aplicarAlerta ? ' alerta-roja' : '';
       html += `<tr class="prom-row">
         <td></td>
