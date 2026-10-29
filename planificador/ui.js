@@ -63,6 +63,11 @@
     // Evita JSON.stringify(volData) costoso en cada keystroke.
     let _isDirty = false;
 
+    // Conectar con EmcalaAuth: evita cierre de sesión por inactividad y avisa al salir con cambios pendientes
+    if (typeof EmcalaAuth !== 'undefined' && typeof EmcalaAuth.registerDirtyCheck === 'function') {
+      EmcalaAuth.registerDirtyCheck(() => _isDirty);
+    }
+
     function _handleInputImmediate(e) {
       const el = e.target;
       const prom = el.dataset.prom;
@@ -329,6 +334,7 @@
           }
         });
       });
+      renderClientesFocos();
       calcTotals();
     }
 
@@ -370,4 +376,84 @@
           setTimeout(() => { if (toast.parentNode) toast.remove(); }, 400);
         }
       }, 20000);
+    }
+
+    // ═══ CLIENTES CON COMPRA CERVEZA / NABS ═══
+    // Renderiza, por promotor (respetando el filtro de supervisor ya aplicado a SPV_DATA),
+    // el CCC acumulado del mes y los clientes nuevos con compra del día (+N).
+    function renderClientesFocos() {
+      try {
+        const dashBottom = document.getElementById('dashboard-bottom');
+        const container = document.getElementById('clientes-focos');
+        if (!container) return;
+        if (!isSupervisor) {
+          container.style.display = 'none';
+          if (dashBottom) dashBottom.style.display = 'none';
+          return;
+        }
+        container.style.display = 'flex';
+        if (dashBottom) dashBottom.style.display = 'flex';
+
+        const cfc = document.getElementById('cf-cerveza-body');
+        const cfn = document.getElementById('cf-nabs-body');
+        if (!cfc || !cfn) return;
+
+        const parseNuevosInfo = (val) => {
+          if (val === null || val === undefined) return { count: 0, ids: [] };
+          if (Array.isArray(val)) {
+            const clean = val.map(x => String(x).trim()).filter(x => x && x !== '0');
+            return { count: clean.length, ids: clean };
+          }
+          const s = String(val).trim();
+          if (!s || s === '0' || s === 'undefined' || s === 'null') {
+            return { count: 0, ids: [] };
+          }
+          const ids = s.split(',').map(x => x.trim()).filter(x => x && x !== '0');
+          return { count: ids.length, ids: ids };
+        };
+
+        const rowsC = [];
+        const rowsN = [];
+        for (const spv in SPV_DATA) {
+          const promotores = SPV_DATA[spv];
+          promotores.forEach(p => {
+            // Omitir cuentas excluidas/sistema (ej. Lemos Patricia)
+            const isExcluded = (typeof EMCALA_EXCLUDED_PROMOTORS !== 'undefined') ? EMCALA_EXCLUDED_PROMOTORS.includes(p) : (p === 'LEMOS PATRICIA');
+            if (isExcluded) return;
+
+            const d = volData[p] || {};
+
+            const cccC = typeof d['acum-ccc'] === 'number' ? Math.round(d['acum-ccc']) : (parseInt(d['acum-ccc'], 10) || 0);
+            const infoNuevosC = parseNuevosInfo(d['clientes-nuevos']);
+
+            const cccN = typeof d['acum-ccc-nabs'] === 'number' ? Math.round(d['acum-ccc-nabs']) : (parseInt(d['acum-ccc-nabs'], 10) || 0);
+            const infoNuevosN = parseNuevosInfo(d['clientes-nuevos-nabs']);
+
+            rowsC.push({ prom: p, ccc: cccC, nuevos: infoNuevosC.count, ids: infoNuevosC.ids });
+            rowsN.push({ prom: p, ccc: cccN, nuevos: infoNuevosN.count, ids: infoNuevosN.ids });
+          });
+        }
+
+        const renderRows = (arr, bodyEl) => {
+          if (arr.length === 0) {
+            bodyEl.innerHTML = '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:12px;">Sin datos</td></tr>';
+            return;
+          }
+          bodyEl.innerHTML = arr.map(r => {
+            const titleTooltip = r.nuevos > 0 ? (r.nuevos === 1 ? `Cliente nuevo: ${r.ids.join(', ')}` : `Clientes nuevos (${r.nuevos}): ${r.ids.join(', ')}`) : '';
+            return `
+              <tr>
+                <td class="cf-prom">${r.prom}</td>
+                <td class="cf-num cf-val-ccc">${r.ccc}</td>
+                <td class="cf-num cf-val-nuevos" title="${titleTooltip}">${r.nuevos > 0 ? '+' + r.nuevos : '0'}</td>
+              </tr>
+            `;
+          }).join('');
+        };
+
+        renderRows(rowsC, cfc);
+        renderRows(rowsN, cfn);
+      } catch (err) {
+        console.warn('Error al renderizar Clientes con Compra (Focos):', err);
+      }
     }

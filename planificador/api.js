@@ -123,7 +123,12 @@
           }
         });
       }
-      if (payload.length === 0) return false;
+      if (payload.length === 0) {
+        // No hay nada distinto al último estado del servidor: no queda nada por guardar.
+        // Se devuelve null (ni true ni false) para que performSync no lo trate como fallo.
+        if (typeof _isDirty !== 'undefined') _isDirty = false;
+        return null;
+      }
       const MAX_RETRIES = 5;
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
@@ -362,7 +367,7 @@
           window._currentMonthLoaded = cMonth;
         } else if (hasObjetivos && window._currentMonthLoaded === cMonth) {
            // Si ya teníamos los objetivos locales (skipObj=1), los volvemos a inyectar al nuevo cloudData del día
-           const objFields = ['obj-f1', 'obj-f2', 'obj-cv', 'obj-ac', 'obj-bc', 'obj-lt', 'obj-ung', 'obj-up', 'obj-rb', 'obj-ag', 'acum-f1', 'acum-f2', 'acum-ccc'];
+           const objFields = ['obj-f1', 'obj-f2', 'obj-cv', 'obj-ac', 'obj-bc', 'obj-lt', 'obj-ung', 'obj-up', 'obj-rb', 'obj-ag', 'acum-f1', 'acum-f2', 'acum-ccc', 'acum-ccc-nabs'];
            for (const p in volData) {
               if (!cloudData[p]) cloudData[p] = {};
               for (const f of objFields) {
@@ -374,6 +379,7 @@
         // Reemplazar volData con datos de la nube (reemplazo completo)
         volData = cloudData;
         window.currentLoadedDate = date;
+        if (typeof _isDirty !== 'undefined') _isDirty = false; // volData ahora refleja la nube
         renderTables();
         window.currentCloudState = JSON.stringify(volData);
         
