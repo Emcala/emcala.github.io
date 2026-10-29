@@ -19,6 +19,24 @@ const EmcalaAuth = (() => {
   const SESSION_KEY     = 'user_session';
   const INACTIVITY_MS   = 30 * 60 * 1000; // 30 minutos
   const CHECK_INTERVAL  = 60 * 1000;       // verificar cada 1 min
+  const MAX_DIRTY_EXTENSION_MS = 3 * 60 * 60 * 1000; // tope extra con cambios sin guardar (3 h)
+
+  // ── VERIFICADOR DE CAMBIOS PENDIENTES ──────────────────────
+  let _dirtyCheckFn = null;
+  let _skipUnloadWarning = false;
+
+  function registerDirtyCheck(fn) {
+    if (typeof fn === 'function') _dirtyCheckFn = fn;
+  }
+
+  function hasUnsavedChanges() {
+    try {
+      return typeof _dirtyCheckFn === 'function' ? !!_dirtyCheckFn() : false;
+    } catch (e) {
+      console.error('[EmcalaAuth] Error verificando cambios sin guardar:', e);
+      return false;
+    }
+  }
 
   // ── SESIÓN ─────────────────────────────────────────────────
 
@@ -47,7 +65,12 @@ const EmcalaAuth = (() => {
     }
 
     // Verificar inactividad
-    if (Date.now() - session.lastActivity > INACTIVITY_MS) {
+    const idleMs = Date.now() - session.lastActivity;
+    if (idleMs > INACTIVITY_MS) {
+      // Con cambios sin guardar se tolera inactividad extra, hasta un tope
+      if (hasUnsavedChanges() && idleMs <= INACTIVITY_MS + MAX_DIRTY_EXTENSION_MS) {
+        return true;
+      }
       console.warn('[EmcalaAuth] Sesión expirada por inactividad');
       return false;
     }
@@ -138,6 +161,7 @@ const EmcalaAuth = (() => {
     setInterval(() => {
       const session = getRawSession();
       if (!isSessionValid(session)) {
+        _skipUnloadWarning = true;
         localStorage.removeItem(SESSION_KEY);
         window.location.replace(LOGIN_URL);
       }
@@ -146,6 +170,14 @@ const EmcalaAuth = (() => {
     // Resetear actividad con interacciones del usuario
     ['click', 'keydown', 'touchstart', 'scroll', 'mousemove'].forEach(evt => {
       document.addEventListener(evt, () => updateActivity(), { passive: true });
+    });
+
+    // Protección contra cierre accidental de pestaña o recarga con cambios sin guardar
+    window.addEventListener('beforeunload', (e) => {
+      if (!_skipUnloadWarning && hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
     });
   }
 
@@ -218,6 +250,8 @@ const EmcalaAuth = (() => {
     logout,
     createSession,
     updateActivity,
+    registerDirtyCheck,
+    hasUnsavedChanges,
     renderUserBadge,
     LOGIN_URL,
     PORTAL_URL
