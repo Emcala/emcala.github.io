@@ -42,7 +42,7 @@ function parseCoordinate(coordStr) {
 // BDR y MAYO no son supervisores: cada uno es su propio rol (ver emcala-config.js)
 function esRolEspecial(nombre) {
     return (typeof EMCALA_NO_SPV !== 'undefined') &&
-           EMCALA_NO_SPV.indexOf(String(nombre || '').trim().toUpperCase()) > -1;
+        EMCALA_NO_SPV.indexOf(String(nombre || '').trim().toUpperCase()) > -1;
 }
 
 // ── Supabase (refresca el access_token antes de cada llamada al GAS) ──
@@ -142,61 +142,128 @@ const DataService = {
         return this._escenariosApi('escenario_borrar', { id: id });
     },
 
+    baseMeta: { origen: 'local', actualizado_por: null, actualizado_el: null, total_clientes: 0 },
+
     async loadData() {
-        // cache:'no-cache' evita que GitHub Pages sirva una copia vieja del CSV.
+        // 1) Intentar cargar la base general desde Supabase (tabla zonas_surcala_base)
+        if (supabaseClient) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('zonas_surcala_base')
+                    .select('csv_text, total_clientes, actualizado_por, actualizado_el')
+                    .eq('id', 'actual')
+                    .maybeSingle();
+
+                if (!error && data && data.csv_text) {
+                    const parsedCloud = this.parseClientesCsv(data.csv_text);
+                    if (parsedCloud.length > 0) {
+                        this.baseMeta = {
+                            origen: 'supabase',
+                            actualizado_por: data.actualizado_por || 'Usuario',
+                            actualizado_el: data.actualizado_el || null,
+                            total_clientes: parsedCloud.length
+                        };
+                        this.processRawClients(parsedCloud);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('[Zonas Surcala] No se pudo leer zonas_surcala_base de Supabase, usando clientes.csv local:', err);
+            }
+        }
+
+        // 2) Fallback: cargar clientes.csv local
         const res = await fetch('clientes.csv', { cache: 'no-cache' });
         if (!res.ok) throw new Error('No se pudo cargar clientes.csv (HTTP ' + res.status + ')');
         const parsed = this.parseClientesCsv(await res.text());
         if (parsed.length === 0) {
             throw new Error('clientes.csv no tiene filas de datos (¿se rompió el export?)');
         }
+        this.baseMeta = { origen: 'local', actualizado_por: null, actualizado_el: null, total_clientes: parsed.length };
         this.processRawClients(parsed);
     },
 
-    // Convierte clientes.csv (delimitador ';') al formato que espera processRawClients().
-    parseClientesCsv(text) {
-        const lineas = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim() !== '');
-        if (lineas.length < 2) return [];
+    // Reemplaza la base general en Supabase (valida formato antes de subir)
+    async guardarBaseEnSupabase(csvText) {
+        if (!supabaseClient) throw new Error('El cliente de Supabase no está disponible.');
+        const parsed = this.parseClientesCsv(csvText);
+        if (parsed.length === 0) {
+            throw new Error('El archivo no contiene filas válidas de clientes.');
+        }
+        const conCoords = parsed.filter(r => !isNaN(parseCoordinate(r.latitud)) && !isNaN(parseCoordinate(r.longitud))).length;
+        if (conCoords === 0) {
+            throw new Error('Ninguna fila tiene Latitud y Longitud válidas. Verificá las columnas del archivo.');
+        }
 
-        // Buscar la línea de encabezado en las primeras 5 líneas (por si hay separadores arriba).
+        // Asegurar sesión activa en Supabase antes del RPC
+        await this._simAuth();
+
+        const { data, error } = await supabaseClient.rpc('actualizar_base_zonas_surcala', {
+            p_csv_text: csvText,
+            p_total: parsed.length
+        });
+        if (error) throw new Error(error.message || 'Error al guardar en Supabase');
+
+        this.baseMeta = {
+            origen: 'supabase',
+            actualizado_por: (data && data.actualizado_por) || 'Usuario',
+            actualizado_el: (data && data.actualizado_el) || new Date().toISOString(),
+            total_clientes: parsed.length
+        };
+        this.processRawClients(parsed);
+        // Si había una simulación activa, re-aplicarla sobre la nueva base
+        if (this.getEscenario().activo) {
+            this.aplicarEscenario();
+        }
+        return { total: parsed.length, conCoords };
+    },
+
+    // Convierte CSV (delimitador ';', ',' o tab) al formato que espera processRawClients().
+    parseClientesCsv(text) {
+        const filas = this.parseCsvTabla(text);
+        if (filas.length < 2) return [];
+
+        const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+        // Buscar la línea de encabezado en las primeras 5 líneas
         let idxHeader = -1;
-        const buscar = Math.min(lineas.length, 5);
+        const buscar = Math.min(filas.length, 5);
         for (let i = 0; i < buscar; i++) {
-            if (/codigo/i.test(lineas[i])) { idxHeader = i; break; }
+            if (filas[i].some(c => norm(c) === 'codigo' || norm(c) === 'cod')) { idxHeader = i; break; }
         }
         if (idxHeader === -1) {
-            throw new Error('clientes.csv: no se encontró el encabezado esperado (columna "codigo") en las primeras 5 líneas');
+            throw new Error('No se encontró el encabezado esperado (columna "codigo") en las primeras 5 líneas del CSV');
         }
-        const headers = lineas[idxHeader].split(';').map(h => h.trim().toLowerCase());
-        const pos = (nombre) => headers.indexOf(nombre.toLowerCase());
+        const headers = filas[idxHeader].map(norm);
+        const pos = (aliases) => headers.findIndex(h => aliases.indexOf(h) > -1);
 
         // Columna del CSV -> campo que usa processRawClients()
         const esperadas = {
-            codigo:       pos('codigo'),
-            razon_social: pos('razon_social'),
-            direccion:    pos('direccion'),
-            zona:         pos('zona'),
-            vendedor:     pos('vendedor'),
-            localidad:    pos('localidad'),
-            latitud:      pos('latitud'),
-            longitud:     pos('longitud'),
-            frecuencia:   pos('dia de visita'),
-            promotor:     pos('promotor'),
-            supervisor:   pos('supervisor')
+            codigo: pos(['codigo', 'cod']),
+            razon_social: pos(['razon social', 'nombre', 'cliente']),
+            direccion: pos(['direccion', 'domicilio']),
+            zona: pos(['zona']),
+            vendedor: pos(['vendedor']),
+            localidad: pos(['localidad']),
+            latitud: pos(['latitud', 'lat']),
+            longitud: pos(['longitud', 'lng', 'lon', 'long']),
+            frecuencia: pos(['dia de visita', 'dia visita', 'frecuencia', 'dias de visita']),
+            promotor: pos(['promotor']),
+            supervisor: pos(['supervisor', 'spv'])
         };
         const faltantes = Object.entries(esperadas).filter(([, idx]) => idx === -1).map(([k]) => k);
         if (faltantes.length > 0) {
-            console.warn('[Zonas Surcala] Columnas faltantes en clientes.csv (llegarán vacías): ' + faltantes.join(', '));
+            console.warn('[Zonas Surcala] Columnas faltantes en el CSV (llegarán vacías): ' + faltantes.join(', '));
         }
-        const campos = esperadas;
 
         const out = [];
-        for (let i = idxHeader + 1; i < lineas.length; i++) {
-            const fila = lineas[i].split(';');
+        for (let i = idxHeader + 1; i < filas.length; i++) {
+            const fila = filas[i];
             const obj = {};
-            for (const campo in campos) {
-                const j = campos[campo];
-                obj[campo] = (j >= 0 && fila[j] !== undefined) ? fila[j].trim() : '';
+            for (const campo in esperadas) {
+                const j = esperadas[campo];
+                obj[campo] = (j >= 0 && fila[j] !== undefined) ? String(fila[j]).trim() : '';
             }
             if (obj.codigo || obj.razon_social) out.push(obj);
         }
@@ -216,7 +283,7 @@ const DataService = {
         try {
             const savedColors = localStorage.getItem('surcala_freq_colors');
             if (savedColors) customColors = JSON.parse(savedColors);
-        } catch(e) {}
+        } catch (e) { }
 
         rawClients.forEach(row => {
             const getVal = (key) => {
@@ -396,7 +463,7 @@ const DataService = {
     },
 
     persistirEscenario() {
-        try { localStorage.setItem('surcala_escenario', JSON.stringify(this.getEscenario())); } catch (e) {}
+        try { localStorage.setItem('surcala_escenario', JSON.stringify(this.getEscenario())); } catch (e) { }
     },
 
     // A qué clientes aplica una regla (siempre evaluado sobre la base REAL)
@@ -443,7 +510,7 @@ const DataService = {
                     const i = idx.get(String(cod));
                     if (i === undefined) return;
                     if (regla.nuevoSupervisor) rows[i].supervisor = regla.nuevoSupervisor;
-                    if (regla.nuevoPromotor)   rows[i].promotor   = regla.nuevoPromotor;
+                    if (regla.nuevoPromotor) rows[i].promotor = regla.nuevoPromotor;
                     if (regla.nuevaFrecuencia) rows[i].frecuencia = regla.nuevaFrecuencia;
                 });
             });
@@ -544,12 +611,12 @@ const DataService = {
         const headers = filas[idxH].map(norm);
         const buscar = (alias) => headers.findIndex(h => alias.indexOf(h) > -1);
         const cols = {
-            codigo:     buscar(aliasCodigo),
+            codigo: buscar(aliasCodigo),
             supervisor: buscar(['supervisor', 'spv']),
-            promotor:   buscar(['promotor']),
+            promotor: buscar(['promotor']),
             frecuencia: buscar(['dia de visita', 'dia visita', 'frecuencia']),
-            zona:       buscar(['zona']),
-            vendedor:   buscar(['vendedor'])
+            zona: buscar(['zona']),
+            vendedor: buscar(['vendedor'])
         };
         const editables = ['supervisor', 'promotor', 'frecuencia', 'zona', 'vendedor'].filter(k => cols[k] >= 0);
         if (!editables.length) {
@@ -628,7 +695,7 @@ const DataService = {
     searchClients(query) {
         const q = query.toLowerCase().trim();
         if (!q) return this.data.clientes;
-        
+
         const terms = q.split(/\s+/);
         return this.data.clientes.filter(c => {
             const searchString = [
@@ -639,7 +706,7 @@ const DataService = {
                 c.Promotor,
                 c.Supervisor
             ].filter(Boolean).join(' ').toLowerCase();
-            
+
             return terms.every(term => searchString.includes(term));
         });
     },
@@ -650,7 +717,7 @@ const DataService = {
         if (zonesStr) {
             try {
                 return JSON.parse(zonesStr);
-            } catch(e) {
+            } catch (e) {
                 console.error("Error parsing custom zones", e);
                 return [];
             }
@@ -662,7 +729,7 @@ const DataService = {
         const zones = this.getCustomZones();
         // Give it an ID if it doesn't have one
         if (!zone.id) {
-            zone.id = 'zone_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+            zone.id = 'zone_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
         }
         // default visibility
         if (typeof zone.visible === 'undefined') {
@@ -688,4 +755,3 @@ const DataService = {
         }
     }
 };
-

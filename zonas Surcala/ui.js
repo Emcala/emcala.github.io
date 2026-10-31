@@ -26,8 +26,8 @@ const UI = {
     updateThemeIcon(theme) {
         const btn = document.getElementById('btn-theme');
         if (!btn) return;
-        btn.innerHTML = theme === 'dark' 
-            ? '<i class="fas fa-sun"></i>' 
+        btn.innerHTML = theme === 'dark'
+            ? '<i class="fas fa-sun"></i>'
             : '<i class="fas fa-moon"></i>';
         btn.title = theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
     },
@@ -82,11 +82,15 @@ const UI = {
             };
         }
         // Config
-        document.getElementById('btn-config').onclick = () => document.getElementById('config-modal').classList.add('active');
+        document.getElementById('btn-config').onclick = () => {
+            this.renderBaseCloudStatus();
+            document.getElementById('config-modal').classList.add('active');
+        };
         document.getElementById('modal-close').onclick = () => document.getElementById('config-modal').classList.remove('active');
         document.getElementById('config-modal').onclick = (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('active'); };
         document.getElementById('save-config').onclick = () => this.saveConfig();
         document.getElementById('btn-refresh').onclick = () => this.refreshData();
+        this.bindBaseUploadEvents();
         // Print
         document.getElementById('print-supervisor').onchange = () => this.updatePrintPreview();
         document.getElementById('print-promotor').onchange = () => this.updatePrintPreview();
@@ -95,7 +99,7 @@ const UI = {
         document.getElementById('btn-export-csv').onclick = () => this.exportCSV();
         // Theme toggle
         document.getElementById('btn-theme').onclick = () => this.toggleTheme();
-        
+
         // Map Selection Cancel
         const btnClearSelection = document.getElementById('btn-clear-map-selection');
         if (btnClearSelection) {
@@ -546,11 +550,11 @@ const UI = {
         const list = document.getElementById('clients-list');
         document.getElementById('client-count').textContent = `${clients.length} clientes`;
         if (clients.length === 0) { list.innerHTML = '<div class="loading-placeholder">No se encontraron clientes</div>'; return; }
-        
+
         // Limit rendering to avoid browser freeze with 5000+ items
         const displayClients = clients.slice(0, 200);
         const hasMore = clients.length > 200;
-        
+
         list.innerHTML = displayClients.map(c => {
             const supervisor = DataService.getSupervisor(c.SupervisorID);
             const promotor = DataService.getPromotor(c.PromotorID);
@@ -566,11 +570,11 @@ const UI = {
                 </div>
             </div>`;
         }).join('');
-        
+
         if (hasMore) {
             list.innerHTML += `<div class="loading-placeholder" style="color: var(--accent-secondary);">Mostrando ${displayClients.length} de ${clients.length} clientes. Usá el buscador para filtrar.</div>`;
         }
-        
+
         list.querySelectorAll('.client-item').forEach(el => {
             el.onclick = () => {
                 const c = DataService.byId ? DataService.byId.get(el.dataset.id) : null;
@@ -629,29 +633,29 @@ const UI = {
 
     handleMapSelection(ids) {
         this.mapSelection = ids;
-        
+
         // Mostrar el banner de selección y ocultar los filtros
         document.getElementById('print-map-selection-banner').classList.remove('hidden');
         document.getElementById('print-dropdown-filters').style.display = 'none';
-        
+
         // Cambiar a la pestaña de impresión automáticamente
         document.getElementById('tab-btn-print').click();
-        
+
         this.updatePrintPreview();
     },
 
     clearMapSelection() {
         this.mapSelection = null;
-        
+
         // Limpiar el dibujo del mapa si existe
         if (window.MapManager && MapManager.clearDrawSelection) {
             MapManager.clearDrawSelection();
         }
-        
+
         // Ocultar banner y mostrar filtros
         document.getElementById('print-map-selection-banner').classList.add('hidden');
         document.getElementById('print-dropdown-filters').style.display = 'block';
-        
+
         this.updatePrintPreview();
     },
 
@@ -755,7 +759,7 @@ const UI = {
         const a = document.createElement('a');
         a.href = url;
         const sufijo = etiqueta ? String(etiqueta).replace(/[^A-Za-z0-9]+/g, '_') + '_' : '';
-        a.download = `SURCALA_${sufijo}${new Date().toISOString().slice(0,10)}.csv`;
+        a.download = `SURCALA_${sufijo}${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     },
@@ -767,7 +771,7 @@ const UI = {
         const tipo = document.getElementById('sim-tipo');
         if (tipo) {
             tipo.onchange = () => {
-                document.getElementById('sim-zona').style.display     = tipo.value === 'zona' ? '' : 'none';
+                document.getElementById('sim-zona').style.display = tipo.value === 'zona' ? '' : 'none';
                 document.getElementById('sim-promotor').style.display = tipo.value === 'promotor' ? '' : 'none';
             };
         }
@@ -787,7 +791,7 @@ const UI = {
         if (btnAdd) {
             btnAdd.onclick = () => {
                 const t = tipo.value;
-                const nuevoSup  = document.getElementById('sim-new-sup').value;
+                const nuevoSup = document.getElementById('sim-new-sup').value;
                 const nuevoProm = document.getElementById('sim-new-prom').value;
                 const nuevaFreq = document.getElementById('sim-new-freq').value;
 
@@ -1003,7 +1007,7 @@ const UI = {
                 Object.keys(cont).forEach(k => cambios.push(nombres[k] + ': ' + cont[k]));
             }
             if (r.nuevoSupervisor) cambios.push('SPV → ' + r.nuevoSupervisor);
-            if (r.nuevoPromotor)   cambios.push('Promotor → ' + r.nuevoPromotor);
+            if (r.nuevoPromotor) cambios.push('Promotor → ' + r.nuevoPromotor);
             if (r.nuevaFrecuencia) cambios.push('Frecuencia → ' + r.nuevaFrecuencia);
             return `<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px; border-bottom:1px solid var(--border-color);">
                 <div style="font-size:12px; min-width:0;">
@@ -1097,7 +1101,7 @@ const UI = {
         if (config.lat) document.getElementById('map-center-lat').value = config.lat;
         if (config.lng) document.getElementById('map-center-lng').value = config.lng;
         if (config.zoom) document.getElementById('map-zoom').value = config.zoom;
-        
+
         document.getElementById('color-luju').value = freqColors['LU-JU'];
         document.getElementById('color-mavi').value = freqColors['MA-VI'];
         document.getElementById('color-misa').value = freqColors['MI-SA'];
@@ -1128,12 +1132,70 @@ const UI = {
         window.location.reload(); // Recargar para aplicar colores en todo el sistema
     },
 
+    renderBaseCloudStatus() {
+        const el = document.getElementById('base-cloud-status');
+        if (!el) return;
+        const m = DataService.baseMeta || {};
+        if (m.origen === 'supabase') {
+            const fecha = m.actualizado_el ? new Date(m.actualizado_el).toLocaleString('es-AR') : '';
+            el.innerHTML = `<i class="fas fa-cloud" style="color:var(--accent-secondary);"></i> <strong>Base activa en Supabase:</strong> ${esc(m.total_clientes)} clientes` +
+                (m.actualizado_por ? ` · subida por <strong>${esc(m.actualizado_por)}</strong>` : '') +
+                (fecha ? ` (${esc(fecha)})` : '');
+        } else {
+            el.innerHTML = `<i class="fas fa-hdd"></i> <strong>Base activa:</strong> archivo local <code>clientes.csv</code> (${esc(m.total_clientes || 0)} clientes). Todavía no se subió una base a Supabase.`;
+        }
+    },
+
+    bindBaseUploadEvents() {
+        const btn = document.getElementById('btn-upload-base');
+        const input = document.getElementById('base-upload-file');
+        if (!btn || !input) return;
+
+        btn.onclick = () => { input.value = ''; input.click(); };
+        input.onchange = () => {
+            const f = input.files && input.files[0];
+            if (!f) return;
+            if (!confirm(`¿Reemplazar la base general en la nube con "${f.name}"?\n\nEsto actualizará el padrón oficial para todos los usuarios.`)) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onerror = () => alert('No se pudo leer el archivo.');
+            reader.onload = async () => {
+                let texto;
+                try { texto = new TextDecoder('utf-8', { fatal: true }).decode(reader.result); }
+                catch (e) { texto = new TextDecoder('windows-1252').decode(reader.result); }
+
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo base a Supabase...';
+                try {
+                    const res = await DataService.guardarBaseEnSupabase(texto);
+                    this.renderBaseCloudStatus();
+                    this.cascadeActivos = null;
+                    this.cascadeJerarquia = null;
+                    this.renderUI();
+                    if (MapManager.map && MapManager.isLoaded) {
+                        MapManager.renderAll();
+                        this.applyClientFilters();
+                    }
+                    alert(`Base general actualizada en la nube.\n\nClientes cargados: ${res.total}\nCon coordenadas válidas: ${res.conCoords}`);
+                } catch (err) {
+                    alert('No se pudo actualizar la base en la nube:\n' + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            };
+            reader.readAsArrayBuffer(f);
+        };
+    },
+
     async refreshData() {
         try {
             await DataService.loadData();
         } catch (e) {
             console.error('[Zonas Surcala] No se pudieron recargar los clientes:', e);
-            alert('No se pudieron recargar los clientes (clientes.csv).');
+            alert('No se pudieron recargar los clientes.');
             return;
         }
         MapManager.renderAll();
