@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,63 +12,236 @@
     @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&display=swap');
 
     :root {
-      --bg: linear-gradient(145deg,#0B2559 0%,#1B5FA8 60%,#0D3880 100%);
+      --bg: linear-gradient(145deg, #0B2559 0%, #1B5FA8 60%, #0D3880 100%);
       --surf: #ffffff;
       --brd: #e2e8f0;
       --acc: #1B5FA8;
       --acc-hover: #14467d;
       --txt: #0f172a;
       --muted: #64748b;
-      --foco1: #ef4444; /* Cervezas */
-      --foco2: #0ea5e9; /* NABS */
-      --foco3: #eab308; /* KPI 1 */
-      --foco4: #8b5cf6; /* KPI 2 */
-      --shad: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.03);
+      --foco1: #ef4444;
+      /* Cervezas */
+      --foco2: #0ea5e9;
+      /* NABS */
+      --foco3: #eab308;
+      /* KPI 1 */
+      --foco4: #8b5cf6;
+      /* KPI 2 */
+      --shad: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body { background: var(--bg); color: var(--txt); font-family: 'Bricolage Grotesque', sans-serif; min-height: 100vh; padding-bottom: 40px; }
-
-    .hdr { background: rgba(255,255,255,0.12); border-bottom: 1px solid rgba(255,255,255,0.22); padding: 20px; text-align: center; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(8px); display:flex; justify-content:center; align-items:center; }
-    .hdr h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 26px; color: #fff; text-transform: uppercase; letter-spacing: -0.02em; margin:0; }
-    .hdr h1 span { color: rgba(255,255,255,0.6); font-weight: 600; font-size: 22px; }
-
-    .container { padding: 16px; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; animation: fadeIn 0.6s ease-out; }
-
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    .card { background: rgba(255, 255, 255, 0.98); border-radius: 20px; padding: 24px; box-shadow: var(--shad); border-top: 4px solid var(--acc); text-align: center; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s; }
-    .card:hover { transform: translateY(-2px); box-shadow: 0 24px 48px rgba(0,0,0,0.12); }
-    .card.foco1 { border-top-color: var(--foco1); }
-    .card.foco2 { border-top-color: var(--foco2); }
-    .card.foco3 { border-top-color: var(--foco3); }
-    .card.foco4 { border-top-color: var(--foco4); }
-
-    .card-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; font-weight: 800; text-transform: uppercase; color: var(--txt); margin-bottom: 20px; letter-spacing: -0.03em; }
-
-    .form-group { margin-bottom: 16px; }
-    .form-group:last-child { margin-bottom: 0; }
-    label { display: block; font-weight: 700; font-size: 13px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; font-family: 'Bricolage Grotesque', sans-serif; letter-spacing: 0.05em; text-align: center; }
-
-    select, input[type="number"], input[type="date"] {
-      width: 100%; padding: 14px; border: 1px solid transparent; border-radius: 12px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; font-weight: 600; color: var(--txt); background: #f1f5f9; outline: none; transition: all 0.3s ease; text-align: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    select:focus, input:focus { background: #fff; border-color: var(--acc); box-shadow: 0 0 0 4px rgba(27, 95, 168, 0.15); }
-    select:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; opacity: 0.7; }
 
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    body {
+      background: var(--bg);
+      color: var(--txt);
+      font-family: 'Bricolage Grotesque', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
 
-    .btn-submit { background: linear-gradient(135deg, #2563eb, #1e40af); color: #fff; border: none; width: 100%; padding: 18px; border-radius: 16px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; text-transform: uppercase; cursor: pointer; box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 12px; letter-spacing: -0.02em; }
-    .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(37, 99, 235, 0.4); }
-    .btn-submit:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
+    .hdr {
+      background: rgba(255, 255, 255, 0.12);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+      padding: 20px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-    #loading { text-align: center; font-weight: 600; color: #e2e8f0; margin-top: 12px; display: none; font-size: 15px; }
-    
+    .hdr h1 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-weight: 800;
+      font-size: 26px;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .hdr h1 span {
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 600;
+      font-size: 22px;
+    }
+
+    .container {
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shad);
+      border-top: 4px solid var(--acc);
+      text-align: center;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+    }
+
+    .card.foco1 {
+      border-top-color: var(--foco1);
+    }
+
+    .card.foco2 {
+      border-top-color: var(--foco2);
+    }
+
+    .card.foco3 {
+      border-top-color: var(--foco3);
+    }
+
+    .card.foco4 {
+      border-top-color: var(--foco4);
+    }
+
+    .card-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--txt);
+      margin-bottom: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+
+    select,
+    input[type="number"],
+    input[type="date"] {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--txt);
+      background: #f1f5f9;
+      outline: none;
+      transition: all 0.3s ease;
+      text-align: center;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    select:focus,
+    input:focus {
+      background: #fff;
+      border-color: var(--acc);
+      box-shadow: 0 0 0 4px rgba(27, 95, 168, 0.15);
+    }
+
+    select:disabled {
+      background: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: #fff;
+      border: none;
+      width: 100%;
+      padding: 18px;
+      border-radius: 16px;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-top: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 32px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-submit:disabled {
+      background: #cbd5e1;
+      color: #64748b;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    #loading {
+      text-align: center;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-top: 12px;
+      display: none;
+      font-size: 15px;
+    }
+
     .global-overlay {
       display: none;
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background: rgba(15, 23, 42, 0.65);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
@@ -79,20 +253,31 @@
       text-align: center;
       padding: 20px;
     }
+
     .spinner {
       width: 48px;
       height: 48px;
-      border: 5px solid rgba(255,255,255,0.2);
+      border: 5px solid rgba(255, 255, 255, 0.2);
       border-top-color: #38bdf8;
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-bottom: 20px;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .overlay-text { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
 
-    .success-msg { 
-      display: none; 
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .overlay-text {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .success-msg {
+      display: none;
       position: fixed;
       top: 80px;
       left: 50%;
@@ -100,24 +285,63 @@
       width: 90%;
       max-width: 400px;
       z-index: 1000;
-      background: linear-gradient(135deg, #10b981, #059669); 
-      color: white; 
-      padding: 16px; 
-      border-radius: 16px; 
-      text-align: center; 
-      font-weight: 800; 
-      font-size: 16px; 
-      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); 
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      padding: 16px;
+      border-radius: 16px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 16px;
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
       animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 
-    .kpi-fixed-text { font-size: 15px; font-weight: 800; color: #065f46; padding: 12px; background: linear-gradient(to right, #ecfdf5, #d1fae5); border-radius: 12px; border: 1px solid #a7f3d0; text-align: center; }
-    .kpi-pending-text { font-size: 14px; font-weight: 600; color: #991b1b; padding: 14px; background: linear-gradient(to right, #fef2f2, #fee2e2); border-radius: 12px; border: 1px solid #fecaca; text-align: center; }
+    @keyframes slideDown {
+      from {
+        transform: translate(-50%, -20px);
+        opacity: 0;
+      }
 
-    .focos-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; text-align: center; }
+      to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
+    }
+
+    .kpi-fixed-text {
+      font-size: 15px;
+      font-weight: 800;
+      color: #065f46;
+      padding: 12px;
+      background: linear-gradient(to right, #ecfdf5, #d1fae5);
+      border-radius: 12px;
+      border: 1px solid #a7f3d0;
+      text-align: center;
+    }
+
+    .kpi-pending-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #991b1b;
+      padding: 14px;
+      background: linear-gradient(to right, #fef2f2, #fee2e2);
+      border-radius: 12px;
+      border: 1px solid #fecaca;
+      text-align: center;
+    }
+
+    .focos-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
     @media (min-width: 480px) {
-      .focos-grid { grid-template-columns: 1fr 1fr; }
+      .focos-grid {
+        grid-template-columns: 1fr 1fr;
+      }
     }
   </style>
 
@@ -133,6 +357,7 @@
     }
   </script>
 </head>
+
 <body>
 
   <div id="global-overlay" class="global-overlay">
@@ -147,7 +372,7 @@
   </div>
 
   <div class="container">
-    
+
     <!-- IDENTIFICACION -->
     <div class="card">
       <div class="card-title">👤 Identificación</div>
@@ -171,27 +396,34 @@
 
     <!-- FOCOS 1 A 4 EN GRID RESPONSIVO -->
     <div class="focos-grid">
-      
+
       <!-- FOCO 1 -->
       <div class="card foco1" style="padding: 16px; margin-bottom: 0; position: relative; overflow: hidden;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Quilmes_Logo.svg" alt="Quilmes" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 120px; opacity: 0.15; pointer-events: none; z-index: 0;">
-        <div class="card-title" style="color:var(--foco1); font-size: 18px; margin-bottom: 12px; position: relative; z-index: 1;">Cervezas</div>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Quilmes_Logo.svg" alt="Quilmes"
+          style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 120px; opacity: 0.15; pointer-events: none; z-index: 0;">
+        <div class="card-title"
+          style="color:var(--foco1); font-size: 18px; margin-bottom: 12px; position: relative; z-index: 1;">Cervezas
+        </div>
         <div class="form-group" style="margin-bottom: 0; position: relative; z-index: 1;">
           <label style="font-size: 13px; margin-bottom: 8px;">Total Plan (HL)</label>
-          <input type="number" id="f1-total" step="0.01" placeholder="0.00" style="padding: 12px; font-size: 18px; text-align: center; position: relative; z-index: 2;">
+          <input type="number" id="f1-total" step="0.01" placeholder="0.00"
+            style="padding: 12px; font-size: 18px; text-align: center; position: relative; z-index: 2;">
         </div>
       </div>
-      
+
       <!-- FOCO 2 -->
       <div class="card foco2" style="padding: 16px; margin-bottom: 0; position: relative; overflow: hidden;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Pepsi_logo_2014.svg" alt="Pepsi" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 120px; opacity: 0.15; pointer-events: none; z-index: 0;">
-        <div class="card-title" style="color:var(--foco2); font-size: 18px; margin-bottom: 12px; position: relative; z-index: 1;">NABS</div>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Pepsi_logo_2014.svg" alt="Pepsi"
+          style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 120px; opacity: 0.15; pointer-events: none; z-index: 0;">
+        <div class="card-title"
+          style="color:var(--foco2); font-size: 18px; margin-bottom: 12px; position: relative; z-index: 1;">NABS</div>
         <div class="form-group" style="margin-bottom: 0; position: relative; z-index: 1;">
           <label style="font-size: 13px; margin-bottom: 8px;">Total Plan (HL)</label>
-          <input type="number" id="f2-total" step="0.01" placeholder="0.00" style="padding: 12px; font-size: 18px; text-align: center; position: relative; z-index: 2;">
+          <input type="number" id="f2-total" step="0.01" placeholder="0.00"
+            style="padding: 12px; font-size: 18px; text-align: center; position: relative; z-index: 2;">
         </div>
       </div>
-      
+
       <!-- FOCO 3 -->
       <div class="card foco3" style="padding: 16px; margin-bottom: 0;">
         <div class="card-title" style="color:var(--foco3); font-size: 18px; margin-bottom: 12px;">🎯 KPI 1</div>
@@ -199,7 +431,7 @@
           <div class="kpi-pending-text">Elegí supervisor...</div>
         </div>
       </div>
-  
+
       <!-- FOCO 4 -->
       <div class="card foco4" style="padding: 16px; margin-bottom: 0;">
         <div class="card-title" style="color:var(--foco4); font-size: 18px; margin-bottom: 12px;">🎯 KPI 2</div>
@@ -207,7 +439,7 @@
           <div class="kpi-pending-text">Elegí supervisor...</div>
         </div>
       </div>
-      
+
     </div>
 
     <!-- FOCO 5 (BOLETAS) -->
@@ -229,11 +461,11 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
 
     const SPV_DATA = {
-      'AVILA EZEQUIEL': ['FERNANDEZ LUIS','GARCIA MAYRA','JOFRE LUCAS','LOPEZ ALEJANDRA','MOURELLE ALFREDO','MUÑOZ PAULA','PEREYRA BRAIAN','TESEI ALEJANDRA','THEILLET NICOLAS'],
-      'ARES PEDRO': ['DIAZ VALERIA','GALLO JONATHAN','LOPEZ PABLO','MIÑO RENZO','SANCHEZ ROCIO','SANTILLAN SERGIO'],
-      'ECEIZA KEVIN': ['CESPEDES ENZO','DOMINGUEZ GONZALO','GONZALEZ ROBERTO','GUARAZ JUAN','JAIMES EZEQUIEL','MELA GONZALO','MENDOZA SERGIO','SAN JUAN CARLOS','SCORNAVACHE WALTER'],
-      'RIERA SALA DANIELA': ['ANDUAGA SANTIAGO','ASCONA MATIAS','BENITEZ NAHUEL','FREDES CLAUDIA','GEREZ JONATHAN','LEITES RODRIGO','MORENO AGUSTINA','REGNER LEANDRO','TORRES KARINA'],
-      'BDR': ['FERREYRA LEONARDO','FERREYRA TOBIAS','VEDIA ELIZABETH'],
+      'RIERA SALA DANIELA': ['FERNANDEZ LUIS', 'GARCIA MAYRA', 'JOFRE LUCAS', 'LOPEZ ALEJANDRA', 'MOURELLE ALFREDO', 'MUÑOZ PAULA', 'PEREYRA BRAIAN', 'TESEI ALEJANDRA', 'THEILLET NICOLAS'],
+      'ARES PEDRO': ['DIAZ VALERIA', 'GALLO JONATHAN', 'LOPEZ PABLO', 'MIÑO RENZO', 'SANCHEZ ROCIO', 'SANTILLAN SERGIO'],
+      'AVILA EZEQUIEL': ['CESPEDES ENZO', 'DOMINGUEZ GONZALO', 'GONZALEZ ROBERTO', 'GUARAZ JUAN', 'JAIMES EZEQUIEL', 'MELA GONZALO', 'MENDOZA SERGIO', 'SAN JUAN CARLOS', 'SCORNAVACHE WALTER'],
+      'ECEIZA KEVIN': ['ANDUAGA SANTIAGO', 'ASCONA MATIAS', 'BENITEZ NAHUEL', 'FREDES CLAUDIA', 'GEREZ JONATHAN', 'LEITES RODRIGO', 'MORENO AGUSTINA', 'REGNER LEANDRO', 'TORRES KARINA'],
+      'BDR': ['FERREYRA LEONARDO', 'FERREYRA TOBIAS', 'VEDIA ELIZABETH'],
       'MAYO': ['LEMOS PATRICIA']
     };
 
@@ -261,7 +493,7 @@
     // Setear fecha actual
     function setTodayDate() {
       const _now = new Date();
-      return `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
+      return `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
     }
     dateInput.value = setTodayDate();
 
@@ -292,7 +524,7 @@
     });
 
     dateInput.addEventListener('change', () => {
-      if(spvSelect.value) {
+      if (spvSelect.value) {
         loadKpis();
       }
     });
@@ -315,7 +547,7 @@
           cache: 'no-store'
         });
         const result = await response.json();
-        
+
         // Aplicar parche de codificación para MIÑO RENZO
         if (result.status === 'success' && result.data) {
           let patchedData = {};
@@ -327,7 +559,7 @@
             patchedData[prom] = result.data[originalProm];
           }
           result.data = patchedData;
-          
+
           // Buscamos cualquier registro que tenga configurado k1-met
           let foundKpi = false;
           for (let key in result.data) {
@@ -394,11 +626,11 @@
       const k1 = document.getElementById('kpi1-p')?.value.trim() || '';
       const k2 = document.getElementById('kpi2-p')?.value.trim() || '';
       const bol = document.getElementById('bol-total')?.value.trim() || '';
-      
+
       let missing = [];
       if (f1 === '') missing.push('Cervezas');
       if (f2 === '') missing.push('NABS');
-      
+
       if (!isLemos) {
         if (k1 === '') missing.push('KPI 1');
         if (k2 === '') missing.push('KPI 2');
@@ -451,7 +683,7 @@
       };
 
       const success = document.getElementById('success-msg');
-      btnSubmit.disabled = true; 
+      btnSubmit.disabled = true;
       showOverlay('Enviando planificación, por favor esperá...');
       success.style.display = 'none';
 
@@ -486,4 +718,5 @@
     });
   </script>
 </body>
+
 </html>
