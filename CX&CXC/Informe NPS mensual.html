@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>EMCALA · Informe NPS Mensual</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&display=swap');
+
+    :root {
+      --navy: #0B2559;
+      --navy-2: #123168;
+      --bg: linear-gradient(145deg, #0B2559 0%, #1B5FA8 60%, #0D3880 100%);
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --fg: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --accent: #1B5FA8;
+      --on-accent: #ffffff;
+      --prom: #16a34a;
+      --pas: #eab308;
+      --det: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      background: #0B2559;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER EMCALA ── */
+    .hdr {
+      background: rgba(22, 49, 84, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .hdr-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand strong {
+      font-size: 20px;
+      letter-spacing: -0.02em;
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .brand .sep {
+      width: 1.5px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .brand-titles {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .brand-titles h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .brand-titles .sub {
+      font-size: 11.5px;
+      color: #b9c6e6;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    /* ── BOTONES ── */
+    .btn {
+      appearance: none;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      color: var(--accent);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:focus-visible,
+    .drop:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 3px;
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      box-shadow: none;
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .btn-outline:disabled {
+      opacity: 0.6;
+      cursor: wait;
+      transform: none;
+    }
+
+    /* ── CONTENEDOR PRINCIPAL ── */
+    .wrap {
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 20px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+      flex: 1;
+    }
+
+    /* ── ZONA DE CARGA (DROPZONE) ── */
+    .drop {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      text-align: center;
+      border: 1.5px dashed rgba(255, 255, 255, 0.35);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 54px 24px;
+      margin: 24px auto 20px;
+      max-width: 640px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+      transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    }
+
+    .drop .drop-icon {
+      font-size: 40px;
+      color: #4ade80;
+      margin-bottom: 2px;
+    }
+
+    .drop p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.85);
+      max-width: 46ch;
+      font-size: 13.5px;
+      font-weight: 500;
+    }
+
+    .drop.over {
+      border-color: #4ade80;
+      background: rgba(255, 255, 255, 0.14);
+      transform: scale(1.01);
+    }
+
+    /* ── ESTADO / ALERTA ── */
+    .estado {
+      margin: 0 0 14px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: rgba(239, 68, 68, 0.92);
+      color: #fff;
+      font-weight: 700;
+      font-size: 12.5px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .estado:empty {
+      display: none;
+    }
+
+    /* ── ÁREA DE CAPTURA BRANDEADA ── */
+    .capture-box {
+      background: linear-gradient(145deg, #0B2559 0%, #1B5FA8 60%, #0D3880 100%);
+      padding: 16px;
+      border-radius: 14px;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+    }
+
+    .capture-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 12px;
+      color: #fff;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 10px;
+    }
+
+    .capture-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .capture-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 2px 0;
+      color: #fff;
+    }
+
+    .capture-period {
+      font-size: 12px;
+      color: #b9c6e6;
+      font-weight: 600;
+    }
+
+    .capture-tag {
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── KPIs ── */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 16px;
+      min-width: 0;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .kpi .l {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .kpi .v {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--navy);
+      font-variant-numeric: tabular-nums;
+      margin-top: 4px;
+      overflow-wrap: anywhere;
+    }
+
+    .kpi.kpi-main {
+      border: 2px solid var(--accent);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+    }
+
+    .kpi.kpi-main .l {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: 0.06em;
+    }
+
+    .kpi.kpi-main .v {
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+
+    /* ── TARJETAS (GRÁFICO Y TABLA) ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      min-width: 0;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.22);
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--navy);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── GRÁFICO SVG ── */
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+    }
+
+    .grid {
+      stroke: var(--line);
+      stroke-width: 1;
+    }
+
+    .zero {
+      stroke: var(--navy);
+      stroke-width: 1.5;
+    }
+
+    .ax {
+      fill: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: inherit;
+    }
+
+    .lbl {
+      fill: var(--fg);
+      font-size: 13px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-family: inherit;
+    }
+
+    .bar {
+      fill: var(--prom);
+    }
+
+    .bar.neg {
+      fill: var(--det);
+    }
+
+    /* ── TABLA ESTILO EMCALA (COMPRIMIDA) ── */
+    .tabla-wrap {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+    }
+
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      min-width: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    th,
+    td {
+      padding: 4px 5px;
+      border-bottom: 1px solid #eef1f5;
+      text-align: center;
+      white-space: nowrap;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    thead tr:first-child th {
+      background: var(--navy);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      text-align: center;
+      padding: 5px 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    thead tr:first-child th:first-child {
+      text-align: left;
+      background: var(--navy);
+      z-index: 3;
+    }
+
+    thead tr:nth-child(2) th {
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 3px 4px;
+      border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+    }
+
+    thead tr:nth-child(2) th:first-child {
+      background: var(--accent);
+      z-index: 3;
+    }
+
+    tbody td {
+      background: var(--surface);
+      color: var(--fg);
+    }
+
+    tbody td:first-child {
+      font-weight: 700;
+      color: #334155;
+      background: var(--surface);
+    }
+
+    tbody tr:hover td {
+      background: var(--surface-alt);
+    }
+
+    tbody tr.total td,
+    tbody tr.total td:first-child {
+      background: #f1f5f9;
+      font-weight: 800;
+      color: var(--navy);
+      border-top: 1px solid #cbd5e1;
+    }
+
+    tbody tr.nps td,
+    tbody tr.nps td:first-child {
+      background: var(--navy);
+      color: #fff;
+      font-weight: 800;
+      font-size: 12px;
+      border-bottom: 0;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: 0px;
+    }
+
+    .nota {
+      margin: 10px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* ── SECCIÓN INFERIOR: DONUT DRIVERS + TOP 5 COMENTARIOS ── */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .bottom-grid .card {
+      margin-bottom: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex: 1;
+      min-height: 200px;
+    }
+
+    .donut-svg-box {
+      width: 175px;
+      height: 175px;
+      flex-shrink: 0;
+    }
+
+    .donut-legend {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+    }
+
+    .legend-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .legend-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .legend-val {
+      font-weight: 800;
+      color: var(--navy);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      font-size: 11.5px;
+    }
+
+    .legend-val span {
+      color: var(--muted);
+      font-weight: 600;
+      margin-left: 3px;
+    }
+
+    .top-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .top-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .top-rank {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      font-weight: 800;
+      font-size: 11.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .top-item:nth-child(1) .top-rank {
+      background: var(--det);
+    }
+
+    .top-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .top-text {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--fg);
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .top-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 3px;
+    }
+
+    .top-tag {
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #e0e7ff;
+      color: var(--navy);
+    }
+
+    .top-bar-track {
+      flex: 1;
+      height: 5px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .top-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+    }
+
+    .top-count {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--navy);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .top-count small {
+      display: block;
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .empty-box {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 24px 12px;
+      background: var(--surface-alt);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+    }
+
+    @media (max-width: 860px) {
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 640px) {
+      .hdr {
+        padding: 8px 12px;
+      }
+
+      .brand strong {
+        font-size: 17px;
+      }
+
+      .kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="hdr">
+    <div class="hdr-left">
+      <div class="brand">
+        <strong>EMCALA</strong>
+        <div class="sep"></div>
+        <div class="brand-titles">
+          <h1>Informe NPS Mensual</h1>
+          <p class="sub" id="sub">Galaxia CMQ · Cargá la base de respuestas para generar el informe</p>
+        </div>
+      </div>
+    </div>
+    <div class="hdr-left">
+      <button class="btn btn-outline" id="btn-copy-img" type="button" hidden><i class="fa-solid fa-camera"></i> Copiar
+        Foto</button>
+      <button class="btn btn-outline" id="btnOtra" type="button" hidden><i class="fa-solid fa-file-excel"></i> Cargar
+        otra base</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="drop" id="drop">
+      <div class="drop-icon"><i class="fa-solid fa-file-excel"></i></div>
+      <button class="btn" id="btn" type="button"><i class="fa-solid fa-upload"></i> Cargar base (.xlsx)</button>
+      <p>Arrastrá el archivo acá o usá el botón. Los datos se procesan en tu navegador y no se guardan.</p>
+    </div>
+    <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+
+    <p class="estado" id="estado" role="status"></p>
+
+    <section id="resultado" hidden>
+      <div class="capture-box" id="captureArea">
+        <div class="capture-banner">
+          <div>
+            <div class="capture-badge">EMCALA · Galaxia CMQ</div>
+            <div class="capture-title">Informe NPS Mensual</div>
+            <div class="capture-period" id="kPeriodo"></div>
+          </div>
+          <div class="capture-tag" id="kFechaGen"></div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <div class="l">Promotores total YTD</div>
+            <div class="v" id="kProm">–</div>
+          </div>
+          <div class="kpi">
+            <div class="l">Detractores YTD</div>
+            <div class="v" id="kDet">–</div>
+          </div>
+          <div class="kpi kpi-main">
+            <div class="l">NPS YTD</div>
+            <div class="v" id="kNps">–</div>
+          </div>
+          <div class="kpi">
+            <div class="l">Objetivo</div>
+            <div class="v" id="kObj">74</div>
+          </div>
+          <div class="kpi">
+            <div class="l">% de cumplimiento</div>
+            <div class="v" id="kCumpl">–</div>
+          </div>
+        </div>
+
+        <section class="card">
+          <h2><i class="fa-solid fa-chart-column" style="color:var(--accent);margin-right:6px;"></i> Evolución mensual
+            del NPS</h2>
+          <svg id="grafico" viewBox="0 0 860 230" role="img"
+            aria-label="Gráfico de barras con el NPS de cada mes"></svg>
+        </section>
+
+        <section class="card" style="margin-bottom:0;">
+          <h2><i class="fa-solid fa-table" style="color:var(--accent);margin-right:6px;"></i> Detalle por mes</h2>
+          <div class="tabla-wrap">
+            <table id="tabla"></table>
+          </div>
+          <p class="nota">Clientes únicos: cada cliente cuenta una vez por mes. Promotor 9–10 · Pasivo 7–8 · Detractor
+            0–6. NPS = % Promotores − % Detractores.</p>
+        </section>
+
+        <div class="bottom-grid">
+          <section class="card">
+            <h2><i class="fa-solid fa-chart-pie" style="color:var(--accent);margin-right:6px;"></i> Drivers primarios
+            </h2>
+            <div class="donut-wrap" id="driversBox"></div>
+          </section>
+
+          <section class="card">
+            <h2><i class="fa-solid fa-comments" style="color:var(--accent);margin-right:6px;"></i> Top 5 principales
+              comentarios</h2>
+            <div class="top-list" id="comentariosBox"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    (function () {
+      const $ = s => document.querySelector(s);
+      const NS = 'http://www.w3.org/2000/svg';
+      const MES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const MES_LARGO = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+      const fmt1 = n => Math.round(n).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      const fmtN = n => n.toLocaleString('es-AR');
+
+      function parseFecha(v) {
+        if (v instanceof Date) return isNaN(v) ? null : { y: v.getFullYear(), m: v.getMonth() + 1 };
+        if (typeof v === 'number' && v > 20000 && v < 80000) {
+          const d = new Date(Math.round((v - 25569) * 86400000));
+          return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1 };
+        }
+        if (typeof v === 'string') {
+          const m = v.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+          if (m) return { y: +m[1], m: +m[2] };
+        }
+        return null;
+      }
+
+      const PALETA_DONUT = ['#0B2559', '#1B5FA8', '#0ea5e9', '#16a34a', '#eab308', '#f97316', '#ef4444', '#64748b'];
+      const IGNORAR_TXT = /^(-+|\.+|n\/a|na|s\/d|s\/c|sin\s*comentarios?|ninguno|ninguna|nada|no|ok|null|undefined)$/i;
+
+      function limpiarTexto(v) {
+        if (v == null) return '';
+        const t = String(v).trim().replace(/\s+/g, ' ');
+        return (!t || IGNORAR_TXT.test(t)) ? '' : t;
+      }
+
+      function procesar(wb) {
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const filas = XLSX.utils.sheet_to_json(ws, { defval: null });
+        if (!filas.length) throw new Error('La hoja está vacía.');
+        const cols = Object.keys(filas[0]);
+        const colF = cols.find(c => /FECHA/i.test(c));
+        const colC = cols.find(c => /COD\s*CLIENTE/i.test(c));
+        const colS = cols.find(c => /^\s*SCORE\s*$/i.test(c));
+        if (!colF || !colC || !colS) throw new Error('No encuentro las columnas FECHA ENC, COD CLIENTE DIST y SCORE.');
+
+        const restoCols = cols.filter(c => c !== colF && c !== colC && c !== colS);
+        const colD = restoCols.find(c => /DRIVER\s*PRIM|PRIMARY\s*DRIVER|DRIVER\s*1|PRIMER\s*DRIVER/i.test(c))
+          || restoCols.find(c => /DRIVER/i.test(c) && !/SEC|SUB|2/i.test(c))
+          || restoCols.find(c => /MOTIVO\s*PRIN|CATEGORIA|EJE|AREA|TOPICO/i.test(c));
+
+        const colCom = restoCols.find(c => c !== colD && /COMENT|OBSERV|VERBATIM|OPINION|RESPUESTA|FEEDBACK|TEXTO|DETALLE/i.test(c))
+          || restoCols.find(c => c !== colD && /DRIVER\s*SEC|SUB\s*DRIVER|SECONDARY|DRIVER\s*2|SUBMOTIVO|MOTIVO|CAUSA|RAZON/i.test(c));
+
+        const meses = new Map();          // clave año*100+mes -> {P,N,D,total}
+        const vistos = new Set();         // un cliente por mes
+        const clientes = new Set();
+        const tot = { P: 0, N: 0, D: 0 };
+        const driversMap = new Map();
+        const comentMap = new Map();
+        let descartadas = 0;
+
+        for (const f of filas) {
+          const fecha = parseFecha(f[colF]);
+          const cli = f[colC] == null ? '' : String(f[colC]).trim();
+          const sr = f[colS] == null ? '' : String(f[colS]).trim();
+          if (!fecha || !cli || !/^\d+$/.test(sr) || Number(sr) > 10) { descartadas++; continue; }
+          const s = Number(sr);
+          const k = fecha.y * 100 + fecha.m;
+          const id = k + '|' + cli;
+          if (vistos.has(id)) continue;
+          vistos.add(id);
+          clientes.add(cli);
+          const cat = s >= 9 ? 'P' : (s >= 7 ? 'N' : 'D');
+          if (!meses.has(k)) meses.set(k, { P: 0, N: 0, D: 0, total: 0 });
+          const mm = meses.get(k);
+          mm[cat]++; mm.total++;
+          tot[cat]++;
+
+          const drv = colD ? limpiarTexto(f[colD]) : '';
+          if (drv) {
+            const dKey = drv.toUpperCase();
+            if (!driversMap.has(dKey)) driversMap.set(dKey, { nombre: drv, count: 0 });
+            driversMap.get(dKey).count++;
+          }
+
+          const com = colCom ? limpiarTexto(f[colCom]) : '';
+          if (com) {
+            const cKey = com.toUpperCase();
+            if (!comentMap.has(cKey)) {
+              comentMap.set(cKey, { texto: com, count: 0, driver: drv, minScore: s });
+            }
+            const item = comentMap.get(cKey);
+            item.count++;
+            if (!item.driver && drv) item.driver = drv;
+            if (s < item.minScore) item.minScore = s;
+          }
+        }
+        if (!meses.size) throw new Error('No encontré respuestas válidas en el archivo.');
+
+        const keys = [...meses.keys()].sort((a, b) => a - b);
+        const serie = keys.map(k => {
+          const m = meses.get(k);
+          const pP = m.P / m.total * 100, pD = m.D / m.total * 100;
+          return {
+            k,
+            label: MES[(k % 100) - 1] + ' ' + Math.floor(k / 100),
+            mesNombre: MES_LARGO[(k % 100) - 1],
+            ...m, pP, pN: m.N / m.total * 100, pD, nps: pP - pD
+          };
+        });
+        const totalResp = serie.reduce((a, m) => a + m.total, 0);
+        const npsGeneral = (tot.P / totalResp - tot.D / totalResp) * 100;
+
+        const drivers = [...driversMap.values()].sort((a, b) => b.count - a.count);
+        const topComentarios = [...comentMap.values()]
+          .sort((a, b) => (b.count - a.count) || (a.minScore - b.minScore) || (b.texto.length - a.texto.length))
+          .slice(0, 5);
+        const totalComent = [...comentMap.values()].reduce((a, c) => a + c.count, 0);
+
+        return { serie, totalResp, tot, clientes: clientes.size, npsGeneral, descartadas, drivers, topComentarios, totalComent };
+      }
+
+      function svgEl(tag, attrs, text) {
+        const e = document.createElementNS(NS, tag);
+        for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+        if (text != null) e.textContent = text;
+        return e;
+      }
+
+      function dibujarGrafico(serie) {
+        const svg = $('#grafico');
+        svg.textContent = '';
+        const W = 860, H = 230, L = 12, R = 12, T = 28, B = 34;
+        const pw = W - L - R, ph = H - T - B;
+        const y = v => T + (100 - Math.max(0, Math.min(100, v))) / 100 * ph;
+        for (const v of [50, 100]) {
+          svg.append(svgEl('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), class: 'grid' }));
+        }
+        svg.append(svgEl('line', { x1: L, x2: W - R, y1: y(0), y2: y(0), class: 'zero' }));
+        const slot = pw / serie.length, bw = Math.min(48, slot * 0.58);
+        serie.forEach((m, i) => {
+          const cx = L + slot * i + slot / 2;
+          const top = y(m.nps), bot = y(0);
+          svg.append(svgEl('rect', { x: cx - bw / 2, y: top, width: bw, height: Math.max(bot - top, 2), rx: 4, class: 'bar' + (Math.round(m.nps) < 74 ? ' neg' : '') }));
+          svg.append(svgEl('text', { x: cx, y: top - 7, 'text-anchor': 'middle', class: 'lbl' }, fmt1(m.nps)));
+          svg.append(svgEl('text', { x: cx, y: H - B + 20, 'text-anchor': 'middle', class: 'ax' }, m.mesNombre));
+        });
+      }
+
+      function celda(tag, text, cls) {
+        const c = document.createElement(tag);
+        if (cls) c.className = cls;
+        c.textContent = text;
+        return c;
+      }
+
+      function dibujarTabla(serie) {
+        const t = $('#tabla');
+        t.textContent = '';
+        const thead = document.createElement('thead');
+        const r1 = document.createElement('tr');
+        r1.append(celda('th', 'Categoría'));
+        serie.forEach(m => { const th = celda('th', m.mesNombre); th.colSpan = 2; r1.append(th); });
+        const r2 = document.createElement('tr');
+        r2.append(celda('th', ''));
+        serie.forEach(() => { r2.append(celda('th', 'Clientes'), celda('th', '%')); });
+        thead.append(r1, r2);
+        const tb = document.createElement('tbody');
+        const filas = [
+          { nombre: 'Promotor', key: 'P', pk: 'pP', color: 'var(--prom)' },
+          { nombre: 'Pasivo', key: 'N', pk: 'pN', color: 'var(--pas)' },
+          { nombre: 'Detractor', key: 'D', pk: 'pD', color: 'var(--det)' },
+        ];
+        for (const f of filas) {
+          const tr = document.createElement('tr');
+          const th = celda('td', '');
+          const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = f.color;
+          th.append(dot, document.createTextNode(f.nombre));
+          tr.append(th);
+          serie.forEach(m => { tr.append(celda('td', fmtN(m[f.key])), celda('td', fmt1(m[f.pk]) + '%')); });
+          tb.append(tr);
+        }
+        const trT = document.createElement('tr'); trT.className = 'total';
+        trT.append(celda('td', 'TOTAL'));
+        serie.forEach(m => trT.append(celda('td', fmtN(m.total)), celda('td', fmt1(m.pP - m.pD) + '%')));
+        const trN = document.createElement('tr'); trN.className = 'nps';
+        trN.append(celda('td', 'NPS'));
+        serie.forEach(m => { const td = celda('td', fmt1(m.nps)); td.colSpan = 2; trN.append(td); });
+        tb.append(trT, trN);
+        t.append(thead, tb);
+      }
+
+      function dibujarDrivers(drivers) {
+        const box = $('#driversBox');
+        box.textContent = '';
+        if (!drivers || !drivers.length) {
+          const empty = celda('div', 'No se detectaron datos de Drivers Primarios en el archivo.', 'empty-box');
+          box.append(empty);
+          return;
+        }
+        const top = drivers.slice(0, 6);
+        const restoCount = drivers.slice(6).reduce((a, d) => a + d.count, 0);
+        if (restoCount > 0) top.push({ nombre: 'Otros', count: restoCount });
+        const totalD = top.reduce((a, d) => a + d.count, 0);
+
+        const svgBox = celda('div', '', 'donut-svg-box');
+        const svg = svgEl('svg', { viewBox: '0 0 200 200', role: 'img', 'aria-label': 'Gráfico de donut de drivers primarios' });
+        const cx = 100, cy = 100, r = 68, C = 2 * Math.PI * r;
+        let acum = 0;
+
+        top.forEach((d, i) => {
+          const frac = d.count / totalD;
+          const len = frac * C;
+          const circle = svgEl('circle', {
+            cx, cy, r,
+            fill: 'none',
+            stroke: PALETA_DONUT[i % PALETA_DONUT.length],
+            'stroke-width': 28,
+            'stroke-dasharray': `${len} ${C - len}`,
+            'stroke-dashoffset': -acum,
+            transform: `rotate(-90 ${cx} ${cy})`
+          });
+          svg.append(circle);
+          acum += len;
+        });
+
+        svg.append(svgEl('text', { x: cx, y: cy - 2, 'text-anchor': 'middle', class: 'lbl', style: 'font-size:20px;fill:var(--navy)' }, fmtN(totalD)));
+        svg.append(svgEl('text', { x: cx, y: cy + 15, 'text-anchor': 'middle', class: 'ax', style: 'font-size:10px;text-transform:uppercase' }, 'Menciones'));
+        svgBox.append(svg);
+
+        const leg = celda('div', '', 'donut-legend');
+        top.forEach((d, i) => {
+          const item = celda('div', '', 'legend-item');
+          const left = celda('div', '', 'legend-left');
+          const dot = celda('span', '', 'dot');
+          dot.style.background = PALETA_DONUT[i % PALETA_DONUT.length];
+          dot.style.marginRight = '0';
+          const name = celda('span', d.nombre, 'legend-name');
+          name.title = d.nombre;
+          left.append(dot, name);
+
+          const pct = fmt1(d.count / totalD * 100) + '%';
+          const val = celda('div', fmtN(d.count), 'legend-val');
+          val.append(celda('span', '(' + pct + ')'));
+          item.append(left, val);
+          leg.append(item);
+        });
+
+        box.append(svgBox, leg);
+      }
+
+      function dibujarComentarios(topComentarios, totalComent) {
+        const box = $('#comentariosBox');
+        box.textContent = '';
+        if (!topComentarios || !topComentarios.length) {
+          const empty = celda('div', 'No se detectaron comentarios en el archivo.', 'empty-box');
+          box.append(empty);
+          return;
+        }
+        const maxCount = topComentarios[0].count;
+        topComentarios.forEach((c, idx) => {
+          const item = celda('div', '', 'top-item');
+          const rank = celda('div', String(idx + 1), 'top-rank');
+          const body = celda('div', '', 'top-body');
+          const txt = celda('div', c.texto, 'top-text');
+          txt.title = c.texto;
+          body.append(txt);
+
+          const meta = celda('div', '', 'top-meta');
+          if (c.driver) {
+            meta.append(celda('span', c.driver, 'top-tag'));
+          }
+          const track = celda('div', '', 'top-bar-track');
+          const fill = celda('div', '', 'top-bar-fill');
+          fill.style.width = Math.max(12, Math.round(c.count / maxCount * 100)) + '%';
+          track.append(fill);
+          meta.append(track);
+          body.append(meta);
+
+          const pct = totalComent ? fmt1(c.count / totalComent * 100) + '%' : '';
+          const countEl = celda('div', fmtN(c.count), 'top-count');
+          countEl.append(celda('small', pct));
+
+          item.append(rank, body, countEl);
+          box.append(item);
+        });
+      }
+
+      function pintar(inf, nombre) {
+        const s = inf.serie;
+        const npsOk = Math.round(inf.npsGeneral) >= 74;
+        const cumpl = Math.round(inf.npsGeneral / 74 * 100);
+        const kCumpl = $('#kCumpl');
+        kCumpl.textContent = fmt1(cumpl) + '%';
+        kCumpl.style.color = npsOk ? 'var(--prom)' : 'var(--det)';
+
+        const pProm = inf.totalResp ? fmt1(inf.tot.P / inf.totalResp * 100) + '%' : '0%';
+        const pDet = inf.totalResp ? fmt1(inf.tot.D / inf.totalResp * 100) + '%' : '0%';
+        $('#kProm').textContent = fmtN(inf.tot.P) + ' (' + pProm + ')';
+        $('#kDet').textContent = fmtN(inf.tot.D) + ' (' + pDet + ')';
+        const kNps = $('#kNps');
+        kNps.textContent = fmt1(inf.npsGeneral);
+        kNps.style.color = npsOk ? 'var(--prom)' : 'var(--det)';
+        const subTxt = (nombre ? nombre + ' · ' : '') + s[0].label + ' a ' + s[s.length - 1].label + ' · ' + fmtN(inf.totalResp) + ' respuestas únicas';
+        $('#sub').textContent = subTxt;
+        if ($('#kPeriodo')) $('#kPeriodo').textContent = subTxt;
+        if ($('#kFechaGen')) $('#kFechaGen').textContent = 'Generado: ' + new Date().toLocaleDateString('es-AR');
+        dibujarGrafico(s);
+        dibujarTabla(s);
+        dibujarDrivers(inf.drivers);
+        dibujarComentarios(inf.topComentarios, inf.totalComent);
+        $('#resultado').hidden = false;
+        $('#drop').hidden = true;
+        $('#btnOtra').hidden = false;
+        if ($('#btn-copy-img')) $('#btn-copy-img').hidden = false;
+      }
+
+      function error(msg) { $('#estado').textContent = msg; }
+
+      function leer(file) {
+        if (!file) return;
+        if (typeof XLSX === 'undefined') { error('No se pudo cargar el lector de Excel. Revisá la conexión y recargá la página.'); return; }
+        error('Procesando ' + file.name + '…');
+        const r = new FileReader();
+        r.onload = e => {
+          try {
+            const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+            const inf = procesar(wb);
+            error('');
+            pintar(inf, file.name);
+            if (inf.descartadas) error(fmtN(inf.descartadas) + ' filas se descartaron por no tener fecha, cliente o score válidos.');
+          } catch (err) {
+            error(err.message || 'No se pudo leer el archivo.');
+          }
+        };
+        r.onerror = () => error('No se pudo leer el archivo.');
+        r.readAsArrayBuffer(file);
+      }
+
+      const input = $('#file');
+      $('#btn').addEventListener('click', () => input.click());
+      $('#btnOtra').addEventListener('click', () => input.click());
+      input.addEventListener('change', () => { leer(input.files[0]); input.value = ''; });
+
+      const drop = $('#drop');
+      ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+      ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+      drop.addEventListener('drop', e => leer(e.dataTransfer.files[0]));
+
+      // Copiar Foto (html2canvas)
+      const btnCopy = $('#btn-copy-img');
+      if (btnCopy) {
+        btnCopy.addEventListener('click', async () => {
+          const origHtml = btnCopy.innerHTML;
+          btnCopy.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Capturando...';
+          btnCopy.disabled = true;
+          try {
+            const captureEl = $('#captureArea');
+            const canvas = await html2canvas(captureEl, {
+              backgroundColor: '#0B2559',
+              scale: 2,
+              useCORS: true,
+              logging: false
+            });
+
+            canvas.toBlob(async blob => {
+              try {
+                const titleText = 'EMCALA · INFORME NPS MENSUAL';
+                const textBlob = new Blob([titleText], { type: 'text/plain' });
+                await navigator.clipboard.write([
+                  new ClipboardItem({
+                    [blob.type]: blob,
+                    'text/plain': textBlob
+                  })
+                ]);
+                btnCopy.innerHTML = '<i class="fa-solid fa-check"></i> ¡Copiado!';
+              } catch (err) {
+                const link = document.createElement('a');
+                link.download = 'Informe_NPS_EMCALA.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btnCopy.innerHTML = '<i class="fa-solid fa-download"></i> ¡Descargado!';
+              }
+              setTimeout(() => {
+                btnCopy.innerHTML = origHtml;
+                btnCopy.disabled = false;
+              }, 2000);
+            }, 'image/png');
+          } catch (e) {
+            console.error(e);
+            btnCopy.innerHTML = '<i class="fa-solid fa-xmark"></i> Error';
+            setTimeout(() => {
+              btnCopy.innerHTML = origHtml;
+              btnCopy.disabled = false;
+            }, 2000);
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+
+</html>
