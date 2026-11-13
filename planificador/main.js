@@ -296,6 +296,32 @@
             try {
               const data = new Uint8Array(evt.target.result);
               const workbook = XLSX.read(data, {type: 'array'});
+              // Si la hoja es el maestro de SKUs (sku_id + full_description), va a la nube igual que el CSV
+              const hojaSkus = workbook.Sheets['PRODUCTOS'] || workbook.Sheets[workbook.SheetNames[0]];
+              const rangoEncabezado = XLSX.utils.decode_range(hojaSkus['!ref'] || 'A1');
+              rangoEncabezado.e.r = rangoEncabezado.s.r;
+              const encabezadoSkus = (XLSX.utils.sheet_to_json(hojaSkus, { header: 1, range: rangoEncabezado, blankrows: false })[0] || [])
+                .map(h => String(h).trim().toLowerCase());
+              if (encabezadoSkus.indexOf('sku_id') >= 0 && encabezadoSkus.indexOf('full_description') >= 0) {
+                try {
+                  btnImportAuto.innerHTML = '⏳ Subiendo SKUs a la nube...';
+                  const csvSkus = XLSX.utils.sheet_to_csv(hojaSkus, { FS: ';', blankrows: false });
+                  const resumen = await CargaSupabase.cargarArchivo(csvSkus, {
+                    skus: true,
+                    onProgress: (t) => { btnImportAuto.innerHTML = '⏳ ' + t; }
+                  });
+                  console.log('☁️ Carga Supabase (xlsx):', resumen);
+                  alert('✅ SKUs cargados en la nube (' + resumen.skus + ' filas).\n\nTodavía el Planificador lee los SKUs de la planilla: la lectura desde la nube es el siguiente paso.');
+                } catch (err) {
+                  console.error(err);
+                  alert('No se pudo cargar en la nube: ' + err.message + '\n\nLa carga se puede repetir sin problema.');
+                } finally {
+                  autoFileInput.value = '';
+                  btnImportAuto.innerHTML = origText;
+                  btnImportAuto.disabled = false;
+                }
+                return;
+              }
               let promotoresFound = 0;
               const allPromoters = [];
               for (let spv in SPV_DATA) {
