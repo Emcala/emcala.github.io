@@ -37,6 +37,35 @@ document.getElementById('folder-input').addEventListener('change', e => {
   });
 });
 
+// ── Barra de progreso de la carga a Supabase ─────────────────
+function showUploadProgress(text, pct) {
+  let box = document.getElementById('up-progress');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'up-progress';
+    box.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;width:min(520px,92vw);background:rgba(15,23,42,.96);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:14px 18px;color:#fff;font-family:inherit;box-shadow:0 10px 30px rgba(0,0,0,.5);';
+    box.innerHTML = '<div id="up-progress-txt" style="font-size:13px;font-weight:700;margin-bottom:8px"></div>' +
+      '<div style="height:10px;background:rgba(255,255,255,.15);border-radius:6px;overflow:hidden"><div id="up-progress-bar" style="height:100%;width:0%;background:#4ade80;transition:width .3s"></div></div>' +
+      '<div style="font-size:11px;opacity:.7;margin-top:8px">No cierres ni recargues esta pestaña hasta que termine.</div>';
+    document.body.appendChild(box);
+  }
+  document.getElementById('up-progress-txt').textContent = text;
+  document.getElementById('up-progress-bar').style.width = Math.max(0, Math.min(100, pct)) + '%';
+}
+function hideUploadProgress() {
+  const box = document.getElementById('up-progress');
+  if (box) box.remove();
+}
+
+// Mientras se sube, avisar antes de cerrar/recargar la pestaña
+window._subiendoASupabase = false;
+if (typeof EmcalaAuth !== 'undefined' && EmcalaAuth.registerDirtyCheck) {
+  EmcalaAuth.registerDirtyCheck(() => window._subiendoASupabase);
+}
+window.addEventListener('beforeunload', e => {
+  if (window._subiendoASupabase) { e.preventDefault(); e.returnValue = ''; }
+});
+
 // Persiste los años recién cargados en Supabase y refresca el badge.
 async function persistirAños(añosGuardados) {
   renderLU('loading');
@@ -44,16 +73,37 @@ async function persistirAños(añosGuardados) {
   let errores = [];
   let filasTotal = 0;
 
-  for (const yr of Object.keys(añosGuardados)) {
-    const res = await guardarAnioEnSupabase(yr, añosGuardados[yr]);
-    if (!res.ok) {
-      todoOk = false;
-      errores.push(`${yr}: ${res.error}`);
-      console.error('Error guardando', yr, 'en Supabase:', res.error);
-    } else {
-      filasTotal += res.inserted || 0;
-      console.log(`${yr}: ${res.inserted} filas guardadas en Supabase.`);
+  const years = Object.keys(añosGuardados);
+  const grandTotal = years.reduce((acc, y) => acc + añosGuardados[y].length, 0);
+  let doneBefore = 0;
+  window._subiendoASupabase = true;
+  showUploadProgress('Preparando carga…', 0);
+
+  try {
+    for (let idx = 0; idx < years.length; idx++) {
+      const yr = years[idx];
+      const total = añosGuardados[yr].length;
+      const res = await guardarAnioEnSupabase(yr, añosGuardados[yr], p => {
+        const overall = (doneBefore + p.done) / grandTotal * 100;
+        const que = p.fase === 'reemplazando' ? 'Reemplazando la carga anterior…' : 'Guardando';
+        showUploadProgress(
+          `${que} ${yr} (año ${idx + 1} de ${years.length}) · ${p.done.toLocaleString('es-AR')} / ${p.total.toLocaleString('es-AR')} filas · ${Math.round(overall)}% total`,
+          overall
+        );
+      });
+      doneBefore += total;
+      if (!res.ok) {
+        todoOk = false;
+        errores.push(`${yr}: ${res.error}`);
+        console.error('Error guardando', yr, 'en Supabase:', res.error);
+      } else {
+        filasTotal += res.inserted || 0;
+        console.log(`${yr}: ${res.inserted} filas guardadas en Supabase.`);
+      }
     }
+  } finally {
+    window._subiendoASupabase = false;
+    hideUploadProgress();
   }
 
   if (todoOk) {
@@ -63,7 +113,7 @@ async function persistirAños(añosGuardados) {
     renderLU('err');
     alert('⚠️ No se pudieron guardar los datos en Supabase:\n\n' +
           errores.join('\n') +
-          '\n\nLos datos quedaron solo en tu pantalla (no persistidos). ' +
+          '\n\nLos datos quedaron solo en tu pantalla. ' +
           'Verificá que estés logueado como auditor y que la tabla exista.');
   }
 

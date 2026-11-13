@@ -171,7 +171,13 @@ async function loadMetaSupabase() {
 }
 
 // ── Escritura: reemplaza un año completo ──────────────────────
-async function guardarAnioEnSupabase(yr, rows) {
+// Orden seguro: 1) inserta lo nuevo, 2) recién ahí borra la carga vieja.
+// Si algo falla antes del paso 2, se deshace lo nuevo y la carga anterior queda intacta.
+// onProgress({ yr, done, total, fase }) se llama durante la inserción.
+async function guardarAnioEnSupabase(yr, rows, onProgress) {
+  let maxIdBefore = null;
+  let viejoBorrado = false;
+  const yrQ = encodeURIComponent(String(yr));
   try {
     const token = await getToken();
     if (!token) return { ok: false, error: 'No hay sesión activa (sin token). Volvé a iniciar sesión.' };
@@ -180,27 +186,31 @@ async function guardarAnioEnSupabase(yr, rows) {
       return { ok: false, error: 'No hay filas para guardar el año ' + yr };
     }
 
-    // 1) Borrar el año existente
-    await sbFetch(`${TABLE_VENTAS}?yr=eq.${encodeURIComponent(String(yr))}`, {
+    // 1) Marca: todo lo que tenga id <= maxIdBefore es la carga vieja
+    const last = await sbFetch(`${TABLE_VENTAS}?select=id&order=id.desc&limit=1`);
+    maxIdBefore = (Array.isArray(last) && last.length) ? Number(last[0].id) : 0;
+
+    // 2) Insertar lo nuevo en lotes
+    const CHUNK = 1000;
+    const payload = rows.map(rowToCSV);
+    let inserted = 0;
+    if (onProgress) onProgress({ yr, done: 0, total: payload.length, fase: 'insertando' });
+    for (let i = 0; i < payload.length; i += CHUNK) {
+      const chunk = payload.slice(i, i + CHUNK);
+      await sbFetch(TABLE_VENTAS, { method: 'POST', body: chunk, prefer: 'return=minimal' });
+      inserted += chunk.length;
+      if (onProgress) onProgress({ yr, done: inserted, total: payload.length, fase: 'insertando' });
+    }
+
+    // 3) Borrar la carga vieja del mismo año
+    if (onProgress) onProgress({ yr, done: inserted, total: payload.length, fase: 'reemplazando' });
+    await sbFetch(`${TABLE_VENTAS}?yr=eq.${yrQ}&id=lte.${maxIdBefore}`, {
       method: 'DELETE',
       prefer: 'return=minimal'
     });
+    viejoBorrado = true;
 
-    // 2) Insertar en lotes (evita límites de tamaño de petición)
-    const CHUNK = 500;
-    const payload = rows.map(rowToCSV);
-    let inserted = 0;
-    for (let i = 0; i < payload.length; i += CHUNK) {
-      const chunk = payload.slice(i, i + CHUNK);
-      await sbFetch(TABLE_VENTAS, {
-        method: 'POST',
-        body: chunk,
-        prefer: 'return=minimal'
-      });
-      inserted += chunk.length;
-    }
-
-    // 3) Actualizar metadato
+    // 4) Actualizar metadato
     const nombre = ((typeof EmcalaAuth !== 'undefined') && EmcalaAuth.getSession)
       ? (EmcalaAuth.getSession().nombre || EmcalaAuth.getSession().usuario || '')
       : '';
@@ -217,6 +227,21 @@ async function guardarAnioEnSupabase(yr, rows) {
 
     return { ok: true, inserted };
   } catch (e) {
+    if (!viejoBorrado && maxIdBefore !== null) {
+      // Deshacer lo recién insertado; la carga anterior sigue intacta
+      try {
+        await sbFetch(`${TABLE_VENTAS}?yr=eq.${yrQ}&id=gt.${maxIdBefore}`, {
+          method: 'DELETE',
+          prefer: 'return=minimal'
+        });
+        return { ok: false, error: e.message + ' (se conservó la carga anterior)' };
+      } catch (e2) {
+        return { ok: false, error: e.message + ' (no se pudo deshacer: puede haber filas duplicadas de ' + yr + ')' };
+      }
+    }
+    if (viejoBorrado) {
+      return { ok: false, error: 'Las filas se guardaron, pero falló la metadata: ' + e.message };
+    }
     return { ok: false, error: e.message };
   }
 }
