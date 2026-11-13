@@ -41,6 +41,11 @@
       <option value="12" selected>Diciembre</option>
     </select>
   </div>
+  <div class="tabs-divider"></div>
+  <div class="last-update-wrap" id="last-update-wrap">
+    <span class="lu-dot" id="lu-dot"></span>
+    <span class="lu-text" id="lu-text">Última actualización: —</span>
+  </div>
 </div>
 
 <!-- ═══ PAGE 1: MENSUAL ═══════════════════════════════════════ -->
@@ -471,9 +476,12 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../emcala-auth.js"></script>
   <script src="config.js"></script>
   <script src="api.js"></script>
   <script src="data.js"></script>
+  <script src="supabase.js"></script>
   <script src="charts.js?v=2"></script>
   <script src="logos_ung.js"></script>
   <script src="ui.js?v=8"></script>

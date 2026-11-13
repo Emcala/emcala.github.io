@@ -1,25 +1,56 @@
 document.getElementById('folder-input').addEventListener('change', e => {
   const files = [...e.target.files].filter(f => f.name.toLowerCase().endsWith('.csv'));
   if (!files.length) return;
+
+  // Si no puede escribir en Supabase (no es auditor), igual permite cargar
+  // en memoria local, pero avisa que no quedará persistido para los demás.
+  const puedeGuardar = (typeof puedeEscribir === 'function') ? puedeEscribir() : true;
+
   let loaded = 0;
+  const añosGuardados = {};
   files.forEach(file => {
     const rd = new FileReader();
-    rd.onload = ev => {
+    rd.onload = async ev => {
       try {
         const rows = parseCSV(ev.target.result);
         if (rows.length) {
           const yr = rows[0]?.yr;
           DATA = DATA.filter(r => r.yr !== yr).concat(rows);
+          añosGuardados[yr] = rows;
         }
       } catch(err) { console.error('Error en', file.name, err); }
       loaded++;
       if (loaded === files.length) {
         renderAll();
+
+        // Si es auditor, persistir cada año cargado en Supabase.
+        if (puedeGuardar && Object.keys(añosGuardados).length) {
+          await persistirAños(añosGuardados);
+        } else if (!puedeGuardar) {
+          console.warn('Solo el auditor puede persistir los datos en Supabase.');
+        }
       }
     };
     rd.readAsText(file, 'utf-16');
   });
 });
+
+// Persiste los años recién cargados en Supabase y refresca el badge.
+async function persistirAños(añosGuardados) {
+  renderLU('loading');
+  let todoOk = true;
+  for (const yr of Object.keys(añosGuardados)) {
+    const res = await guardarAnioEnSupabase(yr, añosGuardados[yr]);
+    if (!res.ok) {
+      todoOk = false;
+      console.error('Error guardando', yr, 'en Supabase:', res.error);
+    }
+  }
+  if (todoOk) {
+    console.log('Datos persistidos en Supabase correctamente.');
+  }
+  await refreshLastUpdate();
+}
 
 // ═══════════════════════════════════════════════════════════════
 // PAGE TABS

@@ -41,6 +41,15 @@ body{background:var(--bg);color:var(--txt);font-family:'Roboto',sans-serif;heigh
 .global-month-select { padding: 4px 8px; font-size: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; border-radius: 4px; background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); outline: none; cursor: pointer; }
 .global-month-select option { color: #000; }
 
+/* LAST UPDATE BADGE */
+.last-update-wrap { display: flex; align-items: center; gap: 6px; margin-left: 4px; margin-right: 8px; white-space: nowrap; }
+.lu-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; }
+.lu-dot.loading { background: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,0.8); animation: lu-pulse 1.2s ease-in-out infinite; }
+.lu-dot.ok { background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.8); }
+.lu-dot.err { background: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.8); }
+.lu-text { color: rgba(255,255,255,0.65); font-size: 11px; font-weight: 600; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+@keyframes lu-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
 /* PAGES */
 .page{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
 .page.active{display:flex;}
