@@ -263,6 +263,25 @@ const EmcalaAuth = (() => {
     }
   }
 
+  // Llamada REST a Supabase (PostgREST) con la sesión del usuario.
+  // opts: { method, body, prefer }. Lanza Error si la respuesta no es OK.
+  async function sbRest(path, opts) {
+    opts = opts || {};
+    const t = await getAccessToken();
+    const headers = { apikey: SB_ANON_AUTH, Authorization: 'Bearer ' + (t || SB_ANON_AUTH), 'Content-Type': 'application/json' };
+    if (opts.prefer) headers.Prefer = opts.prefer;
+    const res = await fetch(SB_URL_AUTH + '/rest/v1/' + path, {
+      method: opts.method || 'GET',
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+    if (!res.ok) {
+      let msg = '';
+      try { msg = (await res.text()).slice(0, 300); } catch (e) {}
+      throw new Error('Supabase ' + res.status + (msg ? ': ' + msg : ''));
+    }
+    return res;
+  }
   // Agrega &token=... a una URL del GAS (los GET de Apps Script no leen headers)
   async function conToken(url) {
     const t = await getAccessToken();
@@ -294,6 +313,7 @@ const EmcalaAuth = (() => {
     hasRole,
     getSession,
     getAccessToken,
+    sbRest,
     conToken,
     sesionRechazada,
     logout,

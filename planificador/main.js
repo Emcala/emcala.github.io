@@ -459,7 +459,7 @@
             
             // --- DETECCION TAREAS ---
             const idxClienteTarea = headers.findIndex(h => h.includes('cliente_id') || h === 'cliente' || (h.includes('cod') && h.includes('cliente')) || h.includes('clienteid'));
-            const idxTarea = headers.findIndex(h => h.includes('tarea'));
+            const idxTarea = headers.indexOf('tarea') !== -1 ? headers.indexOf('tarea') : headers.findIndex(h => h.includes('tarea'));
             const isTareas = (idxClienteTarea !== -1 && idxTarea !== -1 && !headers.some(h => h.includes('periodos')));
             
             // --- DETECCION VENTAS ---
@@ -470,6 +470,36 @@
             const isVentas = hasPeriodos && hasCodPeriodo && hasClientes;
             
             console.log('📋 Detección de archivo:', { isVentas, isTareas, isSkus, headers: headers.slice(0, 8) });
+
+            // --- CARGA A LA NUBE (Supabase): formato nuevo de SKUs y Tareas ---
+            const esSkusNube = headers.includes('sku_id') && headers.includes('full_description');
+            const esTareasNube = headers.includes('cliente_id') && headers.includes('tarea') && headers.includes('dia');
+            if (esSkusNube || esTareasNube) {
+              try {
+                btnImportAuto.innerHTML = '⏳ Subiendo a la nube...';
+                const resumen = await CargaSupabase.cargarArchivo(evt.target.result, {
+                  skus: esSkusNube,
+                  tareas: esTareasNube,
+                  onProgress: (t) => { btnImportAuto.innerHTML = '⏳ ' + t; }
+                });
+                console.log('☁️ Carga Supabase:', resumen);
+              } catch (err) {
+                console.error(err);
+                alert('No se pudo cargar en la nube: ' + err.message + '\n\nLa carga se puede repetir sin problema.');
+                btnImportAuto.innerHTML = origText;
+                btnImportAuto.disabled = false;
+                return;
+              }
+              if (esSkusNube) {
+                // Los SKUs ya están en la nube. El Planificador todavía lee SKUs de la planilla
+                // (el paso de lectura desde la nube es el siguiente), así que no se suben a GAS.
+                alert('✅ SKUs cargados en la nube.\n\nTodavía el Planificador lee los SKUs de la planilla: la lectura desde la nube es el siguiente paso.');
+                btnImportAuto.innerHTML = origText;
+                btnImportAuto.disabled = false;
+                return;
+              }
+              // Tareas: sigue también a la planilla (GAS) para que el Planificador vea los cambios.
+            }
 
             if (!isVentas && !isTareas && !isSkus) {
               alert('⚠️ No se pudo determinar el tipo de archivo CSV.\n\nAsegurate de subir uno de estos formatos:\n• CSV de Ventas (con columnas Periodos, Cod. Período, etc.)\n• CSV de Tareas (con columnas cliente_id, tarea)\n• CSV de SKUs (con columnas sku/código, descripción)');
