@@ -18,6 +18,12 @@
 
   // Actualizar el badge de "última actualización" con los metadatos.
   await refreshLastUpdate();
+  if (!sup.ok) {
+    console.error('Error leyendo datos de Supabase:', sup.error);
+    const t = document.getElementById('lu-text'), d = document.getElementById('lu-dot');
+    if (t) t.textContent += ' · ⚠ no se pudieron leer los datos (ver consola)';
+    if (d) d.className = 'lu-dot err';
+  }
 
   // Autocarga CSV locales (si se configuró AUTO_CSV_SOURCES) como fallback.
   const autoCount = await loadAutoCsvSources();

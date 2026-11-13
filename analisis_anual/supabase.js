@@ -95,27 +95,44 @@ function dbRowToCSV(r) {
   };
 }
 
-// ── Lectura paginada (PostgREST corta cada respuesta en 1000 filas) ──
-async function sbFetchPage(path, from, to) {
-  const token = await getToken();
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + (token || SUPABASE_ANON_KEY),
-      'Range-Unit': 'items',
-      'Range': `${from}-${to}`,
-      'Prefer': 'count=exact'
+// ── Lectura por ventanas de id ────────────────────────────────
+// La tabla tiene más de 1 millón de filas. Paginar con OFFSET + count=exact
+// supera el timeout de 8 s de Supabase (error 500), así que se lee por rangos
+// de id (usa el índice de la clave primaria: cada pedido es rápido).
+// Cada ventana abarca 1000 ids => como mucho 1000 filas (el tope del servidor).
+const LECTURA_COLS = 'sdv,sdv2,cod_s2,un,yr,mes,hl,cli,prod,dias,canal,calibre,prod2,marca,cli_n,fecha';
+const LECTURA_VENTANA = 1000;
+const LECTURA_PARALELO = 6;
+
+async function sbGetConReintentos(path, intentos) {
+  intentos = intentos || 3;
+  let ultimoError;
+  for (let n = 1; n <= intentos; n++) {
+    try {
+      const token = await getToken();
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + (token || SUPABASE_ANON_KEY)
+        }
+      });
+      if (!res.ok) {
+        let msg = '';
+        try { msg = (await res.text()).slice(0, 200); } catch (e) {}
+        throw new Error(`Supabase ${res.status}: ${msg}`);
+      }
+      return await res.json();
+    } catch (e) {
+      ultimoError = e;
+      if (n < intentos) await new Promise(r => setTimeout(r, 400 * n));
     }
-  });
-  // 416 = pedimos una página más allá del final (la tabla cambió o tiene menos filas): no es un error, es "no hay más"
-  if (res.status === 416) return { rows: [], total: null };
-  if (!res.ok) {
-    let msg = '';
-    try { msg = (await res.text()).slice(0, 300); } catch (e) {}
-    throw new Error(`Supabase ${res.status}: ${msg}`);
   }
-  const total = parseInt((res.headers.get('content-range') || '').split('/')[1], 10);
-  return { rows: await res.json(), total: isNaN(total) ? null : total };
+  throw ultimoError;
+}
+
+function mostrarProgresoLectura(pct) {
+  const txt = document.getElementById('lu-text');
+  if (txt) txt.textContent = `Cargando datos… ${pct}%`;
 }
 
 // ── Lectura: trae TODOS los datos y reconstruye DATA ──────────
@@ -124,31 +141,37 @@ async function loadDatosDesdeSupabase() {
     const token = await getToken();
     if (!token) return { ok: false, error: 'No hay sesión activa (sin token)' };
 
-    const q = `${TABLE_VENTAS}?select=*&order=id`;
-    const first = await sbFetchPage(q, 0, 999);
-    if (!first.rows.length) return { ok: true, rows: 0, empty: true };
+    const primero = await sbGetConReintentos(`${TABLE_VENTAS}?select=id&order=id.asc&limit=1`);
+    if (!Array.isArray(primero) || !primero.length) return { ok: true, rows: 0, empty: true };
+    const ultimo = await sbGetConReintentos(`${TABLE_VENTAS}?select=id&order=id.desc&limit=1`);
+    const minId = Number(primero[0].id);
+    const maxId = Number(ultimo[0].id);
 
-    const pageSize = first.rows.length;       // el servidor puede devolver menos de 1000
-    const total = first.total || pageSize;
-    let all = first.rows.slice();
+    const ventanas = [];
+    for (let a = minId; a <= maxId; a += LECTURA_VENTANA) ventanas.push(a);
 
-    if (total > pageSize) {
-      const offsets = [];
-      for (let o = pageSize; o < total; o += pageSize) offsets.push(o);
-      const results = new Array(offsets.length);
-      let next = 0;
-      const worker = async () => {
-        while (next < offsets.length) {
-          const i = next++;
-          const r = await sbFetchPage(q, offsets[i], offsets[i] + pageSize - 1);
-          results[i] = r.rows;
+    const resultados = new Array(ventanas.length);
+    let siguiente = 0, hechas = 0;
+    const worker = async () => {
+      while (true) {
+        const i = siguiente++;
+        if (i >= ventanas.length) return;
+        const a = ventanas[i];
+        const filas = await sbGetConReintentos(
+          `${TABLE_VENTAS}?select=${LECTURA_COLS}&id=gte.${a}&id=lt.${a + LECTURA_VENTANA}&order=id`
+        );
+        resultados[i] = filas.map(dbRowToCSV);
+        hechas++;
+        if (hechas % 20 === 0 || hechas === ventanas.length) {
+          mostrarProgresoLectura(Math.round(hechas / ventanas.length * 100));
         }
-      };
-      await Promise.all(Array.from({ length: 6 }, worker));   // 6 pedidos en paralelo
-      results.forEach(r => { all = all.concat(r); });
-    }
+      }
+    };
+    await Promise.all(Array.from({ length: LECTURA_PARALELO }, worker));
 
-    const rows = all.map(dbRowToCSV);
+    const rows = [];
+    for (const r of resultados) for (let k = 0; k < r.length; k++) rows.push(r[k]);
+
     const years = new Set(rows.map(r => r.yr));
     DATA = DATA.filter(r => !years.has(r.yr)).concat(rows);
     return { ok: true, rows: rows.length };
