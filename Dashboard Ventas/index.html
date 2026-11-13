@@ -9,6 +9,7 @@
 <script src="../emcala-config.js"></script>
 <script src="../emcala-dates.js"></script>
 <script src="../emcala-auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800;900&display=swap');
@@ -476,7 +477,7 @@ async function cargarDashboard() {
 
   try {
     // Siempre pedimos 'ALL' al backend para poder filtrar localmente sin re-fetch
-    const url = `${SCRIPT_URL}?req=dashboard&cMonth=${cMonth}&spv=ALL`;
+    const url = await EmcalaAuth.conToken(`${SCRIPT_URL}?req=dashboard&cMonth=${cMonth}&spv=ALL`);
     
     const MAX_RETRIES = 3;
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -501,6 +502,7 @@ async function cargarDashboard() {
           }
           throw new Error('Respuesta inválida del servidor (HTML en lugar de JSON)');
         }
+        if (EmcalaAuth.sesionRechazada(dashData, 'No tenés permisos para ver el dashboard')) return;
         break; // Éxito
       } catch (e) {
         if (attempt === MAX_RETRIES - 1) throw e;

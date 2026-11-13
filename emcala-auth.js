@@ -240,6 +240,52 @@ const EmcalaAuth = (() => {
     `;
   }
 
+  // ── TOKEN DE SUPABASE PARA LLAMADAS AL GAS ─────────────────
+  const SB_URL_AUTH = 'https://tdwdqgtnyqnsigzhhxsl.supabase.co';
+  const SB_ANON_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2RxZ3RueXFuc2lnemhoeHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTE3NDcsImV4cCI6MjA5ODY2Nzc0N30.aiYnQ3g1HIk1e4G89sODitBqtPlzva_akCz5ruvLw-8';
+  let _sbClient = null;
+
+  // Devuelve el access_token vigente (supabase-js lo renueva si venció).
+  // Fallback: el token guardado en la sesión legacy.
+  async function getAccessToken() {
+    try {
+      if (!_sbClient && window.supabase) {
+        _sbClient = window.supabase.createClient(SB_URL_AUTH, SB_ANON_AUTH);
+      }
+      if (_sbClient) {
+        const { data } = await _sbClient.auth.getSession();
+        if (data && data.session && data.session.access_token) return data.session.access_token;
+      }
+      const s = getSession();
+      return (s && s.accessToken) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  // Agrega &token=... a una URL del GAS (los GET de Apps Script no leen headers)
+  async function conToken(url) {
+    const t = await getAccessToken();
+    if (!t) return url;
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'token=' + encodeURIComponent(t);
+  }
+
+  // Respuestas del GAS con sesión rechazada. 401: redirige al login. 403: avisa.
+  // Devuelve true si la respuesta fue rechazada (el llamador debe cortar).
+  function sesionRechazada(json, mensajeDenegado) {
+    if (!json) return false;
+    if (json.code === 401) {
+      alert('Tu sesión venció, volvé a iniciar sesión');
+      window.location.href = LOGIN_URL;
+      return true;
+    }
+    if (json.code === 403) {
+      alert(json.message || mensajeDenegado || 'No tenés permisos para esta acción');
+      return true;
+    }
+    return false;
+  }
+
   // ── API PÚBLICA ────────────────────────────────────────────
 
   return {
@@ -247,6 +293,9 @@ const EmcalaAuth = (() => {
     requireRole,
     hasRole,
     getSession,
+    getAccessToken,
+    conToken,
+    sesionRechazada,
     logout,
     createSession,
     updateActivity,
