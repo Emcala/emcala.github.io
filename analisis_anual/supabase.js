@@ -107,6 +107,8 @@ async function sbFetchPage(path, from, to) {
       'Prefer': 'count=exact'
     }
   });
+  // 416 = pedimos una página más allá del final (la tabla cambió o tiene menos filas): no es un error, es "no hay más"
+  if (res.status === 416) return { rows: [], total: null };
   if (!res.ok) {
     let msg = '';
     try { msg = (await res.text()).slice(0, 300); } catch (e) {}
