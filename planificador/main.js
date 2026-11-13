@@ -289,7 +289,7 @@
         
         // --- 1. PROCESAMIENTO DE EXCEL (OBJETIVOS PAS) ---
         if (ext === 'xlsx' || ext === 'xls') {
-          btnImportAuto.innerHTML = '⏳ Procesando Excel de Objetivos...';
+          btnImportAuto.innerHTML = '⏳ Procesando Excel...';
           btnImportAuto.disabled = true;
           const reader = new FileReader();
           reader.onload = async function(evt) {
@@ -304,14 +304,14 @@
                 .map(h => String(h).trim().toLowerCase());
               if (encabezadoSkus.indexOf('sku_id') >= 0 && encabezadoSkus.indexOf('full_description') >= 0) {
                 try {
-                  btnImportAuto.innerHTML = '⏳ Subiendo SKUs a la nube...';
+                  btnImportAuto.innerHTML = '⏳ Carga de SKU que validan...';
                   const csvSkus = XLSX.utils.sheet_to_csv(hojaSkus, { FS: ';', blankrows: false });
                   const resumen = await CargaSupabase.cargarArchivo(csvSkus, {
                     skus: true,
                     onProgress: (t) => { btnImportAuto.innerHTML = '⏳ ' + t; }
                   });
                   console.log('☁️ Carga Supabase (xlsx):', resumen);
-                  alert('✅ SKUs cargados en la nube (' + resumen.skus + ' filas).\n\nTodavía el Planificador lee los SKUs de la planilla: la lectura desde la nube es el siguiente paso.');
+                  alert('✅ Carga de SKU que validan completa (' + resumen.skus + ' filas).\n\nTodavía el Planificador lee los SKUs de la planilla: la lectura desde la nube es el siguiente paso.');
                 } catch (err) {
                   console.error(err);
                   alert('No se pudo cargar en la nube: ' + err.message + '\n\nLa carga se puede repetir sin problema.');
