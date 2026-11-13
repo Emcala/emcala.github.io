@@ -95,16 +95,58 @@ function dbRowToCSV(r) {
   };
 }
 
+// ── Lectura paginada (PostgREST corta cada respuesta en 1000 filas) ──
+async function sbFetchPage(path, from, to) {
+  const token = await getToken();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + (token || SUPABASE_ANON_KEY),
+      'Range-Unit': 'items',
+      'Range': `${from}-${to}`,
+      'Prefer': 'count=exact'
+    }
+  });
+  if (!res.ok) {
+    let msg = '';
+    try { msg = (await res.text()).slice(0, 300); } catch (e) {}
+    throw new Error(`Supabase ${res.status}: ${msg}`);
+  }
+  const total = parseInt((res.headers.get('content-range') || '').split('/')[1], 10);
+  return { rows: await res.json(), total: isNaN(total) ? null : total };
+}
+
 // ── Lectura: trae TODOS los datos y reconstruye DATA ──────────
 async function loadDatosDesdeSupabase() {
   try {
     const token = await getToken();
     if (!token) return { ok: false, error: 'No hay sesión activa (sin token)' };
 
-    const data = await sbFetch(`${TABLE_VENTAS}?select=*`);
-    if (!Array.isArray(data) || !data.length) return { ok: true, rows: 0, empty: true };
+    const q = `${TABLE_VENTAS}?select=*&order=id`;
+    const first = await sbFetchPage(q, 0, 999);
+    if (!first.rows.length) return { ok: true, rows: 0, empty: true };
 
-    const rows = data.map(dbRowToCSV);
+    const pageSize = first.rows.length;       // el servidor puede devolver menos de 1000
+    const total = first.total || pageSize;
+    let all = first.rows.slice();
+
+    if (total > pageSize) {
+      const offsets = [];
+      for (let o = pageSize; o < total; o += pageSize) offsets.push(o);
+      const results = new Array(offsets.length);
+      let next = 0;
+      const worker = async () => {
+        while (next < offsets.length) {
+          const i = next++;
+          const r = await sbFetchPage(q, offsets[i], offsets[i] + pageSize - 1);
+          results[i] = r.rows;
+        }
+      };
+      await Promise.all(Array.from({ length: 6 }, worker));   // 6 pedidos en paralelo
+      results.forEach(r => { all = all.concat(r); });
+    }
+
+    const rows = all.map(dbRowToCSV);
     const years = new Set(rows.map(r => r.yr));
     DATA = DATA.filter(r => !years.has(r.yr)).concat(rows);
     return { ok: true, rows: rows.length };
