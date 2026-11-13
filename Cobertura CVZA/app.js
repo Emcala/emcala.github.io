@@ -304,8 +304,9 @@ async function loadAvance(selectedMonth) {
     let totalCcc = 0;
     
     // Llamada unificada al backend de Cobertura
-    const url = `${PLANIFICADOR_URL}?req=cobertura&cMonth=${cMonth}&_t=${Date.now()}`;
+    const url = await EmcalaAuth.conToken(`${PLANIFICADOR_URL}?req=cobertura&cMonth=${cMonth}&_t=${Date.now()}`);
     const result = await fetchJsonRetry(url);
+    if (EmcalaAuth.sesionRechazada(result, 'Acceso no autorizado')) return;
     
     if (result.status === 'success' && result.promotores) {
       for (const prom in result.promotores) {

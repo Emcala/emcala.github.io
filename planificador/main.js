@@ -58,7 +58,7 @@
           btnArchivar.disabled = true;
           
           try {
-            const res = await fetch(`${SCRIPT_URL}?req=archivarHistorico&cMonth=${encodeURIComponent(cMonth)}`);
+            const res = await fetch(await EmcalaAuth.conToken(`${SCRIPT_URL}?req=archivarHistorico&cMonth=${encodeURIComponent(cMonth)}`));
             const data = await res.json();
             if (data.status === 'success') {
               alert(`¡Éxito! ${data.message}`);
@@ -292,7 +292,7 @@
           btnImportAuto.innerHTML = '⏳ Procesando Excel de Objetivos...';
           btnImportAuto.disabled = true;
           const reader = new FileReader();
-          reader.onload = function(evt) {
+          reader.onload = async function(evt) {
             try {
               const data = new Uint8Array(evt.target.result);
               const workbook = XLSX.read(data, {type: 'array'});
@@ -403,7 +403,7 @@
               
               fetch(SCRIPT_URL, {
                 method: 'POST',
-                body: JSON.stringify({ req: 'upload_objectives', month: monthStr, objectives: monthObjs })
+                body: JSON.stringify({ req: 'upload_objectives', token: await EmcalaAuth.getAccessToken(), month: monthStr, objectives: monthObjs })
               }).then(res => res.json()).then(res => {
                  if (res.status === 'success') {
                     alert(`✅ Excel de objetivos procesado. Se actualizaron ${promotoresFound} promotores y se guardaron los objetivos globales en la nube.`);
@@ -549,7 +549,7 @@
               try {
                 const response = await fetch(SCRIPT_URL, {
                   method: 'POST',
-                  body: JSON.stringify({ req: 'upload_tareas', month: cMonth, tareas: tareasPayload })
+                  body: JSON.stringify({ req: 'upload_tareas', token: await EmcalaAuth.getAccessToken(), month: cMonth, tareas: tareasPayload })
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
@@ -592,7 +592,7 @@
               try {
                 const response = await fetch(SCRIPT_URL, {
                   method: 'POST',
-                  body: JSON.stringify({ req: 'upload_skus', skus: skus })
+                  body: JSON.stringify({ req: 'upload_skus', token: await EmcalaAuth.getAccessToken(), skus: skus })
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
@@ -664,7 +664,7 @@
         const d = dateEl.value;
         const cm = window.getCommercialMonthAndStart(d).month;
         const pfUrl = `${SCRIPT_URL}?req=init_bundle&date=${d}&cMonth=${cm}&spv=ALL&_t=${Date.now()}`;
-        window._prefetchedBundle = fetchConTimeout(pfUrl, {}, 45000).then(r => r.ok ? r.json() : null).catch(() => null);
+        window._prefetchedBundle = EmcalaAuth.conToken(pfUrl).then(u => fetchConTimeout(u, {}, 45000)).then(r => r.ok ? r.json() : null).catch(() => null);
       }
 
       // Problema 4 FIX: Corremos el fetch de Mesas y el performSync al MISMO tiempo.

@@ -9,8 +9,9 @@
 
     async function syncSkus() {
       try {
-        const response = await fetchConTimeout(`${SCRIPT_URL}?req=skus`);
+        const response = await fetchConTimeout(await EmcalaAuth.conToken(`${SCRIPT_URL}?req=skus`));
         const result = await response.json();
+        if (EmcalaAuth.sesionRechazada(result, 'No tenés permisos para leer SKUs')) return false;
         if (result.status === 'success' && result.skus) {
           skuMaster = result.skus;
           console.log('SKU Master sincronizado:', skuMaster.length, 'items');
@@ -31,8 +32,9 @@
       const cleanReqMonth = cMonth.replace('-fallback', '');
       if (tareasSyncedMonth === cleanReqMonth && tareasMaster && !forceRefresh) return true;
       try {
-        const response = await fetchConTimeout(`${SCRIPT_URL}?req=tareas&cMonth=${encodeURIComponent(cleanReqMonth)}`);
+        const response = await fetchConTimeout(await EmcalaAuth.conToken(`${SCRIPT_URL}?req=tareas&cMonth=${encodeURIComponent(cleanReqMonth)}`));
         const result = await response.json();
+        if (EmcalaAuth.sesionRechazada(result, 'No tenés permisos para leer tareas')) return false;
         if (result.status === 'success' && result.tareas) {
           let map = {};
           let keysCount = 0;
@@ -248,7 +250,7 @@
         const hasTareas = tareasSyncedMonth === cMonth && !!tareasMaster;
         const hasObjetivos = window._currentMonthLoaded === cMonth;
         
-        const fetchUrl = `${SCRIPT_URL}?req=init_bundle&date=${date}&cMonth=${cMonth}&spv=ALL`
+        const fetchUrl = await EmcalaAuth.conToken(`${SCRIPT_URL}?req=init_bundle&date=${date}&cMonth=${cMonth}&spv=ALL`)
           + (hasSkus ? '&skipSkus=1' : '')
           + (hasTareas ? '&skipTareas=1' : '')
           + (hasObjetivos ? '&skipObj=1' : '')
@@ -291,6 +293,10 @@
               throw new Error('El servidor devolvió una respuesta inválida (no-JSON)');
             }
             
+            if (EmcalaAuth.sesionRechazada(result, 'No tenés permisos para ver esta información')) {
+              btn.innerHTML = orig; btn.disabled = false; dateEl.disabled = false;
+              return;
+            }
             if (result.status === 'success') break; // Éxito, salir del loop
             
             if (result.retryable) {

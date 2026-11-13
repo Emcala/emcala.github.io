@@ -6,6 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Vespertina · EMCALA</title>
 <script src="../emcala-auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   if (!EmcalaAuth.requireRole(['auditor', 'supervisor'])) {
     throw new Error("No autorizado");
@@ -156,8 +157,9 @@
 
     try {
       // 1. Regenerar filas con ventas actuales
-      const resp = await fetch(`${SCRIPT_URL}?req=generar_vespertina_manual&date=${fecha}`);
+      const resp = await fetch(await EmcalaAuth.conToken(`${SCRIPT_URL}?req=generar_vespertina_manual&date=${fecha}`));
       const result = await resp.json();
+      if (EmcalaAuth.sesionRechazada(result, 'No tenés permisos para generar la vespertina')) return;
       if (result.status !== 'success') throw new Error(result.message || 'Error al regenerar');
       
       // 2. Releer y mostrar datos frescos
@@ -195,8 +197,9 @@
     const spvParam = isSupervisor ? MY_SPV : 'ALL';
 
     try {
-      const resp = await fetch(`${SCRIPT_URL}?req=vespertina&date=${fecha}&spv=${encodeURIComponent(spvParam)}&_t=${Date.now()}`);
+      const resp = await fetch(await EmcalaAuth.conToken(`${SCRIPT_URL}?req=vespertina&date=${fecha}&spv=${encodeURIComponent(spvParam)}&_t=${Date.now()}`));
       const result = await resp.json();
+      if (EmcalaAuth.sesionRechazada(result, 'Acceso no autorizado')) return;
       if (result.status !== 'success') throw new Error(result.message || 'Error');
       const rows = result.rows || [];
 
@@ -204,7 +207,7 @@
         renderVistaSpv(container, rows, fecha);
       } else {
         // Vista JDV/auditor: también trae el checklist propio
-        const respJdv = await fetch(`${SCRIPT_URL}?req=vespertina_jdv&date=${fecha}&_t=${Date.now()}`);
+        const respJdv = await fetch(await EmcalaAuth.conToken(`${SCRIPT_URL}?req=vespertina_jdv&date=${fecha}&_t=${Date.now()}`));
         const resultJdv = await respJdv.json();
         renderVistaJdv(container, rows, resultJdv.rows || [], fecha);
       }
@@ -314,7 +317,7 @@
           const resp = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ req: 'vespertina_update_batch', updates: payload })
+            body: JSON.stringify({ req: 'vespertina_update_batch', token: await EmcalaAuth.getAccessToken(), updates: payload })
           });
           result = await resp.json();
           
@@ -593,7 +596,7 @@
           let retries = 0;
           let success = false;
           let result = null;
-          const payload = { req: 'vespertina_jdv_update', fecha, spv: 'GENERAL', jdv: session.nombre, revision, analisis, alineacion, notas };
+          const payload = { req: 'vespertina_jdv_update', token: await EmcalaAuth.getAccessToken(), fecha, spv: 'GENERAL', jdv: session.nombre, revision, analisis, alineacion, notas };
           
           while (retries < 3 && !success) {
             const resp = await fetch(SCRIPT_URL, {
