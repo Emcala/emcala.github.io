@@ -12,8 +12,9 @@
 // Si una carga falla a la mitad, no se borra nada: se puede repetir.
 // =====================================================================
 (function () {
-  const BATCH = 5000;
-  const PARALELO = 3;
+  const BATCH = 2000;
+  const PARALELO = 2;
+  const REINTENTOS = 4;
 
   // Misma regla que api.js: comillas, prefijo 18 de 14 dígitos, ceros a la izquierda.
   function normalizarCliente(raw) {
@@ -70,6 +71,21 @@
     return i;
   }
 
+  // Reintenta un lote si Supabase corta por timeout (57014) o cae un 5xx.
+  async function conReintentos(fn) {
+    let ultimo = null;
+    for (let i = 0; i < REINTENTOS; i++) {
+      try {
+        return await fn();
+      } catch (e) {
+        ultimo = e;
+        if (!/57014|timeout|Supabase 5\d\d/i.test(e.message)) throw e;
+        await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+      }
+    }
+    throw ultimo;
+  }
+
   // Manda los datos en lotes, de a PARALELO lotes a la vez.
   async function enLotes(filas, enviar, onProgress, etiqueta) {
     const lotes = [];
@@ -79,7 +95,7 @@
     async function worker() {
       while (siguiente < lotes.length) {
         const lote = lotes[siguiente++];
-        await enviar(lote);
+        await conReintentos(() => enviar(lote));
         hechos += lote.length;
         if (onProgress) onProgress(etiqueta + ' ' + hechos.toLocaleString('es-AR') + ' de ' + filas.length.toLocaleString('es-AR'));
       }
