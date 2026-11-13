@@ -19,11 +19,11 @@ const TABLE_META   = 'analisis_anual_meta';
 // 2) Fallback: accessToken guardado en la sesión legacy
 async function getToken() {
   try {
-    if (window.EmcalaAuth && typeof EmcalaAuth.getAccessToken === 'function') {
+    if ((typeof EmcalaAuth !== 'undefined') && typeof EmcalaAuth.getAccessToken === 'function') {
       const t = await EmcalaAuth.getAccessToken();
       if (t) return t;
     }
-    if (window.EmcalaAuth && EmcalaAuth.getSession) {
+    if ((typeof EmcalaAuth !== 'undefined') && EmcalaAuth.getSession) {
       const s = EmcalaAuth.getSession();
       if (s && s.accessToken) return s.accessToken;
     }
@@ -157,7 +157,7 @@ async function guardarAnioEnSupabase(yr, rows) {
     }
 
     // 3) Actualizar metadato
-    const nombre = (window.EmcalaAuth && EmcalaAuth.getSession)
+    const nombre = ((typeof EmcalaAuth !== 'undefined') && EmcalaAuth.getSession)
       ? (EmcalaAuth.getSession().nombre || EmcalaAuth.getSession().usuario || '')
       : '';
     await sbFetch(TABLE_META, {
@@ -180,7 +180,7 @@ async function guardarAnioEnSupabase(yr, rows) {
 // ── Indica si el usuario actual puede escribir (rol auditor) ──
 function puedeEscribir() {
   try {
-    const s = window.EmcalaAuth && EmcalaAuth.getSession
+    const s = (typeof EmcalaAuth !== 'undefined') && EmcalaAuth.getSession
       ? EmcalaAuth.getSession()
       : null;
     return !!s && String(s.rol || '').toLowerCase() === 'auditor';

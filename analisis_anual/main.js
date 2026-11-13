@@ -1,6 +1,6 @@
 (async function initDataOnStart() {
   // ── Auth: exigir login y mostrar badge de usuario ────────────
-  if (window.EmcalaAuth) {
+  if ((typeof EmcalaAuth !== 'undefined')) {
     if (!EmcalaAuth.requireLogin()) return;
     EmcalaAuth.renderUserBadge('emcala-user-badge');
   }
