@@ -1,4 +1,10 @@
 (async function initDataOnStart() {
+  // ── Auth: exigir login y mostrar badge de usuario ────────────
+  if (window.EmcalaAuth) {
+    if (!EmcalaAuth.requireLogin()) return;
+    EmcalaAuth.renderUserBadge('emcala-user-badge');
+  }
+
   await fetchConfigData();
   [1,2,3,6].forEach(pg => mkUN(pg));
   [1,2,3,4,5,6].forEach(pg => mkSDV(pg));

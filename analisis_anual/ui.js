@@ -27,7 +27,9 @@ document.getElementById('folder-input').addEventListener('change', e => {
         if (puedeGuardar && Object.keys(añosGuardados).length) {
           await persistirAños(añosGuardados);
         } else if (!puedeGuardar) {
+          renderLU('err');
           console.warn('Solo el auditor puede persistir los datos en Supabase.');
+          alert('⚠️ Cargaste los CSV solo en tu pantalla.\n\nNo quedaron guardados en Supabase porque tu usuario no tiene rol "auditor".\nPedile al auditor que cargue la base para que quede visible para todos.');
         }
       }
     };
@@ -39,16 +41,32 @@ document.getElementById('folder-input').addEventListener('change', e => {
 async function persistirAños(añosGuardados) {
   renderLU('loading');
   let todoOk = true;
+  let errores = [];
+  let filasTotal = 0;
+
   for (const yr of Object.keys(añosGuardados)) {
     const res = await guardarAnioEnSupabase(yr, añosGuardados[yr]);
     if (!res.ok) {
       todoOk = false;
+      errores.push(`${yr}: ${res.error}`);
       console.error('Error guardando', yr, 'en Supabase:', res.error);
+    } else {
+      filasTotal += res.inserted || 0;
+      console.log(`${yr}: ${res.inserted} filas guardadas en Supabase.`);
     }
   }
+
   if (todoOk) {
-    console.log('Datos persistidos en Supabase correctamente.');
+    renderLU('ok');
+    alert(`✅ Datos guardados en Supabase correctamente (${filasTotal} filas). Ya están disponibles para todos los usuarios.`);
+  } else {
+    renderLU('err');
+    alert('⚠️ No se pudieron guardar los datos en Supabase:\n\n' +
+          errores.join('\n') +
+          '\n\nLos datos quedaron solo en tu pantalla (no persistidos). ' +
+          'Verificá que estés logueado como auditor y que la tabla exista.');
   }
+
   await refreshLastUpdate();
 }
 
