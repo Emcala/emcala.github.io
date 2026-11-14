@@ -74,7 +74,7 @@ async function sbFetch(path, opts) {
 function rowToCSV(r) {
   return {
     cod_s: r.codS ?? '', cod_s2: r.codS2 ?? '',
-    un: r.un ?? '', yr: r.yr ?? '', mes: r.mes ?? '',
+    un: r.un ?? '',
     hl: Number(r.hl) || 0, bul: Number(r.bul) || 0,
     cli: r.cli ?? '', prod: r.prod ?? '', dias: r.dias ?? '', canal: r.canal ?? '',
     calibre: r.calibre ?? '', prod2: r.prod2 ?? '', marca: r.marca ?? '',
@@ -102,11 +102,16 @@ async function cargarNombres() {
   return { sup: mapa(sup, 'cod_s'), vend: mapa(vend, 'cod_s2'), cli: mapa(cli, 'cli') };
 }
 
+const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
 function dbRowToCSV(r, nombres) {
   const n = nombres || { sup: {}, vend: {}, cli: {} };
+  const f = r.fecha ? String(r.fecha) : '';
+  const yrD = f.slice(0, 4);
+  const mesD = f.length >= 7 ? MESES_ES[parseInt(f.slice(5, 7), 10) - 1] || '' : '';
   return {
     sdv: n.sup[r.cod_s] || '', codS: r.cod_s, sdv2: n.vend[r.cod_s2] || '', codS2: r.cod_s2,
-    un: r.un, yr: r.yr, mes: r.mes,
+    un: r.un, yr: yrD, mes: mesD,
     hl: Number(r.hl) || 0, bul: Number(r.bul) || 0,
     cli: r.cli, prod: r.prod, dias: r.dias, canal: r.canal,
     calibre: r.calibre, prod2: r.prod2, marca: r.marca,
@@ -119,7 +124,7 @@ function dbRowToCSV(r, nombres) {
 // supera el timeout de 8 s de Supabase (error 500), así que se lee por rangos
 // de id (usa el índice de la clave primaria: cada pedido es rápido).
 // Cada ventana abarca 1000 ids => como mucho 1000 filas (el tope del servidor).
-const LECTURA_COLS = 'cod_s,cod_s2,un,yr,mes,hl,cli,prod,dias,canal,calibre,prod2,marca,fecha';
+const LECTURA_COLS = 'cod_s,cod_s2,un,hl,cli,prod,dias,canal,calibre,prod2,marca,fecha';
 const LECTURA_VENTANA = 1000;
 const LECTURA_PARALELO = 6;
 
@@ -220,7 +225,8 @@ async function loadMetaSupabase() {
 async function guardarAnioEnSupabase(yr, rows, onProgress) {
   let maxIdBefore = null;
   let viejoBorrado = false;
-  const yrQ = encodeURIComponent(String(yr));
+  const desdeQ = encodeURIComponent(yr + '-01-01');
+  const hastaQ = encodeURIComponent((Number(yr) + 1) + '-01-01');
   try {
     const token = await getToken();
     if (!token) return { ok: false, error: 'No hay sesión activa (sin token). Volvé a iniciar sesión.' };
@@ -247,7 +253,7 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
 
     // 3) Borrar la carga vieja del mismo año
     if (onProgress) onProgress({ yr, done: inserted, total: payload.length, fase: 'reemplazando' });
-    await sbFetch(`${TABLE_VENTAS}?yr=eq.${yrQ}&id=lte.${maxIdBefore}`, {
+    await sbFetch(`${TABLE_VENTAS}?fecha=gte.${desdeQ}&fecha=lt.${hastaQ}&id=lte.${maxIdBefore}`, {
       method: 'DELETE',
       prefer: 'return=minimal'
     });
@@ -273,7 +279,7 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
     if (!viejoBorrado && maxIdBefore !== null) {
       // Deshacer lo recién insertado; la carga anterior sigue intacta
       try {
-        await sbFetch(`${TABLE_VENTAS}?yr=eq.${yrQ}&id=gt.${maxIdBefore}`, {
+        await sbFetch(`${TABLE_VENTAS}?fecha=gte.${desdeQ}&fecha=lt.${hastaQ}&id=gt.${maxIdBefore}`, {
           method: 'DELETE',
           prefer: 'return=minimal'
         });
