@@ -154,9 +154,38 @@ async function sbGetConReintentos(path, intentos) {
   throw ultimoError;
 }
 
+// ── Pantalla de carga con barra de progreso (lectura y escritura) ──
+function mostrarCarga(titulo, detalle, pct, nota) {
+  let ov = document.getElementById('load-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'load-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(11,37,89,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);font-family:inherit;';
+    ov.innerHTML =
+      '<div style="width:min(460px,90vw);background:rgba(15,23,42,.96);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 28px;color:#fff;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.5);">' +
+        '<div id="load-ov-title" style="font-size:20px;font-weight:800;margin-bottom:6px;"></div>' +
+        '<div id="load-ov-detail" style="font-size:13px;opacity:.75;margin-bottom:16px;"></div>' +
+        '<div style="height:12px;background:rgba(255,255,255,.15);border-radius:8px;overflow:hidden;"><div id="load-ov-bar" style="height:100%;width:0%;background:#4ade80;border-radius:8px;transition:width .3s;"></div></div>' +
+        '<div id="load-ov-pct" style="font-size:22px;font-weight:800;margin-top:12px;"></div>' +
+        '<div id="load-ov-note" style="font-size:12px;opacity:.7;margin-top:10px;"></div>' +
+      '</div>';
+    document.body.appendChild(ov);
+  }
+  const p = Math.max(0, Math.min(100, Math.round(pct || 0)));
+  document.getElementById('load-ov-title').textContent = titulo || '';
+  document.getElementById('load-ov-detail').textContent = detalle || '';
+  document.getElementById('load-ov-bar').style.width = p + '%';
+  document.getElementById('load-ov-pct').textContent = p + '%';
+  document.getElementById('load-ov-note').textContent = nota || '';
+}
+function ocultarCarga() {
+  const ov = document.getElementById('load-overlay');
+  if (ov) ov.remove();
+}
+
+// Lectura: reserva 0-5% para conectar y nombres, 5-100% para las ventanas
 function mostrarProgresoLectura(pct) {
-  const txt = document.getElementById('lu-text');
-  if (txt) txt.textContent = `Cargando datos… ${pct}%`;
+  mostrarCarga('Cargando datos', 'Descargando ventas desde Supabase…', 5 + pct * 0.95);
 }
 
 // ── Lectura: trae TODOS los datos y reconstruye DATA ──────────
@@ -175,6 +204,7 @@ async function loadDatosDesdeSupabase() {
     for (let a = minId; a <= maxId; a += LECTURA_VENTANA) ventanas.push(a);
 
     const nombres = await cargarNombres();
+    mostrarProgresoLectura(0);
     const resultados = new Array(ventanas.length);
     let siguiente = 0, hechas = 0;
     const worker = async () => {
@@ -218,6 +248,36 @@ async function loadMetaSupabase() {
   } catch (e) { return {}; }
 }
 
+// ── Nombres: actualiza las tablas de búsqueda (código → nombre) ──
+// Las filas de ventas guardan solo códigos; los nombres viven en estas tablas.
+// Sin esto, un cliente/vendedor/supervisor nuevo aparecería sin nombre.
+async function upsertarNombres(rows) {
+  const unicos = (kCod, kNom) => {
+    const m = new Map();
+    rows.forEach(r => {
+      const c = String(r[kCod] ?? '').trim();
+      const n = String(r[kNom] ?? '').trim();
+      if (c && n && !m.has(c)) m.set(c, n);
+    });
+    return Array.from(m, ([c, n]) => ({ c, n }));
+  };
+  const sets = [
+    ['supervisores_ventas', 'cod_s',  unicos('codS',  'sdv')],
+    ['vendedores_ventas',   'cod_s2', unicos('codS2', 'sdv2')],
+    ['clientes_ventas',     'cli',    unicos('cli',   'cliN')]
+  ];
+  for (const [tabla, col, items] of sets) {
+    const payload = items.map(x => ({ [col]: x.c, nombre: x.n }));
+    for (let i = 0; i < payload.length; i += 1000) {
+      await sbFetch(`${tabla}?on_conflict=${col}`, {
+        method: 'POST',
+        body: payload.slice(i, i + 1000),
+        prefer: 'resolution=merge-duplicates,return=minimal'
+      });
+    }
+  }
+}
+
 // ── Escritura: reemplaza un año completo ──────────────────────
 // Orden seguro: 1) inserta lo nuevo, 2) recién ahí borra la carga vieja.
 // Si algo falla antes del paso 2, se deshace lo nuevo y la carga anterior queda intacta.
@@ -259,6 +319,11 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
     });
     viejoBorrado = true;
 
+    // 3b) Nombres nuevos en las tablas de búsqueda (si falla, no se pierde la carga)
+    let warning = '';
+    try { await upsertarNombres(rows); }
+    catch (eN) { warning = 'No se pudieron actualizar los nombres (clientes/vendedores/supervisores nuevos quedarán sin nombre): ' + eN.message; console.warn(warning); }
+
     // 4) Actualizar metadato
     const nombre = ((typeof EmcalaAuth !== 'undefined') && EmcalaAuth.getSession)
       ? (EmcalaAuth.getSession().nombre || EmcalaAuth.getSession().usuario || '')
@@ -274,7 +339,7 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
       prefer: 'resolution=merge-duplicates,return=minimal'
     });
 
-    return { ok: true, inserted };
+    return { ok: true, inserted, warning };
   } catch (e) {
     if (!viejoBorrado && maxIdBefore !== null) {
       // Deshacer lo recién insertado; la carga anterior sigue intacta

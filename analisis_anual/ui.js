@@ -37,34 +37,75 @@ document.getElementById('folder-input').addEventListener('change', e => {
   });
 });
 
+// ── Barra de progreso de la carga a Supabase ─────────────────
+function showUploadProgress(text, pct) {
+  mostrarCarga('Guardando en Supabase', text, pct, 'No cierres ni recargues esta pestaña hasta que termine.');
+}
+function hideUploadProgress() {
+  ocultarCarga();
+}
+
+// Mientras se sube, avisar antes de cerrar/recargar la pestaña
+window._subiendoASupabase = false;
+if (typeof EmcalaAuth !== 'undefined' && EmcalaAuth.registerDirtyCheck) {
+  EmcalaAuth.registerDirtyCheck(() => window._subiendoASupabase);
+}
+window.addEventListener('beforeunload', e => {
+  if (window._subiendoASupabase) { e.preventDefault(); e.returnValue = ''; }
+});
+
 // Persiste los años recién cargados en Supabase y refresca el badge.
 async function persistirAños(añosGuardados) {
   renderLU('loading');
   let todoOk = true;
   let errores = [];
+  let avisos = [];
   let filasTotal = 0;
 
-  for (const yr of Object.keys(añosGuardados)) {
-    const res = await guardarAnioEnSupabase(yr, añosGuardados[yr]);
-    if (!res.ok) {
-      todoOk = false;
-      errores.push(`${yr}: ${res.error}`);
-      console.error('Error guardando', yr, 'en Supabase:', res.error);
-    } else {
-      filasTotal += res.inserted || 0;
-      console.log(`${yr}: ${res.inserted} filas guardadas en Supabase.`);
+  const years = Object.keys(añosGuardados);
+  const grandTotal = years.reduce((acc, y) => acc + añosGuardados[y].length, 0);
+  let doneBefore = 0;
+  window._subiendoASupabase = true;
+  showUploadProgress('Preparando carga…', 0);
+
+  try {
+    for (let idx = 0; idx < years.length; idx++) {
+      const yr = years[idx];
+      const total = añosGuardados[yr].length;
+      const res = await guardarAnioEnSupabase(yr, añosGuardados[yr], p => {
+        const overall = (doneBefore + p.done) / grandTotal * 100;
+        const que = p.fase === 'reemplazando' ? 'Reemplazando la carga anterior…' : 'Guardando';
+        showUploadProgress(
+          `${que} ${yr} (año ${idx + 1} de ${years.length}) · ${p.done.toLocaleString('es-AR')} / ${p.total.toLocaleString('es-AR')} filas · ${Math.round(overall)}% total`,
+          overall
+        );
+      });
+      doneBefore += total;
+      if (!res.ok) {
+        todoOk = false;
+        errores.push(`${yr}: ${res.error}`);
+        console.error('Error guardando', yr, 'en Supabase:', res.error);
+      } else {
+        filasTotal += res.inserted || 0;
+        if (res.warning) avisos.push(`${yr}: ${res.warning}`);
+        console.log(`${yr}: ${res.inserted} filas guardadas en Supabase.`);
+      }
     }
+  } finally {
+    window._subiendoASupabase = false;
+    hideUploadProgress();
   }
 
   if (todoOk) {
     renderLU('ok');
-    alert(`✅ Datos guardados en Supabase correctamente (${filasTotal} filas). Ya están disponibles para todos los usuarios.`);
+    alert(`✅ Datos guardados en Supabase correctamente (${filasTotal} filas). Ya están disponibles para todos los usuarios.` +
+          (avisos.length ? '\n\n⚠️ ' + avisos.join('\n') : ''));
   } else {
     renderLU('err');
     alert('⚠️ No se pudieron guardar los datos en Supabase:\n\n' +
-      errores.join('\n') +
-      '\n\nLos datos quedaron solo en tu pantalla (no persistidos). ' +
-      'Verificá que estés logueado como auditor y que la tabla exista.');
+          errores.join('\n') +
+          '\n\nLos datos quedaron solo en tu pantalla. ' +
+          'Verificá que estés logueado como auditor y que la tabla exista.');
   }
 
   await refreshLastUpdate();

@@ -371,3 +371,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Roboto',sans-serif;heigh
 
 /* Custom Checkbox styles */
 .hdr-cb-all { accent-color: #2563eb; cursor: pointer; }
+
+/* Botón de carga de base (solo auditor) */
+.btn-cargar-base{background:#10b981;color:#fff;border:none;border-radius:8px;padding:4px 12px;margin-left:10px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:filter .2s,transform .2s;}
+.btn-cargar-base:hover{filter:brightness(1.12);transform:translateY(-1px);}

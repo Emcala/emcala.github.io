@@ -5,13 +5,38 @@
     EmcalaAuth.renderUserBadge('emcala-user-badge');
   }
 
+  // ── Carga de base: solo el auditor ve el botón ───────────────
+  const esAuditor = (typeof puedeEscribir === 'function') && puedeEscribir();
+  const btnCargar = document.getElementById('btn-cargar-base');
+  if (btnCargar && esAuditor) {
+    btnCargar.style.display = '';
+    btnCargar.addEventListener('click', () => {
+      const inp = document.getElementById('folder-input');
+      inp.value = '';   // permite volver a elegir la misma carpeta
+      inp.click();
+    });
+  }
+  const up1 = document.getElementById('up1');
+  if (up1 && !esAuditor) {
+    up1.removeAttribute('for');
+    up1.style.cursor = 'default';
+    up1.innerHTML = '<div class="ico">📊</div><p>Todavía no hay datos cargados</p>' +
+      '<small style="font-size:11px;opacity:.7">Pedile al auditor que cargue la base.</small>';
+  }
+
   await fetchConfigData();
   [1,2,3,6].forEach(pg => mkUN(pg));
   [1,2,3,4,5,6].forEach(pg => mkSDV(pg));
 
   // Cargar datos persistentes desde Supabase (si existen).
   renderLU('loading');
-  const sup = await loadDatosDesdeSupabase();
+  mostrarCarga('Cargando datos', 'Conectando con Supabase…', 2);
+  let sup;
+  try {
+    sup = await loadDatosDesdeSupabase();
+  } finally {
+    ocultarCarga();
+  }
   if (sup.ok && sup.rows > 0) {
     renderAll();
   }
