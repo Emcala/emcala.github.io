@@ -73,24 +73,45 @@ async function sbFetch(path, opts) {
 // ── Mapeo columna DB → campo interno (parseCSV usa camelCase) ─
 function rowToCSV(r) {
   return {
-    sdv: r.sdv ?? '', cod_s: r.codS ?? '', sdv2: r.sdv2 ?? '', cod_s2: r.codS2 ?? '',
+    cod_s: r.codS ?? '', cod_s2: r.codS2 ?? '',
     un: r.un ?? '', yr: r.yr ?? '', mes: r.mes ?? '',
     hl: Number(r.hl) || 0, bul: Number(r.bul) || 0,
     cli: r.cli ?? '', prod: r.prod ?? '', dias: r.dias ?? '', canal: r.canal ?? '',
     calibre: r.calibre ?? '', prod2: r.prod2 ?? '', marca: r.marca ?? '',
-    cli_n: r.cliN ?? '', fecha: r.fecha || null, retornable: r.retornable ?? '',
+    fecha: r.fecha || null, retornable: r.retornable ?? '',
     importe_neto: Number(r.importeNeto) || 0
   };
 }
 
-function dbRowToCSV(r) {
+// Nombres desde las tablas de búsqueda (código → nombre). Se traen una vez por carga.
+async function cargarNombres() {
+  const tomarTodo = async (path) => {
+    let out = [];
+    for (let off = 0; ; off += 1000) {
+      const pag = await sbGetConReintentos(`${path}&limit=1000&offset=${off}`);
+      out = out.concat(pag);
+      if (pag.length < 1000) break;
+    }
+    return out;
+  };
+  const [sup, vend, cli] = await Promise.all([
+    tomarTodo('supervisores_ventas?select=cod_s,nombre&order=cod_s'),
+    tomarTodo('vendedores_ventas?select=cod_s2,nombre&order=cod_s2'),
+    tomarTodo('clientes_ventas?select=cli,nombre&order=cli')
+  ]);
+  const mapa = (arr, k) => { const m = {}; arr.forEach(x => { m[x[k]] = x.nombre; }); return m; };
+  return { sup: mapa(sup, 'cod_s'), vend: mapa(vend, 'cod_s2'), cli: mapa(cli, 'cli') };
+}
+
+function dbRowToCSV(r, nombres) {
+  const n = nombres || { sup: {}, vend: {}, cli: {} };
   return {
-    sdv: r.sdv, codS: r.cod_s, sdv2: r.sdv2, codS2: r.cod_s2,
+    sdv: n.sup[r.cod_s] || '', codS: r.cod_s, sdv2: n.vend[r.cod_s2] || '', codS2: r.cod_s2,
     un: r.un, yr: r.yr, mes: r.mes,
     hl: Number(r.hl) || 0, bul: Number(r.bul) || 0,
     cli: r.cli, prod: r.prod, dias: r.dias, canal: r.canal,
     calibre: r.calibre, prod2: r.prod2, marca: r.marca,
-    cliN: r.cli_n, fecha: r.fecha || '', retornable: r.retornable,
+    cliN: n.cli[r.cli] || '', fecha: r.fecha || '', retornable: r.retornable,
     importeNeto: Number(r.importe_neto) || 0
   };
 }
@@ -100,7 +121,7 @@ function dbRowToCSV(r) {
 // supera el timeout de 8 s de Supabase (error 500), así que se lee por rangos
 // de id (usa el índice de la clave primaria: cada pedido es rápido).
 // Cada ventana abarca 1000 ids => como mucho 1000 filas (el tope del servidor).
-const LECTURA_COLS = 'sdv,sdv2,cod_s2,un,yr,mes,hl,cli,prod,dias,canal,calibre,prod2,marca,cli_n,fecha';
+const LECTURA_COLS = 'cod_s,cod_s2,un,yr,mes,hl,cli,prod,dias,canal,calibre,prod2,marca,fecha';
 const LECTURA_VENTANA = 1000;
 const LECTURA_PARALELO = 6;
 
@@ -150,6 +171,7 @@ async function loadDatosDesdeSupabase() {
     const ventanas = [];
     for (let a = minId; a <= maxId; a += LECTURA_VENTANA) ventanas.push(a);
 
+    const nombres = await cargarNombres();
     const resultados = new Array(ventanas.length);
     let siguiente = 0, hechas = 0;
     const worker = async () => {
@@ -160,7 +182,7 @@ async function loadDatosDesdeSupabase() {
         const filas = await sbGetConReintentos(
           `${TABLE_VENTAS}?select=${LECTURA_COLS}&id=gte.${a}&id=lt.${a + LECTURA_VENTANA}&order=id`
         );
-        resultados[i] = filas.map(dbRowToCSV);
+        resultados[i] = filas.map(r => dbRowToCSV(r, nombres));
         hechas++;
         if (hechas % 20 === 0 || hechas === ventanas.length) {
           mostrarProgresoLectura(Math.round(hechas / ventanas.length * 100));
