@@ -78,8 +78,7 @@ function rowToCSV(r) {
     hl: Number(r.hl) || 0, bul: Number(r.bul) || 0,
     cli: r.cli ?? '', prod: r.prod ?? '', dias: r.dias ?? '', canal: r.canal ?? '',
     calibre: r.calibre ?? '', prod2: r.prod2 ?? '', marca: r.marca ?? '',
-    fecha: r.fecha || null, retornable: r.retornable ?? '',
-    importe_neto: Number(r.importeNeto) || 0
+    fecha: r.fecha || null
   };
 }
 
@@ -111,8 +110,7 @@ function dbRowToCSV(r, nombres) {
     hl: Number(r.hl) || 0, bul: Number(r.bul) || 0,
     cli: r.cli, prod: r.prod, dias: r.dias, canal: r.canal,
     calibre: r.calibre, prod2: r.prod2, marca: r.marca,
-    cliN: n.cli[r.cli] || '', fecha: r.fecha || '', retornable: r.retornable,
-    importeNeto: Number(r.importe_neto) || 0
+    cliN: n.cli[r.cli] || '', fecha: r.fecha || ''
   };
 }
 
