@@ -38,9 +38,6 @@ const ST = {
 let DATA = [];
 let CHS  = {}; // echarts instances
 let CH_OBS = {}; // one ResizeObserver per chart container
-const CACHE_DB_NAME = 'emcala-dashboard-db';
-const CACHE_STORE = 'snapshots';
-const CACHE_KEY = 'latest-data-v3';
 
 // Global Month Filter (1-12)
 window.GLOBAL_MONTH_LIMIT = 12;
