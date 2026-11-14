@@ -4,6 +4,7 @@
 //
 // SKUs: columnas sku_id, short_description, full_description.
 //   Clave (id_sku, desc_larga). Pares repetidos: se queda el primero.
+//   short_description es opcional y no se guarda (desc_corta se eliminó de la tabla).
 //   Al terminar bien, borra los SKUs que no vinieron en el archivo.
 // Tareas: columnas cliente_id, tarea, business, dia (AAAAMMDD).
 //   El mes sale de DIA (AAAA-MM). Si el archivo trae dos meses, se rechaza.
@@ -108,7 +109,6 @@
   async function cargarSkus(texto, inicio, onProgress) {
     const { headers, filas } = parsearCSV(texto);
     const iId = columna(headers, 'sku_id');
-    const iCorta = columna(headers, 'short_description');
     const iLarga = columna(headers, 'full_description');
 
     const vistos = new Set();
@@ -122,7 +122,6 @@
       vistos.add(clave);
       datos.push({
         id_sku: id,
-        desc_corta: (f[iCorta] || '').trim(),
         desc_larga: larga,
         updated_at: inicio
       });
