@@ -64,51 +64,103 @@ async function fetchConfigData() {
 
     // Procesar Maestro (Si el GAS ya envió los counts optimizados, los usamos directo)
     let promoCounts = {};
-    if (data.maestro_counts) {
-      promoCounts = data.maestro_counts;
-    } else if (dataMaestro && dataMaestro.length > 0) {
-      const headersMaestro = dataMaestro[0] || [];
-      const matchCol = (cols, keywords) => cols.findIndex(c => {
-        const lbl = String(c || '').trim().toUpperCase();
-        return keywords.some(k => lbl.includes(k));
+    let promoCervCounts = {};
+    const hasCounts = !!(data.maestro_counts && Object.keys(data.maestro_counts).length);
+    const hasCervCounts = !!(data.maestro_counts_cerveza && Object.keys(data.maestro_counts_cerveza).length);
+    const allKnownPromos = Object.values(supMap).flat();
+
+    const vendToName = {};
+    Object.entries(window.NAME_TO_VEND || {}).forEach(([name, code]) => {
+      const c = String(code == null ? '' : code).trim();
+      if (c) vendToName[c] = name;
+    });
+
+    const normPromoKey = raw => {
+      const rawP = String(raw == null ? '' : raw).trim().toUpperCase();
+      if (!rawP) return '';
+      const mapped = vendToName[rawP] ||
+        allKnownPromos.find(kp => rawP.includes(kp) || kp.includes(rawP)) ||
+        rawP;
+      return mapped === 'VTA DEPOSITO' ? '' : mapped;
+    };
+
+    const isSi = v => {
+      const s = String(v == null ? '' : v).trim().toUpperCase();
+      return s === 'SI' || s === 'SÍ' || s === 'YES' || s === 'TRUE' || s === '1';
+    };
+
+    // 1) Camino rápido: conteos ya calculados por el GAS
+    if (hasCounts) {
+      Object.entries(data.maestro_counts).forEach(([k, v]) => {
+        const p = normPromoKey(k);
+        if (!p) return;
+        promoCounts[p] = (promoCounts[p] || 0) + (Number(v) || 0);
       });
-      
-      let iMPromo = matchCol(headersMaestro, ['PERSONAL COMERCIAL', 'PROMOTOR', 'FUERZA DE VENTA']);
-      if (iMPromo === -1) iMPromo = matchCol(headersMaestro, ['VENDEDOR']);
-      const iAnulado = matchCol(headersMaestro, ['ANULADO']);
-      const iFvAnulado = matchCol(headersMaestro, ['FV1 ANULADO', 'FUERZA DE VENTA 1 ANULADO']);
+    }
+    if (hasCervCounts) {
+      Object.entries(data.maestro_counts_cerveza).forEach(([k, v]) => {
+        const p = normPromoKey(k);
+        if (!p) return;
+        promoCervCounts[p] = (promoCervCounts[p] || 0) + (Number(v) || 0);
+      });
+    }
+
+    // 2) Fallback / cálculo desde el maestro completo
+    if (dataMaestro && dataMaestro.length > 0) {
+      const headersMaestro = dataMaestro[0] || [];
+      const normHdr = s => String(s == null ? '' : s)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .trim().toUpperCase();
+      const matchCol = (keywords, exact) => headersMaestro.findIndex(c => {
+        const lbl = normHdr(c);
+        return exact
+          ? keywords.some(k => lbl === normHdr(k))
+          : keywords.some(k => lbl.includes(normHdr(k)));
+      });
+
+      // Nombre del promotor (evitar la columna de código "Personal comercial")
+      let iMPromo = matchCol(['FUERZA DE VENTA 1 DESCRIPCION PERSONAL COMERCIAL'], true);
+      if (iMPromo === -1) iMPromo = matchCol(['DESCRIPCION PERSONAL COMERCIAL']);
+      if (iMPromo === -1) iMPromo = matchCol(['PERSONAL COMERCIAL']);
+      if (iMPromo === -1) iMPromo = matchCol(['PROMOTOR']);
+      if (iMPromo === -1) iMPromo = matchCol(['VENDEDOR']);
+
+      let iAnulado = matchCol(['ANULADO'], true);
+      if (iAnulado === -1) iAnulado = matchCol(['ANULADO']);
+      let iFvAnulado = matchCol(['FUERZA DE VENTA 1 ANULADO'], true);
+      if (iFvAnulado === -1) iFvAnulado = matchCol(['FV1 ANULADO', 'FUERZA DE VENTA 1 ANULADO']);
+
+      // Permiso para vender cerveza
+      let iLic = matchCol(['LICENCIA ALCOHOL'], true);
+      if (iLic === -1) iLic = matchCol(['LICENCIA ALCOHOL']);
+
+      if (iLic === -1 && !hasCervCounts) {
+        console.warn('Análisis Anual: el maestro no trae la columna "Licencia alcohol"; la cartera de Cerveza usará la cartera total.');
+      }
 
       for (let i = 1; i < dataMaestro.length; i++) {
         const r = dataMaestro[i];
-        const anu = iAnulado >= 0 && r[iAnulado] ? String(r[iAnulado]).trim().toUpperCase() : '';
-        const fvAnu = iFvAnulado >= 0 && r[iFvAnulado] ? String(r[iFvAnulado]).trim().toUpperCase() : '';
-        if (anu !== 'SI' && fvAnu !== 'SI') {
-          const rawP = iMPromo >= 0 && r[iMPromo] ? String(r[iMPromo]).trim().toUpperCase() : '';
-          if (rawP) {
-            let p = rawP;
-            const allKnownPromos = Object.values(supMap).flat();
-            const known = allKnownPromos.find(kp => rawP.includes(kp) || kp.includes(rawP));
-            p = known || rawP;
-            promoCounts[p] = (promoCounts[p] || 0) + 1;
-          }
+        if (!r) continue;
+        if (isSi(iAnulado >= 0 ? r[iAnulado] : '') || isSi(iFvAnulado >= 0 ? r[iFvAnulado] : '')) continue;
+
+        const p = normPromoKey(iMPromo >= 0 ? r[iMPromo] : '');
+        if (!p) continue;
+
+        if (!hasCounts) {
+          promoCounts[p] = (promoCounts[p] || 0) + 1;
+        }
+        if (!hasCervCounts && iLic >= 0 && isSi(r[iLic])) {
+          promoCervCounts[p] = (promoCervCounts[p] || 0) + 1;
         }
       }
     }
-    
-    // Si viene por data.maestro_counts, también normalizamos
-    if (data.maestro_counts) {
-      const normCounts = {};
-      const allKnownPromos = Object.values(supMap).flat();
-      Object.entries(data.maestro_counts).forEach(([k, v]) => {
-        const cleanK = String(k).trim().toUpperCase();
-        const known = allKnownPromos.find(kp => cleanK.includes(kp) || kp.includes(cleanK));
-        const p = known || cleanK;
-        normCounts[p] = (normCounts[p] || 0) + v;
-      });
-      promoCounts = normCounts;
-    }
-    
+
     CART_PROMO = promoCounts;
+    CART_PROMO_CERV = Object.keys(promoCervCounts).length ? promoCervCounts : promoCounts;
+
+    if (!Object.keys(promoCervCounts).length) {
+      console.warn('Análisis Anual: no se pudo calcular la cartera de Cerveza con licencia; se usa la cartera total.');
+    }
 
     // Actualizar activePromos en todos los ST
     [1,2,3,4,5,6].forEach(pg => {

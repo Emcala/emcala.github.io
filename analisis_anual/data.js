@@ -165,24 +165,28 @@ function makePromoFilter(pg) {
 }
 
 function getCartera(pg) {
+  // Para Cervezas, la cartera se limita a clientes con permiso para vender cerveza.
+  const src = (ST[pg].un === 'CERVEZAS CMQ' && Object.keys(CART_PROMO_CERV).length)
+    ? CART_PROMO_CERV
+    : CART_PROMO;
   let apiTotal = 0;
   const ap = ST[pg].activePromos;
-  const cartKeys = Object.keys(CART_PROMO);
+  const cartKeys = Object.keys(src);
   const allOn = SEGS.every(seg => seg.promos.every(p => ap.has(seg.key+'|'+p)));
 
   if (allOn) {
-    Object.values(CART_PROMO).forEach(v => apiTotal += v);
+    Object.values(src).forEach(v => apiTotal += v);
   } else {
     SEGS.forEach(seg => {
       seg.promos.forEach(p => {
         if (ap.has(seg.key+'|'+p)) {
-          if (CART_PROMO[p]) {
-            apiTotal += CART_PROMO[p];
+          if (src[p]) {
+            apiTotal += src[p];
           } else {
             // Buscar match flexible
             const match = cartKeys.find(k => p.includes(k) || k.includes(p));
-            if (match && CART_PROMO[match]) {
-              apiTotal += CART_PROMO[match];
+            if (match && src[match]) {
+              apiTotal += src[match];
             }
           }
         }

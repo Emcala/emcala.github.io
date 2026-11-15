@@ -18,6 +18,8 @@ const UN_LIST = [
 // Dynamic Config
 let SEGS = [];
 let CART_PROMO = {};
+// Cartera de clientes con permiso para vender cerveza (Licencia alcohol = SI)
+let CART_PROMO_CERV = {};
 // ═══════════════════════════════════════════════════════════════
 // STATE — one object per page, fully isolated
 // ═══════════════════════════════════════════════════════════════
