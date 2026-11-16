@@ -780,6 +780,39 @@
         div.onclick = () => seleccionarSupervisor(login);
         cont.appendChild(div);
       });
+
+      // Con un supervisor elegido, debajo se listan sus promotores (online y desconectados)
+      if (supervisorSeleccionado) {
+        const titulo = document.createElement('div');
+        titulo.className = 'sidebar-title';
+        titulo.style.padding = '12px 16px 4px';
+        titulo.textContent = 'Promotores de ' + (porLogin.get(supervisorSeleccionado) || supervisorSeleccionado);
+        cont.appendChild(titulo);
+
+        const promotores = listaPromotoresCompleta
+          .filter((p) => p.supervisor_login === supervisorSeleccionado)
+          .map((p) => p.nombre)
+          .sort();
+        const onlineProm = new Set(ultimasPosiciones.filter((p) => p.tipo === 'promotor').map((p) => p.nombre));
+
+        promotores.forEach((nombre) => {
+          const div = document.createElement('div');
+          div.className = 'prom-item';
+          div.innerHTML = `
+            <div class="dot ${onlineProm.has(nombre) ? 'online' : 'offline'}"></div>
+            <div class="nombre">${esc(nombre)}</div>
+          `;
+          div.onclick = () => {
+            const marker = marcadoresPromotores[nombre];
+            if (marker) {
+              map.setView(marker.getLatLng(), 15);
+              marker.openPopup();
+            }
+            if (esMobile()) toggleSidebar(false);
+          };
+          cont.appendChild(div);
+        });
+      }
     }
 
     function seleccionarSupervisor(login) {
@@ -795,7 +828,6 @@
           .filter((i) => i.lat != null && i.lng != null)
           .map((i) => [i.lat, i.lng]);
         if (puntos.length) map.fitBounds(puntos, { padding: [40, 40] });
-        if (esMobile()) toggleSidebar(false);
       }
     }
 
