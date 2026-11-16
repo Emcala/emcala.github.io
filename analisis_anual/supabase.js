@@ -78,7 +78,9 @@ function rowToCSV(r) {
     hl: Number(r.hl) || 0, bul: Number(r.bul) || 0,
     cli: r.cli ?? '', prod: r.prod ?? '', dias: r.dias ?? '', canal: r.canal ?? '',
     calibre: r.calibre ?? '', prod2: r.prod2 ?? '', marca: r.marca ?? '',
-    fecha: r.fecha || null
+    fecha: r.fecha || null,
+    yr: Number(r.yr) || null,
+    mes: r.mes || null
   };
 }
 
@@ -107,8 +109,9 @@ const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agos
 function dbRowToCSV(r, nombres) {
   const n = nombres || { sup: {}, vend: {}, cli: {} };
   const f = r.fecha ? String(r.fecha) : '';
-  const yrD = f.slice(0, 4);
-  const mesD = f.length >= 7 ? MESES_ES[parseInt(f.slice(5, 7), 10) - 1] || '' : '';
+  // yr/mes son columnas propias; la fecha queda sólo como respaldo para filas viejas
+  const yrD = r.yr ? String(r.yr) : f.slice(0, 4);
+  const mesD = r.mes || (f.length >= 7 ? MESES_ES[parseInt(f.slice(5, 7), 10) - 1] || '' : '');
   return {
     sdv: n.sup[r.cod_s] || '', codS: r.cod_s, sdv2: n.vend[r.cod_s2] || '', codS2: r.cod_s2,
     un: r.un, yr: yrD, mes: mesD,
@@ -124,7 +127,7 @@ function dbRowToCSV(r, nombres) {
 // supera el timeout de 8 s de Supabase (error 500), así que se lee por rangos
 // de id (usa el índice de la clave primaria: cada pedido es rápido).
 // Cada ventana abarca 1000 ids => como mucho 1000 filas (el tope del servidor).
-const LECTURA_COLS = 'cod_s,cod_s2,un,hl,cli,prod,dias,canal,calibre,prod2,marca,fecha';
+const LECTURA_COLS = 'cod_s,cod_s2,un,hl,cli,prod,dias,canal,calibre,prod2,marca,fecha,yr,mes';
 const LECTURA_VENTANA = 1000;
 const LECTURA_PARALELO = 6;
 
@@ -279,27 +282,58 @@ async function upsertarNombres(rows) {
 }
 
 // ── Escritura: reemplaza un año completo ──────────────────────
-// Orden seguro: 1) inserta lo nuevo, 2) recién ahí borra la carga vieja.
-// Si algo falla antes del paso 2, se deshace lo nuevo y la carga anterior queda intacta.
-// onProgress({ yr, done, total, fase }) se llama durante la inserción.
+// Orden seguro:
+//   1) Valida año y filas ANTES de tocar nada.
+//   2) Borra la carga anterior de ese año filtrando por la columna `yr`
+//      (en lotes de 1.000 ids; nunca un DELETE masivo).
+//   3) Inserta la carga nueva en lotes de 1.000.
+//   4) Actualiza nombres y metadato.
+// onProgress({ yr, done, total, fase, borradas }) se llama durante el proceso.
+async function borrarAnioEnSupabase(yr, onProgress) {
+  const LOTE = 1000;
+  let borradas = 0;
+  let primerIdAnterior = null;
+  while (true) {
+    const ids = await sbFetch(`${TABLE_VENTAS}?select=id&yr=eq.${encodeURIComponent(yr)}&order=id.asc&limit=${LOTE}`);
+    if (!Array.isArray(ids) || !ids.length) break;
+
+    // Si el servidor responde OK pero las mismas filas siguen apareciendo,
+    // el borrado no se aplicó (típicamente, falta permiso de auditor en RLS).
+    const primerId = String(ids[0].id);
+    if (primerId === primerIdAnterior) {
+      throw new Error('El servidor no confirmó el borrado de ' + yr + ' (revisá que tu usuario tenga rol auditor activo).');
+    }
+    primerIdAnterior = primerId;
+
+    const lista = ids.map(x => x.id).join(',');
+    await sbFetch(`${TABLE_VENTAS}?id=in.(${lista})`, { method: 'DELETE', prefer: 'return=minimal' });
+    borradas += ids.length;
+    if (onProgress) onProgress({ yr, done: 0, total: 0, fase: 'borrando', borradas });
+  }
+  return borradas;
+}
+
 async function guardarAnioEnSupabase(yr, rows, onProgress) {
-  let maxIdBefore = null;
-  let viejoBorrado = false;
-  const desdeQ = encodeURIComponent(yr + '-01-01');
-  const hastaQ = encodeURIComponent((Number(yr) + 1) + '-01-01');
   try {
     const token = await getToken();
     if (!token) return { ok: false, error: 'No hay sesión activa (sin token). Volvé a iniciar sesión.' };
 
-    if (!yr || !rows || !rows.length) {
+    // Validación previa: si algo no cierra, no se borra nada.
+    const yrNum = Number(yr);
+    if (!Number.isInteger(yrNum) || yrNum < 2000 || yrNum > 2100) {
+      return { ok: false, error: 'Año inválido: "' + yr + '". El CSV debe tener la columna Año.' };
+    }
+    if (!rows || !rows.length) {
       return { ok: false, error: 'No hay filas para guardar el año ' + yr };
     }
+    if (rows.some(r => String(r.yr) !== String(yr))) {
+      return { ok: false, error: 'Hay filas de otro año mezcladas en la carga de ' + yr + '. No se guardó nada.' };
+    }
 
-    // 1) Marca: todo lo que tenga id <= maxIdBefore es la carga vieja
-    const last = await sbFetch(`${TABLE_VENTAS}?select=id&order=id.desc&limit=1`);
-    maxIdBefore = (Array.isArray(last) && last.length) ? Number(last[0].id) : 0;
+    // 1) Quitar la carga anterior del mismo año
+    await borrarAnioEnSupabase(yr, onProgress);
 
-    // 2) Insertar lo nuevo en lotes
+    // 2) Insertar la carga nueva en lotes
     const CHUNK = 1000;
     const payload = rows.map(rowToCSV);
     let inserted = 0;
@@ -311,20 +345,12 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
       if (onProgress) onProgress({ yr, done: inserted, total: payload.length, fase: 'insertando' });
     }
 
-    // 3) Borrar la carga vieja del mismo año
-    if (onProgress) onProgress({ yr, done: inserted, total: payload.length, fase: 'reemplazando' });
-    await sbFetch(`${TABLE_VENTAS}?fecha=gte.${desdeQ}&fecha=lt.${hastaQ}&id=lte.${maxIdBefore}`, {
-      method: 'DELETE',
-      prefer: 'return=minimal'
-    });
-    viejoBorrado = true;
-
-    // 3b) Nombres nuevos en las tablas de búsqueda (si falla, no se pierde la carga)
+    // 3) Nombres nuevos en las tablas de búsqueda (si falla, no se pierde la carga)
     let warning = '';
     try { await upsertarNombres(rows); }
     catch (eN) { warning = 'No se pudieron actualizar los nombres (clientes/vendedores/supervisores nuevos quedarán sin nombre): ' + eN.message; console.warn(warning); }
 
-    // 4) Actualizar metadato
+    // 4) Metadato de "última actualización"
     const nombre = ((typeof EmcalaAuth !== 'undefined') && EmcalaAuth.getSession)
       ? (EmcalaAuth.getSession().nombre || EmcalaAuth.getSession().usuario || '')
       : '';
@@ -341,21 +367,6 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
 
     return { ok: true, inserted, warning };
   } catch (e) {
-    if (!viejoBorrado && maxIdBefore !== null) {
-      // Deshacer lo recién insertado; la carga anterior sigue intacta
-      try {
-        await sbFetch(`${TABLE_VENTAS}?fecha=gte.${desdeQ}&fecha=lt.${hastaQ}&id=gt.${maxIdBefore}`, {
-          method: 'DELETE',
-          prefer: 'return=minimal'
-        });
-        return { ok: false, error: e.message + ' (se conservó la carga anterior)' };
-      } catch (e2) {
-        return { ok: false, error: e.message + ' (no se pudo deshacer: puede haber filas duplicadas de ' + yr + ')' };
-      }
-    }
-    if (viejoBorrado) {
-      return { ok: false, error: 'Las filas se guardaron, pero falló la metadata: ' + e.message };
-    }
     return { ok: false, error: e.message };
   }
 }

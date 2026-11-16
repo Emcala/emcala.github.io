@@ -15,8 +15,9 @@ document.getElementById('folder-input').addEventListener('change', e => {
         const rows = parseCSV(ev.target.result);
         if (rows.length) {
           const yr = rows[0]?.yr;
-          DATA = DATA.filter(r => r.yr !== yr).concat(rows);
-          añosGuardados[yr] = rows;
+          añosGuardados[yr] = (añosGuardados[yr] || []).concat(rows);
+          // Acumulado del año (varios CSV del mismo año), no sólo el último archivo
+          DATA = DATA.filter(r => r.yr !== yr).concat(añosGuardados[yr]);
         }
       } catch (err) { console.error('Error en', file.name, err); }
       loaded++;
@@ -74,9 +75,11 @@ async function persistirAños(añosGuardados) {
       const total = añosGuardados[yr].length;
       const res = await guardarAnioEnSupabase(yr, añosGuardados[yr], p => {
         const overall = (doneBefore + p.done) / grandTotal * 100;
-        const que = p.fase === 'reemplazando' ? 'Reemplazando la carga anterior…' : 'Guardando';
+        const detalle = p.fase === 'borrando'
+          ? 'Quitando la carga anterior de ' + yr + ' · ' + (p.borradas || 0).toLocaleString('es-AR') + ' filas eliminadas'
+          : 'Guardando ' + yr + ' · ' + p.done.toLocaleString('es-AR') + ' / ' + p.total.toLocaleString('es-AR') + ' filas';
         showUploadProgress(
-          `${que} ${yr} (año ${idx + 1} de ${years.length}) · ${p.done.toLocaleString('es-AR')} / ${p.total.toLocaleString('es-AR')} filas · ${Math.round(overall)}% total`,
+          `${detalle} (año ${idx + 1} de ${years.length}) · ${Math.round(overall)}% total`,
           overall
         );
       });

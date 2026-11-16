@@ -60,8 +60,10 @@ function parseCSV(txt) {
         iCAL=ix('Calibre'),              iPROD=ix('Producto'),
         iMAR=ix('Marca'),             iCLI_N=ix('Cliente'),
         iRET=ix('Retornable'),        iNET=ix('Importe Neto');
-  let iFECHA=H.findIndex(h => h.toLowerCase() === 'fecha');
-  if (iFECHA === -1) iFECHA = ix('Fecha'); // fallback if strict matching fails
+  // Variantes de encabezado de fecha según el export. Si no hay ninguna, la fecha queda vacía
+  // (el año y el mes se toman de las columnas Año y Mes).
+  const FECHA_ALIASES = ['fecha', 'fecha factura', 'fecha de emisión', 'fecha de emision', 'fecha de venta'];
+  const iFECHA = H.findIndex(h => FECHA_ALIASES.includes(h.trim().toLowerCase()));
 
   function parseDateStr(d) {
     if (!d) return '';
