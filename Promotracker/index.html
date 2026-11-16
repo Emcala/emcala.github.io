@@ -629,6 +629,7 @@
                Clientes visitados hoy: <strong>${Number(item.clientesVisitadosHoy) || 0}</strong><br>
                Última posición: ${esc(item.hora || '-')}
              </div>
+             ${perfilActual && perfilActual.rol === 'auditor' ? `<button class="popup-btn" style="background:#8b5cf6;" onclick="verPromotoresSupervisor('${escJsAttr(item.usuario)}')"><i class="fa-solid fa-users"></i> Ver sus promotores</button>` : ''}
              <button class="popup-btn" onclick="verRecorridoSupervisor('${escJsAttr(item.usuario)}')"><i class="fa-solid fa-route"></i> Ver recorrido</button>
              <button class="popup-btn" style="margin-top:6px; background:#10b981;" onclick="abrirEnGoogleMaps(${Number(item.lat)}, ${Number(item.lng)})"><i class="fa-solid fa-car"></i> Cómo llegar</button>`;
 
@@ -813,6 +814,14 @@
           cont.appendChild(div);
         });
       }
+    }
+
+    // Desde el popup del supervisor en el mapa (sirve en celular, sin abrir el panel)
+    function verPromotoresSupervisor(login) {
+      if (!perfilActual || perfilActual.rol !== 'auditor') return;
+      if (!modoSupervisores) toggleModoSupervisores();
+      if (supervisorSeleccionado !== login) seleccionarSupervisor(login);
+      map.closePopup();
     }
 
     function seleccionarSupervisor(login) {
