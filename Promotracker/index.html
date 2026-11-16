@@ -121,6 +121,9 @@
     }
     .kpi-valor { font-size: 20px; font-weight: 800; color: #fff; }
     .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+    .kpi-card.clickable { cursor: pointer; transition: transform .15s; }
+    .kpi-card.clickable:hover { transform: translateY(-1px); }
+    .kpi-card.activo { outline: 2px solid #f59e0b; outline-offset: -2px; }
 
     /* ============== RESPONSIVE (celulares) ============== */
     @media (max-width: 820px) {
@@ -177,6 +180,10 @@
         <div class="kpi-label">Promotores conectados</div>
       </div>
       <div class="kpi-card">
+        <div class="kpi-valor" id="kpi-desconectados" style="color:#f87171;">0</div>
+        <div class="kpi-label">Promotores desconectados</div>
+      </div>
+      <div class="kpi-card clickable" id="kpi-card-supervisores" title="Ver supervisores">
         <div class="kpi-valor" id="kpi-supervisores">0</div>
         <div class="kpi-label">Supervisores</div>
       </div>
@@ -252,6 +259,8 @@
     let promotorSeleccionado = null;
     let intervaloRefresco = null;
     let listaPromotoresCompleta = [];
+    let modoSupervisores = false;       // solo auditor: vista de supervisores
+    let supervisorSeleccionado = null;  // login del supervisor elegido en esa vista
 
     // Suralnor - Av. Constitución 2270, Manuel Alberti, Buenos Aires
     const DISTRI_COORDS = [-34.4253947, -58.7779553];
@@ -564,6 +573,7 @@
       // Promotores "regulares": los que tienen un supervisor real asignado (excluye BDR y Mayorista)
       const promotoresConSupervisor = listaPromotoresCompleta.filter((p) => p.supervisor_login);
       const conectadosConSupervisor = promotoresConSupervisor.filter((p) => nombresOnline.has(p.nombre)).length;
+      const desconectadosConSupervisor = promotoresConSupervisor.filter((p) => !nombresOnline.has(p.nombre)).length;
 
       // Supervisores: cantidad de logins de supervisor distintos (Mayorista/BDR no tienen login, quedan afuera solos)
       const supervisoresDistintos = new Set(promotoresConSupervisor.map((p) => p.supervisor_login));
@@ -572,13 +582,20 @@
       const bdrConectado = nombresOnline.has('VEDIA ELIZABETH') ? 1 : 0;
 
       document.getElementById('kpi-promotores').textContent = conectadosConSupervisor;
+      document.getElementById('kpi-desconectados').textContent = desconectadosConSupervisor;
       document.getElementById('kpi-supervisores').textContent = supervisoresDistintos.size;
       document.getElementById('kpi-bdr').textContent = bdrConectado;
     }
 
     function itemVisible(item) {
       if (!perfilActual) return false;
-      if (perfilActual.rol === 'auditor') return true;
+      if (perfilActual.rol === 'auditor') {
+        if (!modoSupervisores) return true;
+        // Vista de supervisores: solo supervisores; al elegir uno, él y sus promotores
+        if (!supervisorSeleccionado) return item.tipo === 'supervisor';
+        if (item.tipo === 'supervisor') return item.usuario === supervisorSeleccionado;
+        return item.supervisor_login === supervisorSeleccionado;
+      }
       if (item.tipo === 'promotor') {
         return (perfilActual.promotores_a_cargo || []).includes(item.nombre);
       }
@@ -669,6 +686,10 @@
 
     function renderizarListaLateral() {
       const cont = document.getElementById('lista-promotores');
+      if (perfilActual && perfilActual.rol === 'auditor' && modoSupervisores) {
+        renderizarListaSupervisores(cont);
+        return;
+      }
       const visibles = ultimasPosiciones.filter((i) => itemVisible(i) && i.tipo === 'promotor' && i.nombre);
 
       // Si es supervisor, también mostramos en la lista a los promotores a cargo que
@@ -718,6 +739,67 @@
         cont.appendChild(div);
       });
     }
+
+    // ==========================================================
+    // VISTA DE SUPERVISORES (solo auditor)
+    // ==========================================================
+    function toggleModoSupervisores() {
+      if (!perfilActual || perfilActual.rol !== 'auditor') return;
+      modoSupervisores = !modoSupervisores;
+      supervisorSeleccionado = null;
+      promotorSeleccionado = null;
+      if (capaRecorrido) { map.removeLayer(capaRecorrido); capaRecorrido = null; }
+      document.getElementById('kpi-card-supervisores').classList.toggle('activo', modoSupervisores);
+      document.getElementById('titulo-lista').textContent = modoSupervisores ? 'Supervisores' : 'Todos los promotores';
+      renderizarMarcadores();
+      renderizarListaLateral();
+    }
+
+    function renderizarListaSupervisores(cont) {
+      // Supervisores con login real (Mayorista y BDR no tienen login y quedan afuera)
+      const porLogin = new Map();
+      listaPromotoresCompleta.forEach((p) => {
+        if (p.supervisor_login && !porLogin.has(p.supervisor_login)) {
+          porLogin.set(p.supervisor_login, p.supervisor_nombre || p.supervisor_login);
+        }
+      });
+      const online = new Set(ultimasPosiciones.filter((p) => p.tipo === 'supervisor').map((p) => p.usuario));
+      const lista = [...porLogin.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+
+      cont.innerHTML = '';
+      lista.forEach(([login, nombre]) => {
+        const div = document.createElement('div');
+        div.className = 'prom-item' + (supervisorSeleccionado === login ? ' selected' : '');
+        div.innerHTML = `
+          <div class="dot ${online.has(login) ? 'online' : 'offline'}"></div>
+          <div class="nombre">
+            <div>${esc(nombre)}</div>
+            <div style="font-size:10px; color:var(--muted); margin-top:2px;">${esc(login)}</div>
+          </div>
+        `;
+        div.onclick = () => seleccionarSupervisor(login);
+        cont.appendChild(div);
+      });
+    }
+
+    function seleccionarSupervisor(login) {
+      // Tocar de nuevo al mismo supervisor lo deselecciona
+      supervisorSeleccionado = supervisorSeleccionado === login ? null : login;
+      if (capaRecorrido) { map.removeLayer(capaRecorrido); capaRecorrido = null; }
+      renderizarMarcadores();
+      renderizarListaLateral();
+
+      if (supervisorSeleccionado) {
+        const puntos = [...ultimasPosiciones, ...ultimosDesconectados]
+          .filter(itemVisible)
+          .filter((i) => i.lat != null && i.lng != null)
+          .map((i) => [i.lat, i.lng]);
+        if (puntos.length) map.fitBounds(puntos, { padding: [40, 40] });
+        if (esMobile()) toggleSidebar(false);
+      }
+    }
+
+    document.getElementById('kpi-card-supervisores').addEventListener('click', toggleModoSupervisores);
 
     // ==========================================================
     // RECORRIDO HISTÓRICO (superpuesto en el mismo mapa en vivo)
