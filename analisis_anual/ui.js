@@ -76,7 +76,7 @@ async function persistirAños(añosGuardados) {
       const res = await guardarAnioEnSupabase(yr, añosGuardados[yr], p => {
         const overall = (doneBefore + p.done) / grandTotal * 100;
         const detalle = p.fase === 'borrando'
-          ? 'Quitando la carga anterior de ' + yr + ' · ' + (p.borradas || 0).toLocaleString('es-AR') + ' filas eliminadas'
+          ? 'Quitando la carga anterior de ' + yr + ' · bloque ' + (p.rango || 0) + ' de ' + (p.rangos || 0)
           : 'Guardando ' + yr + ' · ' + p.done.toLocaleString('es-AR') + ' / ' + p.total.toLocaleString('es-AR') + ' filas';
         showUploadProgress(
           `${detalle} (año ${idx + 1} de ${years.length}) · ${Math.round(overall)}% total`,

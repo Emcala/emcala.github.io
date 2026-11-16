@@ -122,14 +122,13 @@ function dbRowToCSV(r, nombres) {
   };
 }
 
-// ── Lectura por ventanas de id ────────────────────────────────
-// La tabla tiene más de 1 millón de filas. Paginar con OFFSET + count=exact
-// supera el timeout de 8 s de Supabase (error 500), así que se lee por rangos
-// de id (usa el índice de la clave primaria: cada pedido es rápido).
-// Cada ventana abarca 1000 ids => como mucho 1000 filas (el tope del servidor).
-const LECTURA_COLS = 'cod_s,cod_s2,un,hl,cli,prod,dias,canal,calibre,prod2,marca,fecha,yr,mes';
-const LECTURA_VENTANA = 1000;
-const LECTURA_PARALELO = 6;
+// ── Lectura por rangos de id + keyset ─────────────────────────
+// La tabla tiene más de 1 millón de filas: OFFSET es lento y supera el timeout
+// de Supabase, así que se pagina por id (usa el índice de la clave primaria).
+const LECTURA_COLS = 'id,cod_s,cod_s2,un,hl,cli,prod,dias,canal,calibre,prod2,marca,fecha,yr,mes';
+const LECTURA_LOTE = 10000;     // filas pedidas por página (acompañar con Max Rows = 10000 en Supabase)
+const LECTURA_PARALELO = 6;     // sub-rangos leídos a la vez
+const LECTURA_SUBRANGOS = 12;   // en cuántas partes contiguas se divide el rango de ids
 
 async function sbGetConReintentos(path, intentos) {
   intentos = intentos || 3;
@@ -186,46 +185,70 @@ function ocultarCarga() {
   if (ov) ov.remove();
 }
 
-// Lectura: reserva 0-5% para conectar y nombres, 5-100% para las ventanas
+// Lectura: reserva 0-5% para conectar y nombres, 5-100% para los sub-rangos
 function mostrarProgresoLectura(pct) {
   mostrarCarga('Cargando datos', 'Descargando ventas desde Supabase…', 5 + pct * 0.95);
 }
 
-// ── Lectura: trae TODOS los datos y reconstruye DATA ──────────
+// ── Lectura: trae los datos de los años guardados y reconstruye DATA ──
+// Sólo lee los años que figuran en analisis_anual_meta (si la meta está vacía,
+// lee todo). Cada sub-rango de ids se recorre con keyset (id > último recibido),
+// así funciona aunque Supabase limite cada respuesta; sólo cambia la cantidad de pedidos.
+async function leerSubrango(rango, filtroYr) {
+  const filas = [];
+  let cursor = rango.lo - 1;
+  while (true) {
+    const lote = await sbGetConReintentos(
+      `${TABLE_VENTAS}?select=${LECTURA_COLS}&id=gt.${cursor}&id=lte.${rango.hi}${filtroYr}&order=id.asc&limit=${LECTURA_LOTE}`
+    );
+    if (!Array.isArray(lote) || !lote.length) break;
+    for (const r of lote) filas.push(r);
+    cursor = Number(lote[lote.length - 1].id);
+    if (cursor >= rango.hi) break;
+  }
+  return filas;
+}
+
 async function loadDatosDesdeSupabase() {
   try {
     const token = await getToken();
     if (!token) return { ok: false, error: 'No hay sesión activa (sin token)' };
 
-    const primero = await sbGetConReintentos(`${TABLE_VENTAS}?select=id&order=id.asc&limit=1`);
+    // Años con datos según la meta
+    const meta = await sbGetConReintentos(`${TABLE_META}?select=yr`);
+    const anios = (Array.isArray(meta) ? meta : [])
+      .map(m => String(m.yr))
+      .filter(y => /^\d{4}$/.test(y));
+    const filtroYr = anios.length ? `&yr=in.(${anios.join(',')})` : '';
+
+    const primero = await sbGetConReintentos(`${TABLE_VENTAS}?select=id&order=id.asc&limit=1${filtroYr}`);
     if (!Array.isArray(primero) || !primero.length) return { ok: true, rows: 0, empty: true };
-    const ultimo = await sbGetConReintentos(`${TABLE_VENTAS}?select=id&order=id.desc&limit=1`);
+    const ultimo = await sbGetConReintentos(`${TABLE_VENTAS}?select=id&order=id.desc&limit=1${filtroYr}`);
     const minId = Number(primero[0].id);
     const maxId = Number(ultimo[0].id);
 
-    const ventanas = [];
-    for (let a = minId; a <= maxId; a += LECTURA_VENTANA) ventanas.push(a);
+    // Partir [minId, maxId] en sub-rangos contiguos
+    const paso = Math.ceil((maxId - minId + 1) / LECTURA_SUBRANGOS);
+    const rangos = [];
+    for (let lo = minId; lo <= maxId; lo += paso) {
+      rangos.push({ lo: lo, hi: Math.min(lo + paso - 1, maxId) });
+    }
 
     const nombres = await cargarNombres();
     mostrarProgresoLectura(0);
-    const resultados = new Array(ventanas.length);
-    let siguiente = 0, hechas = 0;
+    const resultados = new Array(rangos.length);
+    let siguiente = 0, hechos = 0;
     const worker = async () => {
       while (true) {
         const i = siguiente++;
-        if (i >= ventanas.length) return;
-        const a = ventanas[i];
-        const filas = await sbGetConReintentos(
-          `${TABLE_VENTAS}?select=${LECTURA_COLS}&id=gte.${a}&id=lt.${a + LECTURA_VENTANA}&order=id`
-        );
+        if (i >= rangos.length) return;
+        const filas = await leerSubrango(rangos[i], filtroYr);
         resultados[i] = filas.map(r => dbRowToCSV(r, nombres));
-        hechas++;
-        if (hechas % 20 === 0 || hechas === ventanas.length) {
-          mostrarProgresoLectura(Math.round(hechas / ventanas.length * 100));
-        }
+        hechos++;
+        mostrarProgresoLectura(Math.round(hechos / rangos.length * 100));
       }
     };
-    await Promise.all(Array.from({ length: LECTURA_PARALELO }, worker));
+    await Promise.all(Array.from({ length: Math.min(LECTURA_PARALELO, rangos.length) }, worker));
 
     const rows = [];
     for (const r of resultados) for (let k = 0; k < r.length; k++) rows.push(r[k]);
@@ -282,35 +305,42 @@ async function upsertarNombres(rows) {
 }
 
 // ── Escritura: reemplaza un año completo ──────────────────────
-// Orden seguro:
+// Orden:
 //   1) Valida año y filas ANTES de tocar nada.
-//   2) Borra la carga anterior de ese año filtrando por la columna `yr`
-//      (en lotes de 1.000 ids; nunca un DELETE masivo).
-//   3) Inserta la carga nueva en lotes de 1.000.
+//   2) Borra la carga anterior del año por bloques de id (yr = año e id en
+//      [lo, lo + 25.000)) y verifica que no quede ninguna fila.
+//   3) Inserta la carga nueva en lotes de 5.000, hasta 4 en paralelo.
 //   4) Actualiza nombres y metadato.
-// onProgress({ yr, done, total, fase, borradas }) se llama durante el proceso.
+// onProgress({ yr, done, total, fase, rango, rangos }) se llama durante el proceso.
+const BORRADO_RANGO = 25000;
+const INSERT_LOTE = 5000;
+const INSERT_PARALELO = 4;
+
 async function borrarAnioEnSupabase(yr, onProgress) {
-  const LOTE = 1000;
-  let borradas = 0;
-  let primerIdAnterior = null;
-  while (true) {
-    const ids = await sbFetch(`${TABLE_VENTAS}?select=id&yr=eq.${encodeURIComponent(yr)}&order=id.asc&limit=${LOTE}`);
-    if (!Array.isArray(ids) || !ids.length) break;
+  const primero = await sbFetch(`${TABLE_VENTAS}?select=id&yr=eq.${yr}&order=id.asc&limit=1`);
+  if (!Array.isArray(primero) || !primero.length) return 0;
+  const ultimo = await sbFetch(`${TABLE_VENTAS}?select=id&yr=eq.${yr}&order=id.desc&limit=1`);
+  const minId = Number(primero[0].id);
+  const maxId = Number(ultimo[0].id);
 
-    // Si el servidor responde OK pero las mismas filas siguen apareciendo,
-    // el borrado no se aplicó (típicamente, falta permiso de auditor en RLS).
-    const primerId = String(ids[0].id);
-    if (primerId === primerIdAnterior) {
-      throw new Error('El servidor no confirmó el borrado de ' + yr + ' (revisá que tu usuario tenga rol auditor activo).');
-    }
-    primerIdAnterior = primerId;
+  const bloques = [];
+  for (let lo = minId; lo <= maxId; lo += BORRADO_RANGO) bloques.push(lo);
 
-    const lista = ids.map(x => x.id).join(',');
-    await sbFetch(`${TABLE_VENTAS}?id=in.(${lista})`, { method: 'DELETE', prefer: 'return=minimal' });
-    borradas += ids.length;
-    if (onProgress) onProgress({ yr, done: 0, total: 0, fase: 'borrando', borradas });
+  for (let i = 0; i < bloques.length; i++) {
+    const lo = bloques[i];
+    await sbFetch(`${TABLE_VENTAS}?yr=eq.${yr}&id=gte.${lo}&id=lt.${lo + BORRADO_RANGO}`, {
+      method: 'DELETE',
+      prefer: 'return=minimal'
+    });
+    if (onProgress) onProgress({ yr, done: 0, total: 0, fase: 'borrando', rango: i + 1, rangos: bloques.length });
   }
-  return borradas;
+
+  // Verificación: si quedó algo, el borrado no se aplicó (típicamente, falta rol auditor en RLS)
+  const quedan = await sbFetch(`${TABLE_VENTAS}?select=id&yr=eq.${yr}&limit=1`);
+  if (Array.isArray(quedan) && quedan.length) {
+    throw new Error('El servidor no confirmó el borrado de ' + yr + ' (revisá que tu usuario tenga rol auditor activo).');
+  }
+  return bloques.length;
 }
 
 async function guardarAnioEnSupabase(yr, rows, onProgress) {
@@ -331,18 +361,37 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
     }
 
     // 1) Quitar la carga anterior del mismo año
-    await borrarAnioEnSupabase(yr, onProgress);
+    try {
+      await borrarAnioEnSupabase(yr, onProgress);
+    } catch (eB) {
+      return { ok: false, error: eB.message + ' Pudo quedar parte de la carga anterior de ' + yr + ': volvé a subir el archivo.' };
+    }
 
-    // 2) Insertar la carga nueva en lotes
-    const CHUNK = 1000;
+    // 2) Insertar la carga nueva en lotes, en paralelo
     const payload = rows.map(rowToCSV);
+    const lotes = [];
+    for (let i = 0; i < payload.length; i += INSERT_LOTE) lotes.push(payload.slice(i, i + INSERT_LOTE));
     let inserted = 0;
+    let siguiente = 0;
+    let fallo = null;
     if (onProgress) onProgress({ yr, done: 0, total: payload.length, fase: 'insertando' });
-    for (let i = 0; i < payload.length; i += CHUNK) {
-      const chunk = payload.slice(i, i + CHUNK);
-      await sbFetch(TABLE_VENTAS, { method: 'POST', body: chunk, prefer: 'return=minimal' });
-      inserted += chunk.length;
-      if (onProgress) onProgress({ yr, done: inserted, total: payload.length, fase: 'insertando' });
+    const worker = async () => {
+      while (!fallo) {
+        const i = siguiente++;
+        if (i >= lotes.length) return;
+        try {
+          await sbFetch(TABLE_VENTAS, { method: 'POST', body: lotes[i], prefer: 'return=minimal' });
+          inserted += lotes[i].length;
+          if (onProgress) onProgress({ yr, done: inserted, total: payload.length, fase: 'insertando' });
+        } catch (e) {
+          fallo = fallo || e;
+          return;
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(INSERT_PARALELO, lotes.length) }, worker));
+    if (fallo) {
+      return { ok: false, error: 'Se cortó la subida del año ' + yr + ' (' + fallo.message + '). La carga quedó incompleta: volvé a subir el archivo de ' + yr + '.' };
     }
 
     // 3) Nombres nuevos en las tablas de búsqueda (si falla, no se pierde la carga)
