@@ -1,4 +1,4 @@
-document.getElementById('folder-input').addEventListener('change', e => {
+﻿document.getElementById('folder-input').addEventListener('change', e => {
   const files = [...e.target.files].filter(f => f.name.toLowerCase().endsWith('.csv'));
   if (!files.length) return;
 
@@ -62,6 +62,7 @@ async function persistirAños(añosGuardados) {
   let errores = [];
   let avisos = [];
   let filasTotal = 0;
+  let añoIncompleto = false;
 
   const years = Object.keys(añosGuardados);
   const grandTotal = years.reduce((acc, y) => acc + añosGuardados[y].length, 0);
@@ -74,10 +75,16 @@ async function persistirAños(añosGuardados) {
       const yr = years[idx];
       const total = añosGuardados[yr].length;
       const res = await guardarAnioEnSupabase(yr, añosGuardados[yr], p => {
-        const overall = (doneBefore + p.done) / grandTotal * 100;
+        // El borrado pesa como máximo el 20% del año; la subida, el 100%.
+        const fraccion = p.fase === 'borrando'
+          ? (p.rangos ? (p.rango || 0) / p.rangos : Math.min((p.done || 0) / Math.max(total, 1), 1)) * 0.2
+          : (p.done || 0) / Math.max(total, 1);
+        const overall = Math.min(99, (doneBefore + fraccion * total) / grandTotal * 100);
         const detalle = p.fase === 'borrando'
-          ? 'Quitando la carga anterior de ' + yr + ' · bloque ' + (p.rango || 0) + ' de ' + (p.rangos || 0)
-          : 'Guardando ' + yr + ' · ' + p.done.toLocaleString('es-AR') + ' / ' + p.total.toLocaleString('es-AR') + ' filas';
+          ? 'Quitando la carga anterior de ' + yr +
+            (p.done ? ' · ' + p.done.toLocaleString('es-AR') + ' filas quitadas' : '') +
+            (p.rangos ? ' · bloque ' + (p.rango || 0) + ' de ' + p.rangos : '')
+          : 'Guardando ' + yr + ' · ' + (p.done || 0).toLocaleString('es-AR') + ' / ' + total.toLocaleString('es-AR') + ' filas';
         showUploadProgress(
           `${detalle} (año ${idx + 1} de ${years.length}) · ${Math.round(overall)}% total`,
           overall
@@ -87,6 +94,7 @@ async function persistirAños(añosGuardados) {
       if (!res.ok) {
         todoOk = false;
         errores.push(`${yr}: ${res.error}`);
+        if (res.estado === 'anio_vacio' || res.estado === 'incompleto') añoIncompleto = true;
         console.error('Error guardando', yr, 'en Supabase:', res.error);
       } else {
         filasTotal += res.inserted || 0;
@@ -105,10 +113,13 @@ async function persistirAños(añosGuardados) {
           (avisos.length ? '\n\n⚠️ ' + avisos.join('\n') : ''));
   } else {
     renderLU('err');
+    const nota = añoIncompleto
+      ? 'Un año quedó sin datos completos en Supabase y su fecha de actualización fue quitada. Volvé a subir el CSV de ese año.'
+      : 'La carga anterior del año sigue intacta. Podés volver a intentarlo.';
     alert('⚠️ No se pudieron guardar los datos en Supabase:\n\n' +
           errores.join('\n') +
-          '\n\nLos datos quedaron solo en tu pantalla. ' +
-          'Verificá que estés logueado como auditor y que la tabla exista.');
+          '\n\n' + nota +
+          '\n\nLos años que fallaron quedan solo en tu pantalla.');
   }
 
   await refreshLastUpdate();

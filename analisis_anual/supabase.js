@@ -304,25 +304,83 @@ async function upsertarNombres(rows) {
   }
 }
 
-// ── Escritura: reemplaza un año completo ──────────────────────
-// Orden:
-//   1) Valida año y filas ANTES de tocar nada.
-//   2) Borra la carga anterior del año por bloques de id (yr = año e id en
-//      [lo, lo + 25.000)) y verifica que no quede ninguna fila.
-//   3) Inserta la carga nueva en lotes de 5.000, hasta 4 en paralelo.
-//   4) Actualiza nombres y metadato.
-// onProgress({ yr, done, total, fase, rango, rangos }) se llama durante el proceso.
 const BORRADO_RANGO = 25000;
 const INSERT_LOTE = 5000;
 const INSERT_PARALELO = 4;
+const BORRADO_RPC_LOTE = 50000;
+let _rpcBorradoOk = null; // null = sin probar, true = RPC disponible, false = usar respaldo por bloques
 
-async function borrarAnioEnSupabase(yr, onProgress) {
-  // No se busca min/max de la carga con "order by yr": Postgres recorre el índice
-  // de la clave primaria desde el id 1 y supera el timeout. En cambio se recorre
-  // el rango de ids de la tabla en bloques (cada bloque usa el índice de id).
-  // Se consulta el máximo id total una sola vez (índice de la PK, rápido).
+function esTimeout(e) {
+  const m = String((e && e.message) || '');
+  return m.indexOf('57014') >= 0 || /statement timeout/i.test(m);
+}
+
+function rpcNoExiste(e) {
+  const m = String((e && e.message) || '');
+  return (!!e && e.status === 404) || m.indexOf('PGRST202') >= 0 || /Could not find the function/i.test(m);
+}
+
+// ── Llamada a una función RPC de Postgres (POST /rest/v1/rpc/<fn>) ──
+async function sbRpc(fn, args) {
+  const token = await getToken();
+  if (!token) throw new Error('No hay sesión activa (sin token). Volvé a iniciar sesión.');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(args || {})
+  });
+  if (!res.ok) {
+    let msg = '';
+    try { msg = (await res.text()).slice(0, 300); } catch (e) {}
+    const err = new Error(`Supabase ${res.status}: ${msg}`);
+    err.status = res.status;
+    throw err;
+  }
+  const ct = res.headers.get('content-type') || '';
+  if (ct.indexOf('json') >= 0) return res.json();
+  return res.text();
+}
+
+async function limpiarMetaSeguro(yr) {
+  try {
+    await sbFetch(`${TABLE_META}?yr=eq.${yr}`, { method: 'DELETE', prefer: 'return=minimal' });
+  } catch (e) { console.warn('No se pudo limpiar la fecha de actualización de ' + yr, e); }
+}
+
+// ── Borrado con RPC (analisis_anual_borrar_bloque, requiere supabase_setup_v3.sql) ──
+// Cada llamada borra hasta BORRADO_RPC_LOTE filas del año. Se repite hasta que
+// la función devuelve 0: ese cero es la verificación (no hace falta un SELECT extra).
+async function borrarAnioConRpc(yr, onProgress) {
+  let borradas = 0;
+  while (true) {
+    let n = 0;
+    let intentos = 0;
+    while (true) {
+      try {
+        n = Number(await sbRpc('analisis_anual_borrar_bloque', { p_yr: Number(yr), p_limite: BORRADO_RPC_LOTE }));
+        break;
+      } catch (e) {
+        intentos++;
+        if (!esTimeout(e) || intentos >= 3) { e.borrado = borradas > 0; throw e; }
+        await new Promise(r => setTimeout(r, 1000 * intentos));
+      }
+    }
+    if (!n) break;
+    borradas += n;
+    if (onProgress) onProgress({ yr, done: borradas, total: 0, fase: 'borrando' });
+  }
+  return { borradas, verificado: true, modo: 'rpc' };
+}
+
+// ── Borrado de respaldo: bloques de id (usa la clave primaria) ──
+async function borrarAnioPorBloques(yr, onProgress) {
+  // Máximo id global una sola vez (índice de la PK, rápido).
   const ultimoGlobal = await sbFetch(`${TABLE_VENTAS}?select=id&order=id.desc&limit=1`);
-  if (!Array.isArray(ultimoGlobal) || !ultimoGlobal.length) return 0;
+  if (!Array.isArray(ultimoGlobal) || !ultimoGlobal.length) return { borradas: 0, verificado: true, modo: 'bloques' };
   const maxIdGlobal = Number(ultimoGlobal[0].id);
 
   const bloques = [];
@@ -336,49 +394,89 @@ async function borrarAnioEnSupabase(yr, onProgress) {
         prefer: 'return=minimal'
       });
     } catch (e) {
-      // Si es el primer bloque, todavía no se borró nada
-      e.borrado = i > 0;
+      e.borrado = i > 0; // Si es el primer bloque, todavía no se borró nada
       throw e;
     }
     if (onProgress) onProgress({ yr, done: 0, total: 0, fase: 'borrando', rango: i + 1, rangos: bloques.length });
   }
 
-  // Verificación: si quedó algo, el borrado no se aplicó (típicamente, falta rol auditor en RLS)
-  const quedan = await sbFetch(`${TABLE_VENTAS}?select=id&yr=eq.${yr}&limit=1`);
+  // Verificación: si el servidor corta por tiempo, no se frena la carga; se informa.
+  let quedan;
+  try {
+    quedan = await sbFetch(`${TABLE_VENTAS}?select=id&yr=eq.${yr}&limit=1`);
+  } catch (e) {
+    if (esTimeout(e)) return { borradas: null, verificado: false, modo: 'bloques' };
+    throw e;
+  }
   if (Array.isArray(quedan) && quedan.length) {
     const e = new Error('El servidor no confirmó el borrado de ' + yr + ' (revisá que tu usuario tenga rol auditor activo).');
     e.borrado = true;
     throw e;
   }
-  return bloques.length;
+  return { borradas: null, verificado: true, modo: 'bloques' };
 }
 
+// Usa el RPC si existe; si todavía no se ejecutó supabase_setup_v3.sql, usa el respaldo.
+async function borrarAnioEnSupabase(yr, onProgress) {
+  if (_rpcBorradoOk !== false) {
+    try {
+      const r = await borrarAnioConRpc(yr, onProgress);
+      _rpcBorradoOk = true;
+      return r;
+    } catch (e) {
+      if (e.borrado || !rpcNoExiste(e)) throw e;
+      _rpcBorradoOk = false;
+      console.warn('La función analisis_anual_borrar_bloque no existe; se usa borrado por bloques. Ejecutá supabase_setup_v3.sql.');
+    }
+  }
+  return borrarAnioPorBloques(yr, onProgress);
+}
+
+// ── Escritura: reemplaza un año completo ──────────────────────
+// Orden:
+//   1) Valida año y filas ANTES de tocar nada.
+//   2) Quita la carga anterior del año (RPC o respaldo).
+//   3) Inserta la carga nueva en lotes de 5.000, hasta 4 en paralelo.
+//   4) Actualiza nombres y metadato.
+// Devuelve { ok, inserted?, borradas?, warning?, error?, estado? }
+// estado: 'sin_cambios' (año intacto) | 'anio_vacio' (se quitó y no se subió nada)
+//         | 'incompleto' (se quitó y la subida quedó a medias)
 async function guardarAnioEnSupabase(yr, rows, onProgress) {
+  let despuesDeBorrar = false;
   try {
     const token = await getToken();
-    if (!token) return { ok: false, error: 'No hay sesión activa (sin token). Volvé a iniciar sesión.' };
+    if (!token) return { ok: false, estado: 'sin_cambios', error: 'No hay sesión activa (sin token). Volvé a iniciar sesión.' };
 
     // Validación previa: si algo no cierra, no se borra nada.
     const yrNum = Number(yr);
     if (!Number.isInteger(yrNum) || yrNum < 2000 || yrNum > 2100) {
-      return { ok: false, error: 'Año inválido: "' + yr + '". El CSV debe tener la columna Año.' };
+      return { ok: false, estado: 'sin_cambios', error: 'Año inválido: "' + yr + '". El CSV debe tener la columna Año.' };
     }
     if (!rows || !rows.length) {
-      return { ok: false, error: 'No hay filas para guardar el año ' + yr };
+      return { ok: false, estado: 'sin_cambios', error: 'No hay filas para guardar el año ' + yr };
     }
     if (rows.some(r => String(r.yr) !== String(yr))) {
-      return { ok: false, error: 'Hay filas de otro año mezcladas en la carga de ' + yr + '. No se guardó nada.' };
+      return { ok: false, estado: 'sin_cambios', error: 'Hay filas de otro año mezcladas en la carga de ' + yr + '. No se guardó nada.' };
     }
 
     // 1) Quitar la carga anterior del mismo año
+    let borrado;
     try {
-      await borrarAnioEnSupabase(yr, onProgress);
+      borrado = await borrarAnioEnSupabase(yr, onProgress);
     } catch (eB) {
-      const aviso = eB.borrado
-        ? ' Pudo quedar parte de la carga anterior de ' + yr + ': volvé a subir el archivo.'
-        : ' No se borró nada: la carga anterior de ' + yr + ' sigue intacta. Podés volver a intentarlo.';
-      return { ok: false, error: eB.message + aviso };
+      if (eB.borrado) {
+        await limpiarMetaSeguro(yr);
+        return {
+          ok: false, estado: 'incompleto',
+          error: eB.message + ' Pudo quedar parte de la carga anterior de ' + yr + ' borrada: el año quedó INCOMPLETO, volvé a subir el archivo de ' + yr + '.'
+        };
+      }
+      return {
+        ok: false, estado: 'sin_cambios',
+        error: eB.message + ' No se borró nada: la carga anterior de ' + yr + ' sigue intacta. Podés volver a intentarlo.'
+      };
     }
+    despuesDeBorrar = true; // desde acá, si algo falla el año queda sin datos
 
     // 2) Insertar la carga nueva en lotes, en paralelo
     const payload = rows.map(rowToCSV);
@@ -404,32 +502,45 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
     };
     await Promise.all(Array.from({ length: Math.min(INSERT_PARALELO, lotes.length) }, worker));
     if (fallo) {
-      return { ok: false, error: 'Se cortó la subida del año ' + yr + ' (' + fallo.message + '). La carga quedó incompleta: volvé a subir el archivo de ' + yr + '.' };
+      const estado = inserted > 0 ? 'incompleto' : 'anio_vacio';
+      await limpiarMetaSeguro(yr);
+      const situacion = estado === 'anio_vacio' ? 'quedó SIN datos en Supabase' : 'quedó INCOMPLETO en Supabase';
+      return {
+        ok: false, estado,
+        error: 'Se quitó la carga anterior de ' + yr + ' y la subida se cortó (' + fallo.message + '): ' + yr + ' ' + situacion + '. Volvé a subir el archivo de ' + yr + '.'
+      };
+    }
+
+    const warnings = [];
+    if (borrado.verificado === false) {
+      warnings.push('No se pudo confirmar que la carga anterior de ' + yr + ' se borró por completo (tiempo de espera del servidor). Si ves filas duplicadas, ejecutá supabase_setup_v3.sql y volvé a subir el archivo.');
     }
 
     // 3) Nombres nuevos en las tablas de búsqueda (si falla, no se pierde la carga)
-    let warning = '';
     try { await upsertarNombres(rows); }
-    catch (eN) { warning = 'No se pudieron actualizar los nombres (clientes/vendedores/supervisores nuevos quedarán sin nombre): ' + eN.message; console.warn(warning); }
+    catch (eN) {
+      const w = 'No se pudieron actualizar los nombres (clientes/vendedores/supervisores nuevos quedarán sin nombre): ' + eN.message;
+      console.warn(w);
+      warnings.push(w);
+    }
 
-    // 4) Metadato de "última actualización"
+    // 4) Metadato de "última actualización" (si falla, los datos igual quedaron guardados)
     const nombre = ((typeof EmcalaAuth !== 'undefined') && EmcalaAuth.getSession)
       ? (EmcalaAuth.getSession().nombre || EmcalaAuth.getSession().usuario || '')
       : '';
-    await sbFetch(TABLE_META, {
-      method: 'POST',
-      body: {
-        yr: String(yr),
-        actualizado_en: new Date().toISOString(),
-        filas: inserted,
-        actualizado_por: nombre
-      },
-      prefer: 'resolution=merge-duplicates,return=minimal'
-    });
+    try {
+      await sbFetch(TABLE_META, {
+        method: 'POST',
+        body: { yr: String(yr), actualizado_en: new Date().toISOString(), filas: inserted, actualizado_por: nombre },
+        prefer: 'resolution=merge-duplicates,return=minimal'
+      });
+    } catch (eM) {
+      warnings.push('Los datos se guardaron, pero no se pudo registrar la fecha de actualización: ' + eM.message);
+    }
 
-    return { ok: true, inserted, warning };
+    return { ok: true, inserted, borradas: borrado.borradas, warning: warnings.join(' ') };
   } catch (e) {
-    return { ok: false, error: e.message };
+    return { ok: false, estado: despuesDeBorrar ? 'anio_vacio' : 'sin_cambios', error: e.message };
   }
 }
 
