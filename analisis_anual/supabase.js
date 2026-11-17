@@ -317,28 +317,38 @@ const INSERT_LOTE = 5000;
 const INSERT_PARALELO = 4;
 
 async function borrarAnioEnSupabase(yr, onProgress) {
-  const primero = await sbFetch(`${TABLE_VENTAS}?select=id&yr=eq.${yr}&order=id.asc&limit=1`);
-  if (!Array.isArray(primero) || !primero.length) return 0;
-  const ultimo = await sbFetch(`${TABLE_VENTAS}?select=id&yr=eq.${yr}&order=id.desc&limit=1`);
-  const minId = Number(primero[0].id);
-  const maxId = Number(ultimo[0].id);
+  // No se busca min/max de la carga con "order by yr": Postgres recorre el índice
+  // de la clave primaria desde el id 1 y supera el timeout. En cambio se recorre
+  // el rango de ids de la tabla en bloques (cada bloque usa el índice de id).
+  // Se consulta el máximo id total una sola vez (índice de la PK, rápido).
+  const ultimoGlobal = await sbFetch(`${TABLE_VENTAS}?select=id&order=id.desc&limit=1`);
+  if (!Array.isArray(ultimoGlobal) || !ultimoGlobal.length) return 0;
+  const maxIdGlobal = Number(ultimoGlobal[0].id);
 
   const bloques = [];
-  for (let lo = minId; lo <= maxId; lo += BORRADO_RANGO) bloques.push(lo);
+  for (let lo = 1; lo <= maxIdGlobal; lo += BORRADO_RANGO) bloques.push(lo);
 
   for (let i = 0; i < bloques.length; i++) {
     const lo = bloques[i];
-    await sbFetch(`${TABLE_VENTAS}?yr=eq.${yr}&id=gte.${lo}&id=lt.${lo + BORRADO_RANGO}`, {
-      method: 'DELETE',
-      prefer: 'return=minimal'
-    });
+    try {
+      await sbFetch(`${TABLE_VENTAS}?yr=eq.${yr}&id=gte.${lo}&id=lt.${lo + BORRADO_RANGO}`, {
+        method: 'DELETE',
+        prefer: 'return=minimal'
+      });
+    } catch (e) {
+      // Si es el primer bloque, todavía no se borró nada
+      e.borrado = i > 0;
+      throw e;
+    }
     if (onProgress) onProgress({ yr, done: 0, total: 0, fase: 'borrando', rango: i + 1, rangos: bloques.length });
   }
 
   // Verificación: si quedó algo, el borrado no se aplicó (típicamente, falta rol auditor en RLS)
   const quedan = await sbFetch(`${TABLE_VENTAS}?select=id&yr=eq.${yr}&limit=1`);
   if (Array.isArray(quedan) && quedan.length) {
-    throw new Error('El servidor no confirmó el borrado de ' + yr + ' (revisá que tu usuario tenga rol auditor activo).');
+    const e = new Error('El servidor no confirmó el borrado de ' + yr + ' (revisá que tu usuario tenga rol auditor activo).');
+    e.borrado = true;
+    throw e;
   }
   return bloques.length;
 }
@@ -364,7 +374,10 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
     try {
       await borrarAnioEnSupabase(yr, onProgress);
     } catch (eB) {
-      return { ok: false, error: eB.message + ' Pudo quedar parte de la carga anterior de ' + yr + ': volvé a subir el archivo.' };
+      const aviso = eB.borrado
+        ? ' Pudo quedar parte de la carga anterior de ' + yr + ': volvé a subir el archivo.'
+        : ' No se borró nada: la carga anterior de ' + yr + ' sigue intacta. Podés volver a intentarlo.';
+      return { ok: false, error: eB.message + aviso };
     }
 
     // 2) Insertar la carga nueva en lotes, en paralelo
