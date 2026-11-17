@@ -20,10 +20,40 @@ async function loadAutoCsvSources() {
   return loadedFiles;
 }
 
+// Divide una línea CSV respetando campos entre comillas ("" = comilla escapada).
+function dividirCamposCSV(linea, sep) {
+  const out = [];
+  let campo = '', enComillas = false;
+  for (let i = 0; i < linea.length; i++) {
+    const c = linea.charAt(i);
+    if (c === '"') {
+      if (enComillas && linea.charAt(i + 1) === '"') { campo += '"'; i++; }
+      else enComillas = !enComillas;
+    } else if (c === sep && !enComillas) {
+      out.push(campo); campo = '';
+    } else {
+      campo += c;
+    }
+  }
+  out.push(campo);
+  return out.map(v => v.trim());
+}
+
+// Soporta tres formatos: sin comillas, campos citados ("a";"b") y la línea
+// entera entre comillas ("a;b;c"), que es el que llega en algunos exports.
+function camposDeLinea(linea) {
+  const limpia = String(linea || '').replace(/\r$/, '').replace(/^\uFEFF/, '');
+  let campos = dividirCamposCSV(limpia, ';');
+  if (campos.length === 1 && limpia.indexOf(';') !== -1) {
+    campos = dividirCamposCSV(limpia.replace(/^"/, '').replace(/"$/, ''), ';');
+  }
+  return campos;
+}
+
 function parseCSV(txt) {
   if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
   const lines = txt.split(/\r?\n/).filter(l => l.trim());
-  const H = lines[0].split(';').map(h => h.trim());
+  const H = camposDeLinea(lines[0]);
   const ix = n => H.indexOf(n);
   const iS=ix('Sector de Supervisión');
   const iCodS=ix('Código Sector de Supervisión');
@@ -87,7 +117,7 @@ function parseCSV(txt) {
 
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
-    const p = lines[i].split(';');
+    const p = camposDeLinea(lines[i]);
     let sdv = (p[iS]||'').trim().toUpperCase();
     sdv = sdv.replace(/\bSDVAS?\b/g, '').replace(/\bSDVS?\b/g, '').replace(/\bSUPERVISOR(?:ES)?\b/g, '').trim();
     const codS = iCodS !== -1 ? (p[iCodS]||'').trim().toUpperCase() : '';
@@ -112,7 +142,7 @@ function parseCSV(txt) {
       prod2:(p[iPROD]||'').trim(),
       marca: marca,
       cliN:(p[iCLI_N]||'').trim(),
-      fecha: iFECHA !== -1 ? parseDateStr(p[iFECHA]) : '',
+      fecha: (() => { const f = iFECHA !== -1 ? parseDateStr(p[iFECHA]) : ''; return /^\d{4}-\d{2}-\d{2}$/.test(f) ? f : ''; })(),
       retornable: iRET !== -1 ? (p[iRET]||'').trim() : '',
       importeNeto: iNET !== -1 ? parseFloat((p[iNET]||'').replace(/\./g, '').replace(',','.')) || 0 : 0,
     });
