@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════════
 // Módulo Supabase — persistencia de los datos anuales de ventas
 // Lee y escribe en la tabla public.analisis_anual_ventas.
 // Usa el access_token de la sesión (EmcalaAuth) para autorizar
@@ -305,8 +305,8 @@ async function upsertarNombres(rows) {
 }
 
 const BORRADO_RANGO = 25000;
-const INSERT_LOTE = 5000;
-const INSERT_PARALELO = 4;
+const INSERT_LOTE = 1500;      // filas por POST (con 5000 se pasaba del statement_timeout)
+const INSERT_PARALELO = 2;     // POST en paralelo (antes 4: competían entre sí por el timeout)
 const BORRADO_RPC_LOTE = 50000;
 let _rpcBorradoOk = null; // null = sin probar, true = RPC disponible, false = usar respaldo por bloques
 
@@ -318,6 +318,30 @@ function esTimeout(e) {
 function rpcNoExiste(e) {
   const m = String((e && e.message) || '');
   return (!!e && e.status === 404) || m.indexOf('PGRST202') >= 0 || /Could not find the function/i.test(m);
+}
+
+// ── Inserción de un lote con reintentos ───────────────────────
+// Un INSERT cancelado por statement_timeout (57014) hace rollback completo de su
+// transacción: no deja filas a medias, así que reintentarlo (o partirlo) no duplica.
+async function insertarLoteConReintentos(lote, profundidad, onInsertado) {
+  profundidad = profundidad || 0;
+  for (let intento = 0; intento < 3; intento++) {
+    try {
+      await sbFetch(TABLE_VENTAS, { method: 'POST', body: lote, prefer: 'return=minimal' });
+      if (onInsertado) onInsertado(lote.length);
+      return;
+    } catch (e) {
+      if (!esTimeout(e)) throw e;
+      if (lote.length > 250 && profundidad < 3) {
+        const mid = lote.length >> 1;
+        await insertarLoteConReintentos(lote.slice(0, mid), profundidad + 1, onInsertado);
+        await insertarLoteConReintentos(lote.slice(mid), profundidad + 1, onInsertado);
+        return;
+      }
+      if (intento < 2) await new Promise(r => setTimeout(r, 1500 * (intento + 1)));
+    }
+  }
+  throw new Error('Supabase 500: statement timeout repetido al insertar');
 }
 
 // ── Llamada a una función RPC de Postgres (POST /rest/v1/rpc/<fn>) ──
@@ -436,7 +460,7 @@ async function borrarAnioEnSupabase(yr, onProgress) {
 // Orden:
 //   1) Valida año y filas ANTES de tocar nada.
 //   2) Quita la carga anterior del año (RPC o respaldo).
-//   3) Inserta la carga nueva en lotes de 5.000, hasta 4 en paralelo.
+//   3) Inserta la carga nueva en lotes chicos, con reintento y partición ante timeout.
 //   4) Actualiza nombres y metadato.
 // Devuelve { ok, inserted?, borradas?, warning?, error?, estado? }
 // estado: 'sin_cambios' (año intacto) | 'anio_vacio' (se quitó y no se subió nada)
@@ -491,9 +515,10 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
         const i = siguiente++;
         if (i >= lotes.length) return;
         try {
-          await sbFetch(TABLE_VENTAS, { method: 'POST', body: lotes[i], prefer: 'return=minimal' });
-          inserted += lotes[i].length;
-          if (onProgress) onProgress({ yr, done: inserted, total: payload.length, fase: 'insertando' });
+          await insertarLoteConReintentos(lotes[i], 0, n => {
+            inserted += n;
+            if (onProgress) onProgress({ yr, done: inserted, total: payload.length, fase: 'insertando' });
+          });
         } catch (e) {
           fallo = fallo || e;
           return;
