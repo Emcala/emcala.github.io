@@ -97,9 +97,27 @@ body::after{
 .geo-btn:not(.loading) .spinner{display:none;}
 .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.geo-result{margin-top:10px;font-size:13px;}
-.geo-result.ok{color:var(--success);font-weight:600;}
+.geo-result{margin-top:10px;font-size:13px;text-align:center;}
+.geo-result.ok{color:var(--success);font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;}
 .geo-result.err{color:#DC2626;}
+.geo-coords{display:block;font-family:'DM Mono',monospace;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px;}
+.geo-manual-toggle{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;background:#fff;border:1.5px solid var(--navy);border-radius:12px;color:var(--navy);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;padding:12px 14px;}
+.geo-manual-toggle:hover{background:rgba(11,37,89,0.05);}
+.geo-manual{display:none;margin-top:8px;padding:12px;border:1.5px dashed var(--border);border-radius:12px;background:rgba(14,165,233,0.04);}
+.geo-manual.show{display:block;}
+.geo-manual p{font-size:11.5px;color:var(--muted);margin-bottom:8px;line-height:1.4;text-align:center;}
+.geo-manual input[type="text"]{width:100%;margin-bottom:8px;}
+.geo-manual button{width:100%;padding:11px;border-radius:10px;border:none;background:var(--navy);color:#fff;font-family:inherit;font-weight:800;font-size:13px;cursor:pointer;}
+.pin-map-wrap{position:relative;height:300px;border-radius:12px;overflow:hidden;border:1.5px solid var(--border);margin-bottom:8px;}
+#pinMap{width:100%;height:100%;}
+#pinMap .leaflet-control-layers label{display:block;font-size:12px;font-weight:600;letter-spacing:normal;text-transform:none;color:var(--text);margin-bottom:4px;text-align:left;}
+#pinMap .leaflet-control-layers input[type="radio"]{width:auto;padding:0;margin:0 4px 0 0;border:none;background:transparent;-webkit-appearance:radio;appearance:auto;box-shadow:none;}
+.pin-center{position:absolute;left:50%;top:50%;width:32px;height:42px;margin:-42px 0 0 -16px;z-index:500;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));}
+.pin-locate{position:absolute;right:10px;bottom:10px;z-index:500;width:auto !important;padding:8px 12px !important;font-size:12px !important;background:#fff !important;color:var(--navy) !important;border:1.5px solid var(--border) !important;box-shadow:0 2px 6px rgba(0,0,0,.2);}
+.geo-manual details{margin-top:10px;}
+.geo-manual summary{font-size:11.5px;color:var(--muted);cursor:pointer;text-align:center;}
+.geo-manual details input[type="text"]{margin-top:8px;}
+.geo-manual-err{color:#DC2626;font-size:12px;font-weight:600;margin-top:6px;text-align:center;min-height:0;}
 
 .submit-btn{
   width:100%;padding:15px;
@@ -163,6 +181,8 @@ body::after{
 }
 input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 </head>
 <body>
 
@@ -180,24 +200,42 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
         <label>Promotor <span class="req">*</span></label>
         <select id="promotor" required>
           <option value="" disabled selected>Seleccionar promotor...</option>
-          <option>ANDUAGA SANTIAGO</option><option>ASCONA MATIAS</option>
-          <option>BENITEZ NAHUEL</option><option>CESPEDES ENZO</option>
-          <option>DIAZ VALERIA</option><option>DOMINGUEZ GONZALO</option>
-          <option>FERNANDEZ LUIS</option><option>FERREYRA LEONARDO</option>
-          <option>FERREYRA TOBIAS</option><option>FREDES CLAUDIA</option>
-          <option>GALLO JONATHAN</option><option>GARCIA MAYRA</option>
-          <option>GEREZ JONATHAN</option><option>GONZALEZ ROBERTO</option>
-          <option>GUARAZ JUAN</option><option>JAIMES EZEQUIEL</option>
-          <option>JOFRE LUCAS</option><option>LEITES RODRIGO</option>
-          <option>LOPEZ ALEJANDRA</option><option>LOPEZ PABLO</option>
-          <option>MELA GONZALO</option><option>MENDOZA SERGIO</option>
-          <option>MIÑO RENZO</option><option>MORENO AGUSTINA</option>
-          <option>MOURELLE ALFREDO</option><option>MUÑOZ PAULA</option>
-          <option>PEREYRA BRAIAN</option><option>REGNER LEANDRO</option>
-          <option>SAN JUAN CARLOS</option><option>SANCHEZ ROCIO</option>
-          <option>SANTILLAN SERGIO</option><option>SCORNAVACHE WALTER</option>
-          <option>TESEI ALEJANDRA</option><option>THEILLET NICOLAS</option>
-          <option>TORRES KARINA</option><option>VEDIA ELIZABETH</option>
+          <option>ANDUAGA SANTIAGO</option>
+          <option>ASCONA MATIAS</option>
+          <option>BENITEZ NAHUEL</option>
+          <option>CESPEDES ENZO</option>
+          <option>DIAZ VALERIA</option>
+          <option>DOMINGUEZ GONZALO</option>
+          <option>FERNANDEZ LUIS</option>
+          <option>FERREYRA LEONARDO</option>
+          <option>FERREYRA TOBIAS</option>
+          <option>FREDES CLAUDIA</option>
+          <option>GALLO JONATHAN</option>
+          <option>GARCIA MAYRA</option>
+          <option>GEREZ JONATHAN</option>
+          <option>GONZALEZ ROBERTO</option>
+          <option>GUARAZ JUAN</option>
+          <option>JAIMES EZEQUIEL</option>
+          <option>JOFRE LUCAS</option>
+          <option>LEITES RODRIGO</option>
+          <option>LOPEZ ALEJANDRA</option>
+          <option>LOPEZ PABLO</option>
+          <option>MELA GONZALO</option>
+          <option>MENDOZA SERGIO</option>
+          <option>MIÑO RENZO</option>
+          <option>MORENO AGUSTINA</option>
+          <option>MOURELLE ALFREDO</option>
+          <option>MUÑOZ PAULA</option>
+          <option>PEREYRA BRAIAN</option>
+          <option>REGNER LEANDRO</option>
+          <option>SAN JUAN CARLOS</option>
+          <option>SANCHEZ ROCIO</option>
+          <option>SANTILLAN SERGIO</option>
+          <option>SCORNAVACHE WALTER</option>
+          <option>TESEI ALEJANDRA</option>
+          <option>THEILLET NICOLAS</option>
+          <option>TORRES KARINA</option>
+          <option>VEDIA ELIZABETH</option>
         </select>
       </div>
 
@@ -249,9 +287,26 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
             <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
             <circle cx="12" cy="12" r="8" opacity="0.3"/>
           </svg>
-          Obtener Ubicación Actual
+          <span>Obtener Ubicación Actual</span>
         </button>
         <div class="geo-result" id="geoResult"></div>
+
+        <button type="button" class="geo-manual-toggle" id="geoManualToggle" onclick="toggleManualGeo()">📍 Marcar ubicación en el mapa</button>
+        <div class="geo-manual" id="geoManual">
+          <p>Mové el mapa hasta que el <b>pin rojo</b> quede justo sobre el lugar donde está el equipo (entrada, casa, local).<br>Usá el botón de capas del mapa para ver la vista satelital.</p>
+          <div class="pin-map-wrap">
+            <div id="pinMap"></div>
+            <svg class="pin-center" viewBox="0 0 32 42"><path d="M16 0C7.2 0 0 7.2 0 16c0 12 16 26 16 26s16-14 16-26C32 7.2 24.8 0 16 0z" fill="#DC2626"/><circle cx="16" cy="16" r="6" fill="#fff"/></svg>
+            <button type="button" class="pin-locate" onclick="pinMapLocate()">📍 Mi ubicación</button>
+          </div>
+          <button type="button" onclick="confirmPin()">Confirmar ubicación del pin</button>
+          <details>
+            <summary>o pegar coordenadas / link de Google Maps</summary>
+            <input type="text" id="geoManualInput" placeholder="-34.510000, -58.760000 o link de Maps" autocomplete="off">
+            <button type="button" onclick="applyManualGeo()">Usar estas coordenadas</button>
+          </details>
+          <div class="geo-manual-err" id="geoManualErr"></div>
+        </div>
         <input type="hidden" id="latitud">
         <input type="hidden" id="longitud">
       </div>
@@ -351,6 +406,26 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
     if (typeof checkFormValidity === 'function') checkFormValidity();
   }
 
+  let activeWatchId = null;
+  let activeGeoTimeoutId = null;
+  let geoSession = 0; // invalida callbacks viejos del GPS automático
+
+  function stopGeolocate() {
+    geoSession++;
+    if (activeWatchId !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(activeWatchId);
+    }
+    activeWatchId = null;
+    if (activeGeoTimeoutId !== null) clearTimeout(activeGeoTimeoutId);
+    activeGeoTimeoutId = null;
+    const btn = document.getElementById('geoBtn');
+    if (btn) {
+      btn.classList.remove('loading');
+      const span = btn.querySelector('span');
+      if (span) span.textContent = 'Obtener Ubicación Actual';
+    }
+  }
+
   function geolocate() {
     const btn = document.getElementById('geoBtn');
     const result = document.getElementById('geoResult');
@@ -361,6 +436,8 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       return;
     }
 
+    stopGeolocate();
+    const mySession = geoSession;
     btn.classList.add('loading');
     result.className = 'geo-result';
 
@@ -368,8 +445,6 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
     let readings = 0;
     const MAX_READINGS = 4;
     const MIN_ACCURACY = 50;
-    let watchId = null;
-    let timeoutId = null;
 
     function updateBtn(msg) {
       const span = btn.querySelector('span');
@@ -377,20 +452,20 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
     }
 
     function done(pos) {
-      if (watchId) navigator.geolocation.clearWatch(watchId);
-      if (timeoutId) clearTimeout(timeoutId);
+      if (mySession !== geoSession) return;
+      stopGeolocate();
 
       const lat = pos.coords.latitude.toFixed(6).replace(',','.');
       const lng = pos.coords.longitude.toFixed(6).replace(',','.');
       const acc = Math.round(pos.coords.accuracy);
-      geoData = { lat, lng, acc };
+      geoData = { lat, lng, acc, manual: false };
+      document.getElementById('geoManual').classList.remove('show');
       document.getElementById('latitud').value = lat;
       document.getElementById('longitud').value = lng;
 
-      btn.classList.remove('loading');
       if (typeof checkFormValidity === 'function') checkFormValidity();
 
-      const accColor = acc <= 20 ? 'var(--success)' : acc <= 50 ? '#D97706' : 'var(--error)';
+      const accColor = acc <= 20 ? 'var(--success)' : acc <= 50 ? '#D97706' : '#DC2626';
       const accLabel = acc <= 20 ? 'Muy preciso' : acc <= 50 ? 'Aceptable' : 'Baja precisión';
 
       result.className = 'geo-result ok';
@@ -406,23 +481,24 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
     }
 
     function fail(err) {
-      if (watchId) navigator.geolocation.clearWatch(watchId);
-      if (timeoutId) clearTimeout(timeoutId);
-
+      if (mySession !== geoSession) return;
       if (bestPos) { done(bestPos); return; }
+      stopGeolocate();
 
-      btn.classList.remove('loading');
+      // el mapa solo se abre con el botón (toggleManualGeo)
       result.className = 'geo-result err';
       const msgs = {
         1: 'Permiso denegado. Habilitá la ubicación en Configuración.',
         2: 'No se pudo obtener ubicación. Verificá que el GPS esté activo.',
         3: 'Tiempo agotado. Intentá en un lugar más abierto.'
       };
-      result.innerHTML = `✕ ${msgs[err.code] || 'Error desconocido. Intentá de nuevo.'}`;
+      const hint = ' O marcá el lugar en el mapa con el botón de abajo.';
+      result.innerHTML = `✕ ${msgs[err.code] || 'Error desconocido. Intentá de nuevo.'}${hint}`;
     }
 
-    watchId = navigator.geolocation.watchPosition(
+    activeWatchId = navigator.geolocation.watchPosition(
       (pos) => {
+        if (mySession !== geoSession) return;
         readings++;
         updateBtn(`Mejorando precisión... (${readings}/${MAX_READINGS})`);
 
@@ -438,10 +514,146 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
 
-    timeoutId = setTimeout(() => {
+    activeGeoTimeoutId = setTimeout(() => {
       if (bestPos) { done(bestPos); }
       else { fail({ code: 3 }); }
     }, 20000);
+  }
+
+  let pinMap = null;
+  let pinMapMoved = false;          // el promotor ya arrastró el mapa
+  let pinMapResetPending = false;   // se activa en resetForm (nueva solicitud)
+  const PIN_DEFAULT = [-34.5150, -58.7600]; // zona de operación, ajustable
+
+  function toggleManualGeo() {
+    const panel = document.getElementById('geoManual');
+    document.getElementById('geoManualErr').textContent = '';
+    if (panel.classList.contains('show')) panel.classList.remove('show');
+    else openManualGeo();
+  }
+
+  function openManualGeo() {
+    stopGeolocate();
+    document.getElementById('geoManual').classList.add('show');
+    setTimeout(initPinMap, 50);
+  }
+
+  function initPinMap() {
+    if (typeof L === 'undefined') {
+      document.getElementById('geoManualErr').textContent = '⚠️ No se pudo cargar el mapa (sin conexión). Usá "pegar coordenadas".';
+      document.querySelector('#geoManual details').open = true;
+      return;
+    }
+    const center = geoData ? [parseFloat(geoData.lat), parseFloat(geoData.lng)] : PIN_DEFAULT;
+    if (pinMap) {
+      pinMap.invalidateSize();
+      if (geoData) {
+        pinMap.setView(center, 18);
+      } else if (pinMapResetPending) {
+        pinMapMoved = false;
+        pinMap.setView(PIN_DEFAULT, 13);
+        pinMapLocate(true);
+      }
+      pinMapResetPending = false;
+      return;
+    }
+    pinMapMoved = false;
+    pinMapResetPending = false;
+    pinMap = L.map('pinMap', { zoomControl: true }).setView(center, geoData ? 18 : 13);
+    pinMap.on('dragstart', () => { pinMapMoved = true; });
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '© OpenStreetMap'
+    });
+    const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19, attribution: 'Esri'
+    });
+    osm.addTo(pinMap);
+    L.control.layers({ 'Mapa': osm, 'Satélite': sat }, null, { position: 'topright' }).addTo(pinMap);
+    if (!geoData) pinMapLocate(true);
+  }
+
+  function pinMapLocate(silent) {
+    if (!pinMap || !navigator.geolocation) return;
+    if (!silent) document.getElementById('geoManualErr').textContent = '';
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        if (silent && pinMapMoved) return; // no robarle el mapa si ya lo está moviendo
+        pinMap.setView([pos.coords.latitude, pos.coords.longitude], 18);
+      },
+      () => { if (!silent) document.getElementById('geoManualErr').textContent = '✕ No se pudo obtener tu posición. Movelo a mano.'; },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+    );
+  }
+
+  function confirmPin() {
+    if (!pinMap) return;
+    const c = pinMap.getCenter();
+    setManualGeo(c.lat, c.lng);
+  }
+
+  function parseCoords(text) {
+    try { text = decodeURIComponent((text || '').trim()); } catch (e) { text = (text || '').trim(); }
+    // Formatos: "!3dLAT!4dLNG" (pin exacto) / "q=lat,lng" / "@lat,lng" (centro de cámara) / "lat, lng"
+    const patterns = [
+      /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/,
+      /[?&](?:q|ll|query)=(-?\d+(?:[.,]\d+)?),\s*(-?\d+(?:[.,]\d+)?)/,
+      /@(-?\d+(?:[.,]\d+)?),\s*(-?\d+(?:[.,]\d+)?)/,
+      /(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)/
+    ];
+    for (const re of patterns) {
+      const m = text.match(re);
+      if (m) {
+        const lat = parseFloat(m[1].replace(',', '.'));
+        const lng = parseFloat(m[2].replace(',', '.'));
+        if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+      }
+    }
+    return null;
+  }
+
+  function applyManualGeo() {
+    const err = document.getElementById('geoManualErr');
+    const raw = (document.getElementById('geoManualInput').value || '').trim();
+    err.textContent = '';
+    if (/maps\.app\.goo\.gl|goo\.gl\/maps/i.test(raw)) {
+      err.textContent = '✕ Los links cortos (maps.app.goo.gl) no traen coordenadas. Abrí el link en el navegador y copiá la dirección larga, o pegá las coordenadas.';
+      return;
+    }
+    const c = parseCoords(raw);
+    if (!c || c.lat < -90 || c.lat > 90 || c.lng < -180 || c.lng > 180) {
+      err.textContent = '✕ No pude leer las coordenadas. Revisá el formato.';
+      return;
+    }
+    // Rango aproximado de Argentina: evita lat/lng invertidas o signo faltante
+    if (c.lat < -56 || c.lat > -21 || c.lng < -74 || c.lng > -53) {
+      err.textContent = '✕ Esas coordenadas quedan fuera de Argentina. ¿Falta el signo menos o están invertidas?';
+      return;
+    }
+    setManualGeo(c.lat, c.lng);
+  }
+
+  function setManualGeo(latN, lngN) {
+    const err = document.getElementById('geoManualErr');
+    if (latN < -56 || latN > -21 || lngN < -74 || lngN > -53) {
+      err.textContent = '✕ El pin está fuera de Argentina. Revisá la posición.';
+      return;
+    }
+    stopGeolocate();
+    err.textContent = '';
+    const lat = latN.toFixed(6), lng = lngN.toFixed(6);
+    geoData = { lat, lng, acc: null, manual: true };
+    document.getElementById('latitud').value = lat;
+    document.getElementById('longitud').value = lng;
+    const result = document.getElementById('geoResult');
+    result.className = 'geo-result ok';
+    result.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      <div>
+        Ubicación marcada manualmente
+        <span class="geo-coords">Lat: ${lat} | Lng: ${lng}</span>
+      </div>`;
+    document.getElementById('geoManual').classList.remove('show');
+    checkFormValidity();
   }
 
   function checkFormValidity() {
@@ -542,7 +754,8 @@ input,select,textarea,button{-webkit-tap-highlight-color:transparent;touch-actio
       falla: document.getElementById('fallaSugerida').value,
       lat: geoData ? geoData.lat : '',
       lng: geoData ? geoData.lng : '',
-      notas: ''
+      geoManual: (geoData && geoData.manual) ? 'SI' : '',
+      notas: (geoData && geoData.manual) ? 'Ubicación marcada manualmente en mapa' : ''
     };
 
     // Anti-duplicado
@@ -562,7 +775,7 @@ CÓDIGO CLIENTE: ${payload.cliente}
 MARCA HELADERA: ${payload.marca}
 EDF: ${payload.edf}
 FALLA SUGERIDA: ${payload.falla}
-UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada'}`.trim();
+UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}${geoData.manual ? ' (manual)' : ''}` : 'No capturada'}`.trim();
 
     // Con GAS webapp, el POST siempre llega al servidor si hay internet.
     // El "Failed to fetch" es un falso negativo por CORS/redirect de GAS,
@@ -638,10 +851,21 @@ UBICACIÓN: ${geoData ? `Lat ${geoData.lat}, Lng ${geoData.lng}` : 'No capturada
     const sinConexionCheckbox = document.getElementById('sinConexionCliente');
     if (sinConexionCheckbox) sinConexionCheckbox.checked = false;
 
+    stopGeolocate();
     document.getElementById('successOverlay').classList.remove('show');
     document.getElementById('formContent').style.display = 'block';
-    document.getElementById('geoResult').className = 'geo-result';
+    const geoRes = document.getElementById('geoResult');
+    geoRes.className = 'geo-result';
+    geoRes.innerHTML = '';
+    document.getElementById('geoManual').classList.remove('show');
+    const detailsEl = document.querySelector('#geoManual details');
+    if (detailsEl) detailsEl.open = false;
+    document.getElementById('geoManualInput').value = '';
+    document.getElementById('geoManualErr').textContent = '';
+    document.getElementById('latitud').value = '';
+    document.getElementById('longitud').value = '';
     geoData = null;
+    pinMapResetPending = true;
     checkFormValidity();
     setTimeout(() => geolocate(), 500);
   }
