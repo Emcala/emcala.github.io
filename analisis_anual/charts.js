@@ -1,4 +1,4 @@
-// ECHARTS HELPERS
+﻿// ECHARTS HELPERS
 // ═══════════════════════════════════════════════════════════════
 function getEC(id) {
   const el = document.getElementById(id);
@@ -290,8 +290,138 @@ function makeCNC(id, d26, meses26, col26, pg) {
 // ═══════════════════════════════════════════════════════════════
 // CHART: COMPARATIVA DE DESEMPEÑO
 // ═══════════════════════════════════════════════════════════════
+let _compMeasureCtx = null;
+// Ancho del texto con la misma fuente de las etiquetas (medido con canvas)
+function compTxtW(text, px) {
+  if (!_compMeasureCtx) _compMeasureCtx = document.createElement('canvas').getContext('2d');
+  _compMeasureCtx.font = `bold ${px}px "Barlow Condensed", sans-serif`;
+  return _compMeasureCtx.measureText(text).width;
+}
+// Solapamiento de cajas {x1,y1,x2,y2} con 1 px de margen
+function compOverlap(a, b) {
+  return a.x1 < b.x2 + 1 && b.x1 < a.x2 + 1 && a.y1 < b.y2 + 1 && b.y1 < a.y2 + 1;
+}
+// Etiqueta apoyada por encima de un punto (yb = borde inferior de la etiqueta).
+// Si choca con otra etiqueta o con una barra, sube en escalera hasta quedar libre.
+function compPlaceAbove(els, boxes, rects, W, text, px, fill, cxp, yb) {
+  const w  = compTxtW(text, px) + 2;
+  const hh = px * 1.2;
+  let x1 = cxp - w / 2;
+  if (x1 < 2) x1 = 2;
+  if (x1 + w > W - 2) x1 = W - 2 - w;
+  let bottom = yb;
+  let box = null;
+  for (let g = 0; g < 30; g++) {
+    box = { x1, y1: bottom - hh, x2: x1 + w, y2: bottom };
+    const hit = boxes.some(o => compOverlap(box, o)) || rects.some(r => compOverlap(box, r));
+    if (!hit) break;
+    bottom -= hh + 2;
+  }
+  // Nunca fuera del borde superior de la tarjeta: se apoya en el tope
+  if (box.y1 < 1) { const d = 1 - box.y1; box.y1 += d; box.y2 += d; }
+  // Si en el tope igual choca, se corre el mínimo horizontal necesario dentro de la tarjeta
+  const clash = boxes.find(o => compOverlap(box, o));
+  if (clash) {
+    const toRight = clash.x2 + 2 - box.x1;
+    const toLeft  = box.x2 - (clash.x1 - 2);
+    const sh = (box.x2 + toRight <= W - 2) ? toRight : -toLeft;
+    box.x1 += sh; box.x2 += sh;
+  }
+  boxes.push(box);
+  els.push({ type:'text', style:{
+    text, x:(box.x1 + box.x2) / 2, y:box.y2, fill,
+    textAlign:'center', textVerticalAlign:'bottom',
+    font:`bold ${px}px "Barlow Condensed", sans-serif`
+  }});
+}
+// Render de la comparativa con objetivo: todo se calcula en píxeles con api.coord,
+// así se recalcula en cada resize y nada depende del layout de barras de ECharts.
+function compRenderObj(api, p) {
+  const W = api.getWidth(), H = api.getHeight();
+  if (!W || !H) return null;
+  const baseY = api.coord([0, 0])[1];
+  const band  = api.coord([1, 0])[0] - api.coord([0, 0])[0];
+  const els = [], rects = [], boxes = [], geo = [], outside = [];
+
+  els.push({ type:'line', shape:{x1:0, y1:baseY, x2:W, y2:baseY}, style:{stroke:'rgba(0,0,0,0.1)', lineWidth:1} });
+
+  // 1) Barras centradas en su categoría (objetivo fina: 8-12 px; meses: 12-34 px)
+  p.bars.forEach(b => {
+    if (!(b.v > 0)) return;
+    const cx  = api.coord([b.i, 0])[0];
+    const top = api.coord([b.i, b.v])[1];
+    const h   = baseY - top;
+    if (h <= 0) return;
+    const bw = b.obj ? Math.min(12, Math.max(8, band * 0.18)) : Math.min(34, Math.max(12, band * 0.72));
+    rects.push({x1:cx - bw/2, y1:top, x2:cx + bw/2, y2:baseY});
+    els.push({ type:'rect', shape:{x:cx - bw/2, y:top, width:bw, height:h, r:[3,3,0,0]},
+      style:{fill:b.fill, stroke:b.stroke, lineWidth:1} });
+    geo.push({ b, cx, top, h, bw });
+  });
+
+  // 2) Números: dentro de la barra si entran; si no entran (o es el objetivo) van arriba
+  geo.forEach(g => {
+    let px = g.b.obj ? p.fsO : p.fs;
+    // Meses: si el número no entra en el ancho de la barra, se achica (mín. 8 px) antes de pasarlo arriba
+    if (!g.b.obj) while (px > 8 && compTxtW(g.b.lbl, px) + 2 > g.bw - 2) px--;
+    const w  = compTxtW(g.b.lbl, px) + 2;
+    // Dentro de la barra sólo si entra en alto y en ancho; si no, va arriba
+    if (!g.b.obj && g.h >= px * 1.2 + 8 && w <= g.bw - 2) {
+      const y  = g.top + 4;
+      els.push({ type:'text', style:{
+        text:g.b.lbl, x:g.cx, y, fill:g.b.txt,
+        textAlign:'center', textVerticalAlign:'top',
+        font:`bold ${px}px "Barlow Condensed", sans-serif`
+      }});
+      boxes.push({x1:g.cx - w/2, y1:y, x2:g.cx + w/2, y2:y + px * 1.2});
+    } else {
+      outside.push(g);
+    }
+  });
+  outside.forEach(g => compPlaceAbove(els, boxes, rects, W, g.b.lbl, g.b.obj ? p.fsO : p.fs, '#1e293b', g.cx, g.top - 3));
+
+  // 3) Porcentajes anclados al tope de SU barra (no al pie del gráfico)
+  p.pcts.forEach(pt => {
+    const g = geo.find(x => x.b.i === pt.i);
+    if (!g) return;
+    let px = p.fs;
+    // Ancho máximo = banda menos el margen de 2 px de compPlaceAbove; mínimo 7 px
+    while (px > 7 && compTxtW(pt.text, px) + 2 > band - 2) px--;
+    compPlaceAbove(els, boxes, rects, W, pt.text, px, pt.color, g.cx, g.top - 3);
+  });
+
+  // 4) Etiquetas de categoría bajo la línea base
+  let fc = p.fsCat;
+  while (fc > 8 && p.cats.some(c => compTxtW(c, fc) > band - 2)) fc--;
+  p.cats.forEach((c, i) => {
+    els.push({ type:'text', style:{
+      text:c, x:api.coord([i, 0])[0], y:baseY + 3, fill:'#475569',
+      textAlign:'center', textVerticalAlign:'top',
+      font:`bold ${fc}px "Barlow Condensed", sans-serif`
+    }});
+  });
+
+  return { type:'group', children: els };
+}
+// Opción de ECharts para la comparativa con objetivo: una sola serie custom
+function compObjOption(p) {
+  return {
+    animation: false,
+    grid: { top:14, bottom:rf(18), left:2, right:2, containLabel:false },
+    xAxis: { type:'category', data:p.cats, show:false },
+    yAxis: { type:'value', min:0, max:p.yMax, show:false },
+    series: [{
+      type:'custom', silent:true, clip:false, z:5,
+      data:[[0, 0]], encode:{x:0, y:1},
+      renderItem: (params, api) => compRenderObj(api, p)
+    }],
+    tooltip: { show:false }
+  };
+}
+
 function makeComp(id, d26, d25, last, prev, col26, obj) {
   const chart = getEC(id);
+  if (!chart) return;
   const vA  = Math.round(d26[last]) || 0;
   const vB  = prev ? Math.round(d26[prev]) || 0 : 0;
   const vC  = Math.round(d25[last]) || 0;
@@ -308,14 +438,31 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
   const lB  = prev ? prev.slice(0,3).toUpperCase()+' 26' : '—';
   const lC  = last ? last.slice(0,3).toUpperCase()+' 25' : '—';
 
-  // Objetivo: mostaza apagado (sin brillo)
-  const cObj  = '#C2A24A';
-  const cObjB = '#8C7327';
-
-  // Categorías: [Obj (opcional), OCT 26, SEP 26, OCT 25]
-  const cats = hasObj ? [obj.lbl || 'Obj.', lA, lB, lC] : [lA, lB, lC];
-  const off  = hasObj ? 1 : 0;   // índice de la primera barra de mes
-
+  if (hasObj) {
+    // ── HL · Comparativa con objetivo ──
+    // Una sola serie custom: barras, objetivo, números y % se dibujan en píxeles.
+    const cObj  = '#C2A24A';
+    const cObjB = '#8C7327';
+    const bars = [
+      {i:0, v:vO, obj:true, fill:cObj, stroke:cObjB, txt:'#1e293b', lbl:fmtN(vO)},
+      {i:1, v:vA, fill:col26+'ee', stroke:col26, txt:'#fff', lbl:fmtN(vA)},
+      {i:2, v:vB, fill:col26+'99', stroke:col26+'cc', txt:'#1e293b', lbl:fmtN(vB)},
+      {i:3, v:vC, fill:'rgba(37,99,235,0.75)', stroke:'rgba(29,78,216,0.95)', txt:'#fff', lbl:fmtN(vC)}
+    ];
+    // Cada % va sobre la barra del mes que se compara (igual criterio que antes)
+    const pcts = [];
+    if (pAB!==null && vB>0) pcts.push({i:2, text:fP(pAB), color:cAB});
+    if (pAC!==null && vC>0) pcts.push({i:3, text:fP(pAC), color:cAC});
+    chart.setOption(compObjOption({
+      cats: [obj.lbl || 'Obj.', lA, lB, lC],
+      yMax: Math.max(vA, vB, vC, vO, 1) * 1.75,
+      bars, pcts,
+      fs: rf(14), fsO: rf(12), fsCat: rf(10)
+    }), true);
+    return;
+  }
+  // ── Sin objetivo (CCC · TBD · CRM): diseño original ──
+  const cats = [lA, lB, lC];
   const mesD = [
     {value:vA, itemStyle:{color:col26+'ee', borderColor:col26, borderWidth:1, borderRadius:[3,3,0,0]},
      label:{show:vA>0, position:'insideTop', distance:6, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vA)}},
@@ -324,26 +471,16 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
     {value:vC, itemStyle:{color:'rgba(37,99,235,0.75)', borderColor:'rgba(29,78,216,0.95)', borderWidth:1, borderRadius:[3,3,0,0]},
      label:{show:vC>0, position:'insideTop', distance:6, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vC)}}
   ];
-  const mainD = hasObj ? [null, ...mesD] : mesD;
-
-  // Serie de objetivo: barra fina (ancho fijo en px) con número rotado dentro
-  const objD = hasObj ? [{value:vO,
-      itemStyle:{color:cObj, borderColor:cObjB, borderWidth:1, borderRadius:[3,3,0,0]},
-      label:{show:true, position:'insideTop', rotate:90, distance:6, color:'#1f1a0a',
-             fontSize:rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed',
-             formatter:()=>fmtN(vO)}}, null, null, null] : null;
 
   // Porcentajes: serie scatter (sin barras), anclada al centro de cada categoría.
-  // Así cada % queda sobre SU barra y no se corre a la derecha.
   const pctPts = [];
-  if (pAB!==null && vB>0) pctPts.push({cat:off+1, pct:pAB, color:cAB});
-  if (pAC!==null && vC>0) pctPts.push({cat:off+2, pct:pAC, color:cAC});
-  // Si el % de la última categoría se saldría del borde de la tarjeta, se corre hacia adentro
+  if (pAB!==null && vB>0) pctPts.push({cat:1, pct:pAB, color:cAB});
+  if (pAC!==null && vC>0) pctPts.push({cat:2, pct:pAC, color:cAC});
   const nCat = cats.length;
   const scatD = pctPts.map(pt => {
     const txtLen = fP(pt.pct).length;
-    const anchoPx = 0.6 * rf(14) * txtLen;           // ancho aprox. de la etiqueta
-    const bandaPx = 230 / nCat;                       // ancho aprox. de la tarjeta / categorías
+    const anchoPx = 0.6 * rf(14) * txtLen;
+    const bandaPx = 230 / nCat;
     const centroPx = (pt.cat + 0.5) * bandaPx;
     let dx = 0;
     if (centroPx + anchoPx/2 > 230 - 2) dx = (230 - 2) - (centroPx + anchoPx/2);
@@ -355,25 +492,20 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
     };
   });
 
-  const series = [
-    {type:'bar', barWidth:'100%', barCategoryGap:'6%', data:mainD, label:{show:false}},
-  ];
-  if (hasObj) {
-    series.push({type:'bar', barWidth:18, data:objD, label:{show:false}, z:5});
-  }
-  series.push({type:'scatter', symbolSize:0, data:scatD, tooltip:{show:false}, z:10});
-
   chart.setOption({
     animation:false,
     grid:{top:22, bottom:rf(28), left:2, right:2, containLabel:false},
     xAxis:{type:'category', data:cats,
       axisLine:{lineStyle:{color:'rgba(0,0,0,0.1)'}},
       axisTick:{show:false},
-      axisLabel:{color:'#475569', fontSize:hasObj?rf(10):rf(13), fontFamily:'Barlow Condensed',
+      axisLabel:{color:'#475569', fontSize:rf(13), fontFamily:'Barlow Condensed',
                  fontWeight:'bold', interval:0}
     },
-    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,vO,1)*1.30},
-    series,
+    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,1)*1.30},
+    series:[
+      {type:'bar', barWidth:'100%', barCategoryGap:'6%', data:mesD, label:{show:false}},
+      {type:'scatter', symbolSize:0, data:scatD, tooltip:{show:false}, z:10}
+    ],
     tooltip:{show:false}
-  });
+  }, true);
 }
