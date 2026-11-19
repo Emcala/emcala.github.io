@@ -29,8 +29,8 @@ function makeMonthly(id, d25, d26, col26) {
     const p = (val - v25[i]) / v25[i] * 100;
     return { value: val, label: {
       show: true, position: 'top',
-      color: p >= 0 ? '#4ade80' : '#f87171',
-      fontSize: 14, fontWeight: 'bold', fontFamily: 'Barlow Condensed',
+      color: p >= 0 ? '#15803d' : '#dc2626',
+      fontSize: rf(14), fontWeight: 'bold', fontFamily: 'Barlow Condensed',
       formatter: () => (p >= 0 ? '+' : '') + p.toFixed(0) + '%'
     }};
   });
@@ -120,7 +120,7 @@ function makeYTDStackedByCanal(id, ytd25Data, ytd26Data) {
   const t26 = ytd26Data.reduce((a, v) => a + v.value, 0);
   const maxV = Math.max(t25, t26, 1);
   const p = t25 ? (t26 - t25) / t25 * 100 : 0;
-  const sign = p >= 0 ? '+' : '', col = p >= 0 ? '#4ade80' : '#f87171', arrow = p >= 0 ? '▲ ' : '▼ ';
+  const sign = p >= 0 ? '+' : '', col = p >= 0 ? '#15803d' : '#dc2626', arrow = p >= 0 ? '▲ ' : '▼ ';
 
   const series = [];
   ytd26Data.forEach((item26, i) => {
@@ -179,8 +179,8 @@ function makeSKUMonthly(id, d25, d26, col26) {
     const p = (val - v25[i]) / v25[i] * 100;
     return { value: val, label: {
       show: true, position: 'top',
-      color: p >= 0 ? '#4ade80' : '#f87171',
-      fontSize: 14, fontWeight: 'bold', fontFamily: 'Barlow Condensed',
+      color: p >= 0 ? '#15803d' : '#dc2626',
+      fontSize: rf(14), fontWeight: 'bold', fontFamily: 'Barlow Condensed',
       formatter: () => (p >= 0 ? '+' : '') + p.toFixed(0) + '%'
     }};
   });
@@ -218,7 +218,7 @@ function makeYTD(id, d25, d26, meses26, col26) {
   const ytd26 = Math.round(meses26.reduce((a,m) => a+(d26[m]||0), 0));
   const ytd25 = Math.round(meses26.reduce((a,m) => a+(d25[m]||0), 0));
   const p = ytd25 ? (ytd26-ytd25)/ytd25*100 : 0;
-  const sign = p>=0?'+':'', col = p>=0?'#4ade80':'#f87171', arrow = p>=0?'▲ ':'▼ ';
+  const sign = p>=0?'+':'', col = p>=0?'#15803d':'#dc2626', arrow = p>=0?'▲ ':'▼ ';
 
   chart.setOption({
     animation:false,
@@ -278,9 +278,9 @@ function makeCNC(id, d26, meses26, col26, pg) {
         data:[
           {value:cart, itemStyle:{color:'transparent', borderColor:'transparent'}, label:{show:false}},
           {value:ccc,  itemStyle:{color:'transparent', borderColor:'transparent'},
-           label:{show:true, position:'top', color:'#4ade80', fontSize: rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>'▲ '+pCCC.toFixed(1)+'%'}},
+           label:{show:true, position:'top', color:'#15803d', fontSize: rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>'▲ '+pCCC.toFixed(1)+'%'}},
           {value:cnc,  itemStyle:{color:'transparent', borderColor:'transparent'},
-           label:{show:true, position:'top', color:'#f87171', fontSize: rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>'▼ '+pCNC.toFixed(1)+'%'}}
+           label:{show:true, position:'top', color:'#dc2626', fontSize: rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>'▼ '+pCNC.toFixed(1)+'%'}}
         ] }
     ],
     tooltip:{show:false}
@@ -297,8 +297,8 @@ function makeComp(id, d26, d25, last, prev, col26) {
   const vC = Math.round(d25[last]) || 0;
   const pAB = vB ? (vA-vB)/vB*100 : null;
   const pAC = vC ? (vA-vC)/vC*100 : null;
-  const cAB = pAB!==null && pAB>=0 ? '#4ade80' : '#f87171';
-  const cAC = pAC!==null && pAC>=0 ? '#4ade80' : '#f87171';
+  const cAB = pAB!==null && pAB>=0 ? '#15803d' : '#dc2626';
+  const cAC = pAC!==null && pAC>=0 ? '#15803d' : '#dc2626';
   const fP  = p => p===null ? '' : (p>=0?'▲ +':'▼ ')+p.toFixed(1)+'%';
   const lA  = last ? last.slice(0,3).toUpperCase()+' 26' : '—';
   const lB  = prev ? prev.slice(0,3).toUpperCase()+' 26' : '—';
@@ -324,9 +324,9 @@ function makeComp(id, d26, d25, last, prev, col26) {
         data:[
           {value:vA, itemStyle:{color:'transparent', borderColor:'transparent'}, label:{show:false}},
           {value:vB, itemStyle:{color:'transparent', borderColor:'transparent'},
-           label:{show:pAB!==null&&vB>0, position:'top', color:cAB, fontSize: 13, fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAB)}},
+           label:{show:pAB!==null&&vB>0, position:'top', color:cAB, fontSize: rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAB)}},
           {value:vC, itemStyle:{color:'transparent', borderColor:'transparent'},
-           label:{show:pAC!==null&&vC>0, position:'top', color:cAC, fontSize: 13, fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAC)}}
+           label:{show:pAC!==null&&vC>0, position:'top', color:cAC, fontSize: rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAC)}}
         ] }
     ],
     tooltip:{show:false}

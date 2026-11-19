@@ -82,8 +82,8 @@ async function persistirAños(añosGuardados) {
         const overall = Math.min(99, (doneBefore + fraccion * total) / grandTotal * 100);
         const detalle = p.fase === 'borrando'
           ? 'Quitando la carga anterior de ' + yr +
-            (p.done ? ' · ' + p.done.toLocaleString('es-AR') + ' filas quitadas' : '') +
-            (p.rangos ? ' · bloque ' + (p.rango || 0) + ' de ' + p.rangos : '')
+          (p.done ? ' · ' + p.done.toLocaleString('es-AR') + ' filas quitadas' : '') +
+          (p.rangos ? ' · bloque ' + (p.rango || 0) + ' de ' + p.rangos : '')
           : 'Guardando ' + yr + ' · ' + (p.done || 0).toLocaleString('es-AR') + ' / ' + total.toLocaleString('es-AR') + ' filas';
         showUploadProgress(
           `${detalle} (año ${idx + 1} de ${years.length}) · ${Math.round(overall)}% total`,
@@ -110,16 +110,16 @@ async function persistirAños(añosGuardados) {
   if (todoOk) {
     renderLU('ok');
     alert(`✅ Datos guardados en Supabase correctamente (${filasTotal} filas). Ya están disponibles para todos los usuarios.` +
-          (avisos.length ? '\n\n⚠️ ' + avisos.join('\n') : ''));
+      (avisos.length ? '\n\n⚠️ ' + avisos.join('\n') : ''));
   } else {
     renderLU('err');
     const nota = añoIncompleto
       ? 'Un año quedó sin datos completos en Supabase y su fecha de actualización fue quitada. Volvé a subir el CSV de ese año.'
       : 'La carga anterior del año sigue intacta. Podés volver a intentarlo.';
     alert('⚠️ No se pudieron guardar los datos en Supabase:\n\n' +
-          errores.join('\n') +
-          '\n\n' + nota +
-          '\n\nLos años que fallaron quedan solo en tu pantalla.');
+      errores.join('\n') +
+      '\n\n' + nota +
+      '\n\nLos años que fallaron quedan solo en tu pantalla.');
   }
 
   await refreshLastUpdate();
@@ -2253,8 +2253,8 @@ function render8() {
     };
 
     const richConf = {
-      green: { color: '#4ade80', fontSize: 13, fontWeight: 'bold', fontFamily: 'Barlow Condensed', align: 'center', lineHeight: 16 },
-      red: { color: '#f87171', fontSize: 13, fontWeight: 'bold', fontFamily: 'Barlow Condensed', align: 'center', lineHeight: 16 },
+      green: { color: '#15803d', fontSize: 13, fontWeight: 'bold', fontFamily: 'Barlow Condensed', align: 'center', lineHeight: 16 },
+      red: { color: '#dc2626', fontSize: 13, fontWeight: 'bold', fontFamily: 'Barlow Condensed', align: 'center', lineHeight: 16 },
       val: { color: '#1e293b', fontSize: 16, fontWeight: 'bold', fontFamily: 'Barlow Condensed', align: 'center', lineHeight: 18 },
       line: { backgroundColor: '#1e293b', height: 4, width: 24, align: 'center', borderRadius: 2 }
     };
