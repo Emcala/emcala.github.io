@@ -354,8 +354,9 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
     {type:'bar', barWidth:'90%', barGap:'-100%', z:10, data:ovD},
   ];
   if (hasObj) {
-    // Serie de objetivos: mitad de ancho (45%) en sus propias categorías
-    series.push({type:'bar', barWidth:'45%', data:objD, label:{show:false}});
+    // Serie de objetivos: mismo ancho y barGap -100% que las otras, para que las 3 series
+    // queden apiladas en el mismo centro y los % no se corran a la derecha
+    series.push({type:'bar', barWidth:'90%', barGap:'-100%', data:objD, label:{show:false}});
   }
 
   chart.setOption({
