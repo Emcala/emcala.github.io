@@ -547,6 +547,15 @@ function showPage(pg, hasData, hasSel) {
 // ═══════════════════════════════════════════════════════════════
 // ── Objetivos HL (F·I / F·II) desde el GAS del Dashboard ─────────
 // El GAS exige &token=... ; se prueban el token legacy de sesión y el access_token de Supabase.
+// Cervezas CMQ → solo Foco I; UNG → solo Foco II (el resto de UN no lleva objetivo por ahora)
+function focoDeUN(o) {
+  const un = ST[1].un;
+  return {
+    f1: (o && un === 'CERVEZAS CMQ') ? o.f1 : 0,
+    f2: (o && un === 'UNG') ? o.f2 : 0
+  };
+}
+
 async function cargarObjetivosHL(cMonth, onListo) {
   if (window._objCacheHL[cMonth]) return;
   const cands = [];
@@ -624,12 +633,14 @@ function render1() {
   const _cMonth = '2026-' + String(MESES.indexOf(last) + 1).padStart(2, '0');
   const _cachedObj = window._objCacheHL[_cMonth];
   // Render inmediato: con obj si ya están en caché, sin obj si no
-  makeComp('c1-comp-hl', d26v, d25v, last, prev, col, _cachedObj && _cachedObj.f1, _cachedObj && _cachedObj.f2);
+  const _foco = focoDeUN(_cachedObj);
+  makeComp('c1-comp-hl', d26v, d25v, last, prev, col, _foco.f1, _foco.f2);
   if (!_cachedObj) {
     // Pide los objetivos al GAS del Dashboard y re-renderiza solo esta tarjeta
     cargarObjetivosHL(_cMonth, () => {
       const o = window._objCacheHL[_cMonth];
-      makeComp('c1-comp-hl', d26v, d25v, last, prev, col, o.f1, o.f2);
+      const _f = focoDeUN(o);
+      makeComp('c1-comp-hl', d26v, d25v, last, prev, col, _f.f1, _f.f2);
     });
   }
   makeComp('c1-comp-ccc', d26c, d25c, last, prev, col);
