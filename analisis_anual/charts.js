@@ -361,9 +361,8 @@ function compRenderObj(api, p) {
 
   // 2) Números: dentro de la barra si entran; si no entran (o es el objetivo) van arriba
   geo.forEach(g => {
-    let px = g.b.obj ? p.fsO : p.fs;
-    // Meses: si el número no entra en el ancho de la barra, se achica (mín. 8 px) antes de pasarlo arriba
-    if (!g.b.obj) while (px > 8 && compTxtW(g.b.lbl, px) + 2 > g.bw - 2) px--;
+    // Siempre con el tamaño base: nunca se achica. Si no entra en la barra, va arriba.
+    const px = g.b.obj ? p.fsO : p.fs;
     const w  = compTxtW(g.b.lbl, px) + 2;
     // Dentro de la barra sólo si entra en alto y en ancho; si no, va arriba
     if (!g.b.obj && g.h >= px * 1.2 + 8 && w <= g.bw - 2) {
@@ -384,10 +383,8 @@ function compRenderObj(api, p) {
   p.pcts.forEach(pt => {
     const g = geo.find(x => x.b.i === pt.i);
     if (!g) return;
-    let px = p.fs;
-    // Ancho máximo = banda menos el margen de 2 px de compPlaceAbove; mínimo 7 px
-    while (px > 7 && compTxtW(pt.text, px) + 2 > band - 2) px--;
-    compPlaceAbove(els, boxes, rects, W, pt.text, px, pt.color, g.cx, g.top - 3);
+    // Siempre con el tamaño base: el % nunca se achica
+    compPlaceAbove(els, boxes, rects, W, pt.text, p.fs, pt.color, g.cx, g.top - 3);
   });
 
   // 4) Etiquetas de categoría bajo la línea base
@@ -457,7 +454,7 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
       cats: [obj.lbl || 'Obj.', lA, lB, lC],
       yMax: Math.max(vA, vB, vC, vO, 1) * 1.75,
       bars, pcts,
-      fs: rf(14), fsO: rf(12), fsCat: rf(12)
+      fs: rf(14), fsO: rf(14), fsCat: rf(13)
     }), true);
     return;
   }
@@ -477,7 +474,7 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
   const pctFor = (idx, pct, color) => ({
     value: idx === 1 ? vB : vC,
     itemStyle: {color:'transparent', borderColor:'transparent'},
-    label: {show:true, position:'top', color, fontSize:rf(12), fontWeight:'bold',
+    label: {show:true, position:'top', color, fontSize:rf(14), fontWeight:'bold',
             fontFamily:'Barlow Condensed', formatter:()=>fP(pct)}
   });
   const ghostD = [
