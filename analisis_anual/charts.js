@@ -295,7 +295,7 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
   const vA  = Math.round(d26[last]) || 0;
   const vB  = prev ? Math.round(d26[prev]) || 0 : 0;
   const vC  = Math.round(d25[last]) || 0;
-  // obj = { v, lbl } del objetivo de la selección: Foco I (cerveza) o Foco II (NABS / UNG)
+  // obj = { v, lbl, esF1 } del objetivo de la selección (Foco I cerveza / Foco II UNG)
   const vO  = obj && obj.v > 0 ? Math.round(obj.v) : 0;
   const hasObj = vO > 0;
 
@@ -308,67 +308,71 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
   const lB  = prev ? prev.slice(0,3).toUpperCase()+' 26' : '—';
   const lC  = last ? last.slice(0,3).toUpperCase()+' 25' : '—';
 
-  // Colores de las barras de objetivo (amarillo-naranja opaco)
-  const cO1 = 'rgba(249,115,22,0.80)';   // naranja — Foco I cerveza
-  const cO1b= 'rgba(194,65,12,0.95)';
-  const cO2 = 'rgba(234,179,8,0.80)';    // amarillo — Foco II NABs
-  const cO2b= 'rgba(161,98,7,0.95)';
+  // Objetivo: mostaza apagado (sin brillo)
+  const cObj  = '#C2A24A';
+  const cObjB = '#8C7327';
 
-  // Construir categorías y datos dinámicamente
-  const cats  = [lA, lB, lC];
-  const mainD = [
+  // Categorías: [Obj (opcional), OCT 26, SEP 26, OCT 25]
+  const cats = hasObj ? [obj.lbl || 'Obj.', lA, lB, lC] : [lA, lB, lC];
+  const off  = hasObj ? 1 : 0;   // índice de la primera barra de mes
+
+  const mesD = [
     {value:vA, itemStyle:{color:col26+'ee', borderColor:col26, borderWidth:1, borderRadius:[3,3,0,0]},
-     label:{show:vA>0, position:'insideTop', distance:8, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vA)}},
+     label:{show:vA>0, position:'insideTop', distance:6, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vA)}},
     {value:vB, itemStyle:{color:col26+'99', borderColor:col26+'cc', borderWidth:1, borderRadius:[3,3,0,0]},
-     label:{show:vB>0, position:'insideTop', distance:8, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vB)}},
+     label:{show:vB>0, position:'insideTop', distance:6, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vB)}},
     {value:vC, itemStyle:{color:'rgba(37,99,235,0.75)', borderColor:'rgba(29,78,216,0.95)', borderWidth:1, borderRadius:[3,3,0,0]},
-     label:{show:vC>0, position:'insideTop', distance:8, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vC)}}
+     label:{show:vC>0, position:'insideTop', distance:6, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vC)}}
   ];
-  const ovD = [
-    {value:vA, itemStyle:{color:'transparent', borderColor:'transparent'}, label:{show:false}},
-    {value:vB, itemStyle:{color:'transparent', borderColor:'transparent'},
-     label:{show:pAB!==null&&vB>0, position:'top', color:cAB, fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAB)}},
-    {value:vC, itemStyle:{color:'transparent', borderColor:'transparent'},
-     label:{show:pAC!==null&&vC>0, position:'top', color:cAC, fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAC)}}
-  ];
-  // Serie de objetivos: la barra de objetivo va PRIMERA (a la izquierda de OCT 26)
-  const objD = [null, null, null];
+  const mainD = hasObj ? [null, ...mesD] : mesD;
 
-  if (hasObj) {
-    const esF1 = obj.esF1;
-    cats.unshift(obj.lbl);
-    mainD.unshift(null);
-    ovD.unshift(null);
-    objD.unshift({value:vO,
-      itemStyle:{color:esF1?cO1:cO2, borderColor:esF1?cO1b:cO2b, borderWidth:1, borderRadius:[3,3,0,0]},
-      label:{show:true, position:'inside', rotate:90, color:esF1?'#431407':'#1a1500',
+  // Serie de objetivo: barra fina (ancho fijo en px) con número rotado dentro
+  const objD = hasObj ? [{value:vO,
+      itemStyle:{color:cObj, borderColor:cObjB, borderWidth:1, borderRadius:[3,3,0,0]},
+      label:{show:true, position:'insideTop', rotate:90, distance:6, color:'#1f1a0a',
              fontSize:rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed',
-             formatter:()=>fmtN(vO)}
-    });
-  }
+             formatter:()=>fmtN(vO)}}, null, null, null] : null;
+
+  // Porcentajes: serie scatter (sin barras), anclada al centro de cada categoría.
+  // Así cada % queda sobre SU barra y no se corre a la derecha.
+  const pctPts = [];
+  if (pAB!==null && vB>0) pctPts.push({cat:off+1, pct:pAB, color:cAB});
+  if (pAC!==null && vC>0) pctPts.push({cat:off+2, pct:pAC, color:cAC});
+  // Si el % de la última categoría se saldría del borde de la tarjeta, se corre hacia adentro
+  const nCat = cats.length;
+  const scatD = pctPts.map(pt => {
+    const txtLen = fP(pt.pct).length;
+    const anchoPx = 0.6 * rf(14) * txtLen;           // ancho aprox. de la etiqueta
+    const bandaPx = 230 / nCat;                       // ancho aprox. de la tarjeta / categorías
+    const centroPx = (pt.cat + 0.5) * bandaPx;
+    let dx = 0;
+    if (centroPx + anchoPx/2 > 230 - 2) dx = (230 - 2) - (centroPx + anchoPx/2);
+    if (centroPx - anchoPx/2 < 2)       dx = 2 - (centroPx - anchoPx/2);
+    return {
+      value: [pt.cat, 0],
+      label: {show:true, position:'top', distance:4, offset:[dx, 0], color:pt.color, fontSize:rf(14), fontWeight:'bold',
+              fontFamily:'Barlow Condensed', formatter:()=>fP(pt.pct)}
+    };
+  });
 
   const series = [
-    // Serie principal: barras normales (90% del band)
-    {type:'bar', barWidth:'90%', data:mainD, label:{show:false}},
-    // Serie overlay: etiquetas de % encima de las barras principales
-    {type:'bar', barWidth:'90%', barGap:'-100%', z:10, data:ovD},
+    {type:'bar', barWidth:'100%', barCategoryGap:'6%', data:mainD, label:{show:false}},
   ];
   if (hasObj) {
-    // Serie de objetivos: mismo ancho y barGap -100% que las otras, para que las 3 series
-    // queden apiladas en el mismo centro y los % no se corran a la derecha
-    series.push({type:'bar', barWidth:'90%', barGap:'-100%', data:objD, label:{show:false}});
+    series.push({type:'bar', barWidth:18, data:objD, label:{show:false}, z:5});
   }
+  series.push({type:'scatter', symbolSize:0, data:scatD, tooltip:{show:false}, z:10});
 
   chart.setOption({
     animation:false,
-    grid:{top:15, bottom:rf(28), left:2, right:2, containLabel:false},
+    grid:{top:22, bottom:rf(28), left:2, right:2, containLabel:false},
     xAxis:{type:'category', data:cats,
       axisLine:{lineStyle:{color:'rgba(0,0,0,0.1)'}},
       axisTick:{show:false},
-      axisLabel:{color:'#475569', fontSize:hasObj?10:13, fontFamily:'Barlow Condensed',
+      axisLabel:{color:'#475569', fontSize:hasObj?rf(10):rf(13), fontFamily:'Barlow Condensed',
                  fontWeight:'bold', interval:0}
     },
-    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,vO,1)*1.15},
+    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,vO,1)*1.30},
     series,
     tooltip:{show:false}
   });
