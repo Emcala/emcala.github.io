@@ -290,14 +290,14 @@ function makeCNC(id, d26, meses26, col26, pg) {
 // ═══════════════════════════════════════════════════════════════
 // CHART: COMPARATIVA DE DESEMPEÑO
 // ═══════════════════════════════════════════════════════════════
-function makeComp(id, d26, d25, last, prev, col26, objF1, objF2) {
+function makeComp(id, d26, d25, last, prev, col26, obj) {
   const chart = getEC(id);
   const vA  = Math.round(d26[last]) || 0;
   const vB  = prev ? Math.round(d26[prev]) || 0 : 0;
   const vC  = Math.round(d25[last]) || 0;
-  const vO1 = objF1 ? Math.round(objF1) : 0;
-  const vO2 = objF2 ? Math.round(objF2) : 0;
-  const hasObj = vO1 > 0 || vO2 > 0;
+  // obj = { v, lbl } del objetivo de la selección: Foco I (cerveza) o Foco II (NABS / UNG)
+  const vO  = obj && obj.v > 0 ? Math.round(obj.v) : 0;
+  const hasObj = vO > 0;
 
   const pAB = vB ? (vA-vB)/vB*100 : null;
   const pAC = vC ? (vA-vC)/vC*100 : null;
@@ -311,18 +311,12 @@ function makeComp(id, d26, d25, last, prev, col26, objF1, objF2) {
   // Colores de las barras de objetivo (amarillo-naranja opaco)
   const cO1 = 'rgba(249,115,22,0.80)';   // naranja — Foco I cerveza
   const cO1b= 'rgba(194,65,12,0.95)';
-  const cO2 = 'rgba(234,179,8,0.80)';    // amarillo — Foco II UNG
+  const cO2 = 'rgba(234,179,8,0.80)';    // amarillo — Foco II NABs
   const cO2b= 'rgba(161,98,7,0.95)';
 
-  // Objetivo a la IZQUIERDA de los meses (Foco I para Cervezas, Foco II para UNG)
-  const objs = [];
-  if (vO1 > 0) objs.push({name:'Obj.', value:vO1, color:cO1, border:cO1b, text:'#431407'});
-  if (vO2 > 0) objs.push({name:'Obj.', value:vO2, color:cO2, border:cO2b, text:'#1a1500'});
-  const pad = objs.map(() => null);
-
-  const cats  = [...objs.map(o => o.name), lA, lB, lC];
+  // Construir categorías y datos dinámicamente
+  const cats  = [lA, lB, lC];
   const mainD = [
-    ...pad,
     {value:vA, itemStyle:{color:col26+'ee', borderColor:col26, borderWidth:1, borderRadius:[3,3,0,0]},
      label:{show:vA>0, position:'insideTop', distance:8, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vA)}},
     {value:vB, itemStyle:{color:col26+'99', borderColor:col26+'cc', borderWidth:1, borderRadius:[3,3,0,0]},
@@ -331,22 +325,27 @@ function makeComp(id, d26, d25, last, prev, col26, objF1, objF2) {
      label:{show:vC>0, position:'insideTop', distance:8, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vC)}}
   ];
   const ovD = [
-    ...pad,
     {value:vA, itemStyle:{color:'transparent', borderColor:'transparent'}, label:{show:false}},
     {value:vB, itemStyle:{color:'transparent', borderColor:'transparent'},
      label:{show:pAB!==null&&vB>0, position:'top', color:cAB, fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAB)}},
     {value:vC, itemStyle:{color:'transparent', borderColor:'transparent'},
      label:{show:pAC!==null&&vC>0, position:'top', color:cAC, fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAC)}}
   ];
-  // Serie de objetivos: barras en las primeras posiciones, null en los 3 meses
-  const objD = [
-    ...objs.map(o => ({value:o.value,
-      itemStyle:{color:o.color, borderColor:o.border, borderWidth:1, borderRadius:[3,3,0,0]},
-      label:{show:true, position:'inside', rotate:90, color:o.text,
+  // Serie de objetivos: la barra de objetivo va PRIMERA (a la izquierda de OCT 26)
+  const objD = [null, null, null];
+
+  if (hasObj) {
+    const esF1 = obj.esF1;
+    cats.unshift(obj.lbl);
+    mainD.unshift(null);
+    ovD.unshift(null);
+    objD.unshift({value:vO,
+      itemStyle:{color:esF1?cO1:cO2, borderColor:esF1?cO1b:cO2b, borderWidth:1, borderRadius:[3,3,0,0]},
+      label:{show:true, position:'inside', rotate:90, color:esF1?'#431407':'#1a1500',
              fontSize:rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed',
-             formatter:()=>fmtN(o.value)}})),
-    null, null, null
-  ];
+             formatter:()=>fmtN(vO)}
+    });
+  }
 
   const series = [
     // Serie principal: barras normales (90% del band)
@@ -355,8 +354,9 @@ function makeComp(id, d26, d25, last, prev, col26, objF1, objF2) {
     {type:'bar', barWidth:'90%', barGap:'-100%', z:10, data:ovD},
   ];
   if (hasObj) {
-    // Serie de objetivos: mitad de ancho (45%) en sus propias categorías
-    series.push({type:'bar', barWidth:'45%', data:objD, label:{show:false}});
+    // Serie de objetivos: mismo ancho y barGap -100% que las otras, para que las 3 series
+    // queden apiladas en el mismo centro y los % no se corran a la derecha
+    series.push({type:'bar', barWidth:'90%', barGap:'-100%', data:objD, label:{show:false}});
   }
 
   chart.setOption({
@@ -368,7 +368,7 @@ function makeComp(id, d26, d25, last, prev, col26, objF1, objF2) {
       axisLabel:{color:'#475569', fontSize:hasObj?10:13, fontFamily:'Barlow Condensed',
                  fontWeight:'bold', interval:0}
     },
-    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,vO1,vO2,1)*1.15},
+    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,vO,1)*1.15},
     series,
     tooltip:{show:false}
   });
