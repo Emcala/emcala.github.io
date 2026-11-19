@@ -693,7 +693,7 @@ function render3() {
   const extra = r => canalFilter(r, canal);
   const cLbl = { TODOS: 'Todos', KT: 'K+T', AS: 'AS', KTAS: 'K+T/AS', REF: 'REF', KTREF: 'K+T/REF', MAYO_C: 'MAYO' }[canal] || canal;
 
-  document.getElementById('t3-hl').textContent = `Volumen ${vl} · Por Canal (2026)`;
+  document.getElementById('t3-hl').textContent = `Volumen ${vl}`;
   document.getElementById('t3-ytd-hl').textContent = `${vl} · YTD vs LYTD · Canal: ${cLbl}`;
   document.getElementById('t3-comp-hl').textContent = `${vl} · Comparativa · Canal: ${cLbl}`;
 
@@ -763,9 +763,10 @@ function render3() {
   setKPI('k3-6', `TBD REF`, statsByMesa['REF'].s26.bd[last], pct(statsByMesa['REF'].s26.bd[last], statsByMesa['REF'].s25.bd[last]));
   setKPI('k3-7', `TBD MAYO`, statsByMesa['MAYO'].s26.bd[last], pct(statsByMesa['MAYO'].s26.bd[last], statsByMesa['MAYO'].s25.bd[last]));
 
-  makeMonthlyByCanal('c3-hl', chHL26);
-  makeMonthlyByCanal('c3-ccc', chCCC26);
-  makeMonthlyByCanal('c3-bd', chBD26);
+  // Izquierda: mismo gráfico que en Mensual (2025 vs 2026 + % por mes), con el filtro de canal seleccionado
+  makeMonthly('c3-hl', d25v, d26v, col);
+  makeMonthly('c3-ccc', d25c, d26c, col);
+  makeMonthly('c3-bd', d25b, d26b, col);
 
   // --- Right panel: stacked YTD instead of simple bar ---
   makeYTDStackedByCanal('c3-ytd-hl', ytd25DataHL, ytd26DataHL);
