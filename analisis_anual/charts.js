@@ -290,14 +290,14 @@ function makeCNC(id, d26, meses26, col26, pg) {
 // ═══════════════════════════════════════════════════════════════
 // CHART: COMPARATIVA DE DESEMPEÑO
 // ═══════════════════════════════════════════════════════════════
-function makeComp(id, d26, d25, last, prev, col26, objF1, objF2) {
+function makeComp(id, d26, d25, last, prev, col26, obj) {
   const chart = getEC(id);
   const vA  = Math.round(d26[last]) || 0;
   const vB  = prev ? Math.round(d26[prev]) || 0 : 0;
   const vC  = Math.round(d25[last]) || 0;
-  const vO1 = objF1 ? Math.round(objF1) : 0;
-  const vO2 = objF2 ? Math.round(objF2) : 0;
-  const hasObj = vO1 > 0 || vO2 > 0;
+  // obj = { v, lbl } del objetivo de la selección: Foco I (cerveza) o Foco II (NABS / UNG)
+  const vO  = obj && obj.v > 0 ? Math.round(obj.v) : 0;
+  const hasObj = vO > 0;
 
   const pAB = vB ? (vA-vB)/vB*100 : null;
   const pAC = vC ? (vA-vC)/vC*100 : null;
@@ -335,28 +335,16 @@ function makeComp(id, d26, d25, last, prev, col26, objF1, objF2) {
   const objD = [null, null, null];
 
   if (hasObj) {
-    if (vO1 > 0) {
-      cats.push('Obj.I');
-      mainD.push(null);
-      ovD.push(null);
-      objD.push({value:vO1,
-        itemStyle:{color:cO1, borderColor:cO1b, borderWidth:1, borderRadius:[3,3,0,0]},
-        label:{show:true, position:'inside', rotate:90, color:'#431407',
-               fontSize:rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed',
-               formatter:()=>fmtN(vO1)}
-      });
-    }
-    if (vO2 > 0) {
-      cats.push('Obj.II');
-      mainD.push(null);
-      ovD.push(null);
-      objD.push({value:vO2,
-        itemStyle:{color:cO2, borderColor:cO2b, borderWidth:1, borderRadius:[3,3,0,0]},
-        label:{show:true, position:'inside', rotate:90, color:'#1a1500',
-               fontSize:rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed',
-               formatter:()=>fmtN(vO2)}
-      });
-    }
+    const esF1 = obj.lbl === 'Foco I';
+    cats.push(obj.lbl);
+    mainD.push(null);
+    ovD.push(null);
+    objD.push({value:vO,
+      itemStyle:{color:esF1?cO1:cO2, borderColor:esF1?cO1b:cO2b, borderWidth:1, borderRadius:[3,3,0,0]},
+      label:{show:true, position:'inside', rotate:90, color:esF1?'#431407':'#1a1500',
+             fontSize:rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed',
+             formatter:()=>fmtN(vO)}
+    });
   }
 
   const series = [
@@ -379,7 +367,7 @@ function makeComp(id, d26, d25, last, prev, col26, objF1, objF2) {
       axisLabel:{color:'#475569', fontSize:hasObj?10:13, fontFamily:'Barlow Condensed',
                  fontWeight:'bold', interval:0}
     },
-    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,vO1,vO2,1)*1.15},
+    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,vO,1)*1.15},
     series,
     tooltip:{show:false}
   });

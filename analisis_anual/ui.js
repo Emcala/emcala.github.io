@@ -545,6 +545,25 @@ function showPage(pg, hasData, hasSel) {
 // ═══════════════════════════════════════════════════════════════
 // RENDER PAGE 1: MENSUAL
 // ═══════════════════════════════════════════════════════════════
+// Objetivo para la comparativa HL: Cerveza → Foco I (objF1); UNG → Foco II total NABS (objF2).
+// Suma solo los promotores activos en la selección de la página (supervisor/es elegidos).
+function objetivoComp(objetivosPorPromotor, pg) {
+  if (!objetivosPorPromotor) return null;
+  const un = ST[pg].un;
+  const campo = un === 'CERVEZAS CMQ' ? 'objF1' : un === 'UNG' ? 'objF2' : null;
+  if (!campo) return null;
+  const norm = s => String(s || '').trim().toUpperCase().split(/\s+/).sort().join(' ');
+  const porNombre = {};
+  Object.entries(objetivosPorPromotor).forEach(([k, o]) => { porNombre[norm(k)] = o; });
+  let v = 0;
+  SEGS.forEach(seg => seg.promos.forEach(p => {
+    if (!ST[pg].activePromos.has(seg.key + '|' + p)) return;
+    const o = objetivosPorPromotor[p] || porNombre[norm(p)];
+    if (o) v += o[campo] || 0;
+  }));
+  return { v, lbl: campo === 'objF1' ? 'Foco I' : 'Foco II' };
+}
+
 function render1() {
   const hasData = DATA.length > 0;
   const hasSel = ST[1].activePromos.size > 0;
@@ -578,23 +597,18 @@ function render1() {
   makeYTD('c1-ytd-hl', d25v, d26v, m26, col);
   makeCNC('c1-cnc', d26c, m26, col, 1);
   makeYTD('c1-ytd-bd', d25b, d26b, m26, col);
-  // ── HL Comparativa con objetivos F·I / F·II ─────────────────────
-  // Convierte el mes (ej: "Julio") al formato YYYY-MM que espera el GAS
+  // ── HL Comparativa con objetivo de la selección (Cerveza: Foco I · UNG: Foco II) ──
+  // Se cachea el detalle por promotor del mes; la suma depende de la selección actual.
   const _cMonth = '2026-' + String(MESES.indexOf(last) + 1).padStart(2, '0');
-  const _cachedObj = window._objCacheHL[_cMonth];
-  // Render inmediato: con obj si ya están en caché, sin obj si no
-  makeComp('c1-comp-hl', d26v, d25v, last, prev, col, _cachedObj && _cachedObj.f1, _cachedObj && _cachedObj.f2);
-  if (!_cachedObj) {
-    // Fetch al GAS del Dashboard para obtener los objetivos del mes
+  const _objDetalle = window._objCacheHL[_cMonth];
+  makeComp('c1-comp-hl', d26v, d25v, last, prev, col, objetivoComp(_objDetalle, 1));
+  if (!_objDetalle) {
     fetch(`${DASH_GAS_URL}?req=dashboard&cMonth=${_cMonth}&spv=ALL&t=${Date.now()}`)
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(data => {
         if (!data || !data.objetivos) return;
-        const f1 = Object.values(data.objetivos).reduce((s, o) => s + (o.objF1 || 0), 0);
-        const f2 = Object.values(data.objetivos).reduce((s, o) => s + (o.objF2 || 0), 0);
-        window._objCacheHL[_cMonth] = { f1, f2 };
-        // Re-render solo el div de HL comparativa con los objetivos
-        makeComp('c1-comp-hl', d26v, d25v, last, prev, col, f1, f2);
+        window._objCacheHL[_cMonth] = data.objetivos;
+        makeComp('c1-comp-hl', d26v, d25v, last, prev, col, objetivoComp(data.objetivos, 1));
       })
       .catch(e => console.warn('Análisis Anual — objetivos HL no cargados:', e));
   }
