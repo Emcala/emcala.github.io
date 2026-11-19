@@ -331,15 +331,15 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
     {value:vC, itemStyle:{color:'transparent', borderColor:'transparent'},
      label:{show:pAC!==null&&vC>0, position:'top', color:cAC, fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAC)}}
   ];
-  // Serie de objetivos: null en las 3 primeras posiciones, barras en las nuevas
+  // Serie de objetivos: la barra de objetivo va PRIMERA (a la izquierda de OCT 26)
   const objD = [null, null, null];
 
   if (hasObj) {
     const esF1 = obj.esF1;
-    cats.push(obj.lbl);
-    mainD.push(null);
-    ovD.push(null);
-    objD.push({value:vO,
+    cats.unshift(obj.lbl);
+    mainD.unshift(null);
+    ovD.unshift(null);
+    objD.unshift({value:vO,
       itemStyle:{color:esF1?cO1:cO2, borderColor:esF1?cO1b:cO2b, borderWidth:1, borderRadius:[3,3,0,0]},
       label:{show:true, position:'inside', rotate:90, color:esF1?'#431407':'#1a1500',
              fontSize:rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed',
