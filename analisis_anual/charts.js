@@ -352,7 +352,7 @@ function compRenderObj(api, p) {
     const top = api.coord([b.i, b.v])[1];
     const h   = baseY - top;
     if (h <= 0) return;
-    const bw = b.obj ? Math.max(16, Math.min(22, Math.round(band * 0.36))) : Math.max(16, Math.min(band - 4, Math.round(band * 0.84)));
+    const bw = b.obj ? Math.max(18, Math.min(28, Math.round(band * 0.5))) : Math.max(16, Math.min(band - 4, Math.round(band * 0.84)));
     rects.push({x1:cx - bw/2, y1:top, x2:cx + bw/2, y2:baseY});
     els.push({ type:'rect', shape:{x:cx - bw/2, y:top, width:bw, height:h, r:[3,3,0,0]},
       style:{fill:b.fill, stroke:b.stroke, lineWidth:1} });
@@ -477,7 +477,7 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
     const cObj  = '#C2A24A';
     const cObjB = '#8C7327';
     const bars = [
-      {i:0, v:vO, obj:true, fill:cObj, stroke:cObjB, txt:'#1e293b', lbl:fmtN(vO)},
+      {i:0, v:vO, obj:true, fill:cObj, stroke:cObjB, txt:'#fff', lbl:fmtN(vO)},
       {i:1, v:vA, fill:col26+'ee', stroke:col26, txt:'#fff', lbl:fmtN(vA)},
       {i:2, v:vB, fill:col26+'99', stroke:col26+'cc', txt:'#fff', lbl:fmtN(vB)},
       {i:3, v:vC, fill:'rgba(37,99,235,0.75)', stroke:'rgba(29,78,216,0.95)', txt:'#fff', lbl:fmtN(vC)}
