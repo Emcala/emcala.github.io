@@ -63,21 +63,22 @@ function makeMonthly(id, d25, d26, col26) {
 // ═══════════════════════════════════════════════════════════════
 // CHART: MONTHLY BARS BY CANAL (4 mesas side by side)
 // ═══════════════════════════════════════════════════════════════
-function makeMonthlyByCanal(id, channels26, d25, d26) {
+function makeMonthlyByCanal(id, channels26, channels25) {
   const chart = getEC(id);
   if (!chart) return;
 
-  // Peso real por mes: 2026 apilado por mesa (alto = HL reales), 2025 al lado como en Mensual
-  const v25 = MESES.map(m => Math.round(d25[m]) || 0);
-  const mTot26 = MESES.map(m => channels26.reduce((sum, ch) => sum + (Math.round(ch.data[m]) || 0), 0));
-  const maxV = Math.max(...v25, ...mTot26, 1);
+  // Peso por canal en ambos años: 2025 y 2026 apilados por mesa (alto = HL reales)
+  const sumCh = (chs, m) => chs.reduce((sum, ch) => sum + (Math.round(ch.data[m]) || 0), 0);
+  const mTot25 = MESES.map(m => sumCh(channels25, m));
+  const mTot26 = MESES.map(m => sumCh(channels26, m));
+  const maxV = Math.max(...mTot25, ...mTot26, 1);
 
-  const series26 = channels26.map(ch => ({
-    name: ch.name, type: 'bar', stack: 'total26', xAxisIndex: 0, barMaxWidth: 75,
+  const stackSeries = (chs, tots, stackName, xIdx) => chs.map(ch => ({
+    name: ch.name, type: 'bar', stack: stackName, xAxisIndex: xIdx, barMaxWidth: 75,
     itemStyle: { color: ch.color, borderRadius: [2, 2, 0, 0] },
     data: MESES.map((m, i) => {
       const val = Math.round(ch.data[m] || 0);
-      const share = mTot26[i] > 0 ? (val / mTot26[i] * 100) : 0;
+      const share = tots[i] > 0 ? (val / tots[i] * 100) : 0;
       return { value: val, share };
     }),
     label: {
@@ -89,10 +90,10 @@ function makeMonthlyByCanal(id, channels26, d25, d26) {
     }
   }));
 
-  // % de comparación sobre el total 2026 de cada mes (mismo criterio que Mensual)
+  // % de comparación sobre el total de cada mes (mismo criterio que Mensual)
   const ghost26 = mTot26.map((val, i) => {
-    if (!v25[i] || !val) return { value: val, label: { show: false } };
-    const p = (val - v25[i]) / v25[i] * 100;
+    if (!mTot25[i] || !val) return { value: val, label: { show: false } };
+    const p = (val - mTot25[i]) / mTot25[i] * 100;
     return { value: val, label: {
       show: true, position: 'top',
       color: p >= 0 ? '#15803d' : '#dc2626',
@@ -110,11 +111,9 @@ function makeMonthlyByCanal(id, channels26, d25, d26) {
     ],
     yAxis: { type: 'value', show: false, min: 0, max: maxV * 1.18 },
     series: [
-      { name: '2025', type: 'bar', barGap: '5%', barCategoryGap: '15%', xAxisIndex: 0, data: v25, barMaxWidth: 75,
-        itemStyle: { color: 'rgba(37,99,235,0.75)', borderColor: 'rgba(29,78,216,0.95)', borderWidth: 1, borderRadius: [2, 2, 0, 0] },
-        label: { show: true, position: 'insideTop', distance: 6, color: '#fff', fontSize: rf(14), fontWeight: 'bold', fontFamily: 'Barlow Condensed', formatter: p => p.value > 0 ? fmtN(p.value) : '' } },
-      ...series26,
-      { name: '2025_g', type: 'bar', barGap: '5%', barCategoryGap: '15%', xAxisIndex: 1, data: v25, barMaxWidth: 75,
+      ...stackSeries(channels25, mTot25, 'total25', 0),
+      ...stackSeries(channels26, mTot26, 'total26', 0),
+      { name: '2025_g', type: 'bar', barGap: '5%', barCategoryGap: '15%', xAxisIndex: 1, data: mTot25, barMaxWidth: 75,
         itemStyle: { color: 'transparent', borderColor: 'transparent' }, label: { show: false } },
       { name: '2026_g', type: 'bar', xAxisIndex: 1, data: ghost26, barMaxWidth: 75,
         itemStyle: { color: 'transparent', borderColor: 'transparent' } }
@@ -123,10 +122,8 @@ function makeMonthlyByCanal(id, channels26, d25, d26) {
       show: true, trigger: 'axis', axisPointer: { type: 'shadow' }, textStyle: { fontFamily: 'Barlow Condensed', fontSize: 14 },
       formatter: params => {
         const title = params[0].name + '<br/>';
-        const items = params.filter(p => p.seriesName === '2025' || (p.seriesName !== '2025_g' && p.seriesName !== '2026_g'))
-          .map(p => p.seriesName === '2025'
-            ? `${p.marker} 2025: <b>${fmtN(p.value)}</b>`
-            : `${p.marker} ${p.seriesName}: <b>${fmtN(p.value)}</b> (${(p.data.share || 0).toFixed(1)}%)`);
+        const items = params.filter(p => p.seriesName !== '2025_g' && p.seriesName !== '2026_g')
+          .map(p => `${p.marker} ${p.seriesName}: <b>${fmtN(p.value)}</b> (${(p.data.share || 0).toFixed(1)}%)`);
         return title + items.join('<br/>');
       }
     }

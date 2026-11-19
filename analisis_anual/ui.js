@@ -722,7 +722,7 @@ function render3() {
     { name: 'MAYO', color: '#F8961E', filter: r => canalFilter(r, 'MAYO_C') },
   ];
 
-  const chHL26 = [], chCCC26 = [], chBD26 = [];
+  const chHL26 = [], chHL25 = [], chCCC26 = [], chBD26 = [];
   const ytd25DataHL = [], ytd26DataHL = [], ytd25DataBD = [], ytd26DataBD = [];
   const statsByMesa = {};
 
@@ -739,6 +739,7 @@ function render3() {
     statsByMesa[mesa.name] = { s25, s26 };
 
     chHL26.push({ name: mesa.name, color: mesa.color, data: s26.vol });
+    chHL25.push({ name: mesa.name, color: mesa.color, data: s25.vol });
     chCCC26.push({ name: mesa.name, color: mesa.color, data: s26.ccc });
     chBD26.push({ name: mesa.name, color: mesa.color, data: s26.bd });
 
@@ -764,7 +765,7 @@ function render3() {
   setKPI('k3-7', `TBD MAYO`, statsByMesa['MAYO'].s26.bd[last], pct(statsByMesa['MAYO'].s26.bd[last], statsByMesa['MAYO'].s25.bd[last]));
 
   // Izquierda: HL con peso por canal (2026) + 2025 y % de comparación; CCC y BD como en Mensual
-  makeMonthlyByCanal('c3-hl', chHL26, d25v, d26v);
+  makeMonthlyByCanal('c3-hl', chHL26, chHL25);
   makeMonthly('c3-ccc', d25c, d26c, col);
   makeMonthly('c3-bd', d25b, d26b, col);
 
