@@ -603,10 +603,12 @@ function render1() {
   const _objDetalle = window._objCacheHL[_cMonth];
   makeComp('c1-comp-hl', d26v, d25v, last, prev, col, objetivoComp(_objDetalle, 1));
   if (!_objDetalle) {
-    fetch(`${DASH_GAS_URL}?req=dashboard&cMonth=${_cMonth}&spv=ALL&t=${Date.now()}`)
+    // El GAS está en modo ENFORCE: sin token devuelve 401 → se adjunta el access_token de la sesión
+    EmcalaAuth.conToken(`${DASH_GAS_URL}?req=dashboard&cMonth=${_cMonth}&spv=ALL&t=${Date.now()}`)
+      .then(u => fetch(u))
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(data => {
-        if (!data || !data.objetivos) return;
+        if (!data || !data.objetivos) { console.warn('Análisis Anual — objetivos HL sin datos:', data); return; }
         window._objCacheHL[_cMonth] = data.objetivos;
         makeComp('c1-comp-hl', d26v, d25v, last, prev, col, objetivoComp(data.objetivos, 1));
       })
