@@ -447,9 +447,11 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
       {i:3, v:vC, fill:'rgba(37,99,235,0.75)', stroke:'rgba(29,78,216,0.95)', txt:'#fff', lbl:fmtN(vC)}
     ];
     // Cada % va sobre la barra del mes que se compara (igual criterio que antes)
+    // Sólo en HL: porcentajes sin decimal (▼ -10%). CCC/TBD y los demás gráficos no cambian.
+    const fP0 = p => (p>=0 ? '▲ +' : '▼ ') + p.toFixed(0) + '%';
     const pcts = [];
-    if (pAB!==null && vB>0) pcts.push({i:2, text:fP(pAB), color:cAB});
-    if (pAC!==null && vC>0) pcts.push({i:3, text:fP(pAC), color:cAC});
+    if (pAB!==null && vB>0) pcts.push({i:2, text:fP0(pAB), color:cAB});
+    if (pAC!==null && vC>0) pcts.push({i:3, text:fP0(pAC), color:cAC});
     chart.setOption(compObjOption({
       cats: [obj.lbl || 'Obj.', lA, lB, lC],
       yMax: Math.max(vA, vB, vC, vO, 1) * 1.75,
