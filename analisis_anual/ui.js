@@ -545,23 +545,45 @@ function showPage(pg, hasData, hasSel) {
 // ═══════════════════════════════════════════════════════════════
 // RENDER PAGE 1: MENSUAL
 // ═══════════════════════════════════════════════════════════════
-// Objetivo para la comparativa HL: Cerveza → Foco I (objF1); UNG → Foco II total NABS (objF2).
-// Suma solo los promotores activos en la selección de la página (supervisor/es elegidos).
-function objetivoComp(objetivosPorPromotor, pg) {
-  if (!objetivosPorPromotor) return null;
-  const un = ST[pg].un;
-  const campo = un === 'CERVEZAS CMQ' ? 'objF1' : un === 'UNG' ? 'objF2' : null;
-  if (!campo) return null;
-  const norm = s => String(s || '').trim().toUpperCase().split(/\s+/).sort().join(' ');
-  const porNombre = {};
-  Object.entries(objetivosPorPromotor).forEach(([k, o]) => { porNombre[norm(k)] = o; });
-  let v = 0;
-  SEGS.forEach(seg => seg.promos.forEach(p => {
-    if (!ST[pg].activePromos.has(seg.key + '|' + p)) return;
-    const o = objetivosPorPromotor[p] || porNombre[norm(p)];
-    if (o) v += o[campo] || 0;
-  }));
-  return { v, lbl: 'Obj.', esF1: campo === 'objF1' };
+// ── Objetivos HL (F·I / F·II) desde el GAS del Dashboard ─────────
+// El GAS exige &token=... ; se prueban el token legacy de sesión y el access_token de Supabase.
+async function cargarObjetivosHL(cMonth, onListo) {
+  if (window._objCacheHL[cMonth]) return;
+  const cands = [];
+  try {
+    const s = (typeof EmcalaAuth !== 'undefined' && EmcalaAuth.getSession) ? EmcalaAuth.getSession() : null;
+    if (s && s.sessionToken) cands.push(s.sessionToken);
+  } catch (e) {}
+  try {
+    const t = (typeof getToken === 'function') ? await getToken() : '';
+    if (t && cands.indexOf(t) === -1) cands.push(t);
+  } catch (e) {}
+  if (!cands.length) {
+    console.warn('Análisis Anual — sin token de sesión para pedir objetivos HL');
+    return;
+  }
+
+  let motivo = '';
+  for (const tk of cands) {
+    try {
+      const url = `${DASH_GAS_URL}?req=dashboard&cMonth=${cMonth}&spv=ALL&token=${encodeURIComponent(tk)}&t=${Date.now()}`;
+      const r = await fetch(url);
+      const data = await r.json().catch(() => null);
+      if (!r.ok || !data || data.status === 'error') {
+        motivo = (data && data.message) || ('HTTP ' + r.status);
+        continue;
+      }
+      if (!data.objetivos) { motivo = 'la respuesta no trae objetivos'; continue; }
+      const f1 = Object.values(data.objetivos).reduce((s, o) => s + (o.objF1 || 0), 0);
+      const f2 = Object.values(data.objetivos).reduce((s, o) => s + (o.objF2 || 0), 0);
+      window._objCacheHL[cMonth] = { f1, f2 };
+      if (typeof onListo === 'function') onListo();
+      return;
+    } catch (e) {
+      motivo = e.message || String(e);
+    }
+  }
+  console.warn('Análisis Anual — objetivos HL no cargados:', motivo);
 }
 
 function render1() {
@@ -597,22 +619,18 @@ function render1() {
   makeYTD('c1-ytd-hl', d25v, d26v, m26, col);
   makeCNC('c1-cnc', d26c, m26, col, 1);
   makeYTD('c1-ytd-bd', d25b, d26b, m26, col);
-  // ── HL Comparativa con objetivo de la selección (Cerveza: Foco I · UNG: Foco II) ──
-  // Se cachea el detalle por promotor del mes; la suma depende de la selección actual.
+  // ── HL Comparativa con objetivos F·I / F·II ─────────────────────
+  // Convierte el mes (ej: "Julio") al formato YYYY-MM que espera el GAS
   const _cMonth = '2026-' + String(MESES.indexOf(last) + 1).padStart(2, '0');
-  const _objDetalle = window._objCacheHL[_cMonth];
-  makeComp('c1-comp-hl', d26v, d25v, last, prev, col, objetivoComp(_objDetalle, 1));
-  if (!_objDetalle) {
-    // El GAS está en modo ENFORCE: sin token devuelve 401 → se adjunta el access_token de la sesión
-    EmcalaAuth.conToken(`${DASH_GAS_URL}?req=dashboard&cMonth=${_cMonth}&spv=ALL&t=${Date.now()}`)
-      .then(u => fetch(u))
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(data => {
-        if (!data || !data.objetivos) { console.warn('Análisis Anual — objetivos HL sin datos:', data); return; }
-        window._objCacheHL[_cMonth] = data.objetivos;
-        makeComp('c1-comp-hl', d26v, d25v, last, prev, col, objetivoComp(data.objetivos, 1));
-      })
-      .catch(e => console.warn('Análisis Anual — objetivos HL no cargados:', e));
+  const _cachedObj = window._objCacheHL[_cMonth];
+  // Render inmediato: con obj si ya están en caché, sin obj si no
+  makeComp('c1-comp-hl', d26v, d25v, last, prev, col, _cachedObj && _cachedObj.f1, _cachedObj && _cachedObj.f2);
+  if (!_cachedObj) {
+    // Pide los objetivos al GAS del Dashboard y re-renderiza solo esta tarjeta
+    cargarObjetivosHL(_cMonth, () => {
+      const o = window._objCacheHL[_cMonth];
+      makeComp('c1-comp-hl', d26v, d25v, last, prev, col, o.f1, o.f2);
+    });
   }
   makeComp('c1-comp-ccc', d26c, d25c, last, prev, col);
   makeComp('c1-comp-bd', d26b, d25b, last, prev, col);
