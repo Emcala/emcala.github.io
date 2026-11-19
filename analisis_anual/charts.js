@@ -341,7 +341,7 @@ function compRenderObj(api, p) {
   if (!W || !H) return null;
   const baseY = api.coord([0, 0])[1];
   const band  = api.coord([1, 0])[0] - api.coord([0, 0])[0];
-  const els = [], rects = [], boxes = [], geo = [], outside = [];
+  const els = [], rects = [], boxes = [], geo = [], outside = [], pctBoxes = [];
 
   els.push({ type:'line', shape:{x1:2, y1:baseY, x2:W - 2, y2:baseY}, style:{stroke:'rgba(0,0,0,0.1)', lineWidth:1} });
 
@@ -364,6 +364,17 @@ function compRenderObj(api, p) {
     // Siempre con el tamaño base: nunca se achica. Si no entra en la barra, va arriba.
     const px = g.b.obj ? p.fsO : p.fs;
     const w  = compTxtW(g.b.lbl, px) + 2;
+    if (g.b.obj) {
+      // Objetivo: texto vertical centrado dentro de la barra fina (si la barra es lo bastante alta)
+      if (g.h >= w + 6) {
+        els.push({ type:'text', rotation:Math.PI / 2, x:g.cx, y:g.top + g.h / 2, style:{
+          text:g.b.lbl, fill:g.b.txt,
+          textAlign:'center', textVerticalAlign:'middle',
+          font:`bold ${px}px "Barlow Condensed", sans-serif`
+        }});
+        return;
+      }
+    }
     // Dentro de la barra sólo si entra en alto y en ancho; si no, va arriba
     if (!g.b.obj && g.h >= px * 1.2 + 8 && w <= g.bw - 2) {
       const y  = g.top + 4;
@@ -383,8 +394,8 @@ function compRenderObj(api, p) {
   p.pcts.forEach(pt => {
     const g = geo.find(x => x.b.i === pt.i);
     if (!g) return;
-    // Siempre con el tamaño base: el % nunca se achica
-    compPlaceAbove(els, boxes, rects, W, pt.text, p.fs, pt.color, g.cx, g.top - 3);
+    // Siempre con el tamaño base: el % nunca se achica. Va pegado al tope de su barra.
+    compPlacePct(els, pctBoxes, W, pt.text, p.fs, pt.color, g.cx, g.top - 3);
   });
 
   // 4) Etiquetas de categoría bajo la línea base
@@ -399,6 +410,29 @@ function compRenderObj(api, p) {
   });
 
   return { type:'group', children: els };
+}
+// Porcentaje pegado encima de su barra (no sube en escalera). Si choca con otro %,
+// se corre sólo en horizontal lo justo para que no se pisen.
+function compPlacePct(els, pctBoxes, W, text, px, fill, cxp, yb) {
+  const w  = compTxtW(text, px) + 2;
+  const hh = px * 1.2;
+  let x1 = cxp - w / 2;
+  if (x1 < 2) x1 = 2;
+  if (x1 + w > W - 2) x1 = W - 2 - w;
+  const box = { x1, y1: yb - hh, x2: x1 + w, y2: yb };
+  const clash = pctBoxes.find(o => compOverlap(box, o));
+  if (clash) {
+    const right = clash.x2 + 2 - box.x1;
+    const left  = box.x2 - (clash.x1 - 2);
+    const sh = (box.x2 + right <= W - 2) ? right : -left;
+    box.x1 += sh; box.x2 += sh;
+  }
+  pctBoxes.push(box);
+  els.push({ type:'text', style:{
+    text, x:(box.x1 + box.x2) / 2, y:box.y2, fill,
+    textAlign:'center', textVerticalAlign:'bottom',
+    font:`bold ${px}px "Barlow Condensed", sans-serif`
+  }});
 }
 // Opción de ECharts para la comparativa con objetivo: una sola serie custom
 function compObjOption(p) {
@@ -443,7 +477,7 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
     const bars = [
       {i:0, v:vO, obj:true, fill:cObj, stroke:cObjB, txt:'#1e293b', lbl:fmtN(vO)},
       {i:1, v:vA, fill:col26+'ee', stroke:col26, txt:'#fff', lbl:fmtN(vA)},
-      {i:2, v:vB, fill:col26+'99', stroke:col26+'cc', txt:'#1e293b', lbl:fmtN(vB)},
+      {i:2, v:vB, fill:col26+'99', stroke:col26+'cc', txt:'#fff', lbl:fmtN(vB)},
       {i:3, v:vC, fill:'rgba(37,99,235,0.75)', stroke:'rgba(29,78,216,0.95)', txt:'#fff', lbl:fmtN(vC)}
     ];
     // Cada % va sobre la barra del mes que se compara (igual criterio que antes)
@@ -454,7 +488,7 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
     if (pAC!==null && vC>0) pcts.push({i:3, text:fP0(pAC), color:cAC});
     chart.setOption(compObjOption({
       cats: [obj.lbl || 'Obj.', lA, lB, lC],
-      yMax: Math.max(vA, vB, vC, vO, 1) * 1.75,
+      yMax: Math.max(vA, vB, vC, vO, 1) * 1.4,
       bars, pcts,
       fs: rf(14), fsO: rf(14), fsCat: rf(13)
     }), true);
