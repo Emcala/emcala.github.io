@@ -561,7 +561,7 @@ function objetivoComp(objetivosPorPromotor, pg) {
     const o = objetivosPorPromotor[p] || porNombre[norm(p)];
     if (o) v += o[campo] || 0;
   }));
-  return { v, lbl: campo === 'objF1' ? 'Foco I' : 'Foco II' };
+  return { v, lbl: 'Obj.', esF1: campo === 'objF1' };
 }
 
 function render1() {

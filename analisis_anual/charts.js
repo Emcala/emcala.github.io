@@ -335,7 +335,7 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
   const objD = [null, null, null];
 
   if (hasObj) {
-    const esF1 = obj.lbl === 'Foco I';
+    const esF1 = obj.esF1;
     cats.push(obj.lbl);
     mainD.push(null);
     ovD.push(null);
