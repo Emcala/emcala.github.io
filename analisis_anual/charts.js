@@ -492,7 +492,7 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
       cats: [obj.lbl || 'Obj.', lA, lB, lC],
       yMax: Math.max(vA, vB, vC, vO, 1) * 1.4,
       bars, pcts,
-      fs: rf(14), fsO: rf(14), fsCat: rf(13)
+      fs: rf(14), fsO: rf(14), fsCat: rf(12)
     }), true);
     return;
   }
