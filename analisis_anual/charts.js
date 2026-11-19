@@ -63,49 +63,70 @@ function makeMonthly(id, d25, d26, col26) {
 // ═══════════════════════════════════════════════════════════════
 // CHART: MONTHLY BARS BY CANAL (4 mesas side by side)
 // ═══════════════════════════════════════════════════════════════
-function makeMonthlyByCanal(id, channels26) {
+function makeMonthlyByCanal(id, channels26, d25, d26) {
   const chart = getEC(id);
   if (!chart) return;
 
+  // Peso real por mes: 2026 apilado por mesa (alto = HL reales), 2025 al lado como en Mensual
+  const v25 = MESES.map(m => Math.round(d25[m]) || 0);
   const mTot26 = MESES.map(m => channels26.reduce((sum, ch) => sum + (Math.round(ch.data[m]) || 0), 0));
+  const maxV = Math.max(...v25, ...mTot26, 1);
 
-  const series26 = channels26.map((ch, idx) => ({
-    name: ch.name, type: 'bar', stack: 'total26', xAxisIndex: 0, barMaxWidth: 80,
+  const series26 = channels26.map(ch => ({
+    name: ch.name, type: 'bar', stack: 'total26', xAxisIndex: 0, barMaxWidth: 75,
     itemStyle: { color: ch.color, borderRadius: [2, 2, 0, 0] },
     data: MESES.map((m, i) => {
       const val = Math.round(ch.data[m] || 0);
-      const pct = mTot26[i] > 0 ? (val / mTot26[i] * 100) : 0;
-      return { value: pct, absVal: val };
+      const share = mTot26[i] > 0 ? (val / mTot26[i] * 100) : 0;
+      return { value: val, share };
     }),
     label: {
       show: true, position: 'inside',
-      formatter: p => {
-        if (p.value < 6 || p.data.absVal === 0) return ''; 
-        return `{pct|${p.value.toFixed(0)}%}`;
-      },
+      formatter: p => (p.data.share >= 6 ? `{pct|${p.data.share.toFixed(0)}%}` : ''),
       rich: {
         pct: { color: '#ffffff', fontSize: rf(11), fontFamily: 'Barlow Condensed', fontWeight: 'bold', textBorderColor: 'rgba(0,0,0,0.4)', textBorderWidth: 1.5 }
       }
     }
   }));
 
+  // % de comparación sobre el total 2026 de cada mes (mismo criterio que Mensual)
+  const ghost26 = mTot26.map((val, i) => {
+    if (!v25[i] || !val) return { value: val, label: { show: false } };
+    const p = (val - v25[i]) / v25[i] * 100;
+    return { value: val, label: {
+      show: true, position: 'top',
+      color: p >= 0 ? '#15803d' : '#dc2626',
+      fontSize: rf(14), fontWeight: 'bold', fontFamily: 'Barlow Condensed',
+      formatter: () => (p >= 0 ? '+' : '') + p.toFixed(0) + '%'
+    }};
+  });
+
   chart.setOption({
     animation: false, graphic: [],
-    grid: { top: 12, bottom: rf(22), left: 4, right: 4, containLabel: false },
-    xAxis: { type: 'category', data: LABS, axisLine: { lineStyle: { color: 'rgba(0,0,0,0.1)' } }, axisTick: { show: false }, axisLabel: { color: '#475569', fontSize: rf(13), fontFamily: 'Barlow Condensed', fontWeight: 'bold' } },
-    yAxis: { type: 'value', show: false, min: 0, max: 100 },
-    series: series26,
-    tooltip: { 
+    grid: { top: 15, bottom: rf(22), left: 4, right: 4, containLabel: false },
+    xAxis: [
+      { type: 'category', data: LABS, axisLine: { lineStyle: { color: 'rgba(0,0,0,0.1)' } }, axisTick: { show: false }, axisLabel: { color: '#475569', fontSize: rf(13), fontFamily: 'Barlow Condensed', fontWeight: 'bold' } },
+      { type: 'category', data: LABS, show: false }
+    ],
+    yAxis: { type: 'value', show: false, min: 0, max: maxV * 1.18 },
+    series: [
+      { name: '2025', type: 'bar', barGap: '5%', barCategoryGap: '15%', xAxisIndex: 0, data: v25, barMaxWidth: 75,
+        itemStyle: { color: 'rgba(37,99,235,0.75)', borderColor: 'rgba(29,78,216,0.95)', borderWidth: 1, borderRadius: [2, 2, 0, 0] },
+        label: { show: true, position: 'insideTop', distance: 6, color: '#fff', fontSize: rf(14), fontWeight: 'bold', fontFamily: 'Barlow Condensed', formatter: p => p.value > 0 ? fmtN(p.value) : '' } },
+      ...series26,
+      { name: '2025_g', type: 'bar', barGap: '5%', barCategoryGap: '15%', xAxisIndex: 1, data: v25, barMaxWidth: 75,
+        itemStyle: { color: 'transparent', borderColor: 'transparent' }, label: { show: false } },
+      { name: '2026_g', type: 'bar', xAxisIndex: 1, data: ghost26, barMaxWidth: 75,
+        itemStyle: { color: 'transparent', borderColor: 'transparent' } }
+    ],
+    tooltip: {
       show: true, trigger: 'axis', axisPointer: { type: 'shadow' }, textStyle: { fontFamily: 'Barlow Condensed', fontSize: 14 },
       formatter: params => {
-        let title = params[0].name + '<br/>';
-        let items = params.map(p => {
-          const marker = p.marker;
-          const name = p.seriesName;
-          const absVal = typeof fmtN !== 'undefined' ? fmtN(p.data.absVal) : p.data.absVal;
-          const pct = p.value.toFixed(1) + '%';
-          return `${marker} ${name}: <b>${absVal}</b> (${pct})`;
-        });
+        const title = params[0].name + '<br/>';
+        const items = params.filter(p => p.seriesName === '2025' || (p.seriesName !== '2025_g' && p.seriesName !== '2026_g'))
+          .map(p => p.seriesName === '2025'
+            ? `${p.marker} 2025: <b>${fmtN(p.value)}</b>`
+            : `${p.marker} ${p.seriesName}: <b>${fmtN(p.value)}</b> (${(p.data.share || 0).toFixed(1)}%)`);
         return title + items.join('<br/>');
       }
     }
