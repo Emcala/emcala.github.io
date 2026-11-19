@@ -578,7 +578,26 @@ function render1() {
   makeYTD('c1-ytd-hl', d25v, d26v, m26, col);
   makeCNC('c1-cnc', d26c, m26, col, 1);
   makeYTD('c1-ytd-bd', d25b, d26b, m26, col);
-  makeComp('c1-comp-hl', d26v, d25v, last, prev, col);
+  // ── HL Comparativa con objetivos F·I / F·II ─────────────────────
+  // Convierte el mes (ej: "Julio") al formato YYYY-MM que espera el GAS
+  const _cMonth = '2026-' + String(MESES.indexOf(last) + 1).padStart(2, '0');
+  const _cachedObj = window._objCacheHL[_cMonth];
+  // Render inmediato: con obj si ya están en caché, sin obj si no
+  makeComp('c1-comp-hl', d26v, d25v, last, prev, col, _cachedObj && _cachedObj.f1, _cachedObj && _cachedObj.f2);
+  if (!_cachedObj) {
+    // Fetch al GAS del Dashboard para obtener los objetivos del mes
+    fetch(`${DASH_GAS_URL}?req=dashboard&cMonth=${_cMonth}&spv=ALL&t=${Date.now()}`)
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(data => {
+        if (!data || !data.objetivos) return;
+        const f1 = Object.values(data.objetivos).reduce((s, o) => s + (o.objF1 || 0), 0);
+        const f2 = Object.values(data.objetivos).reduce((s, o) => s + (o.objF2 || 0), 0);
+        window._objCacheHL[_cMonth] = { f1, f2 };
+        // Re-render solo el div de HL comparativa con los objetivos
+        makeComp('c1-comp-hl', d26v, d25v, last, prev, col, f1, f2);
+      })
+      .catch(e => console.warn('Análisis Anual — objetivos HL no cargados:', e));
+  }
   makeComp('c1-comp-ccc', d26c, d25c, last, prev, col);
   makeComp('c1-comp-bd', d26b, d25b, last, prev, col);
 }

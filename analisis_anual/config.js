@@ -47,3 +47,8 @@ window.GLOBAL_ALLOWED_MONTHS = new Set(MESES);
 // Si querés autocarga total para tus jefes, poné aquí los 2 CSV "fijos".
 // Ejemplo: ['data/2025.csv', 'data/2026.csv']
 const AUTO_CSV_SOURCES = [];
+
+// URL del GAS del Dashboard Ventas (para leer objetivos F·I / F·II)
+const DASH_GAS_URL = 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec';
+// Cache de objetivos por mes { 'YYYY-MM': { f1, f2 } }
+window._objCacheHL = window._objCacheHL || {};
