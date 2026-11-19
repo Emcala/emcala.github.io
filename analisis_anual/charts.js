@@ -343,7 +343,7 @@ function compRenderObj(api, p) {
   const band  = api.coord([1, 0])[0] - api.coord([0, 0])[0];
   const els = [], rects = [], boxes = [], geo = [], outside = [];
 
-  els.push({ type:'line', shape:{x1:0, y1:baseY, x2:W, y2:baseY}, style:{stroke:'rgba(0,0,0,0.1)', lineWidth:1} });
+  els.push({ type:'line', shape:{x1:2, y1:baseY, x2:W - 2, y2:baseY}, style:{stroke:'rgba(0,0,0,0.1)', lineWidth:1} });
 
   // 1) Barras centradas en su categoría (objetivo fina: 8-12 px; meses: 12-34 px)
   p.bars.forEach(b => {
@@ -352,7 +352,7 @@ function compRenderObj(api, p) {
     const top = api.coord([b.i, b.v])[1];
     const h   = baseY - top;
     if (h <= 0) return;
-    const bw = b.obj ? Math.min(12, Math.max(8, band * 0.18)) : Math.min(34, Math.max(12, band * 0.72));
+    const bw = b.obj ? Math.max(12, Math.min(16, Math.round(band * 0.30))) : Math.max(16, Math.min(band - 4, Math.round(band * 0.84)));
     rects.push({x1:cx - bw/2, y1:top, x2:cx + bw/2, y2:baseY});
     els.push({ type:'rect', shape:{x:cx - bw/2, y:top, width:bw, height:h, r:[3,3,0,0]},
       style:{fill:b.fill, stroke:b.stroke, lineWidth:1} });
@@ -407,7 +407,7 @@ function compRenderObj(api, p) {
 function compObjOption(p) {
   return {
     animation: false,
-    grid: { top:14, bottom:rf(18), left:2, right:2, containLabel:false },
+    grid: { top:15, bottom:rf(28), left:2, right:2, containLabel:false },
     xAxis: { type:'category', data:p.cats, show:false },
     yAxis: { type:'value', min:0, max:p.yMax, show:false },
     series: [{
@@ -457,7 +457,7 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
       cats: [obj.lbl || 'Obj.', lA, lB, lC],
       yMax: Math.max(vA, vB, vC, vO, 1) * 1.75,
       bars, pcts,
-      fs: rf(14), fsO: rf(12), fsCat: rf(10)
+      fs: rf(14), fsO: rf(12), fsCat: rf(12)
     }), true);
     return;
   }
@@ -472,39 +472,33 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
      label:{show:vC>0, position:'insideTop', distance:6, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vC)}}
   ];
 
-  // Porcentajes: serie scatter (sin barras), anclada al centro de cada categoría.
-  const pctPts = [];
-  if (pAB!==null && vB>0) pctPts.push({cat:1, pct:pAB, color:cAB});
-  if (pAC!==null && vC>0) pctPts.push({cat:2, pct:pAC, color:cAC});
-  const nCat = cats.length;
-  const scatD = pctPts.map(pt => {
-    const txtLen = fP(pt.pct).length;
-    const anchoPx = 0.6 * rf(14) * txtLen;
-    const bandaPx = 230 / nCat;
-    const centroPx = (pt.cat + 0.5) * bandaPx;
-    let dx = 0;
-    if (centroPx + anchoPx/2 > 230 - 2) dx = (230 - 2) - (centroPx + anchoPx/2);
-    if (centroPx - anchoPx/2 < 2)       dx = 2 - (centroPx - anchoPx/2);
-    return {
-      value: [pt.cat, 0],
-      label: {show:true, position:'top', distance:4, offset:[dx, 0], color:pt.color, fontSize:rf(14), fontWeight:'bold',
-              fontFamily:'Barlow Condensed', formatter:()=>fP(pt.pct)}
-    };
+  // Porcentajes arriba de cada barra (mismo patrón "ghost" que makeYTD / makeCNC):
+  // serie de barras transparente con label position:'top' sobre el valor de la barra del mes.
+  const pctFor = (idx, pct, color) => ({
+    value: idx === 1 ? vB : vC,
+    itemStyle: {color:'transparent', borderColor:'transparent'},
+    label: {show:true, position:'top', color, fontSize:rf(12), fontWeight:'bold',
+            fontFamily:'Barlow Condensed', formatter:()=>fP(pct)}
   });
+  const ghostD = [
+    {value:vA, itemStyle:{color:'transparent', borderColor:'transparent'}, label:{show:false}},
+    pAB!==null && vB>0 ? pctFor(1, pAB, cAB) : {value:vB, itemStyle:{color:'transparent', borderColor:'transparent'}, label:{show:false}},
+    pAC!==null && vC>0 ? pctFor(2, pAC, cAC) : {value:vC, itemStyle:{color:'transparent', borderColor:'transparent'}, label:{show:false}}
+  ];
 
   chart.setOption({
     animation:false,
-    grid:{top:22, bottom:rf(28), left:2, right:2, containLabel:false},
+    grid:{top:15, bottom:rf(28), left:2, right:2, containLabel:false},
     xAxis:{type:'category', data:cats,
       axisLine:{lineStyle:{color:'rgba(0,0,0,0.1)'}},
       axisTick:{show:false},
-      axisLabel:{color:'#475569', fontSize:rf(13), fontFamily:'Barlow Condensed',
+      axisLabel:{color:'#475569', fontSize:14, fontFamily:'Barlow Condensed',
                  fontWeight:'bold', interval:0}
     },
-    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,1)*1.30},
+    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,1)*1.12},
     series:[
-      {type:'bar', barWidth:'100%', barCategoryGap:'6%', data:mesD, label:{show:false}},
-      {type:'scatter', symbolSize:0, data:scatD, tooltip:{show:false}, z:10}
+      {type:'bar', barMaxWidth:70, data:mesD, label:{show:false}},
+      {type:'bar', barMaxWidth:70, barGap:'-100%', z:10, data:ghostD, label:{show:false}}
     ],
     tooltip:{show:false}
   }, true);
