@@ -405,7 +405,7 @@ function compRenderObj(api, p) {
   while (fc > 8 && p.cats.some(c => compTxtW(c, fc) > band - 2)) fc--;
   p.cats.forEach((c, i) => {
     els.push({ type:'text', style:{
-      text:c, x:api.coord([i, 0])[0], y:baseY + 3, fill:'#475569',
+      text:c, x:api.coord([i, 0])[0], y:baseY + 8, fill:'#475569',
       textAlign:'center', textVerticalAlign:'top',
       font:`bold ${fc}px "Barlow Condensed", sans-serif`
     }});
@@ -492,7 +492,7 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
       cats: [obj.lbl || 'Obj.', lA, lB, lC],
       yMax: Math.max(vA, vB, vC, vO, 1) * 1.4,
       bars, pcts,
-      fs: rf(14), fsO: rf(14), fsCat: rf(12)
+      fs: rf(14), fsO: rf(14), fsCat: rf(14)
     }), true);
     return;
   }
