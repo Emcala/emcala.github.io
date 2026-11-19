@@ -290,20 +290,20 @@ function makeCNC(id, d26, meses26, col26, pg) {
 // ═══════════════════════════════════════════════════════════════
 // CHART: COMPARATIVA DE DESEMPEÑO
 // ═══════════════════════════════════════════════════════════════
-function makeComp(id, d26, d25, last, prev, col26, obj) {
+function makeComp(id, d26, d25, last, prev, col26, objF1, objF2) {
   const chart = getEC(id);
   const vA  = Math.round(d26[last]) || 0;
   const vB  = prev ? Math.round(d26[prev]) || 0 : 0;
   const vC  = Math.round(d25[last]) || 0;
-  // obj = { v, lbl } del objetivo de la selección: Foco I (cerveza) o Foco II (NABS / UNG)
-  const vO  = obj && obj.v > 0 ? Math.round(obj.v) : 0;
-  const hasObj = vO > 0;
+  const vO1 = objF1 ? Math.round(objF1) : 0;
+  const vO2 = objF2 ? Math.round(objF2) : 0;
+  const hasObj = vO1 > 0 || vO2 > 0;
 
   const pAB = vB ? (vA-vB)/vB*100 : null;
   const pAC = vC ? (vA-vC)/vC*100 : null;
   const cAB = pAB!==null && pAB>=0 ? '#15803d' : '#dc2626';
   const cAC = pAC!==null && pAC>=0 ? '#15803d' : '#dc2626';
-  const fP  = p => p===null ? '' : (p>=0?'▲ +':'▼ ')+p.toFixed(1)+'%';
+  const fP  = p => p===null ? '' : (p>=0?'▲+':'▼')+p.toFixed(1)+'%';
   const lA  = last ? last.slice(0,3).toUpperCase()+' 26' : '—';
   const lB  = prev ? prev.slice(0,3).toUpperCase()+' 26' : '—';
   const lC  = last ? last.slice(0,3).toUpperCase()+' 25' : '—';
@@ -318,57 +318,68 @@ function makeComp(id, d26, d25, last, prev, col26, obj) {
   const cats  = [lA, lB, lC];
   const mainD = [
     {value:vA, itemStyle:{color:col26+'ee', borderColor:col26, borderWidth:1, borderRadius:[3,3,0,0]},
-     label:{show:vA>0, position:'insideTop', distance:8, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vA)}},
+     label:{show:vA>0, position:'insideTop', distance:6, color:'#fff', fontSize:rf(13), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vA)}},
     {value:vB, itemStyle:{color:col26+'99', borderColor:col26+'cc', borderWidth:1, borderRadius:[3,3,0,0]},
-     label:{show:vB>0, position:'insideTop', distance:8, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vB)}},
+     label:{show:vB>0, position:'insideTop', distance:6, color:'#fff', fontSize:rf(13), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vB)}},
     {value:vC, itemStyle:{color:'rgba(37,99,235,0.75)', borderColor:'rgba(29,78,216,0.95)', borderWidth:1, borderRadius:[3,3,0,0]},
-     label:{show:vC>0, position:'insideTop', distance:8, color:'#fff', fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vC)}}
+     label:{show:vC>0, position:'insideTop', distance:6, color:'#fff', fontSize:rf(13), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fmtN(vC)}}
   ];
   const ovD = [
     {value:vA, itemStyle:{color:'transparent', borderColor:'transparent'}, label:{show:false}},
     {value:vB, itemStyle:{color:'transparent', borderColor:'transparent'},
-     label:{show:pAB!==null&&vB>0, position:'top', color:cAB, fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAB)}},
+     label:{show:pAB!==null&&vB>0, position:'top', color:cAB, fontSize:rf(11), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAB)}},
     {value:vC, itemStyle:{color:'transparent', borderColor:'transparent'},
-     label:{show:pAC!==null&&vC>0, position:'top', color:cAC, fontSize:rf(14), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAC)}}
+     label:{show:pAC!==null&&vC>0, position:'top', color:cAC, fontSize:rf(11), fontWeight:'bold', fontFamily:'Barlow Condensed', formatter:()=>fP(pAC)}}
   ];
-  // Serie de objetivos: la barra de objetivo va PRIMERA (a la izquierda de OCT 26)
+  // Serie de objetivos: null en las 3 primeras posiciones, barras en las nuevas
   const objD = [null, null, null];
 
   if (hasObj) {
-    const esF1 = obj.esF1;
-    cats.unshift(obj.lbl);
-    mainD.unshift(null);
-    ovD.unshift(null);
-    objD.unshift({value:vO,
-      itemStyle:{color:esF1?cO1:cO2, borderColor:esF1?cO1b:cO2b, borderWidth:1, borderRadius:[3,3,0,0]},
-      label:{show:true, position:'inside', rotate:90, color:esF1?'#431407':'#1a1500',
-             fontSize:rf(12), fontWeight:'bold', fontFamily:'Barlow Condensed',
-             formatter:()=>fmtN(vO)}
-    });
+    if (vO1 > 0) {
+      cats.push('Obj.I');
+      mainD.push(null);
+      ovD.push(null);
+      objD.push({value:vO1,
+        itemStyle:{color:cO1, borderColor:cO1b, borderWidth:1, borderRadius:[3,3,0,0]},
+        label:{show:true, position:'inside', rotate:90, distance:4, color:'#431407',
+               fontSize:rf(11), fontWeight:'bold', fontFamily:'Barlow Condensed',
+               formatter:()=>fmtN(vO1)}
+      });
+    }
+    if (vO2 > 0) {
+      cats.push('Obj.II');
+      mainD.push(null);
+      ovD.push(null);
+      objD.push({value:vO2,
+        itemStyle:{color:cO2, borderColor:cO2b, borderWidth:1, borderRadius:[3,3,0,0]},
+        label:{show:true, position:'inside', rotate:90, distance:4, color:'#1a1500',
+               fontSize:rf(11), fontWeight:'bold', fontFamily:'Barlow Condensed',
+               formatter:()=>fmtN(vO2)}
+      });
+    }
   }
 
   const series = [
-    // Serie principal: barras normales (90% del band)
-    {type:'bar', barWidth:'90%', data:mainD, label:{show:false}},
+    // Serie principal: barras normales (62% del band, con aire entre categorías)
+    {type:'bar', barWidth:'62%', barCategoryGap:'18%', data:mainD, label:{show:false}},
     // Serie overlay: etiquetas de % encima de las barras principales
-    {type:'bar', barWidth:'90%', barGap:'-100%', z:10, data:ovD},
+    {type:'bar', barWidth:'62%', barCategoryGap:'18%', barGap:'-100%', z:10, data:ovD},
   ];
   if (hasObj) {
-    // Serie de objetivos: mismo ancho y barGap -100% que las otras, para que las 3 series
-    // queden apiladas en el mismo centro y los % no se corran a la derecha
-    series.push({type:'bar', barWidth:'90%', barGap:'-100%', data:objD, label:{show:false}});
+    // Serie de objetivos: barra fina (26%, máx. 16px) en sus propias categorías
+    series.push({type:'bar', barWidth:'26%', barMaxWidth:16, barCategoryGap:'18%', data:objD, label:{show:false}});
   }
 
   chart.setOption({
     animation:false,
-    grid:{top:15, bottom:rf(28), left:2, right:2, containLabel:false},
+    grid:{top:24, bottom:rf(28), left:2, right:2, containLabel:false},
     xAxis:{type:'category', data:cats,
       axisLine:{lineStyle:{color:'rgba(0,0,0,0.1)'}},
       axisTick:{show:false},
-      axisLabel:{color:'#475569', fontSize:hasObj?10:13, fontFamily:'Barlow Condensed',
+      axisLabel:{color:'#475569', fontSize:hasObj?rf(10):rf(13), fontFamily:'Barlow Condensed',
                  fontWeight:'bold', interval:0}
     },
-    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,vO,1)*1.15},
+    yAxis:{type:'value', show:false, min:0, max:Math.max(vA,vB,vC,vO1,vO2,1)*1.30},
     series,
     tooltip:{show:false}
   });
