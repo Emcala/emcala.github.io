@@ -352,7 +352,7 @@ function compRenderObj(api, p) {
     const top = api.coord([b.i, b.v])[1];
     const h   = baseY - top;
     if (h <= 0) return;
-    const bw = b.obj ? Math.max(12, Math.min(16, Math.round(band * 0.30))) : Math.max(16, Math.min(band - 4, Math.round(band * 0.84)));
+    const bw = b.obj ? Math.max(16, Math.min(22, Math.round(band * 0.36))) : Math.max(16, Math.min(band - 4, Math.round(band * 0.84)));
     rects.push({x1:cx - bw/2, y1:top, x2:cx + bw/2, y2:baseY});
     els.push({ type:'rect', shape:{x:cx - bw/2, y:top, width:bw, height:h, r:[3,3,0,0]},
       style:{fill:b.fill, stroke:b.stroke, lineWidth:1} });
@@ -394,8 +394,10 @@ function compRenderObj(api, p) {
   p.pcts.forEach(pt => {
     const g = geo.find(x => x.b.i === pt.i);
     if (!g) return;
-    // Siempre con el tamaño base: el % nunca se achica. Va pegado al tope de su barra.
-    compPlacePct(els, pctBoxes, W, pt.text, p.fs, pt.color, g.cx, g.top - 3);
+    // El % va centrado sobre SU barra; sólo se achica lo necesario para no pisar al vecino
+    let px = p.fs;
+    while (px > 9 && compTxtW(pt.text, px) + 2 > band - 4) px--;
+    compPlacePct(els, pctBoxes, W, pt.text, px, pt.color, g.cx, g.top - 3);
   });
 
   // 4) Etiquetas de categoría bajo la línea base
