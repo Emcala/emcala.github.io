@@ -109,7 +109,7 @@ async function cargarNombres() {
 
 const MESES_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-function dbRowToCSV(r, nombres) {
+function dbRowToCSV(r, nombres, prodNombres) {
   const n = nombres || { sup: {}, vend: {}, cli: {} };
   const f = r.fecha ? String(r.fecha) : '';
   // yr/mes son columnas propias; la fecha queda sólo como respaldo para filas viejas
@@ -120,7 +120,7 @@ function dbRowToCSV(r, nombres) {
     un: r.un, yr: yrD, mes: mesD,
     hl: Number(r.hl) || 0, bul: Number(r.bul) || 0,
     cli: r.cli, prod: r.prod, dias: r.dias, canal: r.canal,
-    calibre: r.calibre, prod2: r.prod2, marca: r.marca,
+    calibre: r.calibre, prod2: (prodNombres && prodNombres[r.prod]) || '', marca: r.marca,
     cliN: n.cli[r.cli] || '', fecha: r.fecha || ''
   };
 }
@@ -128,7 +128,6 @@ function dbRowToCSV(r, nombres) {
 // ── Lectura por rangos de id + keyset ─────────────────────────
 // La tabla tiene más de 1 millón de filas: OFFSET es lento y supera el timeout
 // de Supabase, así que se pagina por id (usa el índice de la clave primaria).
-const LECTURA_COLS = 'id,cod_s,cod_s2,un,hl,cli,prod,dias,canal,calibre,prod2,marca,fecha,yr,mes';
 const LECTURA_LOTE = 10000;     // filas pedidas por página (acompañar con Max Rows = 10000 en Supabase)
 const LECTURA_PARALELO = 6;     // sub-rangos leídos a la vez
 const LECTURA_SUBRANGOS = 12;   // en cuántas partes contiguas se divide el rango de ids
@@ -197,25 +196,45 @@ function mostrarProgresoLectura(pct) {
 // Sólo lee los años que figuran en analisis_anual_meta (si la meta está vacía,
 // lee todo). Cada sub-rango de ids se recorre con keyset (id > último recibido),
 // así funciona aunque Supabase limite cada respuesta; sólo cambia la cantidad de pedidos.
-async function leerSubrango(rango, filtroYr) {
+// Columnas que devuelve la función analisis_anual_leer_compacto (en este orden).
+// Cada fila viaja como lista de valores, sin repetir los nombres de campo.
+const COLS_COMPACTAS = ['id', 'cod_s', 'cod_s2', 'un', 'hl', 'bul', 'cli', 'prod', 'dias', 'canal', 'calibre', 'marca', 'yr', 'mes', 'fecha'];
+
+// Descarga un sub-rango de ids en ventanas (LECTURA_LOTE ids cada una) con la función
+// de la base. Sólo trae los años pedidos; la ventana se avanza por id, así que no hay OFFSET.
+async function leerSubrango(rango, aniosFaltantes) {
   const filas = [];
+  const yrs = aniosFaltantes.map(Number);
   let cursor = rango.lo - 1;
-  while (true) {
-    const lote = await sbGetConReintentos(
-      `${TABLE_VENTAS}?select=${LECTURA_COLS}&id=gt.${cursor}&id=lte.${rango.hi}${filtroYr}&order=id.asc&limit=${LECTURA_LOTE}`
-    );
-    if (!Array.isArray(lote) || !lote.length) break;
-    for (const r of lote) filas.push(r);
-    cursor = Number(lote[lote.length - 1].id);
-    if (cursor >= rango.hi) break;
+  while (cursor < rango.hi) {
+    const hasta = Math.min(cursor + LECTURA_LOTE, rango.hi);
+    const lote = await sbRpc('analisis_anual_leer_compacto', { p_yrs: yrs, p_desde: cursor + 1, p_hasta: hasta });
+    if (Array.isArray(lote)) {
+      for (const arr of lote) {
+        const o = {};
+        for (let i = 0; i < COLS_COMPACTAS.length; i++) o[COLS_COMPACTAS[i]] = arr[i];
+        filas.push(o);
+      }
+    }
+    cursor = hasta;
   }
   return filas;
+}
+
+// Nombre de producto (prod2) por código: una sola tabla chica en vez de repetirlo en cada fila
+async function cargarProductos() {
+  const pares = await sbRpc('analisis_anual_productos', {});
+  const m = {};
+  (Array.isArray(pares) ? pares : []).forEach(p => { m[p[0]] = p[1] || ''; });
+  return m;
 }
 
 // ── Caché local persistente (IndexedDB) ───────────────────────
 // Evita descargar cientos de megabytes de ventas en cada F5 (ahorro crítico de Egress).
 const IDB_NAME = 'emcala_analisis_anual_db';
 const IDB_VERSION = 1;
+// Versión de las filas guardadas: subirla invalida la caché de los navegadores (p. ej. al agregar bultos)
+const CACHE_VER = 2;
 const IDB_STORE = 'ventas_cache';
 
 function abrirDB() {
@@ -252,7 +271,7 @@ async function idbGuardarAnio(yr, actualizado_en, rows) {
     return new Promise((resolve) => {
       const tx = db.transaction(IDB_STORE, 'readwrite');
       const store = tx.objectStore(IDB_STORE);
-      store.put({ yr: String(yr), actualizado_en: actualizado_en || '', rows: rows });
+      store.put({ yr: String(yr), actualizado_en: actualizado_en || '', v: CACHE_VER, rows: rows });
       tx.oncomplete = () => resolve(true);
       tx.onerror = () => resolve(false);
     });
@@ -314,7 +333,7 @@ async function loadDatosDesdeSupabase(forzarSinCache) {
       const yStr = String(m.yr);
       if (!forzarSinCache) {
         const cached = await idbObtenerAnio(yStr);
-        if (cached && cached.actualizado_en === m.actualizado_en && Array.isArray(cached.rows) && cached.rows.length > 0) {
+        if (cached && cached.v === CACHE_VER && cached.actualizado_en === m.actualizado_en && Array.isArray(cached.rows) && cached.rows.length > 0) {
           filasPorAnio[yStr] = cached.rows;
           continue;
         }
@@ -358,7 +377,7 @@ async function loadDatosDesdeSupabase(forzarSinCache) {
       rangos.push({ lo: lo, hi: Math.min(lo + paso - 1, maxId) });
     }
 
-    const nombres = await cargarNombres();
+    const [nombres, prodNombres] = await Promise.all([cargarNombres(), cargarProductos()]);
     mostrarProgresoLectura(0);
     const resultados = new Array(rangos.length);
     let siguiente = 0, hechos = 0;
@@ -366,8 +385,8 @@ async function loadDatosDesdeSupabase(forzarSinCache) {
       while (true) {
         const i = siguiente++;
         if (i >= rangos.length) return;
-        const filas = await leerSubrango(rangos[i], filtroYr);
-        resultados[i] = filas.map(r => dbRowToCSV(r, nombres));
+        const filas = await leerSubrango(rangos[i], aniosFaltantes);
+        resultados[i] = filas.map(r => dbRowToCSV(r, nombres, prodNombres));
         hechos++;
         mostrarProgresoLectura(Math.round(hechos / rangos.length * 100));
       }
