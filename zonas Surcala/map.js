@@ -813,10 +813,8 @@ const MapManager = {
     // Aplica el color de los puntos de clientes según el estado actual
     applyClientPaint() {
         if (!this.map || !this.map.getLayer('clients-points')) return;
-        const venta = this.isVentaActive();
         this.map.setPaintProperty('clients-points', 'circle-color', this.getClientColorExpression());
-        this.map.setPaintProperty('clients-points', 'circle-stroke-color', '#ffffff');
-        this.map.setPaintProperty('clients-points', 'circle-stroke-width', venta ? 1.5 : 0);
+        this.map.setPaintProperty('clients-points', 'circle-stroke-width', 0);
     },
 
     // Cambia el estado de la capa Venta y carga los datos si hace falta
