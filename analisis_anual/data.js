@@ -41,19 +41,36 @@ function dividirCamposCSV(linea, sep) {
 
 // Soporta tres formatos: sin comillas, campos citados ("a";"b") y la línea
 // entera entre comillas ("a;b;c"), que es el que llega en algunos exports.
-function camposDeLinea(linea) {
+function camposDeLinea(linea, sep) {
+  const S = sep || ';';
   const limpia = String(linea || '').replace(/\r$/, '').replace(/^\uFEFF/, '');
-  let campos = dividirCamposCSV(limpia, ';');
-  if (campos.length === 1 && limpia.indexOf(';') !== -1) {
-    campos = dividirCamposCSV(limpia.replace(/^"/, '').replace(/"$/, ''), ';');
+  let campos = dividirCamposCSV(limpia, S);
+  if (campos.length === 1 && limpia.indexOf(S) !== -1) {
+    campos = dividirCamposCSV(limpia.replace(/^"/, '').replace(/"$/, ''), S);
   }
   return campos;
+}
+
+// Detecta la codificación del CSV por BOM o por presencia de bytes nulos (UTF-16 sin BOM).
+// Antes se forzaba UTF-16: un export en UTF-8 llegaba como texto ilegible y no se parseaba nada.
+function decodificarCSV(buf) {
+  const b = new Uint8Array(buf);
+  if (b[0] === 0xFF && b[1] === 0xFE) return new TextDecoder('utf-16le').decode(buf.slice(2));
+  if (b[0] === 0xFE && b[1] === 0xFF) return new TextDecoder('utf-16be').decode(buf.slice(2));
+  if (b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) return new TextDecoder('utf-8').decode(buf.slice(3));
+  const n = Math.min(b.length, 400);
+  let nulos = 0;
+  for (let i = 1; i < n; i += 2) if (b[i] === 0) nulos++;
+  if (nulos > n / 4) return new TextDecoder('utf-16le').decode(buf);
+  return new TextDecoder('utf-8').decode(buf);
 }
 
 function parseCSV(txt) {
   if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
   const lines = txt.split(/\r?\n/).filter(l => l.trim());
-  const H = camposDeLinea(lines[0]);
+  // Separador: los exports nuevos vienen con tabulaciones (Excel/copiar y pegar); los viejos con ';'
+  const SEP = (lines[0].indexOf('\t') !== -1 && lines[0].indexOf(';') === -1) ? '\t' : ';';
+  const H = camposDeLinea(lines[0], SEP);
   const ix = n => H.indexOf(n);
   const iS = ix('Sector de Supervisión');
   const iCodS = ix('Código Sector de Supervisión');
@@ -97,16 +114,21 @@ function parseCSV(txt) {
 
   function parseDateStr(d) {
     if (!d) return '';
-    d = String(d).trim();
-    if (/^\d{5}$/.test(d)) {
+    // Quita comillas y la hora si viene pegada: "21/11/2026 0:00:00", "2026-11-21T00:00:00"
+    d = String(d).trim().replace(/^"+|"+$/g, '').split(/[\sT]/)[0].trim();
+    if (/^\d{5}(\.\d+)?$/.test(d)) {
       const excelEpoch = new Date(Date.UTC(1899, 11, 30));
       excelEpoch.setDate(excelEpoch.getDate() + parseInt(d, 10));
       return excelEpoch.toISOString().split('T')[0];
     }
     if (/^\d{8}$/.test(d)) return d.slice(0, 4) + '-' + d.slice(4, 6) + '-' + d.slice(6, 8);
-    if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(d)) {
-      const parts = d.split(/[\/\-]/);
+    if (/^\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}$/.test(d)) {
+      const parts = d.split(/[\/\-.]/);
       return parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
+    }
+    if (/^\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2}$/.test(d)) {
+      const parts = d.split(/[\/\-.]/);
+      return '20' + parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
     }
     if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(d)) {
       const parts = d.split(/[\/\-]/);
@@ -115,9 +137,13 @@ function parseCSV(txt) {
     return d;
   }
 
+  // Diagnóstico: filas que no quedan con año (ni columna Año ni Fecha válida).
+  const diag = { total: 0, sinAnio: 0, ejemplo: '' };
+  window._csvDiag = diag;
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
-    const p = camposDeLinea(lines[i]);
+    const p = camposDeLinea(lines[i], SEP);
+    diag.total++;
     let sdv = (p[iS] || '').trim().toUpperCase();
     sdv = sdv.replace(/\bSDVAS?\b/g, '').replace(/\bSDVS?\b/g, '').replace(/\bSUPERVISOR(?:ES)?\b/g, '').trim();
     const codS = iCodS !== -1 ? (p[iCodS] || '').trim().toUpperCase() : '';
@@ -139,6 +165,10 @@ function parseCSV(txt) {
     if (!mesVal && fechaVal.length >= 7 && typeof MESES !== 'undefined') {
       const idxMes = parseInt(fechaVal.slice(5, 7), 10) - 1;
       if (idxMes >= 0 && idxMes < 12) mesVal = MESES[idxMes];
+    }
+    if (!yrVal) {
+      diag.sinAnio++;
+      if (!diag.ejemplo) diag.ejemplo = (p[iFECHA] || '').trim() || '(vacío)';
     }
 
     rows.push({

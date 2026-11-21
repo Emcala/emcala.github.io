@@ -8,12 +8,18 @@
 
   let loaded = 0;
   const añosGuardados = {};
+  const erroresCSV = [];
   files.forEach(file => {
     const rd = new FileReader();
     rd.onload = async ev => {
       try {
-        const rows = parseCSV(ev.target.result);
-        if (rows.length) {
+        const rows = parseCSV(decodificarCSV(ev.target.result));
+        const diag = window._csvDiag || { total: 0, sinAnio: 0, ejemplo: '' };
+        if (diag.sinAnio > 0) {
+          erroresCSV.push(file.name + ': ' + diag.sinAnio.toLocaleString('es-AR') + ' de ' +
+            diag.total.toLocaleString('es-AR') + ' filas sin año (la columna Fecha no se pudo leer; ejemplo: "' + diag.ejemplo + '")');
+        }
+        if (rows.length && diag.sinAnio === 0) {
           // Agrupar filas por año (extraído del CSV o de la columna Fecha)
           const porAnio = {};
           rows.forEach(r => {
@@ -33,6 +39,13 @@
       if (loaded === files.length) {
         renderAll();
 
+        if (erroresCSV.length) {
+          renderLU('err');
+          alert('⚠️ No se guardó nada en Supabase.\n\n' + erroresCSV.join('\n') +
+            '\n\nRevisá que la columna Fecha tenga formato dd/mm/aaaa o aaaa-mm-dd.');
+          return;
+        }
+
         // Si es auditor, persistir cada año cargado en Supabase.
         if (puedeGuardar && Object.keys(añosGuardados).length) {
           await persistirAños(añosGuardados);
@@ -43,7 +56,7 @@
         }
       }
     };
-    rd.readAsText(file, 'utf-16');
+    rd.readAsArrayBuffer(file);
   });
 });
 
@@ -732,6 +745,7 @@ function render3() {
   ];
 
   const chHL26 = [], chCCC26 = [], chBD26 = [];
+  const chHL25 = [], chCCC25 = [], chBD25 = [];
   const ytd25DataHL = [], ytd26DataHL = [], ytd25DataBD = [], ytd26DataBD = [];
   const statsByMesa = {};
 
@@ -750,6 +764,9 @@ function render3() {
     chHL26.push({ name: mesa.name, color: mesa.color, data: s26.vol });
     chCCC26.push({ name: mesa.name, color: mesa.color, data: s26.ccc });
     chBD26.push({ name: mesa.name, color: mesa.color, data: s26.bd });
+    chHL25.push({ name: mesa.name, color: mesa.color, data: s25.vol });
+    chCCC25.push({ name: mesa.name, color: mesa.color, data: s25.ccc });
+    chBD25.push({ name: mesa.name, color: mesa.color, data: s25.bd });
 
     const v25_hl = m26.reduce((a, m) => a + (s25.vol[m] || 0), 0);
     const v26_hl = m26.reduce((a, m) => a + (s26.vol[m] || 0), 0);
@@ -772,9 +789,9 @@ function render3() {
   setKPI('k3-6', `TBD REF`, statsByMesa['REF'].s26.bd[last], pct(statsByMesa['REF'].s26.bd[last], statsByMesa['REF'].s25.bd[last]));
   setKPI('k3-7', `TBD MAYO`, statsByMesa['MAYO'].s26.bd[last], pct(statsByMesa['MAYO'].s26.bd[last], statsByMesa['MAYO'].s25.bd[last]));
 
-  makeMonthlyByCanal('c3-hl', chHL26);
-  makeMonthlyByCanal('c3-ccc', chCCC26);
-  makeMonthlyByCanal('c3-bd', chBD26);
+  makeMonthlyByCanal('c3-hl', chHL26, chHL25);
+  makeMonthlyByCanal('c3-ccc', chCCC26, chCCC25);
+  makeMonthlyByCanal('c3-bd', chBD26, chBD25);
 
   // --- Right panel: stacked YTD instead of simple bar ---
   makeYTDStackedByCanal('c3-ytd-hl', ytd25DataHL, ytd26DataHL);
