@@ -39,6 +39,10 @@
   }
   if (sup.ok && sup.rows > 0) {
     renderAll();
+    if (sup.desdeCache) {
+      const t = document.getElementById('lu-text');
+      if (t) t.title = 'Datos cargados desde la caché local del navegador (0 KB egress).';
+    }
   }
 
   // Actualizar el badge de "última actualización" con los metadatos.

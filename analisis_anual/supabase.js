@@ -12,7 +12,7 @@ const SUPABASE_URL = 'https://tdwdqgtnyqnsigzhhxsl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2RxZ3RueXFuc2lnemhoeHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTE3NDcsImV4cCI6MjA5ODY2Nzc0N30.aiYnQ3g1HIk1e4G89sODitBqtPlzva_akCz5ruvLw-8';
 
 const TABLE_VENTAS = 'analisis_anual_ventas';
-const TABLE_META   = 'analisis_anual_meta';
+const TABLE_META = 'analisis_anual_meta';
 
 // ── Obtener access_token vigente ──────────────────────────────
 // 1) EmcalaAuth.getAccessToken() (usa supabase-js que ya renueva JWT)
@@ -35,10 +35,10 @@ async function getToken() {
           const obj = JSON.parse(localStorage.getItem(k));
           const token = obj && obj.access_token;
           if (token) return token;
-        } catch (e) {}
+        } catch (e) { }
       }
     }
-  } catch (e) {}
+  } catch (e) { }
   return '';
 }
 
@@ -61,7 +61,7 @@ async function sbFetch(path, opts) {
 
   if (!res.ok) {
     let msg = '';
-    try { msg = (await res.text()).slice(0, 300); } catch (e) {}
+    try { msg = (await res.text()).slice(0, 300); } catch (e) { }
     throw new Error(`Supabase ${res.status}: ${msg}`);
   }
   if (res.status === 204) return null;
@@ -104,7 +104,7 @@ async function cargarNombres() {
   return { sup: mapa(sup, 'cod_s'), vend: mapa(vend, 'cod_s2'), cli: mapa(cli, 'cli') };
 }
 
-const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 function dbRowToCSV(r, nombres) {
   const n = nombres || { sup: {}, vend: {}, cli: {} };
@@ -144,7 +144,7 @@ async function sbGetConReintentos(path, intentos) {
       });
       if (!res.ok) {
         let msg = '';
-        try { msg = (await res.text()).slice(0, 200); } catch (e) {}
+        try { msg = (await res.text()).slice(0, 200); } catch (e) { }
         throw new Error(`Supabase ${res.status}: ${msg}`);
       }
       return await res.json();
@@ -165,11 +165,11 @@ function mostrarCarga(titulo, detalle, pct, nota) {
     ov.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(11,37,89,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);font-family:inherit;';
     ov.innerHTML =
       '<div style="width:min(460px,90vw);background:rgba(15,23,42,.96);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 28px;color:#fff;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.5);">' +
-        '<div id="load-ov-title" style="font-size:20px;font-weight:800;margin-bottom:6px;"></div>' +
-        '<div id="load-ov-detail" style="font-size:13px;opacity:.75;margin-bottom:16px;"></div>' +
-        '<div style="height:12px;background:rgba(255,255,255,.15);border-radius:8px;overflow:hidden;"><div id="load-ov-bar" style="height:100%;width:0%;background:#4ade80;border-radius:8px;transition:width .3s;"></div></div>' +
-        '<div id="load-ov-pct" style="font-size:22px;font-weight:800;margin-top:12px;"></div>' +
-        '<div id="load-ov-note" style="font-size:12px;opacity:.7;margin-top:10px;"></div>' +
+      '<div id="load-ov-title" style="font-size:20px;font-weight:800;margin-bottom:6px;"></div>' +
+      '<div id="load-ov-detail" style="font-size:13px;opacity:.75;margin-bottom:16px;"></div>' +
+      '<div style="height:12px;background:rgba(255,255,255,.15);border-radius:8px;overflow:hidden;"><div id="load-ov-bar" style="height:100%;width:0%;background:#4ade80;border-radius:8px;transition:width .3s;"></div></div>' +
+      '<div id="load-ov-pct" style="font-size:22px;font-weight:800;margin-top:12px;"></div>' +
+      '<div id="load-ov-note" style="font-size:12px;opacity:.7;margin-top:10px;"></div>' +
       '</div>';
     document.body.appendChild(ov);
   }
@@ -209,25 +209,146 @@ async function leerSubrango(rango, filtroYr) {
   return filas;
 }
 
-async function loadDatosDesdeSupabase() {
+// ── Caché local persistente (IndexedDB) ───────────────────────
+// Evita descargar cientos de megabytes de ventas en cada F5 (ahorro crítico de Egress).
+const IDB_NAME = 'emcala_analisis_anual_db';
+const IDB_VERSION = 1;
+const IDB_STORE = 'ventas_cache';
+
+function abrirDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) return reject(new Error('IndexedDB no soportado'));
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: 'yr' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbObtenerAnio(yr) {
+  try {
+    const db = await abrirDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const store = tx.objectStore(IDB_STORE);
+      const req = store.get(String(yr));
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch (e) { return null; }
+}
+
+async function idbGuardarAnio(yr, actualizado_en, rows) {
+  try {
+    const db = await abrirDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      const store = tx.objectStore(IDB_STORE);
+      store.put({ yr: String(yr), actualizado_en: actualizado_en || '', rows: rows });
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+  } catch (e) { return false; }
+}
+
+async function idbLimpiarAnio(yr) {
+  try {
+    const db = await abrirDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).delete(String(yr));
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+  } catch (e) { return false; }
+}
+
+async function idbLimpiarNoListados(aniosActivos) {
+  try {
+    const db = await abrirDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      const store = tx.objectStore(IDB_STORE);
+      const req = store.getAllKeys();
+      req.onsuccess = () => {
+        const keys = req.result || [];
+        keys.forEach(k => {
+          if (!aniosActivos.has(String(k))) store.delete(k);
+        });
+        resolve(true);
+      };
+      req.onerror = () => resolve(false);
+    });
+  } catch (e) { return false; }
+}
+
+async function loadDatosDesdeSupabase(forzarSinCache) {
   try {
     const token = await getToken();
     if (!token) return { ok: false, error: 'No hay sesión activa (sin token)' };
 
-    // Años con datos según la meta
-    const meta = await sbGetConReintentos(`${TABLE_META}?select=yr`);
-    const anios = (Array.isArray(meta) ? meta : [])
-      .map(m => String(m.yr))
-      .filter(y => /^\d{4}$/.test(y));
-    const filtroYr = anios.length ? `&yr=in.(${anios.join(',')})` : '';
+    // 1) Leer metadatos: < 1 KB de transferencia.
+    const meta = await sbGetConReintentos(`${TABLE_META}?select=yr,actualizado_en`);
+    const aniosMeta = (Array.isArray(meta) ? meta : []).filter(m => /^\d{4}$/.test(String(m.yr)));
+    if (!aniosMeta.length) {
+      await idbLimpiarNoListados(new Set());
+      return { ok: true, rows: 0, empty: true };
+    }
 
+    const setAniosMeta = new Set(aniosMeta.map(m => String(m.yr)));
+    await idbLimpiarNoListados(setAniosMeta);
+
+    // 2) Revisar qué años ya tenemos válidos en la caché IndexedDB
+    const filasPorAnio = {};
+    const aniosFaltantes = [];
+
+    for (const m of aniosMeta) {
+      const yStr = String(m.yr);
+      if (!forzarSinCache) {
+        const cached = await idbObtenerAnio(yStr);
+        if (cached && cached.actualizado_en === m.actualizado_en && Array.isArray(cached.rows) && cached.rows.length > 0) {
+          filasPorAnio[yStr] = cached.rows;
+          continue;
+        }
+      }
+      aniosFaltantes.push(yStr);
+    }
+
+    // 3) Si todo estaba en caché local: 0 MB de Egress consumidos.
+    if (aniosFaltantes.length === 0) {
+      mostrarCarga('Cargando datos', 'Recuperando ventas desde almacenamiento local…', 100);
+      const rows = [];
+      aniosMeta.forEach(m => {
+        const arr = filasPorAnio[String(m.yr)] || [];
+        for (let i = 0; i < arr.length; i++) rows.push(arr[i]);
+      });
+      const years = new Set(rows.map(r => r.yr));
+      DATA = DATA.filter(r => !years.has(r.yr)).concat(rows);
+      console.log(`[Análisis Anual] ${rows.length} filas cargadas desde IndexedDB (0 KB de egress de ventas).`);
+      return { ok: true, rows: rows.length, desdeCache: true };
+    }
+
+    // 4) Si hay años nuevos o desactualizados, se descargan solo esos años
+    const filtroYr = `&yr=in.(${aniosFaltantes.join(',')})`;
     const primero = await sbGetConReintentos(`${TABLE_VENTAS}?select=id&order=id.asc&limit=1${filtroYr}`);
-    if (!Array.isArray(primero) || !primero.length) return { ok: true, rows: 0, empty: true };
+    if (!Array.isArray(primero) || !primero.length) {
+      // No hay filas nuevas para los años faltantes
+      const rows = [];
+      Object.keys(filasPorAnio).forEach(y => rows.push(...filasPorAnio[y]));
+      const years = new Set(rows.map(r => r.yr));
+      DATA = DATA.filter(r => !years.has(r.yr)).concat(rows);
+      return { ok: true, rows: rows.length };
+    }
+
     const ultimo = await sbGetConReintentos(`${TABLE_VENTAS}?select=id&order=id.desc&limit=1${filtroYr}`);
     const minId = Number(primero[0].id);
     const maxId = Number(ultimo[0].id);
 
-    // Partir [minId, maxId] en sub-rangos contiguos
     const paso = Math.ceil((maxId - minId + 1) / LECTURA_SUBRANGOS);
     const rangos = [];
     for (let lo = minId; lo <= maxId; lo += paso) {
@@ -250,16 +371,45 @@ async function loadDatosDesdeSupabase() {
     };
     await Promise.all(Array.from({ length: Math.min(LECTURA_PARALELO, rangos.length) }, worker));
 
-    const rows = [];
-    for (const r of resultados) for (let k = 0; k < r.length; k++) rows.push(r[k]);
+    const rowsNuevas = [];
+    for (const r of resultados) for (let k = 0; k < r.length; k++) rowsNuevas.push(r[k]);
 
-    const years = new Set(rows.map(r => r.yr));
-    DATA = DATA.filter(r => !years.has(r.yr)).concat(rows);
-    return { ok: true, rows: rows.length };
+    // Guardar en IndexedDB los años recién descargados
+    for (const yStr of aniosFaltantes) {
+      const filasDeEsteAnio = rowsNuevas.filter(r => String(r.yr) === yStr);
+      const metaAnio = aniosMeta.find(m => String(m.yr) === yStr);
+      await idbGuardarAnio(yStr, metaAnio ? metaAnio.actualizado_en : '', filasDeEsteAnio);
+      filasPorAnio[yStr] = filasDeEsteAnio;
+    }
+
+    const rowsTotales = [];
+    aniosMeta.forEach(m => {
+      const arr = filasPorAnio[String(m.yr)] || [];
+      for (let i = 0; i < arr.length; i++) rowsTotales.push(arr[i]);
+    });
+
+    const years = new Set(rowsTotales.map(r => r.yr));
+    DATA = DATA.filter(r => !years.has(r.yr)).concat(rowsTotales);
+    return { ok: true, rows: rowsTotales.length, desdeCache: false };
   } catch (e) {
     return { ok: false, error: e.message };
   }
 }
+
+// Función global disponible en consola para forzar re-descarga completa
+window.forzarRecargaSupabase = async function () {
+  mostrarCarga('Cargando datos', 'Descargando todo desde Supabase (sin caché local)…', 2);
+  try {
+    const res = await loadDatosDesdeSupabase(true);
+    if (res.ok && res.rows > 0) {
+      if (typeof renderAll === 'function') renderAll();
+      if (typeof refreshLastUpdate === 'function') await refreshLastUpdate();
+    }
+    return res;
+  } finally {
+    ocultarCarga();
+  }
+};
 
 // ── Metadatos: "última actualización" por año ─────────────────
 async function loadMetaSupabase() {
@@ -288,9 +438,9 @@ async function upsertarNombres(rows) {
     return Array.from(m, ([c, n]) => ({ c, n }));
   };
   const sets = [
-    ['supervisores_ventas', 'cod_s',  unicos('codS',  'sdv')],
-    ['vendedores_ventas',   'cod_s2', unicos('codS2', 'sdv2')],
-    ['clientes_ventas',     'cli',    unicos('cli',   'cliN')]
+    ['supervisores_ventas', 'cod_s', unicos('codS', 'sdv')],
+    ['vendedores_ventas', 'cod_s2', unicos('codS2', 'sdv2')],
+    ['clientes_ventas', 'cli', unicos('cli', 'cliN')]
   ];
   for (const [tabla, col, items] of sets) {
     const payload = items.map(x => ({ [col]: x.c, nombre: x.n }));
@@ -359,7 +509,7 @@ async function sbRpc(fn, args) {
   });
   if (!res.ok) {
     let msg = '';
-    try { msg = (await res.text()).slice(0, 300); } catch (e) {}
+    try { msg = (await res.text()).slice(0, 300); } catch (e) { }
     const err = new Error(`Supabase ${res.status}: ${msg}`);
     err.status = res.status;
     throw err;
@@ -372,6 +522,7 @@ async function sbRpc(fn, args) {
 async function limpiarMetaSeguro(yr) {
   try {
     await sbFetch(`${TABLE_META}?yr=eq.${yr}`, { method: 'DELETE', prefer: 'return=minimal' });
+    await idbLimpiarAnio(yr);
   } catch (e) { console.warn('No se pudo limpiar la fecha de actualización de ' + yr, e); }
 }
 
@@ -553,12 +704,15 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
     const nombre = ((typeof EmcalaAuth !== 'undefined') && EmcalaAuth.getSession)
       ? (EmcalaAuth.getSession().nombre || EmcalaAuth.getSession().usuario || '')
       : '';
+    const fechaISO = new Date().toISOString();
     try {
       await sbFetch(TABLE_META, {
         method: 'POST',
-        body: { yr: String(yr), actualizado_en: new Date().toISOString(), filas: inserted, actualizado_por: nombre },
+        body: { yr: String(yr), actualizado_en: fechaISO, filas: inserted, actualizado_por: nombre },
         prefer: 'resolution=merge-duplicates,return=minimal'
       });
+      // Guardar de inmediato en el IndexedDB local del auditor que subió el archivo
+      await idbGuardarAnio(String(yr), fechaISO, rows);
     } catch (eM) {
       warnings.push('Los datos se guardaron, pero no se pudo registrar la fecha de actualización: ' + eM.message);
     }
