@@ -41,11 +41,12 @@ function dividirCamposCSV(linea, sep) {
 
 // Soporta tres formatos: sin comillas, campos citados ("a";"b") y la línea
 // entera entre comillas ("a;b;c"), que es el que llega en algunos exports.
-function camposDeLinea(linea) {
+function camposDeLinea(linea, sep) {
+  const S = sep || ';';
   const limpia = String(linea || '').replace(/\r$/, '').replace(/^\uFEFF/, '');
-  let campos = dividirCamposCSV(limpia, ';');
-  if (campos.length === 1 && limpia.indexOf(';') !== -1) {
-    campos = dividirCamposCSV(limpia.replace(/^"/, '').replace(/"$/, ''), ';');
+  let campos = dividirCamposCSV(limpia, S);
+  if (campos.length === 1 && limpia.indexOf(S) !== -1) {
+    campos = dividirCamposCSV(limpia.replace(/^"/, '').replace(/"$/, ''), S);
   }
   return campos;
 }
@@ -67,7 +68,9 @@ function decodificarCSV(buf) {
 function parseCSV(txt) {
   if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
   const lines = txt.split(/\r?\n/).filter(l => l.trim());
-  const H = camposDeLinea(lines[0]);
+  // Separador: los exports nuevos vienen con tabulaciones (Excel/copiar y pegar); los viejos con ';'
+  const SEP = (lines[0].indexOf('\t') !== -1 && lines[0].indexOf(';') === -1) ? '\t' : ';';
+  const H = camposDeLinea(lines[0], SEP);
   const ix = n => H.indexOf(n);
   const iS = ix('Sector de Supervisión');
   const iCodS = ix('Código Sector de Supervisión');
@@ -139,7 +142,7 @@ function parseCSV(txt) {
   window._csvDiag = diag;
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
-    const p = camposDeLinea(lines[i]);
+    const p = camposDeLinea(lines[i], SEP);
     diag.total++;
     let sdv = (p[iS] || '').trim().toUpperCase();
     sdv = sdv.replace(/\bSDVAS?\b/g, '').replace(/\bSDVS?\b/g, '').replace(/\bSUPERVISOR(?:ES)?\b/g, '').trim();
