@@ -628,7 +628,7 @@ async function guardarAnioEnSupabase(yr, rows, onProgress) {
     // Validación previa: si algo no cierra, no se borra nada.
     const yrNum = Number(yr);
     if (!Number.isInteger(yrNum) || yrNum < 2000 || yrNum > 2100) {
-      return { ok: false, estado: 'sin_cambios', error: 'Año inválido: "' + yr + '". El CSV debe tener la columna Año.' };
+      return { ok: false, estado: 'sin_cambios', error: 'Año inválido: "' + yr + '". Revisá que la columna Fecha del CSV tenga una fecha válida.' };
     }
     if (!rows || !rows.length) {
       return { ok: false, estado: 'sin_cambios', error: 'No hay filas para guardar el año ' + yr };
