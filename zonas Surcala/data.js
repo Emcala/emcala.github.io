@@ -142,6 +142,103 @@ const DataService = {
         return this._escenariosApi('escenario_borrar', { id: id });
     },
 
+    // ── Venta (Planificador): clientes con compra de cerveza en el mes ──
+    // Usa el endpoint req=cobertura del Planificador (hoja KPIs, columna CCC-IDS-CERVEZA).
+    PLANIFICADOR_URL: 'https://script.google.com/macros/s/AKfycbzePqSmRPZhZJ9LPg6dWr50lf_uGvX8Tt09hbwqKiYJVOa8jt85lyGKRReZ-c_OxMcAcg/exec',
+    ventas: null,        // { cMonth, codes: Set, cccTotal, source, lastDate, cargadoEl }
+    _ventasCache: {},    // { [cMonth]: ventas }
+    _ventasTTL: 5 * 60 * 1000,
+
+    // Normaliza un código de cliente para cruzar Planificador <-> base geolocalizada
+    normalizeCodigoCliente(v) {
+        let s = String(v === undefined || v === null ? '' : v).trim();
+        if (!s) return '';
+        if (/^\d+\.0+$/.test(s)) s = s.split('.')[0];
+        if (/^\d+$/.test(s)) s = String(parseInt(s, 10));
+        return s.toUpperCase();
+    },
+
+    // Trae los códigos de clientes con compra de cerveza del mes (YYYY-MM) desde el Planificador
+    async loadVentas(cMonth, force) {
+        if (!/^\d{4}-\d{2}$/.test(String(cMonth || ''))) throw new Error('Mes inválido (formato YYYY-MM).');
+        const cached = this._ventasCache[cMonth];
+        if (!force && cached && (Date.now() - cached.cargadoEl) < this._ventasTTL) {
+            return cached;
+        }
+        // El endpoint cobertura no exige token: si no hay sesión igual se consulta
+        let token = '';
+        try { token = (await this._simAuth()).accessToken || ''; } catch (e) { token = ''; }
+        const url = this.PLANIFICADOR_URL + '?req=cobertura&cMonth=' + encodeURIComponent(cMonth)
+            + '&token=' + encodeURIComponent(token) + '&t=' + Date.now();
+        let res;
+        try {
+            res = await fetch(url, { cache: 'no-store' });
+        } catch (e) {
+            throw new Error('Sin conexión con el Planificador.');
+        }
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' al consultar el Planificador.');
+        let json;
+        try {
+            json = JSON.parse(await res.text());
+        } catch (e) {
+            throw new Error('El Planificador devolvió una respuesta no válida.');
+        }
+        if (!json || json.status !== 'success') {
+            throw new Error((json && json.message) || 'El Planificador devolvió un error.');
+        }
+
+        const codes = new Set();
+        let cccTotal = 0;
+        const promotores = json.promotores || {};
+        Object.keys(promotores).forEach(k => {
+            const p = promotores[k] || {};
+            cccTotal += Number(p.ccc) || 0;
+            (p.clientIds || []).forEach(id => {
+                const n = this.normalizeCodigoCliente(id);
+                if (n) codes.add(n);
+            });
+        });
+
+        const ventas = {
+            cMonth: cMonth,
+            codes: codes,
+            cccTotal: cccTotal,
+            source: json.source || '',
+            lastDate: json.lastDate || '',
+            cargadoEl: Date.now()
+        };
+        this._ventasCache[cMonth] = ventas;
+        return ventas;
+    },
+
+    // Cruce de la venta con la base geolocalizada
+    // ¿El código de cliente compró cerveza en la venta cargada?
+    isVentaCliente(codigo) {
+        const v = this.ventas;
+        return !!(v && v.codes && v.codes.has(this.normalizeCodigoCliente(codigo)));
+    },
+
+    getVentasStats(venta) {
+        const v = venta || this.ventas;
+        if (!v) return null;
+        const enBase = new Set();
+        let conCoords = 0;
+        (this.data.clientes || []).forEach(c => {
+            const cod = this.normalizeCodigoCliente(c.Codigo);
+            if (!v.codes.has(cod)) return;
+            enBase.add(cod);
+            if (!isNaN(c.Latitud) && !isNaN(c.Longitud)) conCoords++;
+        });
+        return {
+            cMonth: v.cMonth,
+            total: v.codes.size,
+            enBase: enBase.size,
+            sinMatch: v.codes.size - enBase.size,
+            conCoords: conCoords,
+            cccTotal: v.cccTotal
+        };
+    },
+
     baseMeta: { origen: 'local', actualizado_por: null, actualizado_el: null, total_clientes: 0 },
 
     async loadData() {

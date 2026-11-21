@@ -184,81 +184,12 @@ body {
 }
 .link-btn:hover { color: var(--accent-primary); }
 
-/* ---- Tree View (Accordion) ---- */
+/* ---- Lista de zonas personalizadas ---- */
 .tree-list { display: flex; flex-direction: column; gap: 4px; }
 
 .tree-node {
     display: flex; flex-direction: column;
 }
-.tree-header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 8px; border-radius: var(--radius-sm);
-    cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid transparent;
-    background: transparent;
-}
-.tree-header:hover {
-    background: var(--bg-tertiary); 
-    border-color: var(--border-glow, rgba(255,255,255,0.1));
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
-    transform: translateY(-1px);
-}
-.tree-header:active {
-    transform: translateY(1px) scale(0.99);
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
-    background: var(--bg-secondary);
-}
-
-.tree-toggle {
-    width: 20px; display: flex; align-items: center; justify-content: center;
-    color: var(--text-muted); transition: transform 0.2s;
-    font-size: 12px;
-}
-.tree-node.expanded > .tree-header > .tree-toggle {
-    transform: rotate(90deg);
-}
-.tree-node.empty > .tree-header > .tree-toggle {
-    opacity: 0; pointer-events: none;
-}
-
-.tree-checkbox-wrap {
-    display: flex; align-items: center; justify-content: center;
-}
-.tree-checkbox {
-    width: 14px; height: 14px; margin: 0; cursor: pointer;
-    accent-color: var(--accent-primary);
-}
-
-.tree-color {
-    width: 12px; height: 12px; border-radius: 3px;
-    flex-shrink: 0; border: 1px solid rgba(255,255,255,0.15);
-}
-
-.tree-name {
-    font-size: 13px; font-weight: 500; flex: 1;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.tree-count {
-    font-size: 11px; color: var(--text-muted);
-    background: var(--bg-primary); padding: 2px 6px;
-    border-radius: 10px; font-weight: 600;
-}
-
-.tree-children {
-    display: none; flex-direction: column; gap: 2px;
-    padding-left: 20px; /* Indentation */
-    margin-top: 2px;
-}
-.tree-node.expanded > .tree-children {
-    display: flex;
-}
-
-/* Specific levels if needed */
-.tree-node.level-1 > .tree-header .tree-name { font-weight: 600; }
-.tree-node.level-2 > .tree-header .tree-name { font-weight: 500; font-size: 12.5px; }
-.tree-node.level-3 > .tree-header .tree-name { font-weight: 400; font-size: 12px; }
-.tree-node.level-4 > .tree-header { padding: 4px 8px; }
-.tree-node.level-4 > .tree-header .tree-name { font-size: 11.5px; color: var(--text-secondary); }
 
 
 
@@ -729,6 +660,18 @@ body {
     background: var(--accent-primary);
     border-color: var(--accent-primary);
 }
+/* Capa Venta (dentro del panel de capas) */
+.layer-panel-venta { padding: 2px 0 4px; }
+#venta-month { width: 130px; }
+.layer-panel-status {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 0 2px;
+    line-height: 1.4;
+}
+.layer-panel-status.loading { color: var(--accent-secondary); }
+.layer-panel-status.error { color: var(--danger-color); }
+
 .layer-panel-switch input:checked + .layer-panel-slider::after {
     left: 16px;
     background: white;

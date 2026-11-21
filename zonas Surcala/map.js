@@ -96,6 +96,10 @@ const MapManager = {
     init(lat, lng, zoom) {
         document.getElementById('map-loading').classList.remove('hidden');
 
+        // Capa Venta (CCC cerveza del mes desde el Planificador): estado persistido
+        this.ventaVisible = localStorage.getItem('surcala_venta_visible') === '1';
+        this._ventaReq = 0;
+
         // Restore config if available, safely handling NaN values
         let pLat = parseFloat(localStorage.getItem('surcala_map_lat'));
         let pLng = parseFloat(localStorage.getItem('surcala_map_lng'));
@@ -139,6 +143,7 @@ const MapManager = {
             this.addCustomControls();
             this.addLayerControlPanel();
             document.getElementById('map-loading').classList.add('hidden');
+            if (this.ventaVisible) this.reloadVentas(false);
             
             // Wait slightly for UI to sync filters
             setTimeout(() => {
@@ -211,6 +216,7 @@ const MapManager = {
             this.map.getCanvas().style.cursor = '';
             this.hoverPopup.remove();
         });
+
     },
 
     setTheme(theme) {
@@ -509,10 +515,7 @@ const MapManager = {
                 if (t.id === 'show-clients') {
                     if (window.UI) UI.applyClientFilters();
                 } else if (t.id === 'color-freq') {
-                    if (this.map && this.map.getLayer('clients-points')) {
-                        const colorProp = cb.checked ? 'FrecuenciaColor' : 'PromotorColor';
-                        this.map.setPaintProperty('clients-points', 'circle-color', ['get', colorProp]);
-                    }
+                    this.applyClientPaint();
                     if (this.map && this.map.getLayer('promoter-zones-fill')) {
                         const zoneColorProp = cb.checked ? 'FrecuenciaColor' : 'PromotorColor';
                         this.map.setPaintProperty('promoter-zones-fill', 'fill-color', ['get', zoneColorProp]);
@@ -529,6 +532,58 @@ const MapManager = {
             
             body.appendChild(row);
         });
+
+        // ── Capa Venta: toggle + mes + estado ──
+        const ventaWrap = document.createElement('div');
+        ventaWrap.className = 'layer-panel-venta';
+
+        const ventaRow = document.createElement('label');
+        ventaRow.className = 'layer-panel-row layer-panel-toggle';
+        const ventaIcon = document.createElement('i');
+        ventaIcon.className = 'fas fa-beer-mug-empty layer-panel-icon';
+        const ventaLabel = document.createElement('span');
+        ventaLabel.className = 'layer-panel-label';
+        ventaLabel.textContent = 'Venta (cerveza)';
+        const ventaSwitch = document.createElement('span');
+        ventaSwitch.className = 'layer-panel-switch';
+        const ventaCb = document.createElement('input');
+        ventaCb.type = 'checkbox';
+        ventaCb.id = 'floating-show-venta';
+        ventaCb.checked = this.ventaVisible;
+        const ventaSlider = document.createElement('span');
+        ventaSlider.className = 'layer-panel-slider';
+        ventaSwitch.appendChild(ventaCb);
+        ventaSwitch.appendChild(ventaSlider);
+        ventaRow.appendChild(ventaIcon);
+        ventaRow.appendChild(ventaLabel);
+        ventaRow.appendChild(ventaSwitch);
+        ventaCb.onchange = () => this.setVentaVisible(ventaCb.checked);
+
+        const monthRow = document.createElement('div');
+        monthRow.className = 'layer-panel-row layer-panel-style-row';
+        const monthLabel = document.createElement('span');
+        monthLabel.className = 'layer-panel-label';
+        monthLabel.textContent = 'Mes de venta';
+        const monthInput = document.createElement('input');
+        monthInput.type = 'month';
+        monthInput.id = 'venta-month';
+        monthInput.className = 'layer-panel-select';
+        monthInput.value = this.getDefaultVentaMonth();
+        monthInput.onchange = () => {
+            if (this.ventaVisible) this.reloadVentas(false);
+        };
+        monthRow.appendChild(monthLabel);
+        monthRow.appendChild(monthInput);
+
+        const status = document.createElement('div');
+        status.id = 'venta-status';
+        status.className = 'layer-panel-status';
+
+        ventaWrap.appendChild(ventaRow);
+        ventaWrap.appendChild(monthRow);
+        ventaWrap.appendChild(status);
+        body.appendChild(ventaWrap);
+        this.updateVentaStatus();
 
         // Collapse / expand
         let collapsed = false;
@@ -558,34 +613,7 @@ const MapManager = {
         const clientes = DataService.data.clientes;
 
         // --- 1. Prepare GeoJSON for Clients ---
-        const clientFeatures = [];
-        clientes.forEach(c => {
-            if (isNaN(c.Latitud) || isNaN(c.Longitud)) return;
-            const sup = DataService.getSupervisor(c.SupervisorID);
-            const prom = DataService.getPromotor(c.PromotorID);
-            
-            clientFeatures.push({
-                type: 'Feature',
-                geometry: { type: 'Point', coordinates: [c.Longitud, c.Latitud] }, // LngLat
-                properties: {
-                    ID: c.ID,
-                    Codigo: c.Codigo,
-                    Nombre: c.Nombre,
-                    Direccion: c.Direccion,
-                    Localidad: c.Localidad,
-                    Zona: c.Zona,
-                    Vendedor: c.Vendedor,
-                    SupervisorID: c.SupervisorID,
-                    SupervisorName: sup ? sup.Nombre : '',
-                    SupervisorColor: sup ? sup.Color : '#666',
-                    PromotorID: c.PromotorID,
-                    PromotorName: prom ? prom.Nombre : '',
-                    PromotorColor: prom ? prom.Color : '#666',
-                    FrecuenciaColor: c.FrecuenciaColor,
-                    FrecuenciaGrupo: c.FrecuenciaGrupo
-                }
-            });
-        });
+        const clientFeatures = this.buildClientFeatures();
 
         // --- Add Source & Layer for Clients ---
         this.map.addSource('clients', { type: 'geojson', data: { type: 'FeatureCollection', features: clientFeatures }});
@@ -664,10 +692,11 @@ const MapManager = {
             layout: { visibility: 'visible' },
             paint: {
                 'circle-radius': 6,
-                'circle-color': ['get', 'PromotorColor'],
+                'circle-color': this.getClientColorExpression(),
                 'circle-opacity': 1.0
             }
         });
+        this.applyClientPaint();
 
 
 
@@ -678,8 +707,161 @@ const MapManager = {
             this._hasAutoCentered = true;
         }
 
+        // Capa Venta: el color de los puntos ya refleja verde/rojo; solo actualizamos el estado
+        this.updateVentaStatus();
+
         // Render custom zones
         this.renderCustomZones();
+    },
+
+    // ── Capa Venta ─────────────────────────────────────────────
+    getDefaultVentaMonth() {
+        if (typeof getCommercialMonth === 'function' && typeof emcalaHoy === 'function') {
+            return getCommercialMonth(emcalaHoy());
+        }
+        const now = new Date();
+        return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    },
+
+    getVentaMonth() {
+        const el = document.getElementById('venta-month');
+        return (el && el.value) ? el.value : this.getDefaultVentaMonth();
+    },
+
+    setVentaStatus(text, kind) {
+        const el = document.getElementById('venta-status');
+        if (!el) return;
+        el.textContent = text;
+        el.className = 'layer-panel-status' + (kind ? ' ' + kind : '');
+    },
+
+    updateVentaStatus() {
+        if (!this.ventaVisible) {
+            this.setVentaStatus('Capa desactivada.', '');
+            return;
+        }
+        const month = this.getVentaMonth();
+        const v = DataService.ventas;
+        if (!v || v.cMonth !== month) {
+            this.setVentaStatus('Activá la capa para cargar la venta de ' + month + '.', '');
+            return;
+        }
+        if (v.codes.size === 0) {
+            if (v.cccTotal > 0) {
+                this.setVentaStatus(month + ': el Planificador informa ' + v.cccTotal + ' clientes con compra, pero sin códigos para geolocalizar (datos históricos).', '');
+            } else {
+                this.setVentaStatus('Sin clientes con compra de cerveza en ' + month + '.', '');
+            }
+            return;
+        }
+        const s = DataService.getVentasStats(v);
+        const sinCoords = s.enBase - s.conCoords;
+        let txt = month + ': ' + s.total + ' clientes con compra · ' + s.conCoords + ' en el mapa';
+        if (sinCoords > 0) txt += ' · ' + sinCoords + ' sin coordenadas';
+        if (s.sinMatch > 0) txt += ' · ' + s.sinMatch + ' sin match en la base';
+        this.setVentaStatus(txt + ' · verde = compró, rojo = no compró', '');
+    },
+
+    // Construye los features de clientes con la propiedad Venta (1 = compró, 0 = no compró)
+    buildClientFeatures() {
+        const features = [];
+        DataService.data.clientes.forEach(c => {
+            if (isNaN(c.Latitud) || isNaN(c.Longitud)) return;
+            const sup = DataService.getSupervisor(c.SupervisorID);
+            const prom = DataService.getPromotor(c.PromotorID);
+            features.push({
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [c.Longitud, c.Latitud] },
+                properties: {
+                    ID: c.ID,
+                    Codigo: c.Codigo,
+                    Nombre: c.Nombre,
+                    Direccion: c.Direccion,
+                    Localidad: c.Localidad,
+                    Zona: c.Zona,
+                    Vendedor: c.Vendedor,
+                    SupervisorID: c.SupervisorID,
+                    SupervisorName: sup ? sup.Nombre : '',
+                    SupervisorColor: sup ? sup.Color : '#666',
+                    PromotorID: c.PromotorID,
+                    PromotorName: prom ? prom.Nombre : '',
+                    PromotorColor: prom ? prom.Color : '#666',
+                    FrecuenciaColor: c.FrecuenciaColor,
+                    FrecuenciaGrupo: c.FrecuenciaGrupo,
+                    Venta: DataService.isVentaCliente(c.Codigo) ? 1 : 0
+                }
+            });
+        });
+        return features;
+    },
+
+    // La capa Venta está activa si el toggle está encendido y los datos son del mes seleccionado
+    isVentaActive() {
+        const v = DataService.ventas;
+        return !!(this.ventaVisible && v && v.cMonth === this.getVentaMonth());
+    },
+
+    // Expresión de color del punto: verde/rojo con Venta activa, si no el color de promotor o de frecuencia
+    getClientColorExpression() {
+        if (this.isVentaActive()) {
+            return ['case', ['==', ['get', 'Venta'], 1], '#16a34a', '#dc2626'];
+        }
+        const colorProp = document.getElementById('floating-color-freq')?.checked ? 'FrecuenciaColor' : 'PromotorColor';
+        return ['get', colorProp];
+    },
+
+    // Aplica el color de los puntos de clientes según el estado actual
+    applyClientPaint() {
+        if (!this.map || !this.map.getLayer('clients-points')) return;
+        const venta = this.isVentaActive();
+        this.map.setPaintProperty('clients-points', 'circle-color', this.getClientColorExpression());
+        this.map.setPaintProperty('clients-points', 'circle-stroke-color', '#ffffff');
+        this.map.setPaintProperty('clients-points', 'circle-stroke-width', venta ? 1.5 : 0);
+    },
+
+    // Cambia el estado de la capa Venta y carga los datos si hace falta
+    async setVentaVisible(on) {
+        this.ventaVisible = !!on;
+        localStorage.setItem('surcala_venta_visible', on ? '1' : '0');
+        if (on) {
+            await this.reloadVentas(false);
+        } else {
+            this._ventaReq = (this._ventaReq || 0) + 1; // invalida cargas en vuelo
+            this.refreshClientsVenta();
+        }
+    },
+
+    // Consulta el Planificador para el mes seleccionado y refresca los colores
+    async reloadVentas(force) {
+        if (!this.ventaVisible) return;
+        const month = this.getVentaMonth();
+        const reqId = (this._ventaReq = (this._ventaReq || 0) + 1);
+        this.setVentaStatus('Cargando venta de ' + month + '…', 'loading');
+        let venta;
+        try {
+            venta = await DataService.loadVentas(month, force);
+        } catch (e) {
+            if (reqId !== this._ventaReq) return;
+            console.error('[Zonas Surcala] No se pudo cargar la venta:', e);
+            DataService.ventas = null;
+            this.refreshClientsVenta();
+            this.setVentaStatus('No se pudo cargar la venta: ' + e.message, 'error');
+            return;
+        }
+        if (reqId !== this._ventaReq) return;
+        DataService.ventas = venta;
+        this.refreshClientsVenta();
+    },
+
+    // Reescribe los features de clientes (campo Venta) y el color; mantiene los filtros activos
+    refreshClientsVenta() {
+        if (!this.map || !this.isLoaded) return;
+        const src = this.map.getSource('clients');
+        if (src) {
+            src.setData({ type: 'FeatureCollection', features: this.buildClientFeatures() });
+        }
+        this.applyClientPaint();
+        this.updateVentaStatus();
     },
 
     startDrawingCustomZone() {
@@ -820,6 +1002,7 @@ ${stats.especiales.map(e => `                                <span><i class="fas
             this.map.setFilter('clients-points', filter);
         }
 
+
         if (this.map.getLayer('promoter-zones-fill')) {
             if (activePromFreqIDs.size === 0) {
                 this.map.setFilter('promoter-zones-fill', ['==', 'PromFreqID', 'NONE']);
@@ -846,6 +1029,10 @@ ${stats.especiales.map(e => `                                <span><i class="fas
         if (c.SupervisorName) popupHtml += `<span class="popup-tag" style="background:${c.SupervisorColor}">${esc(c.SupervisorName)}</span>`;
         if (c.PromotorName) popupHtml += `<span class="popup-tag" style="background:${c.PromotorColor}">${esc(c.PromotorName)}</span>`;
         if (c.FrecuenciaGrupo) popupHtml += `<span class="popup-tag" style="background:${c.FrecuenciaColor}; text-shadow: 0px 1px 2px rgba(0,0,0,0.4);">${esc(c.FrecuenciaGrupo)}</span>`;
+        if (this.isVentaActive()) {
+            const compro = Number(c.Venta) === 1;
+            popupHtml += `<span class="popup-tag" style="background:${compro ? '#16a34a' : '#dc2626'}">${compro ? 'Compró cerveza' : 'Sin compra'}</span>`;
+        }
         popupHtml += `</div>`;
         return popupHtml;
     },
