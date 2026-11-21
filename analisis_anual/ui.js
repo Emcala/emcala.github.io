@@ -14,10 +14,19 @@
       try {
         const rows = parseCSV(ev.target.result);
         if (rows.length) {
-          const yr = rows[0]?.yr;
-          añosGuardados[yr] = (añosGuardados[yr] || []).concat(rows);
-          // Acumulado del año (varios CSV del mismo año), no sólo el último archivo
-          DATA = DATA.filter(r => r.yr !== yr).concat(añosGuardados[yr]);
+          // Agrupar filas por año (extraído del CSV o de la columna Fecha)
+          const porAnio = {};
+          rows.forEach(r => {
+            const y = r.yr || (r.fecha ? r.fecha.slice(0, 4) : '');
+            if (y) {
+              if (!porAnio[y]) porAnio[y] = [];
+              porAnio[y].push(r);
+            }
+          });
+          Object.keys(porAnio).forEach(y => {
+            añosGuardados[y] = (añosGuardados[y] || []).concat(porAnio[y]);
+            DATA = DATA.filter(r => r.yr !== y).concat(añosGuardados[y]);
+          });
         }
       } catch (err) { console.error('Error en', file.name, err); }
       loaded++;
@@ -561,7 +570,7 @@ function objetivoComp(objetivosPorPromotor, pg) {
     const o = objetivosPorPromotor[p] || porNombre[norm(p)];
     if (o) v += o[campo] || 0;
   }));
-  return { v, lbl: 'Objetivo', esF1: campo === 'objF1' };
+  return { v, lbl: 'Obj.', esF1: campo === 'objF1' };
 }
 
 function render1() {
@@ -693,7 +702,7 @@ function render3() {
   const extra = r => canalFilter(r, canal);
   const cLbl = { TODOS: 'Todos', KT: 'K+T', AS: 'AS', KTAS: 'K+T/AS', REF: 'REF', KTREF: 'K+T/REF', MAYO_C: 'MAYO' }[canal] || canal;
 
-  document.getElementById('t3-hl').textContent = `Volumen ${vl} · Por Canal`;
+  document.getElementById('t3-hl').textContent = `Volumen ${vl} · Por Canal (2026)`;
   document.getElementById('t3-ytd-hl').textContent = `${vl} · YTD vs LYTD · Canal: ${cLbl}`;
   document.getElementById('t3-comp-hl').textContent = `${vl} · Comparativa · Canal: ${cLbl}`;
 
@@ -722,7 +731,7 @@ function render3() {
     { name: 'MAYO', color: '#F8961E', filter: r => canalFilter(r, 'MAYO_C') },
   ];
 
-  const chHL26 = [], chHL25 = [], chCCC26 = [], chBD26 = [];
+  const chHL26 = [], chCCC26 = [], chBD26 = [];
   const ytd25DataHL = [], ytd26DataHL = [], ytd25DataBD = [], ytd26DataBD = [];
   const statsByMesa = {};
 
@@ -739,7 +748,6 @@ function render3() {
     statsByMesa[mesa.name] = { s25, s26 };
 
     chHL26.push({ name: mesa.name, color: mesa.color, data: s26.vol });
-    chHL25.push({ name: mesa.name, color: mesa.color, data: s25.vol });
     chCCC26.push({ name: mesa.name, color: mesa.color, data: s26.ccc });
     chBD26.push({ name: mesa.name, color: mesa.color, data: s26.bd });
 
@@ -764,10 +772,9 @@ function render3() {
   setKPI('k3-6', `TBD REF`, statsByMesa['REF'].s26.bd[last], pct(statsByMesa['REF'].s26.bd[last], statsByMesa['REF'].s25.bd[last]));
   setKPI('k3-7', `TBD MAYO`, statsByMesa['MAYO'].s26.bd[last], pct(statsByMesa['MAYO'].s26.bd[last], statsByMesa['MAYO'].s25.bd[last]));
 
-  // Izquierda: HL con peso por canal (2026) + 2025 y % de comparación; CCC y BD como en Mensual
-  makeMonthlyByCanal('c3-hl', chHL26, chHL25);
-  makeMonthly('c3-ccc', d25c, d26c, col);
-  makeMonthly('c3-bd', d25b, d26b, col);
+  makeMonthlyByCanal('c3-hl', chHL26);
+  makeMonthlyByCanal('c3-ccc', chCCC26);
+  makeMonthlyByCanal('c3-bd', chBD26);
 
   // --- Right panel: stacked YTD instead of simple bar ---
   makeYTDStackedByCanal('c3-ytd-hl', ytd25DataHL, ytd26DataHL);

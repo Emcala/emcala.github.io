@@ -72,6 +72,9 @@ async function sbFetch(path, opts) {
 
 // ── Mapeo columna DB → campo interno (parseCSV usa camelCase) ─
 function rowToCSV(r) {
+  const f = r.fecha || '';
+  const yNum = Number(r.yr) || (f.length >= 4 ? parseInt(f.slice(0, 4), 10) : null);
+  const mStr = r.mes || (f.length >= 7 && typeof MESES !== 'undefined' ? MESES[parseInt(f.slice(5, 7), 10) - 1] || null : null);
   return {
     cod_s: r.codS ?? '', cod_s2: r.codS2 ?? '',
     un: r.un ?? '',
@@ -79,8 +82,8 @@ function rowToCSV(r) {
     cli: r.cli ?? '', prod: r.prod ?? '', dias: r.dias ?? '', canal: r.canal ?? '',
     calibre: r.calibre ?? '', prod2: r.prod2 ?? '', marca: r.marca ?? '',
     fecha: r.fecha || null,
-    yr: Number(r.yr) || null,
-    mes: r.mes || null
+    yr: yNum,
+    mes: mStr
   };
 }
 
