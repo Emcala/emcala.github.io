@@ -24,9 +24,9 @@
       '<small style="font-size:11px;opacity:.7">Pedile al auditor que cargue la base.</small>';
   }
 
-  await fetchConfigData();
-  [1,2,3,6].forEach(pg => mkUN(pg));
-  [1,2,3,4,5,6].forEach(pg => mkSDV(pg));
+  // La configuración (Apps Script) tarda varios segundos: se pide en paralelo con la
+  // lectura de Supabase/caché, para no esperarla antes de mostrar los datos.
+  const cfgPromise = fetchConfigData();
 
   // Cargar datos persistentes desde Supabase (si existen).
   renderLU('loading');
@@ -37,6 +37,11 @@
   } finally {
     ocultarCarga();
   }
+
+  await cfgPromise;
+  [1,2,3,6].forEach(pg => mkUN(pg));
+  [1,2,3,4,5,6].forEach(pg => mkSDV(pg));
+
   if (sup.ok && sup.rows > 0) {
     renderAll();
     if (sup.desdeCache) {
