@@ -188,21 +188,30 @@ const DataService = {
         }
 
         const codes = new Set();
+        const codesNabs = new Set();
         let cccTotal = 0;
+        let cccNabsTotal = 0;
         const promotores = json.promotores || {};
         Object.keys(promotores).forEach(k => {
             const p = promotores[k] || {};
             cccTotal += Number(p.ccc) || 0;
+            cccNabsTotal += Number(p.cccNabs) || 0;
             (p.clientIds || []).forEach(id => {
                 const n = this.normalizeCodigoCliente(id);
                 if (n) codes.add(n);
+            });
+            (p.clientIdsNabs || []).forEach(id => {
+                const n = this.normalizeCodigoCliente(id);
+                if (n) codesNabs.add(n);
             });
         });
 
         const ventas = {
             cMonth: cMonth,
             codes: codes,
+            codesNabs: codesNabs,
             cccTotal: cccTotal,
+            cccNabsTotal: cccNabsTotal,
             source: json.source || '',
             lastDate: json.lastDate || '',
             cargadoEl: Date.now()
@@ -213,29 +222,33 @@ const DataService = {
 
     // Cruce de la venta con la base geolocalizada
     // ¿El código de cliente compró cerveza en la venta cargada?
-    isVentaCliente(codigo) {
+    // unidad: 'cerveza' (default) o 'nabs'
+    isVentaCliente(codigo, unidad) {
         const v = this.ventas;
-        return !!(v && v.codes && v.codes.has(this.normalizeCodigoCliente(codigo)));
+        if (!v) return false;
+        const set = (unidad === 'nabs') ? v.codesNabs : v.codes;
+        return !!(set && set.has(this.normalizeCodigoCliente(codigo)));
     },
 
-    getVentasStats(venta) {
+    getVentasStats(venta, unidad) {
         const v = venta || this.ventas;
         if (!v) return null;
+        const set = (unidad === 'nabs') ? v.codesNabs : v.codes;
         const enBase = new Set();
         let conCoords = 0;
         (this.data.clientes || []).forEach(c => {
             const cod = this.normalizeCodigoCliente(c.Codigo);
-            if (!v.codes.has(cod)) return;
+            if (!set.has(cod)) return;
             enBase.add(cod);
             if (!isNaN(c.Latitud) && !isNaN(c.Longitud)) conCoords++;
         });
         return {
             cMonth: v.cMonth,
-            total: v.codes.size,
+            total: set.size,
             enBase: enBase.size,
-            sinMatch: v.codes.size - enBase.size,
+            sinMatch: set.size - enBase.size,
             conCoords: conCoords,
-            cccTotal: v.cccTotal
+            cccTotal: (unidad === 'nabs') ? (v.cccNabsTotal || 0) : v.cccTotal
         };
     },
 
