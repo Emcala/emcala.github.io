@@ -214,7 +214,7 @@ const MapManager = {
             pressStart = { x: tp.clientX - rect.left, y: tp.clientY - rect.top };
             pressTimer = setTimeout(() => {
                 pressTimer = null;
-                this.openClientAt(pressStart);
+                this.openClientAt(pressStart, false);
             }, 500);
         }, { passive: true });
         canvas.addEventListener('touchmove', (ev) => {
@@ -227,6 +227,9 @@ const MapManager = {
         }, { passive: true });
         canvas.addEventListener('touchend', cancelPress, { passive: true });
         canvas.addEventListener('touchcancel', cancelPress, { passive: true });
+        this.map.on('movestart', cancelPress);
+        this.map.on('zoomstart', cancelPress);
+        this.map.on('rotatestart', cancelPress);
 
         this.map.on('mousemove', 'clients-points', (e) => {
             this.map.getCanvas().style.cursor = 'pointer';
@@ -1098,7 +1101,7 @@ ${stats.especiales.map(e => `                                <span><i class="fas
     },
 
     // Abre el popup del cliente más cercano al punto tocado (p = {x, y} en píxeles del mapa)
-    openClientAt(p) {
+    openClientAt(p, recenter = true) {
         if (!this.map || !this.map.getLayer('clients-points')) return;
         const r = 16;
         const feats = this.map.queryRenderedFeatures(
@@ -1127,7 +1130,7 @@ ${stats.especiales.map(e => `                                <span><i class="fas
             .setLngLat(best.geometry.coordinates)
             .setHTML(this.generatePopupHtml(best.properties))
             .addTo(this.map);
-        if (isMobile) {
+        if (isMobile && recenter) {
             this.map.easeTo({
                 center: best.geometry.coordinates,
                 padding: { top: 40, bottom: Math.round(window.innerHeight * 0.45), left: 0, right: 0 },

@@ -1028,10 +1028,27 @@ body {
     .map-layer-panel { min-width: 0; max-width: 200px; }
     .map-layer-panel .layer-panel-body { max-height: 40vh; overflow-y: auto; }
     .map-search-widget { width: 92%; top: 8px; }
-    .maplibregl-popup-content {
-        max-height: 42vh;
-        overflow-y: auto;
-        font-size: 13px;
-    }
+    .client-popup .maplibregl-popup-content { font-size: 13px; }
+    .client-popup .popup-content { max-height: 38vh; overflow-y: auto; padding-right: 22px; }
     .popup-content h3 { font-size: 14px; margin-bottom: 8px; }
+}
+
+/* Botón X para cerrar popups (visible en tema claro y oscuro, área de toque cómoda) */
+.maplibregl-popup-close-button {
+    width: 34px !important;
+    height: 34px !important;
+    right: 2px !important;
+    top: 2px !important;
+    font-size: 24px !important;
+    line-height: 34px !important;
+    color: var(--text-primary) !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 50% !important;
+    cursor: pointer;
+}
+.maplibregl-popup-close-button:hover,
+.maplibregl-popup-close-button:active {
+    color: var(--accent-secondary) !important;
+    background: var(--bg-tertiary) !important;
 }
