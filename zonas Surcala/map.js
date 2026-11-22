@@ -189,38 +189,44 @@ const MapManager = {
             offset: 15
         });
 
-        // Click/toque: el punto es chico y el dedo no lo pega; buscamos el cliente más cercano en un área alrededor del toque
+        // Computadora: click normal. Celular: mantener apretado (ver abajo), así no se abre nada al mover el mapa
+        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         this.map.on('click', (e) => {
-            if (!this.map.getLayer('clients-points')) return;
-            const p = e.point;
-            const r = 16;
-            const feats = this.map.queryRenderedFeatures(
-                [[p.x - r, p.y - r], [p.x + r, p.y + r]],
-                { layers: ['clients-points'] }
-            );
-            if (!feats || feats.length === 0) return;
-            let best = feats[0];
-            let bestD = Infinity;
-            feats.forEach(f => {
-                const sp = this.map.project(f.geometry.coordinates);
-                const d = Math.pow(sp.x - p.x, 2) + Math.pow(sp.y - p.y, 2);
-                if (d < bestD) { bestD = d; best = f; }
-            });
-            const isMobile = window.matchMedia('(max-width: 768px)').matches;
-            const popupW = Math.min(340, window.innerWidth - 24) + 'px';
-            new maplibregl.Popup({ offset: 15, className: 'client-popup', maxWidth: popupW })
-                .setLngLat(best.geometry.coordinates)
-                .setHTML(this.generatePopupHtml(best.properties))
-                .addTo(this.map);
-            if (isMobile) {
-                // Corre el mapa para que el punto quede en la mitad de arriba y el popup no se corte abajo
-                this.map.easeTo({
-                    center: best.geometry.coordinates,
-                    padding: { top: 40, bottom: Math.round(window.innerHeight * 0.45), left: 0, right: 0 },
-                    duration: 300
-                });
-            }
+            if (isTouch) return;
+            this.openClientAt(e.point);
         });
+
+        const canvas = this.map.getCanvas();
+        canvas.style.webkitTouchCallout = 'none';
+        canvas.style.userSelect = 'none';
+        canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
+
+        let pressTimer = null;
+        let pressStart = null;
+        const cancelPress = () => {
+            if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        };
+        canvas.addEventListener('touchstart', (ev) => {
+            cancelPress();
+            if (!ev.touches || ev.touches.length !== 1) return;
+            const rect = canvas.getBoundingClientRect();
+            const tp = ev.touches[0];
+            pressStart = { x: tp.clientX - rect.left, y: tp.clientY - rect.top };
+            pressTimer = setTimeout(() => {
+                pressTimer = null;
+                this.openClientAt(pressStart);
+            }, 500);
+        }, { passive: true });
+        canvas.addEventListener('touchmove', (ev) => {
+            if (!pressTimer || !ev.touches || ev.touches.length !== 1) { cancelPress(); return; }
+            const rect = canvas.getBoundingClientRect();
+            const tp = ev.touches[0];
+            const dx = (tp.clientX - rect.left) - pressStart.x;
+            const dy = (tp.clientY - rect.top) - pressStart.y;
+            if (Math.sqrt(dx * dx + dy * dy) > 10) cancelPress();
+        }, { passive: true });
+        canvas.addEventListener('touchend', cancelPress, { passive: true });
+        canvas.addEventListener('touchcancel', cancelPress, { passive: true });
 
         this.map.on('mousemove', 'clients-points', (e) => {
             this.map.getCanvas().style.cursor = 'pointer';
@@ -1089,6 +1095,45 @@ ${stats.especiales.map(e => `                                <span><i class="fas
         }
         popupHtml += `</div>`;
         return popupHtml;
+    },
+
+    // Abre el popup del cliente más cercano al punto tocado (p = {x, y} en píxeles del mapa)
+    openClientAt(p) {
+        if (!this.map || !this.map.getLayer('clients-points')) return;
+        const r = 16;
+        const feats = this.map.queryRenderedFeatures(
+            [[p.x - r, p.y - r], [p.x + r, p.y + r]],
+            { layers: ['clients-points'] }
+        );
+        if (!feats || feats.length === 0) return;
+        let best = feats[0];
+        let bestD = Infinity;
+        feats.forEach(f => {
+            const sp = this.map.project(f.geometry.coordinates);
+            const d = Math.pow(sp.x - p.x, 2) + Math.pow(sp.y - p.y, 2);
+            if (d < bestD) { bestD = d; best = f; }
+        });
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        const popupW = Math.min(340, window.innerWidth - 24) + 'px';
+        if (this.hoverPopup) this.hoverPopup.remove();
+        if (this._clientPopup) this._clientPopup.remove();
+        this._clientPopup = new maplibregl.Popup({
+            offset: 15,
+            className: 'client-popup',
+            maxWidth: popupW,
+            closeOnClick: false,
+            closeButton: true
+        })
+            .setLngLat(best.geometry.coordinates)
+            .setHTML(this.generatePopupHtml(best.properties))
+            .addTo(this.map);
+        if (isMobile) {
+            this.map.easeTo({
+                center: best.geometry.coordinates,
+                padding: { top: 40, bottom: Math.round(window.innerHeight * 0.45), left: 0, right: 0 },
+                duration: 300
+            });
+        }
     },
 
     flyToClient(c) {
