@@ -42,7 +42,11 @@ const UI = {
     },
 
     bindEvents() {
-        // Sidebar toggle
+        // Sidebar toggle (en móvil arranca cerrado para no tapar el mapa)
+        if (window.matchMedia('(max-width: 768px)').matches) {
+            const sb = document.getElementById('sidebar');
+            if (sb) sb.classList.remove('sidebar-open');
+        }
         document.getElementById('sidebar-toggle').onclick = () => {
             document.getElementById('sidebar').classList.toggle('sidebar-open');
             setTimeout(() => MapManager.map && MapManager.map.invalidateSize(), 300);
