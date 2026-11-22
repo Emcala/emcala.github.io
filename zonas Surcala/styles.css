@@ -1017,3 +1017,21 @@ body {
 }
 .chip-chevron i { display: inline-block; transition: transform 0.2s; }
 .chip-chevron.open i { transform: rotate(180deg); }
+
+/* ==========================================
+   CELULAR: alturas reales, paneles chicos y popup legible
+   ========================================== */
+@media (max-width: 768px) {
+    body { height: 100vh; height: 100dvh; }
+    #app-layout { height: calc(100vh - var(--header-height)); height: calc(100dvh - var(--header-height)); }
+    .map-custom-control { top: 6px; left: 6px; gap: 6px; }
+    .map-layer-panel { min-width: 0; max-width: 200px; }
+    .map-layer-panel .layer-panel-body { max-height: 40vh; overflow-y: auto; }
+    .map-search-widget { width: 92%; top: 8px; }
+    .maplibregl-popup-content {
+        max-height: 42vh;
+        overflow-y: auto;
+        font-size: 13px;
+    }
+    .popup-content h3 { font-size: 14px; margin-bottom: 8px; }
+}

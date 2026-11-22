@@ -206,10 +206,20 @@ const MapManager = {
                 const d = Math.pow(sp.x - p.x, 2) + Math.pow(sp.y - p.y, 2);
                 if (d < bestD) { bestD = d; best = f; }
             });
-            new maplibregl.Popup({ offset: 15, className: 'client-popup' })
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            const popupW = Math.min(340, window.innerWidth - 24) + 'px';
+            new maplibregl.Popup({ offset: 15, className: 'client-popup', maxWidth: popupW })
                 .setLngLat(best.geometry.coordinates)
                 .setHTML(this.generatePopupHtml(best.properties))
                 .addTo(this.map);
+            if (isMobile) {
+                // Corre el mapa para que el punto quede en la mitad de arriba y el popup no se corte abajo
+                this.map.easeTo({
+                    center: best.geometry.coordinates,
+                    padding: { top: 40, bottom: Math.round(window.innerHeight * 0.45), left: 0, right: 0 },
+                    duration: 300
+                });
+            }
         });
 
         this.map.on('mousemove', 'clients-points', (e) => {
@@ -614,7 +624,10 @@ const MapManager = {
         this.updateVentaStatus();
 
         // Collapse / expand
-        let collapsed = false;
+        let collapsed = window.matchMedia('(max-width: 768px)').matches;
+        body.style.display = collapsed ? 'none' : '';
+        headerBtn.querySelector('.layer-chevron').style.transform = collapsed ? 'rotate(180deg)' : '';
+        container.classList.toggle('collapsed', collapsed);
         headerBtn.onclick = () => {
             collapsed = !collapsed;
             body.style.display = collapsed ? 'none' : '';
