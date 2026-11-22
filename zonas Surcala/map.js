@@ -189,13 +189,26 @@ const MapManager = {
             offset: 15
         });
 
-        this.map.on('click', 'clients-points', (e) => {
-            const feature = e.features[0];
-            const c = feature.properties;
-            
+        // Click/toque: el punto es chico y el dedo no lo pega; buscamos el cliente más cercano en un área alrededor del toque
+        this.map.on('click', (e) => {
+            if (!this.map.getLayer('clients-points')) return;
+            const p = e.point;
+            const r = 16;
+            const feats = this.map.queryRenderedFeatures(
+                [[p.x - r, p.y - r], [p.x + r, p.y + r]],
+                { layers: ['clients-points'] }
+            );
+            if (!feats || feats.length === 0) return;
+            let best = feats[0];
+            let bestD = Infinity;
+            feats.forEach(f => {
+                const sp = this.map.project(f.geometry.coordinates);
+                const d = Math.pow(sp.x - p.x, 2) + Math.pow(sp.y - p.y, 2);
+                if (d < bestD) { bestD = d; best = f; }
+            });
             new maplibregl.Popup({ offset: 15, className: 'client-popup' })
-                .setLngLat(feature.geometry.coordinates)
-                .setHTML(this.generatePopupHtml(c))
+                .setLngLat(best.geometry.coordinates)
+                .setHTML(this.generatePopupHtml(best.properties))
                 .addTo(this.map);
         });
 
