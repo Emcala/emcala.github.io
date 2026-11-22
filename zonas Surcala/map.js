@@ -99,7 +99,6 @@ const MapManager = {
         // Capa Venta (CCC cerveza del mes desde el Planificador): estado persistido
         this.ventaVisible = localStorage.getItem('surcala_venta_visible') === '1';
         this._ventaReq = 0;
-        this.ventaUnidad = localStorage.getItem('surcala_venta_unidad') === 'nabs' ? 'nabs' : 'cerveza';
 
         // Restore config if available, safely handling NaN values
         let pLat = parseFloat(localStorage.getItem('surcala_map_lat'));
@@ -118,8 +117,8 @@ const MapManager = {
             this._lastZoom = zoom;
         }
         
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        this._currentBaseMap = isDark ? 'carto-dark' : 'osm';
+        // Solo OpenStreetMap: sin selector de estilo y sin cambio por tema
+        this._currentBaseMap = 'osm';
 
         this.map = new maplibregl.Map({
             container: 'map',
@@ -223,11 +222,7 @@ const MapManager = {
     setTheme(theme) {
         // Automatically switch base map to dark/light variants if using default
         if (!this.map || !this.isLoaded) return;
-        if (theme === 'dark') {
-            this.switchTileLayer('carto-dark');
-        } else {
-            this.switchTileLayer('osm');
-        }
+        this.switchTileLayer('osm');
     },
 
     switchTileLayer(key) {
@@ -472,9 +467,7 @@ const MapManager = {
         });
         styleSelect.onchange = () => this.switchTileLayer(styleSelect.value);
         
-        styleRow.appendChild(styleLabel);
-        styleRow.appendChild(styleSelect);
-        body.appendChild(styleRow);
+        // Selector de estilo de mapa desactivado: solo OpenStreetMap
 
         const divider = document.createElement('div');
         divider.className = 'layer-panel-divider';
@@ -483,8 +476,7 @@ const MapManager = {
         // Toggle rows
         const toggles = [
             { id: 'show-clients', icon: 'fa-store', label: 'Clientes', default: true },
-            { id: 'color-freq', icon: 'fa-palette', label: 'Días de Visita', default: false },
-            { id: 'show-promoter-zones', icon: 'fa-vector-square', label: 'Zonas de Promotores', default: false }
+            { id: 'color-freq', icon: 'fa-palette', label: 'Días de Visita', default: false }
         ];
 
         toggles.forEach(t => {
@@ -544,8 +536,7 @@ const MapManager = {
         ventaIcon.className = 'fas fa-beer-mug-empty layer-panel-icon';
         const ventaLabel = document.createElement('span');
         ventaLabel.className = 'layer-panel-label';
-        ventaLabel.id = 'venta-label';
-        ventaLabel.textContent = 'Venta (' + this.getVentaUnitLabel() + ')';
+        ventaLabel.textContent = 'Venta (cerveza)';
         const ventaSwitch = document.createElement('span');
         ventaSwitch.className = 'layer-panel-switch';
         const ventaCb = document.createElement('input');
@@ -582,27 +573,7 @@ const MapManager = {
         status.className = 'layer-panel-status';
 
         ventaWrap.appendChild(ventaRow);
-        const unitRow = document.createElement('div');
-        unitRow.className = 'layer-panel-row layer-panel-style-row';
-        const unitLabel = document.createElement('span');
-        unitLabel.className = 'layer-panel-label';
-        unitLabel.textContent = 'Unidad';
-        const unitSelect = document.createElement('select');
-        unitSelect.id = 'venta-unidad';
-        unitSelect.className = 'layer-panel-select';
-        [['cerveza', 'Cerveza'], ['nabs', 'NABS']].forEach(([val, txt]) => {
-            const opt = document.createElement('option');
-            opt.value = val;
-            opt.textContent = txt;
-            unitSelect.appendChild(opt);
-        });
-        unitSelect.value = this.ventaUnidad;
-        unitSelect.onchange = () => this.setVentaUnidad(unitSelect.value);
-        unitRow.appendChild(unitLabel);
-        unitRow.appendChild(unitSelect);
-
         ventaWrap.appendChild(monthRow);
-        ventaWrap.appendChild(unitRow);
         ventaWrap.appendChild(status);
         body.appendChild(ventaWrap);
         this.updateVentaStatus();
@@ -757,43 +728,28 @@ const MapManager = {
         el.className = 'layer-panel-status' + (kind ? ' ' + kind : '');
     },
 
-    getVentaUnitLabel() {
-        return this.ventaUnidad === 'nabs' ? 'NABS' : 'cerveza';
-    },
-
-    setVentaUnidad(u) {
-        this.ventaUnidad = (u === 'nabs') ? 'nabs' : 'cerveza';
-        localStorage.setItem('surcala_venta_unidad', this.ventaUnidad);
-        const lbl = document.getElementById('venta-label');
-        if (lbl) lbl.textContent = 'Venta (' + this.getVentaUnitLabel() + ')';
-        this.refreshClientsVenta();
-    },
-
     updateVentaStatus() {
         if (!this.ventaVisible) {
             this.setVentaStatus('Capa desactivada.', '');
             return;
         }
         const month = this.getVentaMonth();
-        const unit = this.getVentaUnitLabel();
         const v = DataService.ventas;
         if (!v || v.cMonth !== month) {
             this.setVentaStatus('Activá la capa para cargar la venta de ' + month + '.', '');
             return;
         }
-        const codes = (this.ventaUnidad === 'nabs') ? v.codesNabs : v.codes;
-        if (!codes || codes.size === 0) {
-            const cccTot = (this.ventaUnidad === 'nabs') ? (v.cccNabsTotal || 0) : v.cccTotal;
-            if (cccTot > 0) {
-                this.setVentaStatus(month + ': el Planificador informa ' + cccTot + ' clientes con compra de ' + unit + ', pero sin códigos para geolocalizar (datos históricos).', '');
+        if (v.codes.size === 0) {
+            if (v.cccTotal > 0) {
+                this.setVentaStatus(month + ': el Planificador informa ' + v.cccTotal + ' clientes con compra, pero sin códigos para geolocalizar (datos históricos).', '');
             } else {
-                this.setVentaStatus('Sin clientes con compra de ' + unit + ' en ' + month + '.', '');
+                this.setVentaStatus('Sin clientes con compra de cerveza en ' + month + '.', '');
             }
             return;
         }
-        const s = DataService.getVentasStats(v, this.ventaUnidad);
+        const s = DataService.getVentasStats(v);
         const sinCoords = s.enBase - s.conCoords;
-        let txt = month + ': ' + s.total + ' clientes con compra de ' + unit + ' · ' + s.conCoords + ' en el mapa';
+        let txt = month + ': ' + s.total + ' clientes con compra · ' + s.conCoords + ' en el mapa';
         if (sinCoords > 0) txt += ' · ' + sinCoords + ' sin coordenadas';
         if (s.sinMatch > 0) txt += ' · ' + s.sinMatch + ' sin match en la base';
         this.setVentaStatus(txt + ' · verde = compró, rojo = no compró', '');
@@ -825,7 +781,7 @@ const MapManager = {
                     PromotorColor: prom ? prom.Color : '#666',
                     FrecuenciaColor: c.FrecuenciaColor,
                     FrecuenciaGrupo: c.FrecuenciaGrupo,
-                    Venta: DataService.isVentaCliente(c.Codigo, this.ventaUnidad) ? 1 : 0
+                    Venta: DataService.isVentaCliente(c.Codigo) ? 1 : 0
                 }
             });
         });
@@ -1066,7 +1022,7 @@ ${stats.especiales.map(e => `                                <span><i class="fas
         if (c.FrecuenciaGrupo) popupHtml += `<span class="popup-tag" style="background:${c.FrecuenciaColor}; text-shadow: 0px 1px 2px rgba(0,0,0,0.4);">${esc(c.FrecuenciaGrupo)}</span>`;
         if (this.isVentaActive()) {
             const compro = Number(c.Venta) === 1;
-            popupHtml += `<span class="popup-tag" style="background:${compro ? '#16a34a' : '#dc2626'}">${compro ? 'Compró ' + this.getVentaUnitLabel() : 'Sin compra'}</span>`;
+            popupHtml += `<span class="popup-tag" style="background:${compro ? '#16a34a' : '#dc2626'}">${compro ? 'Compró cerveza' : 'Sin compra'}</span>`;
         }
         popupHtml += `</div>`;
         return popupHtml;
