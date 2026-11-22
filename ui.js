@@ -1,0 +1,1210 @@
+// ============================================
+// UI CONTROLLER - Zonas Surcala
+// Sidebar, filters, print, config (read-only, no CRUD)
+// ============================================
+
+// Helper para escapar datos del CSV / localStorage antes de innerHTML
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const UI = {
+    activeClients: new Set(),
+    mapSelection: null,
+
+    init() {
+        this.initTheme();
+        this.bindEvents();
+        this.loadConfig();
+    },
+
+    initTheme() {
+        const saved = localStorage.getItem('surcala_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+        this.updateThemeIcon(saved);
+    },
+
+    updateThemeIcon(theme) {
+        const btn = document.getElementById('btn-theme');
+        if (!btn) return;
+        btn.innerHTML = theme === 'dark'
+            ? '<i class="fas fa-sun"></i>'
+            : '<i class="fas fa-moon"></i>';
+        btn.title = theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
+    },
+
+    toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme') || 'dark';
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('surcala_theme', next);
+        this.updateThemeIcon(next);
+        if (MapManager.setTheme) MapManager.setTheme(next);
+    },
+
+    bindEvents() {
+        // Sidebar toggle (en móvil arranca cerrado para no tapar el mapa)
+        if (window.matchMedia('(max-width: 768px)').matches) {
+            const sb = document.getElementById('sidebar');
+            if (sb) sb.classList.remove('sidebar-open');
+        }
+        document.getElementById('sidebar-toggle').onclick = () => {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+            setTimeout(() => MapManager.map && MapManager.map.invalidateSize(), 300);
+        };
+        // Tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+
+                // Si salimos de la pestaña de impresión, limpiamos el polígono del mapa para que no moleste
+                if (btn.dataset.tab !== 'tab-print') {
+                    this.clearMapSelection();
+                }
+            };
+        });
+        // Search
+        const searchInput = document.getElementById('search-clients');
+        const clearBtn = document.getElementById('clear-search');
+        searchInput.oninput = () => {
+            clearBtn.classList.toggle('visible', searchInput.value.length > 0);
+            this.filterClients(searchInput.value);
+        };
+        clearBtn.onclick = () => { searchInput.value = ''; clearBtn.classList.remove('visible'); this.filterClients(''); };
+        // Filtro en cascada: "Ver Todos"
+        const btnCascadeReset = document.getElementById('cascade-reset');
+        if (btnCascadeReset) {
+            btnCascadeReset.onclick = () => {
+                this.cascadeActivos = null;               // null = todo activo, se recalcula al renderizar
+                this.cascadeAbiertas = new Set();
+                this.cascadeSupsAbiertos = new Set();
+                this.cascadePromsAbiertos = new Set();
+                this.renderCascadeFilters();
+                this.applyCascadeFilters();
+            };
+        }
+        // Config
+        document.getElementById('btn-config').onclick = () => {
+            this.renderBaseCloudStatus();
+            document.getElementById('config-modal').classList.add('active');
+        };
+        document.getElementById('modal-close').onclick = () => document.getElementById('config-modal').classList.remove('active');
+        document.getElementById('config-modal').onclick = (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('active'); };
+        document.getElementById('save-config').onclick = () => this.saveConfig();
+        document.getElementById('btn-refresh').onclick = () => this.refreshData();
+        this.bindBaseUploadEvents();
+        // Print
+        document.getElementById('print-supervisor').onchange = () => this.updatePrintPreview();
+        document.getElementById('print-promotor').onchange = () => this.updatePrintPreview();
+        document.getElementById('print-localidad').onchange = () => this.updatePrintPreview();
+        document.getElementById('btn-print').onclick = () => this.printReport();
+        document.getElementById('btn-export-csv').onclick = () => this.exportCSV();
+        // Theme toggle
+        document.getElementById('btn-theme').onclick = () => this.toggleTheme();
+
+        // Map Selection Cancel
+        const btnClearSelection = document.getElementById('btn-clear-map-selection');
+        if (btnClearSelection) {
+            btnClearSelection.onclick = () => this.clearMapSelection();
+        }
+
+        this.bindCustomZoneEvents();
+        this.bindSimEvents();
+    },
+
+    bindCustomZoneEvents() {
+        // Draw Button
+        const btnDraw = document.getElementById('btn-draw-custom-zone');
+        if (btnDraw) {
+            btnDraw.onclick = () => {
+                if (window.MapManager) {
+                    MapManager.startDrawingCustomZone();
+                }
+            };
+        }
+
+        // Modal close/cancel
+        const modal = document.getElementById('custom-zone-modal');
+        const closeModal = () => {
+            modal.classList.remove('active');
+            if (window.MapManager) MapManager.cancelPendingCustomZone();
+        };
+
+        if (document.getElementById('custom-zone-modal-close')) {
+            document.getElementById('custom-zone-modal-close').onclick = closeModal;
+        }
+        if (document.getElementById('btn-cancel-zone')) {
+            document.getElementById('btn-cancel-zone').onclick = closeModal;
+        }
+        if (modal) {
+            modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+        }
+
+        // Modal Save
+        const btnSave = document.getElementById('btn-save-zone');
+        if (btnSave) {
+            btnSave.onclick = () => {
+                const nameInput = document.getElementById('custom-zone-name');
+                const colorInput = document.getElementById('custom-zone-color');
+                const name = nameInput.value.trim() || 'Zona sin nombre';
+                const color = colorInput.value || '#3b82f6';
+
+                const existe = DataService.getCustomZones()
+                    .some(z => (z.name || '').trim().toLowerCase() === name.trim().toLowerCase());
+
+                if (existe && !confirm(`Ya existe una zona llamada "${name}". ¿Guardarla igual?`)) {
+                    return; // no cierra el modal, no descarta el polígono pendiente
+                }
+
+                if (window.MapManager) MapManager.savePendingCustomZone(name, color);
+                nameInput.value = '';
+                modal.classList.remove('active');
+                this.renderCustomZonesList();
+            };
+        }
+    },
+
+    showCustomZoneModal() {
+        const modal = document.getElementById('custom-zone-modal');
+        if (modal) {
+            modal.classList.add('active');
+            document.getElementById('custom-zone-name').focus();
+        }
+    },
+
+    renderCustomZonesList() {
+        const list = document.getElementById('custom-zones-list');
+        if (!list) return;
+
+        const zones = DataService.getCustomZones();
+        if (zones.length === 0) {
+            list.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding: 20px;">No hay zonas guardadas.</div>';
+            return;
+        }
+
+        let html = '';
+        zones.forEach(z => {
+            const isVis = z.visible !== false;
+            const stats = DataService.getZoneStats(z.geometry, this.activeClients);
+            html += `
+            <div class="tree-node level-1" style="display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:8px; padding: 8px; border-bottom: 1px solid var(--border-color);">
+                <div style="display:flex; flex-direction:column; gap:2px; flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:16px; height:16px; border-radius:3px; background:${esc(z.color)}"></div>
+                        <span style="font-size:13px; font-weight:500;">${esc(z.name)}</span>
+                    </div>
+                    <span style="font-size:11px; color:var(--text-secondary); padding-left:26px;">${stats.clientes} clientes · ${stats.promotores} promotores · ${stats.supervisores} SPV${stats.especiales.map(e => ' · 1 ' + esc(e)).join('')}</span>
+                </div>
+                <div style="display:flex; gap:8px; flex-shrink:0;">
+                    <button class="link-btn export-zone" data-id="${esc(z.id)}" style="color:var(--text-secondary);" title="Descargar Excel (CSV) de esta zona">
+                        <i class="fas fa-file-excel"></i>
+                    </button>
+                    <button class="link-btn print-zone" data-id="${esc(z.id)}" style="color:var(--text-secondary);" title="Imprimir esta zona">
+                        <i class="fas fa-print"></i>
+                    </button>
+                    <button class="link-btn toggle-zone-vis" data-id="${esc(z.id)}" style="color:var(--text-secondary);" title="${isVis ? 'Ocultar' : 'Mostrar'}">
+                        <i class="fas ${isVis ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                    </button>
+                    <button class="link-btn delete-zone" data-id="${esc(z.id)}" style="color:var(--danger-color);" title="Eliminar">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>`;
+        });
+
+        list.innerHTML = html;
+
+        // Bind events
+        list.querySelectorAll('.toggle-zone-vis').forEach(btn => {
+            btn.onclick = () => {
+                DataService.toggleCustomZoneVisibility(btn.dataset.id);
+                this.renderCustomZonesList();
+                if (window.MapManager) MapManager.renderCustomZones();
+            };
+        });
+
+        list.querySelectorAll('.delete-zone').forEach(btn => {
+            btn.onclick = () => {
+                if (confirm('¿Estás seguro de eliminar esta zona?')) {
+                    DataService.deleteCustomZone(btn.dataset.id);
+                    this.renderCustomZonesList();
+                    if (window.MapManager) MapManager.renderCustomZones();
+                }
+            };
+        });
+
+        list.querySelectorAll('.export-zone').forEach(btn => {
+            btn.onclick = () => {
+                const z = DataService.getCustomZones().find(x => x.id === btn.dataset.id);
+                this.exportCSV(this.getZoneClients(btn.dataset.id), z ? z.name : '');
+            };
+        });
+
+        list.querySelectorAll('.print-zone').forEach(btn => {
+            btn.onclick = () => {
+                const z = DataService.getCustomZones().find(x => x.id === btn.dataset.id);
+                this.printReport(this.getZoneClients(btn.dataset.id), z ? z.name : '');
+            };
+        });
+    },
+    // ============================================
+    // FILTRO EN CASCADA: Día > Supervisor > Promotor > Cliente
+    // Estado: claves "FREC|SUPERVISORID|PROMOTORID|CLIENTEID" activas.
+    // ============================================
+    cascadeAbiertas: null,        // Set de frecuencias con el panel desplegado
+    cascadeSupsAbiertos: null,    // Set de "SUPERVISORID@FREC"
+    cascadePromsAbiertos: null,   // Set de "PROMOTORID@SUPERVISORID@FREC"
+    cascadeActivos: null,         // Set de claves activas
+    cascadeJerarquia: null,       // Map FREC -> Map(SUP -> Map(PROM -> [idsCliente]))
+
+    // Se arma desde los CLIENTES (no desde supervisores[]/promotores[]), para que cada
+    // combinación sea independiente y no reaparezca el bug de promotores compartidos.
+    buildCascadeJerarquia() {
+        const jer = new Map();
+        DataService.data.clientes.forEach(c => {
+            const f = c.FrecuenciaGrupo || 'Sin Frecuencia';
+            if (!jer.has(f)) jer.set(f, new Map());
+            if (!jer.get(f).has(c.SupervisorID)) jer.get(f).set(c.SupervisorID, new Map());
+            if (!jer.get(f).get(c.SupervisorID).has(c.PromotorID)) jer.get(f).get(c.SupervisorID).set(c.PromotorID, []);
+            jer.get(f).get(c.SupervisorID).get(c.PromotorID).push(c.ID);
+        });
+        return jer;
+    },
+
+    cascadeClave(f, s, p, id) { return f + '|' + s + '|' + p + '|' + id; },
+
+    cascadeTodasLasClaves() {
+        const claves = [];
+        this.cascadeJerarquia.forEach((sups, f) => {
+            sups.forEach((proms, s) => proms.forEach((ids, p) => ids.forEach(id => claves.push(this.cascadeClave(f, s, p, id)))));
+        });
+        return claves;
+    },
+
+    // Devuelve las claves de un alcance: (f) | (f,s) | (f,s,p)
+    cascadeClaves(f, s, p) {
+        const claves = [];
+        const sups = this.cascadeJerarquia.get(f);
+        if (!sups) return claves;
+        const agregarProm = (sid, pid, ids) => ids.forEach(id => claves.push(this.cascadeClave(f, sid, pid, id)));
+        if (s === undefined) {
+            sups.forEach((proms, sid) => proms.forEach((ids, pid) => agregarProm(sid, pid, ids)));
+        } else if (p === undefined) {
+            const proms = sups.get(s);
+            if (proms) proms.forEach((ids, pid) => agregarProm(s, pid, ids));
+        } else {
+            const proms = sups.get(s);
+            const ids = proms && proms.get(p);
+            if (ids) agregarProm(s, p, ids);
+        }
+        return claves;
+    },
+
+    renderCascadeFilters() {
+        const cont = document.getElementById('cascade-chips');
+        const panel = document.getElementById('cascade-panel');
+        if (!cont || !panel) return;
+
+        this.cascadeJerarquia = this.buildCascadeJerarquia();
+        if (!this.cascadeActivos) this.cascadeActivos = new Set(this.cascadeTodasLasClaves());
+        if (!this.cascadeAbiertas) this.cascadeAbiertas = new Set();
+        if (!this.cascadeSupsAbiertos) this.cascadeSupsAbiertos = new Set();
+        if (!this.cascadePromsAbiertos) this.cascadePromsAbiertos = new Set();
+
+        const ORDEN = ['LU-JU', 'MA-VI', 'MI-SA'];
+        const freqs = [...this.cascadeJerarquia.keys()].sort((a, b) => {
+            const ia = ORDEN.indexOf(a), ib = ORDEN.indexOf(b);
+            if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+            return a.localeCompare(b);
+        });
+
+        // ---- Nivel 1: chips de Día de Visita ----
+        cont.innerHTML = '';
+        freqs.forEach(f => {
+            const sups = this.cascadeJerarquia.get(f);
+            const claves = this.cascadeClaves(f);
+            const activos = claves.filter(k => this.cascadeActivos.has(k)).length;
+            const st = activos === 0 ? 'none' : (activos === claves.length ? 'all' : 'partial');
+            const abierta = this.cascadeAbiertas.has(f);
+
+            const chip = document.createElement('div');
+            chip.className = 'chip ' + st;
+
+            const sel = document.createElement('button');
+            sel.type = 'button';
+            sel.className = 'chip-sel';
+            // Contar SOLO los tildados, separando SPV / BDR / MAYO
+            const activosSup = [...sups.keys()].filter(sid =>
+                this.cascadeClaves(f, sid).some(k => this.cascadeActivos.has(k))
+            );
+            let nSpv = 0, nBdr = 0, nMayo = 0;
+            activosSup.forEach(sid => {
+                const s = DataService.getSupervisor(sid);
+                const nombre = s ? s.Nombre : sid;
+                if (nombre === 'BDR') nBdr++;
+                else if (nombre === 'MAYO') nMayo++;
+                else nSpv++;
+            });
+            const partes = [];
+            if (nSpv) partes.push(nSpv + ' SPV');
+            if (nBdr) partes.push(nBdr + ' BDR');
+            if (nMayo) partes.push(nMayo + ' MAYO');
+            sel.textContent = f + ' (' + (partes.join(' · ') || '0') + ')';
+            sel.title = 'Seleccionar / deseleccionar todo ' + f;
+            sel.onclick = () => {
+                const todas = claves.every(k => this.cascadeActivos.has(k));
+                claves.forEach(k => { if (todas) this.cascadeActivos.delete(k); else this.cascadeActivos.add(k); });
+                this.renderCascadeFilters();
+                this.applyCascadeFilters();
+            };
+            chip.appendChild(sel);
+
+            const abr = document.createElement('button');
+            abr.type = 'button';
+            abr.className = 'chip-open' + (abierta ? ' open' : '');
+            abr.innerHTML = '<i class="fas fa-chevron-down"></i>';
+            abr.title = 'Desplegar / cerrar';
+            abr.onclick = () => {
+                if (abierta) this.cascadeAbiertas.delete(f); else this.cascadeAbiertas.add(f);
+                this.renderCascadeFilters();
+            };
+            chip.appendChild(abr);
+
+            cont.appendChild(chip);
+        });
+
+        // ---- Niveles 2, 3 y 4 ----
+        panel.innerHTML = '';
+        freqs.filter(f => this.cascadeAbiertas.has(f)).forEach(f => {
+            const sups = this.cascadeJerarquia.get(f);
+
+            const seccion = document.createElement('div');
+            seccion.className = 'chip-section';
+
+            const titulo = document.createElement('div');
+            titulo.className = 'chip-section-title';
+            titulo.textContent = f;
+            seccion.appendChild(titulo);
+
+            sups.forEach((proms, sid) => {
+                const sup = DataService.getSupervisor(sid);
+                const clavesS = this.cascadeClaves(f, sid);
+                const activasS = clavesS.filter(k => this.cascadeActivos.has(k)).length;
+                const abiertoSup = this.cascadeSupsAbiertos.has(sid + '@' + f);
+
+                const fila = document.createElement('div');
+                fila.className = 'chip-row';
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = activasS === clavesS.length;
+                cb.indeterminate = activasS > 0 && activasS < clavesS.length;
+                cb.onchange = () => {
+                    clavesS.forEach(k => { if (cb.checked) this.cascadeActivos.add(k); else this.cascadeActivos.delete(k); });
+                    this.renderCascadeFilters();
+                    this.applyCascadeFilters();
+                };
+                fila.appendChild(cb);
+
+                const col = document.createElement('span');
+                col.className = 'chip-color';
+                col.style.background = sup ? sup.Color : '#666';
+                fila.appendChild(col);
+
+                const nom = document.createElement('span');
+                nom.className = 'chip-name';
+                nom.textContent = sup ? sup.Nombre : sid;
+                fila.appendChild(nom);
+
+                const cnt = document.createElement('span');
+                cnt.className = 'chip-count';
+                cnt.textContent = [...proms.keys()].filter(pid =>
+                    this.cascadeClaves(f, sid, pid).some(k => this.cascadeActivos.has(k))
+                ).length;                                  // nº de promotores tildados
+                fila.appendChild(cnt);
+
+                const chev = document.createElement('button');
+                chev.className = 'chip-chevron' + (abiertoSup ? ' open' : '');
+                chev.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                chev.onclick = () => {
+                    if (abiertoSup) this.cascadeSupsAbiertos.delete(sid + '@' + f);
+                    else this.cascadeSupsAbiertos.add(sid + '@' + f);
+                    this.renderCascadeFilters();
+                };
+                fila.appendChild(chev);
+
+                seccion.appendChild(fila);
+                if (!abiertoSup) return;
+
+                proms.forEach((ids, pid) => {
+                    const prom = DataService.getPromotor(pid);
+                    const clavesP = this.cascadeClaves(f, sid, pid);
+                    const activasP = clavesP.filter(k => this.cascadeActivos.has(k)).length;
+                    const abiertoProm = this.cascadePromsAbiertos.has(pid + '@' + sid + '@' + f);
+
+                    const sub = document.createElement('div');
+                    sub.className = 'chip-subrow';
+
+                    const cb2 = document.createElement('input');
+                    cb2.type = 'checkbox';
+                    cb2.checked = activasP === clavesP.length;
+                    cb2.indeterminate = activasP > 0 && activasP < clavesP.length;
+                    cb2.onchange = () => {
+                        clavesP.forEach(k => { if (cb2.checked) this.cascadeActivos.add(k); else this.cascadeActivos.delete(k); });
+                        this.renderCascadeFilters();
+                        this.applyCascadeFilters();
+                    };
+                    sub.appendChild(cb2);
+
+                    const col2 = document.createElement('span');
+                    col2.className = 'chip-color';
+                    col2.style.background = prom ? prom.Color : '#666';
+                    sub.appendChild(col2);
+
+                    const nom2 = document.createElement('span');
+                    nom2.className = 'chip-name';
+                    nom2.textContent = prom ? prom.Nombre : pid;
+                    sub.appendChild(nom2);
+
+                    const cnt2 = document.createElement('span');
+                    cnt2.className = 'chip-count';
+                    cnt2.textContent = ids.filter(id =>
+                        this.cascadeActivos.has(this.cascadeClave(f, sid, pid, id))
+                    ).length;                              // nº de clientes tildados
+                    sub.appendChild(cnt2);
+
+                    const chev2 = document.createElement('button');
+                    chev2.className = 'chip-chevron' + (abiertoProm ? ' open' : '');
+                    chev2.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                    chev2.onclick = () => {
+                        if (abiertoProm) this.cascadePromsAbiertos.delete(pid + '@' + sid + '@' + f);
+                        else this.cascadePromsAbiertos.add(pid + '@' + sid + '@' + f);
+                        this.renderCascadeFilters();
+                    };
+                    sub.appendChild(chev2);
+
+                    seccion.appendChild(sub);
+                    if (!abiertoProm) return;
+
+                    ids.forEach(id => {
+                        const cli = DataService.byId ? DataService.byId.get(id) : null;
+                        const clave = this.cascadeClave(f, sid, pid, id);
+
+                        const filaCli = document.createElement('div');
+                        filaCli.className = 'chip-clientrow';
+
+                        const cb3 = document.createElement('input');
+                        cb3.type = 'checkbox';
+                        cb3.checked = this.cascadeActivos.has(clave);
+                        cb3.onchange = () => {
+                            if (cb3.checked) this.cascadeActivos.add(clave);
+                            else this.cascadeActivos.delete(clave);
+                            this.renderCascadeFilters();
+                            this.applyCascadeFilters();
+                        };
+                        filaCli.appendChild(cb3);
+
+                        const nom3 = document.createElement('span');
+                        nom3.className = 'chip-name';
+                        nom3.textContent = cli ? ('#' + (cli.Codigo || cli.ID) + ' - ' + cli.Nombre) : id;
+                        filaCli.appendChild(nom3);
+
+                        seccion.appendChild(filaCli);
+                    });
+                });
+            });
+
+            panel.appendChild(seccion);
+        });
+    },
+
+    applyCascadeFilters() {
+        if (!this.cascadeJerarquia) this.cascadeJerarquia = this.buildCascadeJerarquia();
+        if (!this.cascadeActivos) this.cascadeActivos = new Set(this.cascadeTodasLasClaves());
+
+        const visibles = new Set();
+        DataService.data.clientes.forEach(c => {
+            const f = c.FrecuenciaGrupo || 'Sin Frecuencia';
+            if (this.cascadeActivos.has(this.cascadeClave(f, c.SupervisorID, c.PromotorID, c.ID))) visibles.add(c.ID);
+        });
+        this.activeClients = visibles;
+
+        const checkbox = document.getElementById('floating-show-clients');
+        const globalShow = checkbox ? checkbox.checked : true;
+        MapManager.updateClientVisibility(visibles, globalShow);
+
+        // Re-renderizar las zonas para que los contadores reflejen el filtro
+        this.renderCustomZonesList();
+    },
+
+    // --- DATA RENDERING ---
+    renderUI() {
+        this.renderCascadeFilters();
+        this.renderClientList(DataService.data.clientes);
+        this.renderPrintDropdowns();
+        this.updatePrintPreview();
+        this.renderCustomZonesList();
+        this.renderSimTab();
+        this.refrescarEscenariosOnline();
+    },
+
+    renderClientList(clients) {
+        const list = document.getElementById('clients-list');
+        document.getElementById('client-count').textContent = `${clients.length} clientes`;
+        if (clients.length === 0) { list.innerHTML = '<div class="loading-placeholder">No se encontraron clientes</div>'; return; }
+
+        // Limit rendering to avoid browser freeze with 5000+ items
+        const displayClients = clients.slice(0, 200);
+        const hasMore = clients.length > 200;
+
+        list.innerHTML = displayClients.map(c => {
+            const supervisor = DataService.getSupervisor(c.SupervisorID);
+            const promotor = DataService.getPromotor(c.PromotorID);
+            return `<div class="client-item" data-id="${esc(c.ID)}" data-lat="${c.Latitud}" data-lng="${c.Longitud}">
+                <div class="client-item-header">
+                    <span class="client-item-code">#${esc(c.Codigo || c.ID)}</span>
+                    <span class="client-item-name">${esc(c.Nombre)}</span>
+                </div>
+                <div class="client-item-addr">${esc(c.Direccion || '')}</div>
+                <div class="client-item-tags">
+                    ${supervisor ? `<span class="client-tag" style="background:${supervisor.Color}">${esc(supervisor.Nombre)}</span>` : ''}
+                    ${promotor ? `<span class="client-tag" style="background:${promotor.Color}">${esc(promotor.Nombre)}</span>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+
+        if (hasMore) {
+            list.innerHTML += `<div class="loading-placeholder" style="color: var(--accent-secondary);">Mostrando ${displayClients.length} de ${clients.length} clientes. Usá el buscador para filtrar.</div>`;
+        }
+
+        list.querySelectorAll('.client-item').forEach(el => {
+            el.onclick = () => {
+                const c = DataService.byId ? DataService.byId.get(el.dataset.id) : null;
+                if (c) MapManager.flyToClient(c);
+            };
+        });
+    },
+
+    applyClientFilters() {
+        // Usado por el panel de capas del mapa y por app.js/map.js
+        this.applyCascadeFilters();
+    },
+
+    filterClients(query) {
+        const filtered = DataService.searchClients(query);
+        this.renderClientList(filtered);
+    },
+
+    // --- PRINT ---
+    renderPrintDropdowns() {
+        const sSelect = document.getElementById('print-supervisor');
+        const pSelect = document.getElementById('print-promotor');
+        const lSelect = document.getElementById('print-localidad');
+        sSelect.innerHTML = '<option value="">-- Todos los supervisores --</option>' +
+            DataService.data.supervisores.map(s => `<option value="${esc(s.ID)}">${esc(s.Nombre)}</option>`).join('');
+        pSelect.innerHTML = '<option value="">-- Todos los promotores --</option>' +
+            DataService.data.promotores.map(p => `<option value="${esc(p.ID)}">${esc(p.Nombre)}</option>`).join('');
+        lSelect.innerHTML = '<option value="">-- Todas las localidades --</option>' +
+            DataService.data.localidades.map(l => `<option value="${esc(l.Nombre)}">${esc(l.Nombre)}</option>`).join('');
+    },
+
+    getFilteredPrintClients() {
+        // Si hay una selección de mapa activa, usamos esa selección
+        if (this.mapSelection !== null) {
+            return DataService.data.clientes.filter(c => this.mapSelection.includes(c.ID));
+        }
+
+        const sid = document.getElementById('print-supervisor').value;
+        const pid = document.getElementById('print-promotor').value;
+        const loc = document.getElementById('print-localidad').value;
+        let clients = DataService.data.clientes;
+        if (sid) clients = clients.filter(c => c.SupervisorID === sid);
+        if (pid) clients = clients.filter(c => c.PromotorID === pid);
+        if (loc) clients = clients.filter(c => c.Localidad === loc);
+        return clients;
+    },
+
+    // Clientes dentro de una zona dibujada, respetando el filtro de la herramienta de selección
+    getZoneClients(zoneId) {
+        const zona = DataService.getCustomZones().find(z => z.id === zoneId);
+        if (!zona) return [];
+        let clientes = DataService.getClientsInGeometry(zona.geometry);
+        if (this.activeClients) clientes = clientes.filter(c => this.activeClients.has(c.ID));
+        return clientes;
+    },
+
+    handleMapSelection(ids) {
+        this.mapSelection = ids;
+
+        // Mostrar el banner de selección y ocultar los filtros
+        document.getElementById('print-map-selection-banner').classList.remove('hidden');
+        document.getElementById('print-dropdown-filters').style.display = 'none';
+
+        // Cambiar a la pestaña de impresión automáticamente
+        document.getElementById('tab-btn-print').click();
+
+        this.updatePrintPreview();
+    },
+
+    clearMapSelection() {
+        this.mapSelection = null;
+
+        // Limpiar el dibujo del mapa si existe
+        if (window.MapManager && MapManager.clearDrawSelection) {
+            MapManager.clearDrawSelection();
+        }
+
+        // Ocultar banner y mostrar filtros
+        document.getElementById('print-map-selection-banner').classList.add('hidden');
+        document.getElementById('print-dropdown-filters').style.display = 'block';
+
+        this.updatePrintPreview();
+    },
+
+    updatePrintPreview() {
+        const clients = this.getFilteredPrintClients();
+        document.getElementById('print-count').textContent = `${clients.length} clientes`;
+        const list = document.getElementById('print-client-list');
+        if (clients.length === 0) {
+            list.innerHTML = '<div class="loading-placeholder">No hay clientes con los filtros seleccionados</div>';
+            return;
+        }
+        // Compact table preview (show first 100)
+        const previewClients = clients.slice(0, 100);
+        let html = '<table class="preview-table"><thead><tr>';
+        html += '<th>Código</th><th>Razón Social</th><th>Dirección</th><th>Loc.</th><th>Zona</th>';
+        html += '</tr></thead><tbody>';
+        previewClients.forEach((c) => {
+            html += `<tr>
+                <td>${esc(c.Codigo || c.ID)}</td>
+                <td>${esc(c.Nombre)}</td>
+                <td>${esc(c.Direccion || '')}</td>
+                <td>${esc(c.Localidad || '')}</td>
+                <td>${esc(c.Zona || '')}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        if (clients.length > 100) {
+            html += `<div class="loading-placeholder" style="font-size:10px;">Mostrando 100 de ${clients.length}</div>`;
+        }
+        list.innerHTML = html;
+    },
+
+    printReport(clients, etiqueta) {
+        clients = clients || this.getFilteredPrintClients();
+        if (clients.length === 0) { alert('No hay clientes para imprimir con los filtros seleccionados.'); return; }
+
+        document.getElementById('print-date').textContent = `Generado: ${new Date().toLocaleString('es-AR')}`;
+        let info = '';
+        if (etiqueta) {
+            info = `<strong>Zona:</strong> ${esc(etiqueta)} | <strong>Total:</strong> ${clients.length} clientes`;
+        } else if (this.mapSelection !== null) {
+            info = `<strong>Selección en mapa</strong> | <strong>Total:</strong> ${clients.length} clientes`;
+        } else {
+            const sid = document.getElementById('print-supervisor').value;
+            const pid = document.getElementById('print-promotor').value;
+            const loc = document.getElementById('print-localidad').value;
+            if (sid) { const s = DataService.getSupervisor(sid); info += `<strong>Supervisor:</strong> ${esc(s ? s.Nombre : sid)} | `; }
+            if (pid) { const p = DataService.getPromotor(pid); info += `<strong>Promotor:</strong> ${esc(p ? p.Nombre : pid)} | `; }
+            if (loc) { info += `<strong>Localidad:</strong> ${loc} | `; }
+            info += `<strong>Total:</strong> ${clients.length} clientes`;
+        }
+        document.getElementById('print-filters-info').innerHTML = info;
+
+        const tbody = document.getElementById('print-table-body');
+        tbody.innerHTML = clients.map(c => {
+            return `<tr>
+                <td>${esc(c.Codigo || c.ID)}</td>
+                <td>${esc(c.Nombre)}</td>
+                <td>${esc(c.Direccion || '')}</td>
+                <td>${esc(c.Localidad || '')}</td>
+                <td>${esc(c.Zona || '')}</td>
+                <td>${esc(c.Vendedor || '')}</td>
+                <td>${esc(c.Promotor || '')}</td>
+                <td>${esc(c.Supervisor || '')}</td>
+            </tr>`;
+        }).join('');
+
+        window.print();
+    },
+
+    exportCSV(clients, etiqueta) {
+        clients = clients || this.getFilteredPrintClients();
+        if (clients.length === 0) { alert('No hay clientes para exportar.'); return; }
+
+        const headers = ['Código', 'Razón Social', 'Dirección', 'Localidad', 'Zona', 'Vendedor', 'Promotor', 'Supervisor', 'Latitud', 'Longitud', 'Día de visita'];
+        const rows = clients.map(c => [
+            c.Codigo || c.ID,
+            c.Nombre,
+            c.Direccion || '',
+            c.Localidad || '',
+            c.Zona || '',
+            c.Vendedor || '',
+            c.Promotor || '',
+            c.Supervisor || '',
+            c.Latitud || '',
+            c.Longitud || '',
+            c.Frecuencia || ''
+        ]);
+
+        // BOM for UTF-8 + CSV content
+        let csv = '\uFEFF' + headers.join(';') + '\n';
+        rows.forEach(row => {
+            csv += row.map(cell => {
+                let text = String(cell).replace(/"/g, '""').replace(/[\r\n]+/g, ' ');
+                return `"${text}"`;
+            }).join(';') + '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const sufijo = etiqueta ? String(etiqueta).replace(/[^A-Za-z0-9]+/g, '_') + '_' : '';
+        a.download = `SURCALA_${sufijo}${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    },
+
+    // ============================================
+    // MÓDULO DE SIMULACIÓN
+    // ============================================
+    bindSimEvents() {
+        const tipo = document.getElementById('sim-tipo');
+        if (tipo) {
+            tipo.onchange = () => {
+                document.getElementById('sim-zona').style.display = tipo.value === 'zona' ? '' : 'none';
+                document.getElementById('sim-promotor').style.display = tipo.value === 'promotor' ? '' : 'none';
+            };
+        }
+
+        const btnToggle = document.getElementById('btn-sim-toggle');
+        if (btnToggle) {
+            btnToggle.onclick = () => {
+                const escenario = DataService.getEscenario();
+                escenario.activo = !escenario.activo;
+                DataService.persistirEscenario();
+                DataService.aplicarEscenario();
+                this.afterSimChange();
+            };
+        }
+
+        const btnAdd = document.getElementById('btn-sim-add');
+        if (btnAdd) {
+            btnAdd.onclick = () => {
+                const t = tipo.value;
+                const nuevoSup = document.getElementById('sim-new-sup').value;
+                const nuevoProm = document.getElementById('sim-new-prom').value;
+                const nuevaFreq = document.getElementById('sim-new-freq').value;
+
+                if (!nuevoSup && !nuevoProm && !nuevaFreq) {
+                    alert('Elegí al menos un cambio (supervisor, promotor o frecuencia).');
+                    return;
+                }
+
+                const regla = { tipo: t, nuevoSupervisor: nuevoSup || null, nuevoPromotor: nuevoProm || null, nuevaFrecuencia: nuevaFreq || null };
+
+                if (t === 'zona') {
+                    const zid = document.getElementById('sim-zona').value;
+                    const zona = DataService.getCustomZones().find(z => z.id === zid);
+                    if (!zona) { alert('No hay ninguna zona seleccionada.'); return; }
+                    regla.zonaId = zid;
+                } else if (t === 'seleccion') {
+                    if (!this.activeClients || this.activeClients.size === 0) {
+                        alert('No hay clientes tildados. Andá a "Filtros" y tildá lo que quieras mover.');
+                        return;
+                    }
+                    regla.clienteIds = [...this.activeClients];
+                } else {
+                    regla.promotorOrigen = document.getElementById('sim-promotor').value;
+                    if (!regla.promotorOrigen) { alert('Elegí un promotor.'); return; }
+                }
+
+                const escenario = DataService.getEscenario();
+                escenario.reglas.push(regla);
+                DataService.persistirEscenario();
+                DataService.aplicarEscenario();
+                this.afterSimChange();
+            };
+        }
+
+        const btnLimpiar = document.getElementById('btn-sim-limpiar');
+        if (btnLimpiar) {
+            btnLimpiar.onclick = () => {
+                if (!confirm('¿Borrar todos los cambios de la simulación?')) return;
+                DataService.escenario = { activo: false, reglas: [] };
+                DataService.persistirEscenario();
+                DataService.aplicarEscenario();
+                this.afterSimChange();
+            };
+        }
+
+        const btnGuardar = document.getElementById('btn-sim-guardar');
+        if (btnGuardar) {
+            btnGuardar.onclick = async () => {
+                const escenario = DataService.getEscenario();
+                if (!escenario.reglas.length) { alert('No hay cambios para guardar.'); return; }
+                const nombre = (prompt('Nombre del escenario:', 'Escenario ' + new Date().toLocaleDateString('es-AR')) || '').trim();
+                if (!nombre) return;
+                const existente = (this.escenariosOnline || []).find(e => e.nombre.toLowerCase() === nombre.toLowerCase());
+                if (existente && !confirm('Ya existe "' + existente.nombre + '" (guardado por ' + existente.usuario + ').\n¿Reemplazarlo?')) return;
+                btnGuardar.disabled = true;
+                try {
+                    const r = await DataService.escenarioGuardar(nombre);
+                    alert('Escenario "' + nombre + '" guardado online.');
+                    await this.refrescarEscenariosOnline(r.id);
+                } catch (e) {
+                    alert('No se pudo guardar online:\n' + e.message);
+                } finally {
+                    btnGuardar.disabled = false;
+                }
+            };
+        }
+
+        const btnCargar = document.getElementById('btn-sim-cargar');
+        if (btnCargar) {
+            btnCargar.onclick = async () => {
+                const sel = document.getElementById('sim-escenarios-sel');
+                const id = sel && sel.value;
+                if (!id) { alert('Elegí un escenario de la lista.'); return; }
+                btnCargar.disabled = true;
+                try {
+                    const cargado = await DataService.escenarioObtener(id);
+                    DataService.escenario = { activo: true, reglas: cargado.reglas || [] };
+                    DataService.persistirEscenario();
+                    DataService.aplicarEscenario();
+                    this.afterSimChange();
+                } catch (e) {
+                    alert('No se pudo cargar el escenario:\n' + e.message);
+                } finally {
+                    btnCargar.disabled = false;
+                }
+            };
+        }
+
+        const btnBorrar = document.getElementById('btn-sim-borrar');
+        if (btnBorrar) {
+            btnBorrar.onclick = async () => {
+                const sel = document.getElementById('sim-escenarios-sel');
+                const id = sel && sel.value;
+                if (!id) { alert('Elegí un escenario de la lista.'); return; }
+                const e = (this.escenariosOnline || []).find(x => x.id === id);
+                if (!confirm('¿Borrar "' + (e ? e.nombre : id) + '" del servidor?\nSe borra para todos los usuarios.')) return;
+                btnBorrar.disabled = true;
+                try {
+                    await DataService.escenarioBorrar(id);
+                    await this.refrescarEscenariosOnline();
+                } catch (err) {
+                    alert('No se pudo borrar:\n' + err.message);
+                } finally {
+                    btnBorrar.disabled = false;
+                }
+            };
+        }
+
+        const btnImport = document.getElementById('btn-sim-import');
+        const fileImport = document.getElementById('sim-import-file');
+        if (btnImport && fileImport) {
+            btnImport.onclick = () => { fileImport.value = ''; fileImport.click(); };
+            fileImport.onchange = () => {
+                const f = fileImport.files && fileImport.files[0];
+                if (!f) return;
+                const reader = new FileReader();
+                reader.onerror = () => alert('No se pudo leer el archivo.');
+                reader.onload = () => {
+                    // UTF-8 primero; si falla (Excel en ANSI) se usa windows-1252
+                    let texto;
+                    try { texto = new TextDecoder('utf-8', { fatal: true }).decode(reader.result); }
+                    catch (e) { texto = new TextDecoder('windows-1252').decode(reader.result); }
+                    try {
+                        const r = DataService.importarCsvEscenario(texto, f.name);
+                        DataService.persistirEscenario();
+                        DataService.aplicarEscenario();
+                        this.afterSimChange();
+                        alert('CSV importado.\n\n' +
+                            'Filas leídas: ' + r.filasLeidas + '\n' +
+                            'Clientes con cambios: ' + r.modificados + '\n' +
+                            (r.sinMatch ? 'Códigos que no existen en la base: ' + r.sinMatch + '\n' : '') +
+                            'Columnas detectadas: ' + r.columnas.join(', ') +
+                            (r.modificados ? '' : '\n\nNo hay diferencias contra la base real.'));
+                    } catch (e) {
+                        alert('No se pudo importar el CSV:\n' + e.message);
+                    }
+                };
+                reader.readAsArrayBuffer(f);
+            };
+        }
+
+        const btnExport = document.getElementById('btn-sim-export');
+        if (btnExport) {
+            btnExport.onclick = () => {
+                this.exportCSV(DataService.data.clientes.slice(), 'simulado');
+            };
+        }
+    },
+
+    renderSimTab() {
+        const escenario = DataService.getEscenario();
+
+        const btnToggle = document.getElementById('btn-sim-toggle');
+        if (btnToggle) {
+            btnToggle.textContent = escenario.activo ? '🧪 Simulación: ON' : 'Simulación: OFF';
+            btnToggle.style.background = escenario.activo ? 'var(--danger-color)' : '';
+        }
+
+        const base = DataService.dataReal;
+        if (!base) return;
+
+        const selZona = document.getElementById('sim-zona');
+        if (selZona) {
+            const zonas = DataService.getCustomZones();
+            selZona.innerHTML = zonas.length
+                ? zonas.map(z => `<option value="${esc(z.id)}">${esc(z.name)}</option>`).join('')
+                : '<option value="">(no hay zonas dibujadas)</option>';
+        }
+        const selProm = document.getElementById('sim-promotor');
+        if (selProm) {
+            selProm.innerHTML = base.promotores.map(p => `<option value="${esc(p.Nombre)}">${esc(p.Nombre)}</option>`).join('');
+        }
+        const selSup = document.getElementById('sim-new-sup');
+        if (selSup) {
+            selSup.innerHTML = '<option value="">Supervisor: sin cambio</option>' +
+                base.supervisores.map(s => `<option value="${esc(s.Nombre)}">${esc(s.Nombre)}</option>`).join('');
+        }
+        const selPromN = document.getElementById('sim-new-prom');
+        if (selPromN) {
+            selPromN.innerHTML = '<option value="">Promotor: sin cambio</option>' +
+                base.promotores.map(p => `<option value="${esc(p.Nombre)}">${esc(p.Nombre)}</option>`).join('');
+        }
+
+        this.renderSimReglas();
+        this.renderSimComparativo();
+    },
+
+    renderSimReglas() {
+        const cont = document.getElementById('sim-reglas-list');
+        if (!cont) return;
+        const escenario = DataService.getEscenario();
+        if (!escenario.reglas.length) {
+            cont.innerHTML = '<div class="loading-placeholder">Sin cambios todavía.</div>';
+            return;
+        }
+        cont.innerHTML = escenario.reglas.map((r, i) => {
+            let donde;
+            if (r.tipo === 'zona') {
+                const z = DataService.getCustomZones().find(x => x.id === r.zonaId);
+                donde = 'Zona "' + (z ? z.name : (r.zonaNombre || '?')) + '"';
+            } else if (r.tipo === 'seleccion') {
+                donde = 'Selección (' + (r.clienteIds || []).length + ' clientes)';
+            } else if (r.tipo === 'csv') {
+                donde = 'CSV importado' + (r.etiqueta ? ' (' + r.etiqueta + ')' : '') + ' — ' + Object.keys(r.cambios || {}).length + ' clientes';
+            } else {
+                donde = 'Promotor ' + r.promotorOrigen;
+            }
+            const cambios = [];
+            if (r.tipo === 'csv') {
+                const cont = {};
+                Object.values(r.cambios || {}).forEach(d => Object.keys(d).forEach(k => { cont[k] = (cont[k] || 0) + 1; }));
+                const nombres = { supervisor: 'SPV', promotor: 'Promotor', frecuencia: 'Frecuencia', zona: 'Zona', vendedor: 'Vendedor' };
+                Object.keys(cont).forEach(k => cambios.push(nombres[k] + ': ' + cont[k]));
+            }
+            if (r.nuevoSupervisor) cambios.push('SPV → ' + r.nuevoSupervisor);
+            if (r.nuevoPromotor) cambios.push('Promotor → ' + r.nuevoPromotor);
+            if (r.nuevaFrecuencia) cambios.push('Frecuencia → ' + r.nuevaFrecuencia);
+            return `<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px; border-bottom:1px solid var(--border-color);">
+                <div style="font-size:12px; min-width:0;">
+                    <div style="font-weight:600;">${i + 1}. ${esc(donde)}</div>
+                    <div style="color:var(--text-secondary); font-size:11px;">${esc(cambios.join(' · '))}</div>
+                </div>
+                <button class="link-btn del-sim-regla" data-idx="${i}" style="color:var(--danger-color);" title="Quitar"><i class="fas fa-times"></i></button>
+            </div>`;
+        }).join('');
+
+        cont.querySelectorAll('.del-sim-regla').forEach(btn => {
+            btn.onclick = () => {
+                const escenario = DataService.getEscenario();
+                escenario.reglas.splice(parseInt(btn.dataset.idx, 10), 1);
+                DataService.persistirEscenario();
+                DataService.aplicarEscenario();
+                this.afterSimChange();
+            };
+        });
+    },
+
+    renderSimComparativo() {
+        const cont = document.getElementById('sim-comparativo');
+        if (!cont) return;
+        const cmp = DataService.compararEscenario();
+        const fila = (t, x, y) => {
+            const cambio = x !== y;
+            return `<div style="display:flex; justify-content:space-between;">
+                <span>${t}</span>
+                <span>${x} → <strong style="color:${cambio ? 'var(--accent-secondary)' : 'inherit'}">${y}</strong></span>
+            </div>`;
+        };
+        cont.innerHTML =
+            `<div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:10px; margin-bottom:4px;"><span></span><span>REAL → SIMULADO</span></div>` +
+            fila('SPV', cmp.antes.spv, cmp.despues.spv) +
+            fila('BDR', cmp.antes.bdr, cmp.despues.bdr) +
+            fila('MAYO', cmp.antes.mayo, cmp.despues.mayo) +
+            fila('Promotores', cmp.antes.promotores, cmp.despues.promotores) +
+            fila('Clientes', cmp.antes.clientes, cmp.despues.clientes) +
+            `<div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border-color);">
+                <strong>${cmp.movidos}</strong> clientes con asignación distinta
+            </div>`;
+    },
+
+    // Refrescar todo lo que depende de los datos
+    afterSimChange() {
+        this.cascadeActivos = null;      // el filtro vuelve a "todo tildado"
+        this.cascadeJerarquia = null;
+        this.renderCascadeFilters();
+        this.applyCascadeFilters();
+        this.renderCustomZonesList();
+        this.renderSimTab();
+        if (MapManager.map && MapManager.isLoaded) MapManager.renderAll();
+    },
+
+    // Lista de escenarios guardados en el servidor
+    async refrescarEscenariosOnline(seleccionarId) {
+        const sel = document.getElementById('sim-escenarios-sel');
+        const estado = document.getElementById('sim-escenarios-estado');
+        if (!sel) return;
+        if (estado) estado.textContent = 'Consultando servidor…';
+        try {
+            const lista = await DataService.escenariosListar();
+            this.escenariosOnline = lista;
+            sel.innerHTML = lista.length
+                ? lista.map(e => `<option value="${esc(e.id)}">${esc(e.nombre)} · ${esc(e.usuario)} · ${esc(new Date(e.fecha).toLocaleDateString('es-AR'))} · ${esc(e.clientes)} cli.</option>`).join('')
+                : '<option value="">(no hay escenarios guardados)</option>';
+            if (seleccionarId) sel.value = seleccionarId;
+            if (estado) estado.textContent = lista.length + ' escenario(s) online';
+        } catch (e) {
+            this.escenariosOnline = [];
+            sel.innerHTML = '<option value="">(sin conexión)</option>';
+            if (estado) estado.textContent = e.message;
+        }
+    },
+
+    // --- CONFIG ---
+    loadConfig() {
+        let config = {};
+        let freqColors = {
+            'LU-JU': '#818cf8',
+            'MA-VI': '#34d399',
+            'MI-SA': '#fbbf24'
+        };
+        try {
+            config = JSON.parse(localStorage.getItem('surcala_config') || '{}');
+            freqColors = JSON.parse(localStorage.getItem('surcala_freq_colors')) || freqColors;
+        } catch (e) {
+            console.warn('No se pudo acceder a localStorage', e);
+        }
+        if (config.lat) document.getElementById('map-center-lat').value = config.lat;
+        if (config.lng) document.getElementById('map-center-lng').value = config.lng;
+        if (config.zoom) document.getElementById('map-zoom').value = config.zoom;
+
+        document.getElementById('color-luju').value = freqColors['LU-JU'];
+        document.getElementById('color-mavi').value = freqColors['MA-VI'];
+        document.getElementById('color-misa').value = freqColors['MI-SA'];
+    },
+
+    saveConfig() {
+        const config = {
+            lat: parseFloat(document.getElementById('map-center-lat').value),
+            lng: parseFloat(document.getElementById('map-center-lng').value),
+            zoom: parseInt(document.getElementById('map-zoom').value)
+        };
+        const freqColors = {
+            'LU-JU': document.getElementById('color-luju').value,
+            'MA-VI': document.getElementById('color-mavi').value,
+            'MI-SA': document.getElementById('color-misa').value
+        };
+        try {
+            localStorage.setItem('surcala_config', JSON.stringify(config));
+            localStorage.setItem('surcala_freq_colors', JSON.stringify(freqColors));
+        } catch (e) {
+            console.warn('No se pudo guardar en localStorage', e);
+            alert('No se pudieron guardar los ajustes (puede deberse a permisos del navegador).');
+        }
+        document.getElementById('config-modal').classList.remove('active');
+        localStorage.removeItem('surcala_map_lat');
+        localStorage.removeItem('surcala_map_lng');
+        localStorage.removeItem('surcala_map_zoom');
+        window.location.reload(); // Recargar para aplicar colores en todo el sistema
+    },
+
+    renderBaseCloudStatus() {
+        const el = document.getElementById('base-cloud-status');
+        if (!el) return;
+        const m = DataService.baseMeta || {};
+        if (m.origen === 'supabase') {
+            const fecha = m.actualizado_el ? new Date(m.actualizado_el).toLocaleString('es-AR') : '';
+            el.innerHTML = `<i class="fas fa-cloud" style="color:var(--accent-secondary);"></i> <strong>Base activa en Supabase:</strong> ${esc(m.total_clientes)} clientes` +
+                (m.actualizado_por ? ` · subida por <strong>${esc(m.actualizado_por)}</strong>` : '') +
+                (fecha ? ` (${esc(fecha)})` : '');
+        } else {
+            el.innerHTML = `<i class="fas fa-hdd"></i> <strong>Base activa:</strong> archivo local <code>clientes.csv</code> (${esc(m.total_clientes || 0)} clientes). Todavía no se subió una base a Supabase.`;
+        }
+    },
+
+    bindBaseUploadEvents() {
+        const btn = document.getElementById('btn-upload-base');
+        const input = document.getElementById('base-upload-file');
+        if (!btn || !input) return;
+
+        btn.onclick = () => { input.value = ''; input.click(); };
+        input.onchange = () => {
+            const f = input.files && input.files[0];
+            if (!f) return;
+            if (!confirm(`¿Reemplazar la base general en la nube con "${f.name}"?\n\nEsto actualizará el padrón oficial para todos los usuarios.`)) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onerror = () => alert('No se pudo leer el archivo.');
+            reader.onload = async () => {
+                let texto;
+                try { texto = new TextDecoder('utf-8', { fatal: true }).decode(reader.result); }
+                catch (e) { texto = new TextDecoder('windows-1252').decode(reader.result); }
+
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo base a Supabase...';
+                try {
+                    const res = await DataService.guardarBaseEnSupabase(texto);
+                    this.renderBaseCloudStatus();
+                    this.cascadeActivos = null;
+                    this.cascadeJerarquia = null;
+                    this.renderUI();
+                    if (MapManager.map && MapManager.isLoaded) {
+                        MapManager.renderAll();
+                        this.applyClientFilters();
+                    }
+                    alert(`Base general actualizada en la nube.\n\nClientes cargados: ${res.total}\nCon coordenadas válidas: ${res.conCoords}`);
+                } catch (err) {
+                    alert('No se pudo actualizar la base en la nube:\n' + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            };
+            reader.readAsArrayBuffer(f);
+        };
+    },
+
+    async refreshData() {
+        try {
+            await DataService.loadData();
+        } catch (e) {
+            console.error('[Zonas Surcala] No se pudieron recargar los clientes:', e);
+            alert('No se pudieron recargar los clientes.');
+            return;
+        }
+        MapManager.renderAll();
+        this.renderUI();
+    }
+};
+
+window.UI = UI;
