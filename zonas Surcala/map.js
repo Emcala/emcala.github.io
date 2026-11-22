@@ -214,7 +214,7 @@ const MapManager = {
             pressStart = { x: tp.clientX - rect.left, y: tp.clientY - rect.top };
             pressTimer = setTimeout(() => {
                 pressTimer = null;
-                this.openClientAt(pressStart, false);
+                this.openClientAt(pressStart, true);
             }, 500);
         }, { passive: true });
         canvas.addEventListener('touchmove', (ev) => {
@@ -1133,7 +1133,6 @@ ${stats.especiales.map(e => `                                <span><i class="fas
         if (isMobile && recenter) {
             this.map.easeTo({
                 center: best.geometry.coordinates,
-                padding: { top: 40, bottom: Math.round(window.innerHeight * 0.45), left: 0, right: 0 },
                 duration: 300
             });
         }
