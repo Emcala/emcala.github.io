@@ -663,6 +663,35 @@ body {
 /* Capa Venta (dentro del panel de capas) */
 .layer-panel-venta { padding: 2px 0 4px; }
 #venta-month { width: 130px; }
+/* Sub-switches CVZA / NABS de la capa Venta */
+.layer-panel-sub {
+    padding-left: 18px !important;
+    opacity: 0.95;
+}
+.layer-panel-sub .layer-panel-icon { font-size: 10px; }
+/* Leyenda CCC / CNC de la capa Venta */
+.layer-panel-legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 5px 0 2px;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+.layer-panel-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.layer-panel-legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.layer-panel-legend-dot.ccc { background: #16a34a; }
+.layer-panel-legend-dot.cnc { background: #dc2626; }
 .layer-panel-status {
     font-size: 11px;
     color: var(--text-muted);

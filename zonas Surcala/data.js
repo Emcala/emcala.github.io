@@ -230,10 +230,24 @@ const DataService = {
         return !!(set && set.has(this.normalizeCodigoCliente(codigo)));
     },
 
-    getVentasStats(venta, unidad) {
+    // Códigos de clientes con compra según las unidades activas (cerveza y/o nabs → unión)
+    getVentaCodes(venta, unidades) {
+        const v = venta || this.ventas;
+        if (!v) return new Set();
+        const u = unidades || { cerveza: true, nabs: false };
+        if (u.cerveza && u.nabs) {
+            const set = new Set(v.codes || []);
+            (v.codesNabs || new Set()).forEach(c => set.add(c));
+            return set;
+        }
+        return (u.nabs ? (v.codesNabs || new Set()) : (v.codes || new Set()));
+    },
+
+    // Stats de la capa Venta para una o dos unidades (CVZA / NABS)
+    getVentasStatsUnidades(venta, unidades) {
         const v = venta || this.ventas;
         if (!v) return null;
-        const set = (unidad === 'nabs') ? v.codesNabs : v.codes;
+        const set = this.getVentaCodes(v, unidades);
         const enBase = new Set();
         let conCoords = 0;
         (this.data.clientes || []).forEach(c => {
@@ -242,14 +256,26 @@ const DataService = {
             enBase.add(cod);
             if (!isNaN(c.Latitud) && !isNaN(c.Longitud)) conCoords++;
         });
+        const u = unidades || { cerveza: true, nabs: false };
+        const cccTotal = (u.cerveza && u.nabs)
+            ? (v.cccTotal || 0) + (v.cccNabsTotal || 0)
+            : (u.nabs ? (v.cccNabsTotal || 0) : (v.cccTotal || 0));
         return {
             cMonth: v.cMonth,
             total: set.size,
             enBase: enBase.size,
             sinMatch: set.size - enBase.size,
             conCoords: conCoords,
-            cccTotal: (unidad === 'nabs') ? (v.cccNabsTotal || 0) : v.cccTotal
+            cccTotal: cccTotal
         };
+    },
+
+    // Compatibilidad: stats de una sola unidad ('cerveza' por defecto o 'nabs')
+    getVentasStats(venta, unidad) {
+        return this.getVentasStatsUnidades(venta, {
+            cerveza: unidad !== 'nabs',
+            nabs: unidad === 'nabs'
+        });
     },
 
     baseMeta: { origen: 'local', actualizado_por: null, actualizado_el: null, total_clientes: 0 },

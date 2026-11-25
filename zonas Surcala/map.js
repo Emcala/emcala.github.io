@@ -96,10 +96,16 @@ const MapManager = {
     init(lat, lng, zoom) {
         document.getElementById('map-loading').classList.remove('hidden');
 
-        // Capa Venta (CCC cerveza del mes desde el Planificador): estado persistido
+        // Capa Venta (CVZA / NABS del mes desde el Planificador): estado persistido
         this.ventaVisible = localStorage.getItem('surcala_venta_visible') === '1';
         this._ventaReq = 0;
-        this.ventaUnidad = localStorage.getItem('surcala_venta_unidad') === 'nabs' ? 'nabs' : 'cerveza';
+        // Sub-capas: ambas encendidas por defecto (verde = compró CVZA o NABS)
+        let ventaUnidades = null;
+        try { ventaUnidades = JSON.parse(localStorage.getItem('surcala_venta_unidades') || 'null'); } catch (e) { ventaUnidades = null; }
+        this.ventaUnidades = {
+            cerveza: !ventaUnidades || ventaUnidades.cerveza !== false,
+            nabs: !ventaUnidades || ventaUnidades.nabs !== false
+        };
 
         // Restore config if available, safely handling NaN values
         let pLat = parseFloat(localStorage.getItem('surcala_map_lat'));
@@ -570,7 +576,7 @@ const MapManager = {
         const ventaLabel = document.createElement('span');
         ventaLabel.className = 'layer-panel-label';
         ventaLabel.id = 'venta-label';
-        ventaLabel.textContent = 'Venta (' + this.getVentaUnitLabel() + ')';
+        ventaLabel.textContent = 'Ventas';
         const ventaSwitch = document.createElement('span');
         ventaSwitch.className = 'layer-panel-switch';
         const ventaCb = document.createElement('input');
@@ -585,7 +591,41 @@ const MapManager = {
         ventaRow.appendChild(ventaLabel);
         ventaRow.appendChild(ventaSwitch);
         ventaCb.onchange = () => this.setVentaVisible(ventaCb.checked);
+        ventaWrap.appendChild(ventaRow);
 
+        // Sub-switches: qué unidades se pintan (CVZA, NABS o ambas)
+        const crearVentaUnitRow = (unidad, texto, icono) => {
+            const row = document.createElement('label');
+            row.className = 'layer-panel-row layer-panel-toggle layer-panel-sub';
+
+            const icon = document.createElement('i');
+            icon.className = `fas ${icono} layer-panel-icon`;
+            row.appendChild(icon);
+
+            const lbl = document.createElement('span');
+            lbl.className = 'layer-panel-label';
+            lbl.textContent = texto;
+            row.appendChild(lbl);
+
+            const wrap = document.createElement('span');
+            wrap.className = 'layer-panel-switch';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.id = `floating-venta-${unidad}`;
+            cb.checked = !!this.getVentaUnidades()[unidad];
+            const slider = document.createElement('span');
+            slider.className = 'layer-panel-slider';
+            wrap.appendChild(cb);
+            wrap.appendChild(slider);
+            row.appendChild(wrap);
+
+            cb.onchange = () => this.setVentaUnidades({ [unidad]: cb.checked });
+            return row;
+        };
+        ventaWrap.appendChild(crearVentaUnitRow('cerveza', 'CVZA', 'fa-beer-mug-empty'));
+        ventaWrap.appendChild(crearVentaUnitRow('nabs', 'NABS', 'fa-bottle-water'));
+
+        // Mes de venta (debajo de los switches de unidad)
         const monthRow = document.createElement('div');
         monthRow.className = 'layer-panel-row layer-panel-style-row';
         const monthLabel = document.createElement('span');
@@ -601,34 +641,31 @@ const MapManager = {
         };
         monthRow.appendChild(monthLabel);
         monthRow.appendChild(monthInput);
+        ventaWrap.appendChild(monthRow);
+
+        // Leyenda: ● CCC = compró (verde) · ● CNC = no compró (rojo)
+        const legend = document.createElement('div');
+        legend.id = 'venta-legend';
+        legend.className = 'layer-panel-legend';
+        [['ccc', 'CCC'], ['cnc', 'CNC']].forEach(([cls, txt]) => {
+            const item = document.createElement('span');
+            item.className = 'layer-panel-legend-item';
+            item.title = (cls === 'ccc') ? 'Cliente con compra' : 'Cliente sin compra';
+            const dot = document.createElement('span');
+            dot.className = 'layer-panel-legend-dot ' + cls;
+            const label = document.createElement('span');
+            label.textContent = txt;
+            item.appendChild(dot);
+            item.appendChild(label);
+            legend.appendChild(item);
+        });
+        ventaWrap.appendChild(legend);
 
         const status = document.createElement('div');
         status.id = 'venta-status';
         status.className = 'layer-panel-status';
-
-        ventaWrap.appendChild(ventaRow);
-        const unitRow = document.createElement('div');
-        unitRow.className = 'layer-panel-row layer-panel-style-row';
-        const unitLabel = document.createElement('span');
-        unitLabel.className = 'layer-panel-label';
-        unitLabel.textContent = 'Unidad';
-        const unitSelect = document.createElement('select');
-        unitSelect.id = 'venta-unidad';
-        unitSelect.className = 'layer-panel-select';
-        [['cerveza', 'Cerveza'], ['nabs', 'NABS']].forEach(([val, txt]) => {
-            const opt = document.createElement('option');
-            opt.value = val;
-            opt.textContent = txt;
-            unitSelect.appendChild(opt);
-        });
-        unitSelect.value = this.ventaUnidad;
-        unitSelect.onchange = () => this.setVentaUnidad(unitSelect.value);
-        unitRow.appendChild(unitLabel);
-        unitRow.appendChild(unitSelect);
-
-        ventaWrap.appendChild(monthRow);
-        ventaWrap.appendChild(unitRow);
         ventaWrap.appendChild(status);
+
         body.appendChild(ventaWrap);
         this.updateVentaStatus();
 
@@ -785,55 +822,86 @@ const MapManager = {
         el.className = 'layer-panel-status' + (kind ? ' ' + kind : '');
     },
 
-    getVentaUnitLabel() {
-        return this.ventaUnidad === 'nabs' ? 'NABS' : 'cerveza';
+    // Unidades activas de la capa Venta (por defecto: CVZA + NABS)
+    getVentaUnidades() {
+        if (!this.ventaUnidades) this.ventaUnidades = { cerveza: true, nabs: true };
+        return this.ventaUnidades;
     },
 
-    setVentaUnidad(u) {
-        this.ventaUnidad = (u === 'nabs') ? 'nabs' : 'cerveza';
-        localStorage.setItem('surcala_venta_unidad', this.ventaUnidad);
-        const lbl = document.getElementById('venta-label');
-        if (lbl) lbl.textContent = 'Venta (' + this.getVentaUnitLabel() + ')';
+    // ¿Hay al menos una unidad activa?
+    hasVentaUnits() {
+        const u = this.getVentaUnidades();
+        return !!(u.cerveza || u.nabs);
+    },
+
+    // Etiqueta de las unidades activas: "CVZA", "NABS" o "CVZA + NABS"
+    getVentaUnitsLabel() {
+        const u = this.getVentaUnidades();
+        const activas = [];
+        if (u.cerveza) activas.push('CVZA');
+        if (u.nabs) activas.push('NABS');
+        return activas.length ? activas.join(' + ') : 'sin unidades';
+    },
+
+    // Cambia las unidades que se pintan (no vuelve a consultar al Planificador)
+    setVentaUnidades(cambios) {
+        const u = this.getVentaUnidades();
+        if (typeof cambios.cerveza === 'boolean') u.cerveza = cambios.cerveza;
+        if (typeof cambios.nabs === 'boolean') u.nabs = cambios.nabs;
+        try { localStorage.setItem('surcala_venta_unidades', JSON.stringify(u)); } catch (e) { }
         this.refreshClientsVenta();
     },
 
     updateVentaStatus() {
+        const legend = document.getElementById('venta-legend');
+        if (legend) legend.style.display = (this.ventaVisible && this.hasVentaUnits()) ? '' : 'none';
         if (!this.ventaVisible) {
             this.setVentaStatus('Capa desactivada.', '');
             return;
         }
+        if (!this.hasVentaUnits()) {
+            this.setVentaStatus('Elegí CVZA, NABS o ambos para pintar el mapa.', '');
+            return;
+        }
         const month = this.getVentaMonth();
-        const unit = this.getVentaUnitLabel();
+        const unitsLabel = this.getVentaUnitsLabel();
         const v = DataService.ventas;
         if (!v || v.cMonth !== month) {
             this.setVentaStatus('Activá la capa para cargar la venta de ' + month + '.', '');
             return;
         }
-        const codes = (this.ventaUnidad === 'nabs') ? v.codesNabs : v.codes;
-        if (!codes || codes.size === 0) {
-            const cccTot = (this.ventaUnidad === 'nabs') ? (v.cccNabsTotal || 0) : v.cccTotal;
+        const s = DataService.getVentasStatsUnidades(v, this.getVentaUnidades());
+        if (!s || s.total === 0) {
+            const cccTot = s ? (s.cccTotal || 0) : 0;
             if (cccTot > 0) {
-                this.setVentaStatus(month + ': el Planificador informa ' + cccTot + ' clientes con compra de ' + unit + ', pero sin códigos para geolocalizar (datos históricos).', '');
+                this.setVentaStatus(month + ': el Planificador informa ' + cccTot + ' clientes con compra de ' + unitsLabel + ', pero sin códigos para geolocalizar (datos históricos).', '');
             } else {
-                this.setVentaStatus('Sin clientes con compra de ' + unit + ' en ' + month + '.', '');
+                this.setVentaStatus('Sin clientes con compra de ' + unitsLabel + ' en ' + month + '.', '');
             }
             return;
         }
-        const s = DataService.getVentasStats(v, this.ventaUnidad);
         const sinCoords = s.enBase - s.conCoords;
-        let txt = month + ': ' + s.total + ' clientes con compra de ' + unit + ' · ' + s.conCoords + ' en el mapa';
+        let txt = month + ': ' + s.total + ' clientes con compra de ' + unitsLabel + ' · ' + s.conCoords + ' en el mapa';
         if (sinCoords > 0) txt += ' · ' + sinCoords + ' sin coordenadas';
         if (s.sinMatch > 0) txt += ' · ' + s.sinMatch + ' sin match en la base';
-        this.setVentaStatus(txt + ' · verde = compró, rojo = no compró', '');
+        const u = this.getVentaUnidades();
+        if (u.cerveza && u.nabs && (!v.codesNabs || v.codesNabs.size === 0) && (v.cccNabsTotal || 0) > 0) {
+            txt += ' · NABS sin códigos en este mes';
+        }
+        this.setVentaStatus(txt, '');
     },
 
-    // Construye los features de clientes con la propiedad Venta (1 = compró, 0 = no compró)
+    // Construye los features de clientes con Venta / VentaCvza / VentaNabs (1 = compró, 0 = no compró)
     buildClientFeatures() {
         const features = [];
+        const unidades = this.getVentaUnidades();
         DataService.data.clientes.forEach(c => {
             if (isNaN(c.Latitud) || isNaN(c.Longitud)) return;
             const sup = DataService.getSupervisor(c.SupervisorID);
             const prom = DataService.getPromotor(c.PromotorID);
+            const comproCvza = DataService.isVentaCliente(c.Codigo, 'cerveza');
+            const comproNabs = DataService.isVentaCliente(c.Codigo, 'nabs');
+            const compro = (unidades.cerveza && comproCvza) || (unidades.nabs && comproNabs);
             features.push({
                 type: 'Feature',
                 geometry: { type: 'Point', coordinates: [c.Longitud, c.Latitud] },
@@ -853,7 +921,9 @@ const MapManager = {
                     PromotorColor: prom ? prom.Color : '#666',
                     FrecuenciaColor: c.FrecuenciaColor,
                     FrecuenciaGrupo: c.FrecuenciaGrupo,
-                    Venta: DataService.isVentaCliente(c.Codigo, this.ventaUnidad) ? 1 : 0
+                    Venta: compro ? 1 : 0,
+                    VentaCvza: comproCvza ? 1 : 0,
+                    VentaNabs: comproNabs ? 1 : 0
                 }
             });
         });
@@ -863,7 +933,7 @@ const MapManager = {
     // La capa Venta está activa si el toggle está encendido y los datos son del mes seleccionado
     isVentaActive() {
         const v = DataService.ventas;
-        return !!(this.ventaVisible && v && v.cMonth === this.getVentaMonth());
+        return !!(this.ventaVisible && this.hasVentaUnits() && v && v.cMonth === this.getVentaMonth());
     },
 
     // Expresión de color del punto: verde/rojo con Venta activa, si no el color de promotor o de frecuencia
@@ -1092,9 +1162,15 @@ ${stats.especiales.map(e => `                                <span><i class="fas
         if (c.SupervisorName) popupHtml += `<span class="popup-tag" style="background:${c.SupervisorColor}">${esc(c.SupervisorName)}</span>`;
         if (c.PromotorName) popupHtml += `<span class="popup-tag" style="background:${c.PromotorColor}">${esc(c.PromotorName)}</span>`;
         if (c.FrecuenciaGrupo) popupHtml += `<span class="popup-tag" style="background:${c.FrecuenciaColor}; text-shadow: 0px 1px 2px rgba(0,0,0,0.4);">${esc(c.FrecuenciaGrupo)}</span>`;
+        // Solo se listan las unidades compradas (CCC). Si no compró ninguna no se agrega nada:
+        // el punto del cliente ya está pintado de rojo (CNC).
         if (this.isVentaActive()) {
-            const compro = Number(c.Venta) === 1;
-            popupHtml += `<span class="popup-tag" style="background:${compro ? '#16a34a' : '#dc2626'}">${compro ? 'Compró ' + this.getVentaUnitLabel() : 'Sin compra'}</span>`;
+            if (Number(c.VentaCvza) === 1) {
+                popupHtml += `<span class="popup-tag" style="background:#16a34a">CCC CVZA</span>`;
+            }
+            if (Number(c.VentaNabs) === 1) {
+                popupHtml += `<span class="popup-tag" style="background:#16a34a">CCC NABS</span>`;
+            }
         }
         popupHtml += `</div>`;
         return popupHtml;
