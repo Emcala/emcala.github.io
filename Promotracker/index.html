@@ -237,7 +237,7 @@
     // ==========================================================
     const SUPABASE_URL = 'https://tdwdqgtnyqnsigzhhxsl.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2RxZ3RueXFuc2lnemhoeHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTE3NDcsImV4cCI6MjA5ODY2Nzc0N30.aiYnQ3g1HIk1e4G89sODitBqtPlzva_akCz5ruvLw-8';
-    const INTERVALO_REFRESCO_MS = 60000; // 60 s (el GAS actualiza la tabla cada 5 min)
+    const INTERVALO_REFRESCO_MS = 300000; // 5 min (igual que el GAS, que actualiza la tabla cada 5 min)
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -357,6 +357,10 @@
 
       actualizarPosiciones();
       intervaloRefresco = setInterval(actualizarPosiciones, INTERVALO_REFRESCO_MS);
+      // Al volver a la pestaña, refresca de inmediato (el timer se saltea mientras está oculta)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') actualizarPosiciones();
+      });
     }
 
     async function cerrarSesion() {
@@ -522,6 +526,7 @@
     // ACTUALIZAR POSICIONES EN VIVO
     // ==========================================================
     async function actualizarPosiciones() {
+      if (document.visibilityState === 'hidden') return; // pestaña oculta: no consultar
       try {
         if (!(await revalidarCuenta())) return;
         const hoy = new Date();
