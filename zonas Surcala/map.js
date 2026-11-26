@@ -1043,10 +1043,10 @@ const MapManager = {
             filter: ['>', ['get', 'Heladeras'], 0],
             layout: {
                 'icon-image': this.HELADERA_ICON_ID,
-                'icon-size': 0.36,
+                'icon-size': 0.26,
                 'icon-allow-overlap': true,
                 'icon-ignore-placement': true,
-                'icon-offset': [10, -10],
+                'icon-offset': [14, -14],
                 'visibility': this.isHeladerasVisible() ? 'visible' : 'none'
             },
             paint: {
