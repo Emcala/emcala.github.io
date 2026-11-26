@@ -828,6 +828,8 @@ const MapManager = {
             id: 'clients-points',
             type: 'circle',
             source: 'clients',
+            // Los clientes con EDF no muestran punto: los reemplaza el copo (clients-heladeras)
+            filter: ['==', ['get', 'Heladeras'], 0],
             layout: { visibility: 'visible' },
             paint: {
                 'circle-radius': 6,
@@ -1046,7 +1048,7 @@ const MapManager = {
                 'icon-size': 0.26,
                 'icon-allow-overlap': true,
                 'icon-ignore-placement': true,
-                'icon-offset': [14, -14],
+                'icon-offset': [0, 0],
                 'visibility': this.isHeladerasVisible() ? 'visible' : 'none'
             },
             paint: {
@@ -1290,11 +1292,12 @@ ${stats.especiales.map(e => `                                <span><i class="fas
             if (c) activePromFreqIDs.add(c.PromotorID + '_' + (c.FrecuenciaGrupo || 'Sin Frecuencia'));
         });
 
+        // Puntos: sólo clientes visibles por filtro y sin EDF (los EDF los dibuja el copo)
+        const sinEdf = ['==', ['get', 'Heladeras'], 0];
         if (idsArray.length === 0) {
-            this.map.setFilter('clients-points', ['==', 'ID', 'NONE']);
+            this.map.setFilter('clients-points', ['all', sinEdf, ['==', 'ID', 'NONE']]);
         } else {
-            const filter = ['in', 'ID', ...idsArray];
-            this.map.setFilter('clients-points', filter);
+            this.map.setFilter('clients-points', ['all', sinEdf, ['in', 'ID', ...idsArray]]);
         }
         if (this.map.getLayer('clients-heladeras')) {
             this.map.setFilter('clients-heladeras', idsArray.length === 0
