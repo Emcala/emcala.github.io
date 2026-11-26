@@ -990,42 +990,34 @@ const MapManager = {
     HELADERA_STAR_COLORS: { ccc: '#16a34a', cnc: '#dc2626', neutro: '#94a3b8' },
 
     // Dibuja un copo de nieve (fa-snowflake) en canvas y lo registra como SDF para teñirlo con icon-color
-    // v3: brazos más gruesos (lineWidth 9) + círculo central sólido para aspecto "gordito"
     addHeladerasIcons() {
-        const imgId = 'heladera-edf-icon-v3';
+        const imgId = 'heladera-edf-icon';
         if (this.map.hasImage(imgId)) return;
-        const size = 64;
+        const size = 48;
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
         const cx = size / 2, cy = size / 2;
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 9;
+        ctx.lineWidth = 4;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        // Brazos principales
         for (let i = 0; i < 6; i++) {
             const a = i * Math.PI / 3;
             const cos = Math.cos(a), sin = Math.sin(a);
             ctx.beginPath();
             ctx.moveTo(cx, cy);
-            ctx.lineTo(cx + 22 * cos, cy + 22 * sin);
+            ctx.lineTo(cx + 18 * cos, cy + 18 * sin);
             ctx.stroke();
-            // Ramitas laterales
-            const bx = cx + 14 * cos, by = cy + 14 * sin;
-            [-Math.PI / 3.5, Math.PI / 3.5].forEach(da => {
+            const bx = cx + 11 * cos, by = cy + 11 * sin;
+            [-Math.PI / 4, Math.PI / 4].forEach(da => {
                 ctx.beginPath();
                 ctx.moveTo(bx, by);
-                ctx.lineTo(bx + 7 * Math.cos(a + da), by + 7 * Math.sin(a + da));
+                ctx.lineTo(bx + 5.5 * Math.cos(a + da), by + 5.5 * Math.sin(a + da));
                 ctx.stroke();
             });
         }
-        // Nodo central sólido
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-        ctx.fill();
         this.map.addImage(imgId, ctx.getImageData(0, 0, size, size), { pixelRatio: 1, sdf: true });
     },
 
