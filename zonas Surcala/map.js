@@ -913,10 +913,6 @@ const MapManager = {
             this.setVentaStatus('Capa desactivada.', '');
             return;
         }
-        if (!this.hasVentaUnits()) {
-            this.setVentaStatus('Elegí CVZA, NABS o ambos para pintar el mapa.', '');
-            return;
-        }
         const month = this.getVentaMonth();
         const unitsLabel = this.getVentaUnitsLabel();
         const v = DataService.ventas;
@@ -948,14 +944,14 @@ const MapManager = {
     // Construye los features de clientes con Venta / VentaCvza / VentaNabs (1 = compró, 0 = no compró)
     buildClientFeatures() {
         const features = [];
-        const unidades = this.getVentaUnidades();
         DataService.data.clientes.forEach(c => {
             if (isNaN(c.Latitud) || isNaN(c.Longitud)) return;
             const sup = DataService.getSupervisor(c.SupervisorID);
             const prom = DataService.getPromotor(c.PromotorID);
             const comproCvza = DataService.isVentaCliente(c.Codigo, 'cerveza');
             const comproNabs = DataService.isVentaCliente(c.Codigo, 'nabs');
-            const compro = (unidades.cerveza && comproCvza) || (unidades.nabs && comproNabs);
+            // Verde = compró CVZA o NABS (o ambas). Rojo = no compró ninguna. No depende de los sub-switches.
+            const compro = comproCvza || comproNabs;
             const hel = DataService.getHeladerasCliente(c.Codigo);
             const ventaActiva = this.isVentaActive();
             features.push({
@@ -1092,7 +1088,7 @@ const MapManager = {
     // La capa Venta está activa si el toggle está encendido y los datos son del mes seleccionado
     isVentaActive() {
         const v = DataService.ventas;
-        return !!(this.ventaVisible && this.hasVentaUnits() && v && v.cMonth === this.getVentaMonth());
+        return !!(this.ventaVisible && v && v.cMonth === this.getVentaMonth());
     },
 
     // Expresión de color del punto: verde/rojo con Venta activa, si no el color de promotor o de frecuencia
@@ -1369,9 +1365,8 @@ ${stats.especiales.map(e => `                                <span><i class="fas
         let estado = (c.VentaEstado !== undefined) ? Number(c.VentaEstado) : NaN;
         if (isNaN(estado)) {
             // Cliente crudo (flyToClient): calcular el estado con la venta cargada
-            const u = this.getVentaUnidades();
-            const compro = (u.cerveza && DataService.isVentaCliente(c.Codigo, 'cerveza'))
-                || (u.nabs && DataService.isVentaCliente(c.Codigo, 'nabs'));
+            const compro = DataService.isVentaCliente(c.Codigo, 'cerveza')
+                || DataService.isVentaCliente(c.Codigo, 'nabs');
             estado = this.isVentaActive() ? (compro ? 1 : 0) : -1;
         }
         if (estado === 1) return this.HELADERA_STAR_COLORS.ccc;
