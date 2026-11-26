@@ -632,41 +632,33 @@ const MapManager = {
         ventaWrap.appendChild(crearVentaUnitRow('cerveza', 'CVZA', 'fa-beer-mug-empty'));
         ventaWrap.appendChild(crearVentaUnitRow('nabs', 'NABS', 'fa-bottle-water'));
 
-        // Mes de venta (debajo de los switches de unidad)
+        // Mes (debajo de los switches de unidad): muestra solo mes abreviado (ENE..DIC)
         const monthRow = document.createElement('div');
         monthRow.className = 'layer-panel-row layer-panel-style-row';
         const monthLabel = document.createElement('span');
         monthLabel.className = 'layer-panel-label';
-        monthLabel.textContent = 'Mes de venta';
-        const monthInput = document.createElement('input');
-        monthInput.type = 'month';
-        monthInput.id = 'venta-month';
-        monthInput.className = 'layer-panel-select';
-        monthInput.value = this.getDefaultVentaMonth();
-        monthInput.onchange = () => {
+        monthLabel.textContent = 'Mes';
+        const monthSelect = document.createElement('select');
+        monthSelect.id = 'venta-month';
+        monthSelect.className = 'layer-panel-select';
+        const MESES_CORTOS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+        const defMonth = this.getDefaultVentaMonth();
+        const [defY, defM] = defMonth.split('-').map(Number);
+        for (let offset = 11; offset >= 0; offset--) {
+            const d = new Date(defY, defM - 1 - offset, 1);
+            const val = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = MESES_CORTOS[d.getMonth()];
+            if (val === defMonth) opt.selected = true;
+            monthSelect.appendChild(opt);
+        }
+        monthSelect.onchange = () => {
             if (this.ventaVisible) this.reloadVentas(false);
         };
         monthRow.appendChild(monthLabel);
-        monthRow.appendChild(monthInput);
+        monthRow.appendChild(monthSelect);
         ventaWrap.appendChild(monthRow);
-
-        // Leyenda: ● CCC = compró (verde) · ● CNC = no compró (rojo)
-        const legend = document.createElement('div');
-        legend.id = 'venta-legend';
-        legend.className = 'layer-panel-legend';
-        [['ccc', 'CCC'], ['cnc', 'CNC']].forEach(([cls, txt]) => {
-            const item = document.createElement('span');
-            item.className = 'layer-panel-legend-item';
-            item.title = (cls === 'ccc') ? 'Cliente con compra' : 'Cliente sin compra';
-            const dot = document.createElement('span');
-            dot.className = 'layer-panel-legend-dot ' + cls;
-            const label = document.createElement('span');
-            label.textContent = txt;
-            item.appendChild(dot);
-            item.appendChild(label);
-            legend.appendChild(item);
-        });
-        ventaWrap.appendChild(legend);
 
         const status = document.createElement('div');
         status.id = 'venta-status';
@@ -676,7 +668,7 @@ const MapManager = {
         body.appendChild(ventaWrap);
         this.updateVentaStatus();
 
-        // ── Capa Heladeras (EDF): toggle + leyenda de estrellas + estado ──
+        // ── Capa EDF: toggle + estado ──
         const heladerasWrap = document.createElement('div');
         heladerasWrap.className = 'layer-panel-venta';
 
@@ -686,7 +678,7 @@ const MapManager = {
         hIcon.className = 'fas fa-snowflake layer-panel-icon';
         const hLabel = document.createElement('span');
         hLabel.className = 'layer-panel-label';
-        hLabel.textContent = 'Heladeras (EDF)';
+        hLabel.textContent = 'EDF';
         const hSwitch = document.createElement('span');
         hSwitch.className = 'layer-panel-switch';
         const hCb = document.createElement('input');
@@ -703,26 +695,6 @@ const MapManager = {
         hCb.onchange = () => this.setHeladerasVisible(hCb.checked);
         heladerasWrap.appendChild(hRow);
 
-        const hLegend = document.createElement('div');
-        hLegend.id = 'heladeras-legend';
-        hLegend.className = 'layer-panel-legend';
-        [['ccc', 'CCC', 'Cliente con compra'], ['cnc', 'CNC', 'Cliente sin compra'], ['neutro', 'Sin dato', 'Sin venta cargada']].forEach(([cls, txt, tip]) => {
-            const item = document.createElement('span');
-            item.className = 'layer-panel-legend-item';
-            item.title = tip;
-            const star = document.createElement('span');
-            star.className = 'layer-panel-legend-dot';
-            star.style.background = this.HELADERA_STAR_COLORS[cls];
-            star.style.borderRadius = '0';
-            star.style.clipPath = 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
-            const label = document.createElement('span');
-            label.textContent = txt;
-            item.appendChild(star);
-            item.appendChild(label);
-            hLegend.appendChild(item);
-        });
-        heladerasWrap.appendChild(hLegend);
-
         const hStatus = document.createElement('div');
         hStatus.id = 'heladeras-status';
         hStatus.className = 'layer-panel-status';
@@ -730,6 +702,24 @@ const MapManager = {
 
         body.appendChild(heladerasWrap);
         this.updateHeladerasStatus();
+
+        // Leyenda única al final: ■ CCC (verde) · ■ CNC (rojo)
+        const legend = document.createElement('div');
+        legend.id = 'ccc-cnc-legend';
+        legend.className = 'layer-panel-legend';
+        [['ccc', 'CCC', 'Cliente con compra'], ['cnc', 'CNC', 'Cliente sin compra']].forEach(([cls, txt, tip]) => {
+            const item = document.createElement('span');
+            item.className = 'layer-panel-legend-item';
+            item.title = tip;
+            const dot = document.createElement('span');
+            dot.className = 'layer-panel-legend-dot ' + cls;
+            const label = document.createElement('span');
+            label.textContent = txt;
+            item.appendChild(dot);
+            item.appendChild(label);
+            legend.appendChild(item);
+        });
+        body.appendChild(legend);
 
         // Collapse / expand
         let collapsed = window.matchMedia('(max-width: 768px)').matches;
@@ -917,8 +907,6 @@ const MapManager = {
     },
 
     updateVentaStatus() {
-        const legend = document.getElementById('venta-legend');
-        if (legend) legend.style.display = (this.ventaVisible && this.hasVentaUnits()) ? '' : 'none';
         if (!this.ventaVisible) {
             this.setVentaStatus('Capa desactivada.', '');
             return;
@@ -998,36 +986,42 @@ const MapManager = {
         return features;
     },
 
-    // ── Capa Heladeras (EDF): estrella junto al punto del cliente ──
-    // Colores: verde = CCC (compró), rojo = CNC (no compró), gris = sin dato de venta
+    // ── Capa EDF: copo de nieve junto al punto del cliente ──
     HELADERA_STAR_COLORS: { ccc: '#16a34a', cnc: '#dc2626', neutro: '#94a3b8' },
 
-    // Dibuja una estrella de 5 puntas en canvas y la registra como imagen de MapLibre
+    // Dibuja un copo de nieve (fa-snowflake) en canvas y lo registra como SDF para teñirlo con icon-color
     addHeladerasIcons() {
-        const size = 40;
-        Object.keys(this.HELADERA_STAR_COLORS).forEach(key => {
-            const imgId = 'heladera-star-' + key;
-            if (this.map.hasImage(imgId)) return;
-            const canvas = document.createElement('canvas');
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-            const cx = size / 2, cy = size / 2, outer = size / 2 - 2, inner = outer * 0.45;
+        const imgId = 'heladera-edf-icon';
+        if (this.map.hasImage(imgId)) return;
+        const size = 48;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const cx = size / 2, cy = size / 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        for (let i = 0; i < 6; i++) {
+            const a = i * Math.PI / 3;
+            const cos = Math.cos(a), sin = Math.sin(a);
             ctx.beginPath();
-            for (let i = 0; i < 10; i++) {
-                const r = (i % 2 === 0) ? outer : inner;
-                const a = -Math.PI / 2 + (i * Math.PI / 5);
-                const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
-                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-            }
-            ctx.closePath();
-            ctx.fillStyle = this.HELADERA_STAR_COLORS[key];
-            ctx.fill();
-            this.map.addImage(imgId, ctx.getImageData(0, 0, size, size), { pixelRatio: 1 });
-        });
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + 18 * cos, cy + 18 * sin);
+            ctx.stroke();
+            const bx = cx + 11 * cos, by = cy + 11 * sin;
+            [-Math.PI / 4, Math.PI / 4].forEach(da => {
+                ctx.beginPath();
+                ctx.moveTo(bx, by);
+                ctx.lineTo(bx + 5.5 * Math.cos(a + da), by + 5.5 * Math.sin(a + da));
+                ctx.stroke();
+            });
+        }
+        this.map.addImage(imgId, ctx.getImageData(0, 0, size, size), { pixelRatio: 1, sdf: true });
     },
 
-    // Estrella: solo clientes con al menos un equipo. Color según CCC / CNC / sin dato
+    // Copo EDF: CCC/CNC si Venta está activa; si no, el color por defecto del cliente (promotor/frecuencia)
     addHeladerasLayer() {
         if (!this.map || !this.isLoaded || !this.map.getSource('clients')) return;
         this.addHeladerasIcons();
@@ -1038,12 +1032,15 @@ const MapManager = {
             source: 'clients',
             filter: ['>', ['get', 'Heladeras'], 0],
             layout: {
-                'icon-image': this.getHeladerasIconExpression(),
-                'icon-size': 0.8,
+                'icon-image': 'heladera-edf-icon',
+                'icon-size': 0.7,
                 'icon-allow-overlap': true,
                 'icon-ignore-placement': true,
                 'icon-offset': [14, -14],
                 'visibility': this.isHeladerasVisible() ? 'visible' : 'none'
+            },
+            paint: {
+                'icon-color': this.getClientColorExpression()
             }
         });
         this.refreshHeladerasFilter();
@@ -1056,18 +1053,9 @@ const MapManager = {
         return cb ? cb.checked : (localStorage.getItem('surcala_heladeras_visible') === '1');
     },
 
-    // Expresión de imagen según el estado de venta del cliente (VentaEstado: 1 CCC, 0 CNC, -1 sin dato)
-    getHeladerasIconExpression() {
-        if (!this.isVentaActive()) return 'heladera-star-neutro';
-        return ['case',
-            ['==', ['get', 'VentaEstado'], 1], 'heladera-star-ccc',
-            ['==', ['get', 'VentaEstado'], 0], 'heladera-star-cnc',
-            'heladera-star-neutro'];
-    },
-
     refreshHeladerasFilter() {
         if (!this.map || !this.map.getLayer('clients-heladeras')) return;
-        this.map.setLayoutProperty('clients-heladeras', 'icon-image', this.getHeladerasIconExpression());
+        this.map.setPaintProperty('clients-heladeras', 'icon-color', this.getClientColorExpression());
         this.map.setLayoutProperty('clients-heladeras', 'visibility', this.isHeladerasVisible() ? 'visible' : 'none');
         this.updateHeladerasStatus();
     },
@@ -1079,12 +1067,10 @@ const MapManager = {
 
     updateHeladerasStatus() {
         const el = document.getElementById('heladeras-status');
-        const legend = document.getElementById('heladeras-legend');
-        if (legend) legend.style.display = this.isHeladerasVisible() ? '' : 'none';
         if (!el) return;
-        if (!this.isHeladerasVisible()) { el.textContent = 'Capa de heladeras desactivada.'; return; }
+        if (!this.isHeladerasVisible()) { el.textContent = 'Capa EDF desactivada.'; return; }
         const s = DataService.getHeladerasStats();
-        if (!s) { el.textContent = 'Sin base de heladeras cargada (Configuración).'; return; }
+        if (!s) { el.textContent = 'Sin base EDF cargada (Configuración).'; return; }
         const enMapa = DataService.data.clientes.filter(c => DataService.getHeladerasCliente(c.Codigo) && !isNaN(c.Latitud) && !isNaN(c.Longitud)).length;
         let txt = s.equipos + ' equipos en ' + s.clientes + ' clientes · ' + enMapa + ' en el mapa';
         if (s.sinMatch > 0) txt += ' · ' + s.sinMatch + ' sin match en la base';
@@ -1109,8 +1095,12 @@ const MapManager = {
     // Aplica el color de los puntos de clientes según el estado actual
     applyClientPaint() {
         if (!this.map || !this.map.getLayer('clients-points')) return;
-        this.map.setPaintProperty('clients-points', 'circle-color', this.getClientColorExpression());
+        const colorExpr = this.getClientColorExpression();
+        this.map.setPaintProperty('clients-points', 'circle-color', colorExpr);
         this.map.setPaintProperty('clients-points', 'circle-stroke-width', 0);
+        if (this.map.getLayer('clients-heladeras')) {
+            this.map.setPaintProperty('clients-heladeras', 'icon-color', colorExpr);
+        }
     },
 
     // Cambia el estado de la capa Venta y carga los datos si hace falta
@@ -1350,7 +1340,7 @@ ${stats.especiales.map(e => `                                <span><i class="fas
         if (!hel || !hel.total) return '';
         const color = this.getStarColorFor(c);
         let html = `<div class="popup-divider"></div>`;
-        html += `<div class="popup-edf-head"><span class="popup-star" style="color:${color}">★</span> Heladeras (EDF): <strong>${esc(hel.total)}</strong></div>`;
+        html += `<div class="popup-edf-head"><span class="popup-star" style="color:${color}"><i class="fas fa-snowflake"></i></span> EDF: <strong>${esc(hel.total)}</strong></div>`;
         hel.grupos.forEach(g => {
             const series = g.series.length ? g.series.map(s => esc(s)).join(', ') : 'sin serie';
             html += `<div class="popup-edf-item">
@@ -1373,7 +1363,7 @@ ${stats.especiales.map(e => `                                <span><i class="fas
         }
         if (estado === 1) return this.HELADERA_STAR_COLORS.ccc;
         if (estado === 0) return this.HELADERA_STAR_COLORS.cnc;
-        return this.HELADERA_STAR_COLORS.neutro;
+        return c.PromotorColor || (DataService.getPromotorById && DataService.getPromotorById(c.PromotorID)?.Color) || this.HELADERA_STAR_COLORS.neutro;
     },
 
     // Abre el popup del cliente más cercano al punto tocado (p = {x, y} en píxeles del mapa)
