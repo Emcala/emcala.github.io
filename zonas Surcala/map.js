@@ -988,36 +988,46 @@ const MapManager = {
 
     // ── Capa EDF: copo de nieve junto al punto del cliente ──
     HELADERA_STAR_COLORS: { ccc: '#16a34a', cnc: '#dc2626', neutro: '#94a3b8' },
+    // Id único de la imagen del copo: lo usan el registro (addImage) y la capa (icon-image)
+    HELADERA_ICON_ID: 'heladera-edf-icon',
 
     // Dibuja un copo de nieve (fa-snowflake) en canvas y lo registra como SDF para teñirlo con icon-color
+    // v4: trazos gruesos (lineWidth 12 en canvas de 64) y brazos más largos → aspecto "gordito", un poco más grande que el punto del cliente
     addHeladerasIcons() {
-        const imgId = 'heladera-edf-icon';
+        const imgId = this.HELADERA_ICON_ID;
         if (this.map.hasImage(imgId)) return;
-        const size = 48;
+        const size = 64;
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
         const cx = size / 2, cy = size / 2;
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 12;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+        // Brazos principales
         for (let i = 0; i < 6; i++) {
             const a = i * Math.PI / 3;
             const cos = Math.cos(a), sin = Math.sin(a);
             ctx.beginPath();
             ctx.moveTo(cx, cy);
-            ctx.lineTo(cx + 18 * cos, cy + 18 * sin);
+            ctx.lineTo(cx + 24 * cos, cy + 24 * sin);
             ctx.stroke();
-            const bx = cx + 11 * cos, by = cy + 11 * sin;
-            [-Math.PI / 4, Math.PI / 4].forEach(da => {
+            // Ramitas laterales
+            const bx = cx + 15 * cos, by = cy + 15 * sin;
+            [-Math.PI / 3.5, Math.PI / 3.5].forEach(da => {
                 ctx.beginPath();
                 ctx.moveTo(bx, by);
-                ctx.lineTo(bx + 5.5 * Math.cos(a + da), by + 5.5 * Math.sin(a + da));
+                ctx.lineTo(bx + 8 * Math.cos(a + da), by + 8 * Math.sin(a + da));
                 ctx.stroke();
             });
         }
+        // Nodo central sólido
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+        ctx.fill();
         this.map.addImage(imgId, ctx.getImageData(0, 0, size, size), { pixelRatio: 1, sdf: true });
     },
 
@@ -1032,8 +1042,8 @@ const MapManager = {
             source: 'clients',
             filter: ['>', ['get', 'Heladeras'], 0],
             layout: {
-                'icon-image': 'heladera-edf-icon',
-                'icon-size': 0.35,
+                'icon-image': this.HELADERA_ICON_ID,
+                'icon-size': 0.36,
                 'icon-allow-overlap': true,
                 'icon-ignore-placement': true,
                 'icon-offset': [10, -10],
