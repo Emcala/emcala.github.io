@@ -85,7 +85,7 @@ const MapManager = {
             }]
         }
     },
-    
+
     tileLayerNames: {
         'osm': 'OpenStreetMap',
         'carto-voyager': 'Voyager',
@@ -117,13 +117,13 @@ const MapManager = {
         } else {
             this._lastCenter = [lng, lat];
         }
-        
+
         if (!isNaN(pZoom)) {
             this._lastZoom = pZoom;
         } else {
             this._lastZoom = zoom;
         }
-        
+
         // Solo OpenStreetMap: sin selector de estilo y sin cambio por tema
         this._currentBaseMap = 'osm';
 
@@ -138,7 +138,7 @@ const MapManager = {
 
         this.map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
         this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-        
+
         const geolocate = new maplibregl.GeolocateControl({
             positionOptions: { enableHighAccuracy: true },
             trackUserLocation: true
@@ -151,7 +151,7 @@ const MapManager = {
             this.addLayerControlPanel();
             document.getElementById('map-loading').classList.add('hidden');
             if (this.ventaVisible) this.reloadVentas(false);
-            
+
             // Wait slightly for UI to sync filters
             setTimeout(() => {
                 if (DataService.isLoaded) {
@@ -170,7 +170,7 @@ const MapManager = {
         this.map.on('draw.create', this.onDrawUpdate.bind(this));
         this.map.on('draw.update', this.onDrawUpdate.bind(this));
         this.map.on('draw.delete', this.onDrawDelete.bind(this));
-        
+
         // Cancelar dibujo/selección con la tecla Escape
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.draw) {
@@ -247,10 +247,10 @@ const MapManager = {
         this.map.on('mousemove', 'clients-points', (e) => {
             this.map.getCanvas().style.cursor = 'pointer';
             if (!e.features || e.features.length === 0) return;
-            
+
             const feature = e.features[0];
             const c = feature.properties;
-            
+
             // Hover Tooltip Promotor
             const html = `<div style="font-weight:600; font-size:12px; color:var(--text-primary); text-align:center;">${esc(c.PromotorName || 'Sin Promotor')}</div>`;
             this.hoverPopup.setLngLat(feature.geometry.coordinates)
@@ -274,7 +274,7 @@ const MapManager = {
     switchTileLayer(key) {
         if (!this.baseMaps[key] || this._currentBaseMap === key) return;
         this._currentBaseMap = key;
-        
+
         // Changing style in MapLibre removes custom sources/layers
         // So we must wait for the new style to load, then re-add our data.
         this.map.setStyle(this.baseMaps[this._currentBaseMap]);
@@ -294,7 +294,7 @@ const MapManager = {
                 if (window.UI) UI.applyClientFilters();
             }
         });
-        
+
         const selector = document.getElementById('map-style-selector');
         if (selector) selector.value = key;
     },
@@ -302,7 +302,7 @@ const MapManager = {
     addCustomControls() {
         const container = document.createElement('div');
         container.className = 'map-custom-control';
-        
+
         const centerBtn = document.createElement('a');
         centerBtn.href = '#';
         centerBtn.className = 'map-control-btn maplibregl-ctrl-group';
@@ -312,7 +312,7 @@ const MapManager = {
             e.preventDefault();
             this.map.flyTo({ center: [-58.7779553, -34.4253947], zoom: 16 });
         };
-        
+
         const selectBtn = document.createElement('a');
         selectBtn.href = '#';
         selectBtn.className = 'map-control-btn maplibregl-ctrl-group';
@@ -321,7 +321,7 @@ const MapManager = {
         selectBtn.onclick = (e) => {
             e.preventDefault();
             this.draw.changeMode('draw_polygon');
-            
+
             // Notification toast
             const toast = document.createElement('div');
             toast.className = 'layer-panel-body'; // Reusing a nice style
@@ -330,7 +330,7 @@ const MapManager = {
             document.getElementById('map-container').appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
         };
-        
+
         const searchBtn = document.createElement('a');
         searchBtn.href = '#';
         searchBtn.className = 'map-control-btn maplibregl-ctrl-group';
@@ -340,7 +340,7 @@ const MapManager = {
             e.preventDefault();
             this.toggleSearchWidget(searchBtn);
         };
-        
+
         container.appendChild(searchBtn);
         container.appendChild(selectBtn);
         container.appendChild(centerBtn);
@@ -407,7 +407,7 @@ const MapManager = {
                         resultsDiv.innerHTML = '';
                         this.flyToClient(c);
                     }
-                    
+
                     widget.classList.add('hidden');
                     const btn = document.querySelector('.map-control-btn[title="Buscar cliente"]');
                     if (btn) btn.classList.remove('active');
@@ -427,7 +427,7 @@ const MapManager = {
             this.pendingCustomZoneFeature = lastFeature;
             this.draw.delete(lastFeature.id); // Remove from draw tools immediately
             this.isDrawingCustomZone = false;
-            
+
             // Trigger UI modal
             if (window.UI) {
                 UI.showCustomZoneModal();
@@ -443,7 +443,7 @@ const MapManager = {
         }
 
         const polygon = this.draw.getAll().features[0];
-        
+
         // Usar Turf.js para cruzar con los clientes
         const selectedIds = [];
         DataService.data.clientes.forEach(c => {
@@ -490,7 +490,7 @@ const MapManager = {
         headerBtn.innerHTML = '<i class="fas fa-layer-group"></i> <span>Capas</span> <i class="fas fa-chevron-up layer-chevron"></i>';
         header.appendChild(headerBtn);
         container.appendChild(header);
-        
+
         const body = document.createElement('div');
         body.className = 'layer-panel-body';
         container.appendChild(body);
@@ -512,7 +512,7 @@ const MapManager = {
             styleSelect.appendChild(opt);
         });
         styleSelect.onchange = () => this.switchTileLayer(styleSelect.value);
-        
+
         // Selector de estilo de mapa desactivado: solo OpenStreetMap
 
         const divider = document.createElement('div');
@@ -528,16 +528,16 @@ const MapManager = {
         toggles.forEach(t => {
             const row = document.createElement('label');
             row.className = 'layer-panel-row layer-panel-toggle';
-            
+
             const icon = document.createElement('i');
             icon.className = `fas ${t.icon} layer-panel-icon`;
             row.appendChild(icon);
-            
+
             const label = document.createElement('span');
             label.className = 'layer-panel-label';
             label.textContent = t.label;
             row.appendChild(label);
-            
+
             const switchWrap = document.createElement('span');
             switchWrap.className = 'layer-panel-switch';
             const cb = document.createElement('input');
@@ -568,7 +568,7 @@ const MapManager = {
                     }
                 }
             };
-            
+
             body.appendChild(row);
         });
 
@@ -750,7 +750,7 @@ const MapManager = {
         if (!this.map || !this.isLoaded) return;
         const layers = ['clients-heladeras', 'clients-points', 'promoter-zones-line', 'promoter-zones-fill', 'custom-zones-line', 'custom-zones-fill'];
         layers.forEach(l => { if (this.map.getLayer(l)) this.map.removeLayer(l); });
-        
+
         const sources = ['clients', 'promoter-zones', 'custom-zones'];
         sources.forEach(s => { if (this.map.getSource(s)) this.map.removeSource(s); });
     },
@@ -765,13 +765,13 @@ const MapManager = {
         const clientFeatures = this.buildClientFeatures();
 
         // --- Add Source & Layer for Clients ---
-        this.map.addSource('clients', { type: 'geojson', data: { type: 'FeatureCollection', features: clientFeatures }});
+        this.map.addSource('clients', { type: 'geojson', data: { type: 'FeatureCollection', features: clientFeatures } });
 
         // --- Calculate Promoter Zones using Turf.js ---
         const promoterFeatures = [];
         DataService.data.promotores.forEach(prom => {
             const promClients = DataService.getClientsByPromotor(prom.ID).filter(c => !isNaN(c.Latitud) && !isNaN(c.Longitud));
-            
+
             // Agrupar por frecuencia
             const freqGroups = {};
             promClients.forEach(c => {
@@ -804,7 +804,7 @@ const MapManager = {
         });
 
         // --- Add Source & Layers for Promoter Zones ---
-        this.map.addSource('promoter-zones', { type: 'geojson', data: { type: 'FeatureCollection', features: promoterFeatures }});
+        this.map.addSource('promoter-zones', { type: 'geojson', data: { type: 'FeatureCollection', features: promoterFeatures } });
 
         const showZonesInput = document.getElementById('floating-show-promoter-zones');
         const showZones = showZonesInput ? showZonesInput.checked : false;
@@ -1012,7 +1012,7 @@ const MapManager = {
             canvas.width = size;
             canvas.height = size;
             const ctx = canvas.getContext('2d');
-            const cx = size / 2, cy = size / 2, outer = size / 2 - 3, inner = outer * 0.45;
+            const cx = size / 2, cy = size / 2, outer = size / 2 - 2, inner = outer * 0.45;
             ctx.beginPath();
             for (let i = 0; i < 10; i++) {
                 const r = (i % 2 === 0) ? outer : inner;
@@ -1023,9 +1023,6 @@ const MapManager = {
             ctx.closePath();
             ctx.fillStyle = this.HELADERA_STAR_COLORS[key];
             ctx.fill();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = '#ffffff';
-            ctx.stroke();
             this.map.addImage(imgId, ctx.getImageData(0, 0, size, size), { pixelRatio: 1 });
         });
     },
@@ -1042,10 +1039,10 @@ const MapManager = {
             filter: ['>', ['get', 'Heladeras'], 0],
             layout: {
                 'icon-image': this.getHeladerasIconExpression(),
-                'icon-size': 0.6,
+                'icon-size': 0.8,
                 'icon-allow-overlap': true,
                 'icon-ignore-placement': true,
-                'icon-offset': [12, -12],
+                'icon-offset': [14, -14],
                 'visibility': this.isHeladerasVisible() ? 'visible' : 'none'
             }
         });
@@ -1169,13 +1166,13 @@ const MapManager = {
 
     savePendingCustomZone(name, color) {
         if (!this.pendingCustomZoneFeature) return;
-        
+
         const zone = {
             name: name,
             color: color,
             geometry: this.pendingCustomZoneFeature.geometry
         };
-        
+
         const saved = DataService.saveCustomZone(zone);
         this.pendingCustomZoneFeature = null;
         this.renderCustomZones();
@@ -1188,7 +1185,7 @@ const MapManager = {
 
     renderCustomZones() {
         if (!this.map) return;
-        
+
         const zones = DataService.getCustomZones();
         const features = zones.filter(z => z.visible !== false).map(z => ({
             type: 'Feature',
@@ -1279,7 +1276,7 @@ ${stats.especiales.map(e => `                                <span><i class="fas
 
     updateClientVisibility(visibleClientIds, globalShowClients) {
         if (!this.map || !this.map.getLayer('clients-points')) return;
-        
+
         if (!globalShowClients) {
             this.map.setLayoutProperty('clients-points', 'visibility', 'none');
         } else {
@@ -1292,7 +1289,7 @@ ${stats.especiales.map(e => `                                <span><i class="fas
             const c = DataService.byId && DataService.byId.get(id);
             if (c) activePromFreqIDs.add(c.PromotorID + '_' + (c.FrecuenciaGrupo || 'Sin Frecuencia'));
         });
-        
+
         if (idsArray.length === 0) {
             this.map.setFilter('clients-points', ['==', 'ID', 'NONE']);
         } else {
@@ -1422,7 +1419,7 @@ ${stats.especiales.map(e => `                                <span><i class="fas
     flyToClient(c) {
         if (!this.map || isNaN(c.Latitud) || isNaN(c.Longitud)) return;
         this.map.flyTo({ center: [c.Longitud, c.Latitud], zoom: 17, duration: 800 });
-        
+
         new maplibregl.Popup({ offset: 15, className: 'client-popup' })
             .setLngLat([c.Longitud, c.Latitud])
             .setHTML(this.generatePopupHtml(c))
