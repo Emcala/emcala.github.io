@@ -989,50 +989,60 @@ const MapManager = {
     // Id único de la imagen del copo: lo usan el registro (addImage) y la capa (icon-image)
     HELADERA_ICON_ID: 'heladera-edf-icon',
 
-    // Dibuja un copo de nieve (fa-snowflake) en canvas y lo registra como SDF para teñirlo con icon-color
-    // v4: trazos gruesos (lineWidth 12 en canvas de 64) y brazos más largos → aspecto "gordito", un poco más grande que el punto del cliente
+    // Carácter del glifo fa-snowflake tal como lo calcula Font Awesome en la página (el mismo que ve la ficha)
+    getSnowflakeChar() {
+        const el = document.createElement('i');
+        el.className = 'fas fa-snowflake';
+        el.style.position = 'absolute';
+        el.style.visibility = 'hidden';
+        document.body.appendChild(el);
+        const content = getComputedStyle(el, '::before').content;
+        el.remove();
+        const ch = (content || '').replace(/^["']|["']$/g, '');
+        return (ch && ch !== 'none' && ch !== 'normal') ? ch : '\uf2dc';
+    },
+
+    // Registra el copo EDF como imagen SDF (se tiñe con icon-color).
+    // Usa el glifo real de Font Awesome, así el mapa y la ficha muestran el mismo icono.
+    // Devuelve false si la fuente todavía no cargó; en ese caso vuelve a crear la capa cuando esté lista.
     addHeladerasIcons() {
         const imgId = this.HELADERA_ICON_ID;
-        if (this.map.hasImage(imgId)) return;
-        const size = 64;
+        if (this.map.hasImage(imgId)) return true;
+        const fontSpec = '900 100px "Font Awesome 6 Free"';
+        if (!document.fonts.check(fontSpec)) {
+            document.fonts.load(fontSpec).then(() => {
+                if (this.map && this.isLoaded) this.addHeladerasLayer();
+            }).catch(() => {});
+            return false;
+        }
+        const ch = this.getSnowflakeChar();
+        const size = 128; // canvas 128 con pixelRatio 2 → 64 px lógicos, nítido en pantalla
+        const target = 120; // el glifo ocupa 120 px del canvas
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
-        const cx = size / 2, cy = size / 2;
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 12;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        // Brazos principales
-        for (let i = 0; i < 6; i++) {
-            const a = i * Math.PI / 3;
-            const cos = Math.cos(a), sin = Math.sin(a);
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(cx + 24 * cos, cy + 24 * sin);
-            ctx.stroke();
-            // Ramitas laterales
-            const bx = cx + 15 * cos, by = cy + 15 * sin;
-            [-Math.PI / 3.5, Math.PI / 3.5].forEach(da => {
-                ctx.beginPath();
-                ctx.moveTo(bx, by);
-                ctx.lineTo(bx + 8 * Math.cos(a + da), by + 8 * Math.sin(a + da));
-                ctx.stroke();
-            });
-        }
-        // Nodo central sólido
         ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(cx, cy, 7, 0, Math.PI * 2);
-        ctx.fill();
-        this.map.addImage(imgId, ctx.getImageData(0, 0, size, size), { pixelRatio: 1, sdf: true });
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        // Medimos a 100 px y escalamos para centrar el glifo exacto en el canvas
+        ctx.font = fontSpec;
+        const m = ctx.measureText(ch);
+        const aL = m.actualBoundingBoxLeft, aR = m.actualBoundingBoxRight;
+        const aA = m.actualBoundingBoxAscent, aD = m.actualBoundingBoxDescent;
+        const k = target / Math.max(aL + aR, aA + aD);
+        ctx.font = '900 ' + (100 * k).toFixed(2) + 'px "Font Awesome 6 Free"';
+        const x = (size - (aL + aR) * k) / 2 + aL * k;
+        const y = (size - (aA + aD) * k) / 2 + aA * k;
+        ctx.fillText(ch, x, y);
+        this.map.addImage(imgId, ctx.getImageData(0, 0, size, size), { pixelRatio: 2, sdf: true });
+        return true;
     },
 
     // Copo EDF: CCC/CNC si Venta está activa; si no, el color por defecto del cliente (promotor/frecuencia)
     addHeladerasLayer() {
         if (!this.map || !this.isLoaded || !this.map.getSource('clients')) return;
-        this.addHeladerasIcons();
+        if (!this.addHeladerasIcons()) return;
         if (this.map.getLayer('clients-heladeras')) this.map.removeLayer('clients-heladeras');
         this.map.addLayer({
             id: 'clients-heladeras',
