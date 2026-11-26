@@ -770,6 +770,8 @@
         }
       });
       const online = new Set(ultimasPosiciones.filter((p) => p.tipo === 'supervisor').map((p) => p.usuario));
+      // Supervisores online que no tienen promotores asignados: se agregan con su login como nombre
+      online.forEach((login) => { if (login && !porLogin.has(login)) porLogin.set(login, login); });
       const lista = [...porLogin.entries()].sort((a, b) => a[1].localeCompare(b[1]));
 
       cont.innerHTML = '';
