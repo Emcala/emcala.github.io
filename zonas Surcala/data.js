@@ -791,6 +791,225 @@ const DataService = {
         return { filasLeidas, sinMatch, modificados, columnas: editables };
     },
 
+    // ============================================================
+    // BASE STOCK HELADERAS (EDF) — equipos por cliente (PDV)
+    // ============================================================
+    heladeras: null,                       // { porCodigo: Map(codigo -> {total, grupos[]}), totalEquipos, totalClientes, meta }
+    HELADERAS_TABLE: 'zonas_surcala_heladeras',
+
+    _normHeladera(s) {
+        return String(s === undefined || s === null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    },
+
+    // Filas crudas (arrays) de la exportación de Stock Heladeras → registros reducidos.
+    // Conserva sólo Ubicación = PDV y Cod. Cliente distinto de 0.
+    // Si no hay encabezado reconocible, usa el orden fijo de la exportación (32 columnas).
+    parseHeladerasFilas(filas) {
+        const norm = (s) => this._normHeladera(s);
+        const rows = (filas || []).filter(f => Array.isArray(f) && f.some(c => String(c ?? '').trim() !== ''));
+        let idxH = -1;
+        for (let i = 0; i < Math.min(rows.length, 10); i++) {
+            const h = rows[i].map(norm);
+            if (h.indexOf('ubicacion') > -1 && h.indexOf('cod cliente') > -1) { idxH = i; break; }
+        }
+
+        let pos;
+        if (idxH > -1) {
+            const h = rows[idxH].map(norm);
+            pos = {
+                ubic: h.indexOf('ubicacion'),
+                cli: h.indexOf('cod cliente'),
+                desc: h.indexOf('desc producto'),
+                cod: h.indexOf('cod producto'),
+                serie: h.indexOf('nro serie')
+            };
+            const faltan = Object.keys(pos).filter(k => pos[k] === -1);
+            if (faltan.length) throw new Error('No encuentro las columnas: ' + faltan.join(', ') + '.');
+        } else {
+            // Posiciones 0-based de la exportación: Ubicación=4, Cod. Cliente=8, Cod. Producto=15, Desc. Producto=16, Nro. Serie=24
+            if (!rows.length || rows[0].length < 25) {
+                throw new Error('El archivo no tiene el formato esperado de Stock Heladeras (32 columnas).');
+            }
+            pos = { ubic: 4, cli: 8, cod: 15, desc: 16, serie: 24 };
+        }
+
+        const stats = { filasLeidas: 0, descartadasUbicacion: 0, descartadasCliente: 0, ubicaciones: {}, registros: [] };
+        for (let i = idxH + 1; i < rows.length; i++) {
+            const f = rows[i];
+            const get = (j) => String(f[j] === undefined || f[j] === null ? '' : f[j]).trim();
+            stats.filasLeidas++;
+            const ubic = get(pos.ubic);
+            stats.ubicaciones[ubic] = (stats.ubicaciones[ubic] || 0) + 1;
+            if (norm(ubic) !== 'pdv') { stats.descartadasUbicacion++; continue; }
+            const cod = this.normalizeCodigoCliente(get(pos.cli));
+            if (!cod || cod === '0' || !/^\d+$/.test(cod)) { stats.descartadasCliente++; continue; }
+            stats.registros.push({
+                codigo: cod,
+                producto: get(pos.desc),
+                codProducto: get(pos.cod),
+                serie: get(pos.serie)
+            });
+        }
+        return stats;
+    },
+
+    // Armado del índice por cliente: quita duplicados (mismo cliente + mismo Nro. Serie)
+    buildHeladerasIndex(registros) {
+        const porCodigo = new Map();
+        const unicos = [];
+        const vistos = new Set();
+        (registros || []).forEach(r => {
+            if (r.serie) {
+                const k = r.codigo + '|' + r.serie;
+                if (vistos.has(k)) return;
+                vistos.add(k);
+            }
+            unicos.push(r);
+            if (!porCodigo.has(r.codigo)) porCodigo.set(r.codigo, { total: 0, gruposMap: new Map() });
+            const cli = porCodigo.get(r.codigo);
+            cli.total++;
+            const gKey = (r.codProducto || '') + '|' + (r.producto || '');
+            if (!cli.gruposMap.has(gKey)) {
+                cli.gruposMap.set(gKey, { producto: r.producto || '(sin descripción)', codProducto: r.codProducto || '', cantidad: 0, series: [] });
+            }
+            const g = cli.gruposMap.get(gKey);
+            g.cantidad++;
+            if (r.serie) g.series.push(r.serie);
+        });
+        porCodigo.forEach(cli => { cli.grupos = [...cli.gruposMap.values()]; delete cli.gruposMap; });
+        return { porCodigo, registrosUnicos: unicos, totalEquipos: unicos.length, totalClientes: porCodigo.size };
+    },
+
+    // Datos de heladeras de un cliente: { total, grupos:[{producto, codProducto, cantidad, series[]}] } o null
+    getHeladerasCliente(codigo) {
+        if (!this.heladeras) return null;
+        return this.heladeras.porCodigo.get(this.normalizeCodigoCliente(codigo)) || null;
+    },
+
+    // Estadísticas de cruce contra la base geolocalizada
+    getHeladerasStats() {
+        const h = this.heladeras;
+        if (!h || !h.totalEquipos) return null;
+        const base = new Map((this.data.clientes || []).map(c => [this.normalizeCodigoCliente(c.Codigo), c]));
+        let enBase = 0, conCoords = 0;
+        h.porCodigo.forEach((v, cod) => {
+            const c = base.get(cod);
+            if (!c) return;
+            enBase++;
+            if (!isNaN(c.Latitud) && !isNaN(c.Longitud)) conCoords++;
+        });
+        return {
+            equipos: h.totalEquipos,
+            clientes: h.totalClientes,
+            enBase: enBase,
+            sinMatch: h.totalClientes - enBase,
+            conCoords: conCoords
+        };
+    },
+
+
+    // Reconstruye el índice desde el CSV reducido guardado en Supabase (codigo;producto;cod_producto;nro_serie)
+    setHeladerasFromCsv(text, meta) {
+        const filas = this.parseCsvTabla(text).slice(1);
+        const registros = filas
+            .filter(f => f[0])
+            .map(f => ({ codigo: String(f[0]).trim(), producto: f[1] || '', codProducto: f[2] || '', serie: f[3] || '' }));
+        const idx = this.buildHeladerasIndex(registros);
+        this.heladeras = {
+            porCodigo: idx.porCodigo,
+            totalEquipos: idx.totalEquipos,
+            totalClientes: idx.totalClientes,
+            meta: meta || { origen: 'supabase', actualizado_por: null, actualizado_el: null }
+        };
+    },
+
+    // Carga la base de heladeras desde Supabase. Nunca lanza error: si falla, el mapa sigue sin estrellas.
+    async loadHeladeras() {
+        this.heladeras = { porCodigo: new Map(), totalEquipos: 0, totalClientes: 0, meta: { origen: 'vacio', actualizado_por: null, actualizado_el: null } };
+        if (!supabaseClient) return;
+        try {
+            const { data, error } = await supabaseClient
+                .from(this.HELADERAS_TABLE)
+                .select('csv_text, actualizado_por, actualizado_el')
+                .eq('id', 'actual')
+                .maybeSingle();
+            if (error || !data || !data.csv_text) return;
+            this.setHeladerasFromCsv(data.csv_text, {
+                origen: 'supabase',
+                actualizado_por: data.actualizado_por || 'Usuario',
+                actualizado_el: data.actualizado_el || null
+            });
+        } catch (err) {
+            console.warn('[Zonas Surcala] No se pudo leer la base de heladeras de Supabase:', err);
+        }
+    },
+
+    _csvCell(v) {
+        const s = String(v === undefined || v === null ? '' : v);
+        return /[;"\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    },
+
+    // Reemplaza la base de heladeras en Supabase (solo registros PDV con cliente válido, sin duplicados)
+    async guardarHeladerasEnSupabase(registros) {
+        if (!supabaseClient) throw new Error('El cliente de Supabase no está disponible.');
+        const idx = this.buildHeladerasIndex(registros);
+        if (idx.totalEquipos === 0) throw new Error('No hay equipos en PDV con código de cliente válido.');
+
+        const csv = 'codigo;producto;cod_producto;nro_serie\n' + idx.registrosUnicos
+            .map(r => [r.codigo, r.producto, r.codProducto, r.serie].map(v => this._csvCell(v)).join(';'))
+            .join('\n');
+
+        await this._simAuth();
+        const { data, error } = await supabaseClient.rpc('actualizar_heladeras_zonas_surcala', {
+            p_csv_text: csv,
+            p_equipos: idx.totalEquipos,
+            p_clientes: idx.totalClientes
+        });
+        if (error) throw new Error(error.message || 'Error al guardar en Supabase');
+
+        this.heladeras = {
+            porCodigo: idx.porCodigo,
+            totalEquipos: idx.totalEquipos,
+            totalClientes: idx.totalClientes,
+            meta: {
+                origen: 'supabase',
+                actualizado_por: (data && data.actualizado_por) || 'Usuario',
+                actualizado_el: (data && data.actualizado_el) || new Date().toISOString()
+            }
+        };
+        return { equipos: idx.totalEquipos, clientes: idx.totalClientes };
+    },
+
+    // Carga SheetJS sólo cuando hace falta (archivo Excel)
+    _cargarSheetJs() {
+        if (window.XLSX) return Promise.resolve(window.XLSX);
+        return new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+            s.onload = () => resolve(window.XLSX);
+            s.onerror = () => reject(new Error('No se pudo cargar el lector de Excel. Revisá la conexión.'));
+            document.head.appendChild(s);
+        });
+    },
+
+    // Filas (arrays) de un .xlsx/.xls (primera hoja) o de un CSV/TXT
+    async leerArchivoHeladeras(file) {
+        const buf = await file.arrayBuffer();
+        if (/\.xlsx?$/i.test(file.name || '')) {
+            const XLSX = await this._cargarSheetJs();
+            const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+        }
+        let texto;
+        try { texto = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+        catch (e) { texto = new TextDecoder('windows-1252').decode(buf); }
+        return this.parseCsvTabla(texto);
+    },
+
+
+
     getSupervisor(id) { return this.data.supervisores.find(s => s.ID === id); },
     getPromotor(id) { return this.data.promotores.find(p => p.ID === id); },
     getClientsByPromotor(pid) { return this.data.clientes.filter(c => c.PromotorID === pid); },

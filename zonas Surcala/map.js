@@ -237,6 +237,13 @@ const MapManager = {
         this.map.on('zoomstart', cancelPress);
         this.map.on('rotatestart', cancelPress);
 
+        this.map.on('mousemove', 'clients-heladeras', () => {
+            this.map.getCanvas().style.cursor = 'pointer';
+        });
+        this.map.on('mouseleave', 'clients-heladeras', () => {
+            this.map.getCanvas().style.cursor = '';
+        });
+
         this.map.on('mousemove', 'clients-points', (e) => {
             this.map.getCanvas().style.cursor = 'pointer';
             if (!e.features || e.features.length === 0) return;
@@ -669,6 +676,61 @@ const MapManager = {
         body.appendChild(ventaWrap);
         this.updateVentaStatus();
 
+        // ── Capa Heladeras (EDF): toggle + leyenda de estrellas + estado ──
+        const heladerasWrap = document.createElement('div');
+        heladerasWrap.className = 'layer-panel-venta';
+
+        const hRow = document.createElement('label');
+        hRow.className = 'layer-panel-row layer-panel-toggle';
+        const hIcon = document.createElement('i');
+        hIcon.className = 'fas fa-snowflake layer-panel-icon';
+        const hLabel = document.createElement('span');
+        hLabel.className = 'layer-panel-label';
+        hLabel.textContent = 'Heladeras (EDF)';
+        const hSwitch = document.createElement('span');
+        hSwitch.className = 'layer-panel-switch';
+        const hCb = document.createElement('input');
+        hCb.type = 'checkbox';
+        hCb.id = 'floating-show-heladeras';
+        hCb.checked = localStorage.getItem('surcala_heladeras_visible') === '1';
+        const hSlider = document.createElement('span');
+        hSlider.className = 'layer-panel-slider';
+        hSwitch.appendChild(hCb);
+        hSwitch.appendChild(hSlider);
+        hRow.appendChild(hIcon);
+        hRow.appendChild(hLabel);
+        hRow.appendChild(hSwitch);
+        hCb.onchange = () => this.setHeladerasVisible(hCb.checked);
+        heladerasWrap.appendChild(hRow);
+
+        const hLegend = document.createElement('div');
+        hLegend.id = 'heladeras-legend';
+        hLegend.className = 'layer-panel-legend';
+        [['ccc', 'CCC', 'Cliente con compra'], ['cnc', 'CNC', 'Cliente sin compra'], ['neutro', 'Sin dato', 'Sin venta cargada']].forEach(([cls, txt, tip]) => {
+            const item = document.createElement('span');
+            item.className = 'layer-panel-legend-item';
+            item.title = tip;
+            const star = document.createElement('span');
+            star.className = 'layer-panel-legend-dot';
+            star.style.background = this.HELADERA_STAR_COLORS[cls];
+            star.style.borderRadius = '0';
+            star.style.clipPath = 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
+            const label = document.createElement('span');
+            label.textContent = txt;
+            item.appendChild(star);
+            item.appendChild(label);
+            hLegend.appendChild(item);
+        });
+        heladerasWrap.appendChild(hLegend);
+
+        const hStatus = document.createElement('div');
+        hStatus.id = 'heladeras-status';
+        hStatus.className = 'layer-panel-status';
+        heladerasWrap.appendChild(hStatus);
+
+        body.appendChild(heladerasWrap);
+        this.updateHeladerasStatus();
+
         // Collapse / expand
         let collapsed = window.matchMedia('(max-width: 768px)').matches;
         body.style.display = collapsed ? 'none' : '';
@@ -686,7 +748,7 @@ const MapManager = {
 
     clearAll() {
         if (!this.map || !this.isLoaded) return;
-        const layers = ['clients-points', 'promoter-zones-line', 'promoter-zones-fill', 'custom-zones-line', 'custom-zones-fill'];
+        const layers = ['clients-heladeras', 'clients-points', 'promoter-zones-line', 'promoter-zones-fill', 'custom-zones-line', 'custom-zones-fill'];
         layers.forEach(l => { if (this.map.getLayer(l)) this.map.removeLayer(l); });
         
         const sources = ['clients', 'promoter-zones', 'custom-zones'];
@@ -785,6 +847,8 @@ const MapManager = {
         });
         this.applyClientPaint();
 
+        // Capa de heladeras (estrella) sobre el mismo source de clientes
+        this.addHeladerasLayer();
 
 
         if (clientFeatures.length > 0 && !this._hasAutoCentered) {
@@ -902,6 +966,8 @@ const MapManager = {
             const comproCvza = DataService.isVentaCliente(c.Codigo, 'cerveza');
             const comproNabs = DataService.isVentaCliente(c.Codigo, 'nabs');
             const compro = (unidades.cerveza && comproCvza) || (unidades.nabs && comproNabs);
+            const hel = DataService.getHeladerasCliente(c.Codigo);
+            const ventaActiva = this.isVentaActive();
             features.push({
                 type: 'Feature',
                 geometry: { type: 'Point', coordinates: [c.Longitud, c.Latitud] },
@@ -923,11 +989,109 @@ const MapManager = {
                     FrecuenciaGrupo: c.FrecuenciaGrupo,
                     Venta: compro ? 1 : 0,
                     VentaCvza: comproCvza ? 1 : 0,
-                    VentaNabs: comproNabs ? 1 : 0
+                    VentaNabs: comproNabs ? 1 : 0,
+                    VentaEstado: ventaActiva ? (compro ? 1 : 0) : -1,
+                    Heladeras: hel ? hel.total : 0
                 }
             });
         });
         return features;
+    },
+
+    // ── Capa Heladeras (EDF): estrella junto al punto del cliente ──
+    // Colores: verde = CCC (compró), rojo = CNC (no compró), gris = sin dato de venta
+    HELADERA_STAR_COLORS: { ccc: '#16a34a', cnc: '#dc2626', neutro: '#94a3b8' },
+
+    // Dibuja una estrella de 5 puntas en canvas y la registra como imagen de MapLibre
+    addHeladerasIcons() {
+        const size = 40;
+        Object.keys(this.HELADERA_STAR_COLORS).forEach(key => {
+            const imgId = 'heladera-star-' + key;
+            if (this.map.hasImage(imgId)) return;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const cx = size / 2, cy = size / 2, outer = size / 2 - 3, inner = outer * 0.45;
+            ctx.beginPath();
+            for (let i = 0; i < 10; i++) {
+                const r = (i % 2 === 0) ? outer : inner;
+                const a = -Math.PI / 2 + (i * Math.PI / 5);
+                const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = this.HELADERA_STAR_COLORS[key];
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+            this.map.addImage(imgId, ctx.getImageData(0, 0, size, size), { pixelRatio: 1 });
+        });
+    },
+
+    // Estrella: solo clientes con al menos un equipo. Color según CCC / CNC / sin dato
+    addHeladerasLayer() {
+        if (!this.map || !this.isLoaded || !this.map.getSource('clients')) return;
+        this.addHeladerasIcons();
+        if (this.map.getLayer('clients-heladeras')) this.map.removeLayer('clients-heladeras');
+        this.map.addLayer({
+            id: 'clients-heladeras',
+            type: 'symbol',
+            source: 'clients',
+            filter: ['>', ['get', 'Heladeras'], 0],
+            layout: {
+                'icon-image': this.getHeladerasIconExpression(),
+                'icon-size': 0.6,
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
+                'icon-offset': [12, -12],
+                'visibility': this.isHeladerasVisible() ? 'visible' : 'none'
+            }
+        });
+        this.refreshHeladerasFilter();
+        // Reaplicar el filtro de Filtros/selección activo sobre la capa recién creada
+        if (window.UI && UI.activeClients) this.updateClientVisibility(UI.activeClients, true);
+    },
+
+    isHeladerasVisible() {
+        const cb = document.getElementById('floating-show-heladeras');
+        return cb ? cb.checked : (localStorage.getItem('surcala_heladeras_visible') === '1');
+    },
+
+    // Expresión de imagen según el estado de venta del cliente (VentaEstado: 1 CCC, 0 CNC, -1 sin dato)
+    getHeladerasIconExpression() {
+        if (!this.isVentaActive()) return 'heladera-star-neutro';
+        return ['case',
+            ['==', ['get', 'VentaEstado'], 1], 'heladera-star-ccc',
+            ['==', ['get', 'VentaEstado'], 0], 'heladera-star-cnc',
+            'heladera-star-neutro'];
+    },
+
+    refreshHeladerasFilter() {
+        if (!this.map || !this.map.getLayer('clients-heladeras')) return;
+        this.map.setLayoutProperty('clients-heladeras', 'icon-image', this.getHeladerasIconExpression());
+        this.map.setLayoutProperty('clients-heladeras', 'visibility', this.isHeladerasVisible() ? 'visible' : 'none');
+        this.updateHeladerasStatus();
+    },
+
+    setHeladerasVisible(on) {
+        localStorage.setItem('surcala_heladeras_visible', on ? '1' : '0');
+        this.refreshHeladerasFilter();
+    },
+
+    updateHeladerasStatus() {
+        const el = document.getElementById('heladeras-status');
+        const legend = document.getElementById('heladeras-legend');
+        if (legend) legend.style.display = this.isHeladerasVisible() ? '' : 'none';
+        if (!el) return;
+        if (!this.isHeladerasVisible()) { el.textContent = 'Capa de heladeras desactivada.'; return; }
+        const s = DataService.getHeladerasStats();
+        if (!s) { el.textContent = 'Sin base de heladeras cargada (Configuración).'; return; }
+        const enMapa = DataService.data.clientes.filter(c => DataService.getHeladerasCliente(c.Codigo) && !isNaN(c.Latitud) && !isNaN(c.Longitud)).length;
+        let txt = s.equipos + ' equipos en ' + s.clientes + ' clientes · ' + enMapa + ' en el mapa';
+        if (s.sinMatch > 0) txt += ' · ' + s.sinMatch + ' sin match en la base';
+        el.textContent = txt;
     },
 
     // La capa Venta está activa si el toggle está encendido y los datos son del mes seleccionado
@@ -995,6 +1159,7 @@ const MapManager = {
         }
         this.applyClientPaint();
         this.updateVentaStatus();
+        this.refreshHeladerasFilter();
     },
 
     startDrawingCustomZone() {
@@ -1134,6 +1299,11 @@ ${stats.especiales.map(e => `                                <span><i class="fas
             const filter = ['in', 'ID', ...idsArray];
             this.map.setFilter('clients-points', filter);
         }
+        if (this.map.getLayer('clients-heladeras')) {
+            this.map.setFilter('clients-heladeras', idsArray.length === 0
+                ? ['all', ['>', ['get', 'Heladeras'], 0], ['==', ['get', 'ID'], 'NONE']]
+                : ['all', ['>', ['get', 'Heladeras'], 0], ['in', ['get', 'ID'], ['literal', idsArray]]]);
+        }
 
 
         if (this.map.getLayer('promoter-zones-fill')) {
@@ -1172,17 +1342,52 @@ ${stats.especiales.map(e => `                                <span><i class="fas
                 popupHtml += `<span class="popup-tag" style="background:#16a34a">CCC NABS</span>`;
             }
         }
+        popupHtml += this.generateHeladerasPopupHtml(c);
         popupHtml += `</div>`;
         return popupHtml;
+    },
+
+    // Sección de heladeras (EDF) de la ficha: total, modelos, código y series
+    generateHeladerasPopupHtml(c) {
+        const hel = DataService.getHeladerasCliente(c.Codigo);
+        if (!hel || !hel.total) return '';
+        const color = this.getStarColorFor(c);
+        let html = `<div class="popup-divider"></div>`;
+        html += `<div class="popup-edf-head"><span class="popup-star" style="color:${color}">★</span> Heladeras (EDF): <strong>${esc(hel.total)}</strong></div>`;
+        hel.grupos.forEach(g => {
+            const series = g.series.length ? g.series.map(s => esc(s)).join(', ') : 'sin serie';
+            html += `<div class="popup-edf-item">
+                <div><strong>${esc(g.cantidad)} x</strong> ${esc(g.producto)} <span class="popup-edf-cod">(Cod. ${esc(g.codProducto || '-')})</span></div>
+                <div class="popup-edf-series">Serie: ${series}</div>
+            </div>`;
+        });
+        return html;
+    },
+
+    // Color de la estrella de un cliente: verde CCC, rojo CNC, gris sin dato de venta
+    getStarColorFor(c) {
+        let estado = (c.VentaEstado !== undefined) ? Number(c.VentaEstado) : NaN;
+        if (isNaN(estado)) {
+            // Cliente crudo (flyToClient): calcular el estado con la venta cargada
+            const u = this.getVentaUnidades();
+            const compro = (u.cerveza && DataService.isVentaCliente(c.Codigo, 'cerveza'))
+                || (u.nabs && DataService.isVentaCliente(c.Codigo, 'nabs'));
+            estado = this.isVentaActive() ? (compro ? 1 : 0) : -1;
+        }
+        if (estado === 1) return this.HELADERA_STAR_COLORS.ccc;
+        if (estado === 0) return this.HELADERA_STAR_COLORS.cnc;
+        return this.HELADERA_STAR_COLORS.neutro;
     },
 
     // Abre el popup del cliente más cercano al punto tocado (p = {x, y} en píxeles del mapa)
     openClientAt(p, recenter = true) {
         if (!this.map || !this.map.getLayer('clients-points')) return;
         const r = 16;
+        const capas = ['clients-points'];
+        if (this.map.getLayer('clients-heladeras')) capas.push('clients-heladeras');
         const feats = this.map.queryRenderedFeatures(
             [[p.x - r, p.y - r], [p.x + r, p.y + r]],
-            { layers: ['clients-points'] }
+            { layers: capas }
         );
         if (!feats || feats.length === 0) return;
         let best = feats[0];

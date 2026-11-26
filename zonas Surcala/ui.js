@@ -88,6 +88,7 @@ const UI = {
         // Config
         document.getElementById('btn-config').onclick = () => {
             this.renderBaseCloudStatus();
+            this.renderHeladerasCloudStatus();
             document.getElementById('config-modal').classList.add('active');
         };
         document.getElementById('modal-close').onclick = () => document.getElementById('config-modal').classList.remove('active');
@@ -95,6 +96,7 @@ const UI = {
         document.getElementById('save-config').onclick = () => this.saveConfig();
         document.getElementById('btn-refresh').onclick = () => this.refreshData();
         this.bindBaseUploadEvents();
+        this.bindHeladerasUploadEvents();
         // Print
         document.getElementById('print-supervisor').onchange = () => this.updatePrintPreview();
         document.getElementById('print-promotor').onchange = () => this.updatePrintPreview();
@@ -566,6 +568,7 @@ const UI = {
                 <div class="client-item-header">
                     <span class="client-item-code">#${esc(c.Codigo || c.ID)}</span>
                     <span class="client-item-name">${esc(c.Nombre)}</span>
+                    ${(() => { const h = DataService.getHeladerasCliente(c.Codigo); return h ? `<span class="client-item-star" style="color:${MapManager.getStarColorFor(c)}" title="Heladeras (EDF): ${esc(h.total)}">★ ${esc(h.total)}</span>` : ''; })()}
                 </div>
                 <div class="client-item-addr">${esc(c.Direccion || '')}</div>
                 <div class="client-item-tags">
@@ -1176,6 +1179,7 @@ const UI = {
                     const res = await DataService.guardarBaseEnSupabase(texto);
                     this.renderBaseCloudStatus();
                     this.cascadeActivos = null;
+                    this.renderHeladerasCloudStatus();
                     this.cascadeJerarquia = null;
                     this.renderUI();
                     if (MapManager.map && MapManager.isLoaded) {
@@ -1191,6 +1195,72 @@ const UI = {
                 }
             };
             reader.readAsArrayBuffer(f);
+        };
+    },
+
+    // ── Base Stock Heladeras (Nube) ──
+    renderHeladerasCloudStatus() {
+        const el = document.getElementById('heladeras-cloud-status');
+        if (!el) return;
+        const h = DataService.heladeras;
+        if (!h || !h.totalEquipos) {
+            el.innerHTML = `<i class="fas fa-info-circle"></i> <strong>Sin base de heladeras cargada.</strong> Las estrellas no se muestran hasta subir un archivo.`;
+            return;
+        }
+        const m = h.meta || {};
+        const fecha = m.actualizado_el ? new Date(m.actualizado_el).toLocaleString('es-AR') : '';
+        el.innerHTML = `<i class="fas fa-cloud" style="color:var(--accent-secondary);"></i> <strong>Base activa en Supabase:</strong> ${esc(h.totalEquipos)} equipos en ${esc(h.totalClientes)} clientes` +
+            (m.actualizado_por ? ` · subida por <strong>${esc(m.actualizado_por)}</strong>` : '') +
+            (fecha ? ` (${esc(fecha)})` : '');
+    },
+
+    bindHeladerasUploadEvents() {
+        const btn = document.getElementById('btn-upload-heladeras');
+        const input = document.getElementById('heladeras-upload-file');
+        if (!btn || !input) return;
+
+        btn.onclick = () => { input.value = ''; input.click(); };
+        input.onchange = async () => {
+            const f = input.files && input.files[0];
+            if (!f) return;
+            if (!confirm(`¿Reemplazar la base de heladeras en la nube con "${f.name}"?\n\nEsto actualizará el stock de EDF para todos los usuarios.`)) return;
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando heladeras...';
+            try {
+                const filas = await DataService.leerArchivoHeladeras(f);
+                const st = DataService.parseHeladerasFilas(filas);
+                const ubic = Object.keys(st.ubicaciones).map(u => `${u || '(vacío)'}: ${st.ubicaciones[u]}`).join(' · ');
+                if (!st.registros.length) {
+                    alert('No hay filas con Ubicación = PDV y Cod. Cliente válido.\n\nUbicaciones encontradas: ' + ubic);
+                    return;
+                }
+                const ok = confirm(
+                    `Resumen del archivo:\n\n` +
+                    `Filas leídas: ${st.filasLeidas}\n` +
+                    `Ubicaciones: ${ubic}\n` +
+                    `Descartadas (no PDV): ${st.descartadasUbicacion}\n` +
+                    `Descartadas (Cod. Cliente 0 o vacío): ${st.descartadasCliente}\n` +
+                    `Registros a guardar: ${st.registros.length}\n\n¿Confirmás la carga en la nube?`
+                );
+                if (!ok) return;
+
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo base de heladeras...';
+                const res = await DataService.guardarHeladerasEnSupabase(st.registros);
+                this.renderHeladerasCloudStatus();
+                if (MapManager.map && MapManager.isLoaded) {
+                    MapManager.renderAll();
+                    this.applyClientFilters();
+                }
+                this.renderCustomZonesList();
+                alert(`Base de heladeras actualizada en la nube.\n\nEquipos: ${res.equipos}\nClientes: ${res.clientes}`);
+            } catch (err) {
+                alert('No se pudo actualizar la base de heladeras:\n' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
         };
     },
 

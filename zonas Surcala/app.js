@@ -35,6 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Base de heladeras (EDF) desde Supabase; nunca bloquea el mapa
+        await DataService.loadHeladeras();
+
         // Render UI
         UI.renderUI();
 

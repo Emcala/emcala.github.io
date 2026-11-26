@@ -467,6 +467,23 @@
                         <i class="fas fa-cloud-upload-alt"></i> Reemplazar base general en la nube
                     </button>
                 </div>
+
+                <div class="config-section">
+                    <h3>Base Stock Heladeras (Nube)</h3>
+                    <p class="config-help" id="heladeras-cloud-status" style="margin-bottom: 10px;">
+                        Verificando estado de la base de heladeras en Supabase...
+                    </p>
+                    <p class="config-help" style="margin-bottom: 12px;">
+                        Subí el export de Stock Heladeras (Excel o CSV). Se toman solo las filas con <code>Ubicación</code> = PDV
+                        y <code>Cod. Cliente</code> distinto de 0. Se usan <code>Cod. Cliente</code>, <code>Desc. Producto</code>,
+                        <code>Cod. Producto</code> y <code>Nro. Serie</code>.
+                    </p>
+                    <input type="file" id="heladeras-upload-file" accept=".csv,.xlsx,.xls,text/csv,.txt" style="display:none;">
+                    <button type="button" class="btn-primary" id="btn-upload-heladeras"
+                        style="width:100%; justify-content:center;">
+                        <i class="fas fa-cloud-upload-alt"></i> Reemplazar base de heladeras en la nube
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <div></div>
