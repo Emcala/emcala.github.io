@@ -855,6 +855,10 @@ const MapManager = {
 
         // Render custom zones
         this.renderCustomZones();
+
+        // renderAll recrea las capas sin filtro: reaplicar el filtro del panel izquierdo
+        // para que nunca aparezca el total de clientes tras un re-render
+        if (window.UI) UI.applyClientFilters();
     },
 
     // ── Capa Venta ─────────────────────────────────────────────
