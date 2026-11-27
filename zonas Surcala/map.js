@@ -1071,16 +1071,25 @@ const MapManager = {
         return cb ? cb.checked : (localStorage.getItem('surcala_heladeras_visible') === '1');
     },
 
+    // Switch "Clientes": si está apagado, también se ocultan los copos EDF
+    isClientesVisible() {
+        const cb = document.getElementById('floating-show-clients');
+        return cb ? cb.checked : true;
+    },
+
     refreshHeladerasFilter() {
         if (!this.map || !this.map.getLayer('clients-heladeras')) return;
         this.map.setPaintProperty('clients-heladeras', 'icon-color', this.getClientColorExpression());
-        this.map.setLayoutProperty('clients-heladeras', 'visibility', this.isHeladerasVisible() ? 'visible' : 'none');
+        const visible = this.isHeladerasVisible() && this.isClientesVisible();
+        this.map.setLayoutProperty('clients-heladeras', 'visibility', visible ? 'visible' : 'none');
         this.updateHeladerasStatus();
     },
 
     setHeladerasVisible(on) {
         localStorage.setItem('surcala_heladeras_visible', on ? '1' : '0');
         this.refreshHeladerasFilter();
+        // Cambiar EDF cambia qué cliente se dibuja como punto y cuál como copo
+        if (window.UI) UI.applyClientFilters();
     },
 
     updateHeladerasStatus() {
@@ -1298,18 +1307,20 @@ ${stats.especiales.map(e => `                                <span><i class="fas
             if (c) activePromFreqIDs.add(c.PromotorID + '_' + (c.FrecuenciaGrupo || 'Sin Frecuencia'));
         });
 
-        // Puntos: sólo clientes visibles por filtro y sin EDF (los EDF los dibuja el copo)
+        // Puntos: clientes del filtro izquierdo. Con EDF encendido, los que tienen heladeras
+        // los dibuja el copo; con EDF apagado, todos los clientes filtrados se ven como punto normal.
+        const edfOn = this.isHeladerasVisible();
+        const inFilter = idsArray.length === 0
+            ? ['==', 'ID', 'NONE']
+            : ['in', 'ID', ...idsArray];
         const sinEdf = ['==', ['get', 'Heladeras'], 0];
-        if (idsArray.length === 0) {
-            this.map.setFilter('clients-points', ['all', sinEdf, ['==', 'ID', 'NONE']]);
-        } else {
-            this.map.setFilter('clients-points', ['all', sinEdf, ['in', 'ID', ...idsArray]]);
-        }
+        this.map.setFilter('clients-points', edfOn ? ['all', sinEdf, inFilter] : inFilter);
+
+        // Copos EDF: solo clientes filtrados con heladeras
         if (this.map.getLayer('clients-heladeras')) {
-            this.map.setFilter('clients-heladeras', idsArray.length === 0
-                ? ['all', ['>', ['get', 'Heladeras'], 0], ['==', ['get', 'ID'], 'NONE']]
-                : ['all', ['>', ['get', 'Heladeras'], 0], ['in', ['get', 'ID'], ['literal', idsArray]]]);
+            this.map.setFilter('clients-heladeras', ['all', ['>', ['get', 'Heladeras'], 0], inFilter]);
         }
+        this.refreshHeladerasFilter();
 
 
         if (this.map.getLayer('promoter-zones-fill')) {
