@@ -829,7 +829,7 @@ const MapManager = {
             type: 'circle',
             source: 'clients',
             // Los clientes con EDF no muestran punto: los reemplaza el copo (clients-heladeras)
-            filter: ['==', ['get', 'Heladeras'], 0],
+            filter: ['==', 'Heladeras', 0],
             layout: { visibility: 'visible' },
             paint: {
                 'circle-radius': 6,
@@ -1052,7 +1052,7 @@ const MapManager = {
             id: 'clients-heladeras',
             type: 'symbol',
             source: 'clients',
-            filter: ['>', ['get', 'Heladeras'], 0],
+            filter: ['>', 'Heladeras', 0],
             layout: {
                 'icon-image': this.HELADERA_ICON_ID,
                 'icon-size': 0.26,
@@ -1317,12 +1317,12 @@ ${stats.especiales.map(e => `                                <span><i class="fas
         const inFilter = idsArray.length === 0
             ? ['==', 'ID', 'NONE']
             : ['in', 'ID', ...idsArray];
-        const sinEdf = ['==', ['get', 'Heladeras'], 0];
+        const sinEdf = ['==', 'Heladeras', 0];
         this.map.setFilter('clients-points', edfOn ? ['all', sinEdf, inFilter] : inFilter);
 
         // Copos EDF: solo clientes filtrados con heladeras
         if (this.map.getLayer('clients-heladeras')) {
-            this.map.setFilter('clients-heladeras', ['all', ['>', ['get', 'Heladeras'], 0], inFilter]);
+            this.map.setFilter('clients-heladeras', ['all', ['>', 'Heladeras', 0], inFilter]);
         }
         this.refreshHeladerasFilter();
 
